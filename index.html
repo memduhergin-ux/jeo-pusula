@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>JeoCompass</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+    <!-- View 1: Compass (Pusula) -->
+    <div id="view-compass" class="view-section active">
+        <div class="compass-container">
+            <div class="compass-body">
+                <div class="lubber-line"></div>
+                <div class="dial">
+                    <div class="ring-ticks"></div>
+                    <div class="cardinal-points">
+                        <span class="cardinal n">N</span>
+                        <span class="cardinal e">E</span>
+                        <span class="cardinal s">S</span>
+                        <span class="cardinal w">W</span>
+                    </div>
+                </div>
+                <div class="needle-container" id="compass-needle">
+                    <div class="needle-north"></div>
+                    <div class="needle-south"></div>
+                    <div class="needle-center"></div>
+                </div>
+            </div>
+
+            <!-- Calibration Button (Top Left - Symmetric) -->
+            <div class="calib-container">
+                <button id="btn-calibrate" class="calibrate-btn">CAL</button>
+            </div>
+
+            <!-- Signature Tag (Top Right - Symmetric) -->
+            <div class="signature-container">
+                <div class="signature-tag">MET</div>
+            </div>
+
+            <!-- Level Bubble moved to Housing (Bottom Left) -->
+            <div class="level-container">
+                <div class="level-bubble" id="level-bubble"></div>
+                <div class="level-crosshair"></div>
+                <div class="level-center-target"></div>
+            </div>
+
+            <!-- REC Button (Bottom Right - Symmetric) -->
+            <div class="save-container">
+                <button id="btn-save" class="save-btn">REC</button>
+            </div>
+        </div>
+
+        <div id="calibration-warning" class="warning"></div>
+
+        <div class="data-panel">
+            <div class="data-grid">
+                <!-- Strike Instrument (Left) -->
+                <div class="instrument-cluster cluster-strike">
+                    <button id="btn-hold-strike" class="hold-btn">H</button>
+                    <div class="display-box">
+                        <span class="data-label">Strike</span>
+                        <span class="data-value" id="val-strike">0</span>
+                    </div>
+                </div>
+
+                <!-- Dip Instrument (Right) -->
+                <div class="instrument-cluster cluster-dip">
+                    <div class="display-box">
+                        <span class="data-label">Dip</span>
+                        <span class="data-value" id="val-dip">0</span>
+                    </div>
+                    <button id="btn-hold-dip" class="hold-btn">H</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coordinates -->
+        <div class="panel">
+            <div class="toggle-container">
+                <button id="btn-wgs" class="toggle-btn" title="WGS84 (Lat/Lon)">WGS</button>
+                <button id="btn-utm" class="toggle-btn active" title="UTM ED50 (Sağa/Yukarı)">UTM</button>
+            </div>
+
+            <div class="coords-container" id="coord-content">
+                <div class="data-label">Konum bekleniyor...</div>
+            </div>
+        </div>
+
+        <!-- Permission Button -->
+        <button id="permission-btn" class="permission-btn">Pusula İzni Ver</button>
+    </div>
+
+    <!-- View 2: Map (Harita) -->
+    <div id="view-map" class="view-section">
+        <div class="panel" style="margin-top: 10px; height: calc(100% - 20px); padding: 5px; position: relative;">
+            <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
+            <button id="btn-follow-me" class="map-fab" title="Konumu Takip Et">
+                <i class="icon-location">🎯</i>
+            </button>
+        </div>
+    </div>
+
+    <!-- View 3: Records (Kayıtlar) -->
+    <div id="view-records" class="view-section">
+        <div class="panel wide-panel" style="margin-top: 10px;">
+            <div class="records-header">
+                <button class="save-btn ready" id="btn-more-options" title="Seçenekler">⋮</button>
+                <button class="save-btn ready" id="btn-toggle-lock" title="Kilidi Aç/Kapat">🔒</button>
+
+                <div class="search-container">
+                    <input type="text" id="record-search" placeholder="Ara..." class="form-input">
+                </div>
+
+                <button class="save-btn ready" id="btn-share" title="Paylaş" disabled>📤</button>
+            </div>
+            <div style="overflow-x: auto; margin-top: 10px;">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all-records"></th>
+                            <th>No</th>
+                            <th>Y</th>
+                            <th>X</th>
+                            <th>Z</th>
+                            <th>Strike</th>
+                            <th>Dip</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-body">
+                        <tr>
+                            <td colspan="8">Henüz kayıt yok</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Pusula Kalibrasyonu</h2>
+            </div>
+            <div class="modal-body" style="color:#ccc; line-height:1.5;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div class="figure-8" style="margin: 0 auto 10px auto;"></div>
+                    <p>Sensörleri kalibre etmek için telefonu havada <strong>8 çizecek şekilde</strong> döndürün.</p>
+                </div>
+
+                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensör
+                        Durumu:</label>
+                    <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
+                        Taranıyor...</p>
+                </div>
+
+                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Manyetik Sapma
+                        (Deklinasyon):</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="declination-input" value="0" step="0.1"
+                            style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
+                        <span>Derece</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">Gerçek Kuzey ile aradaki farkı buradan
+                        manuel olarak düzeltebilirsiniz.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-confirm" id="btn-calibration-close">Tamam</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Modal -->
+    <div class="modal-overlay" id="record-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Veri Kaydı</h2>
+            </div>
+            <div class="modal-body">
+                <!-- Record No -->
+                <div class="form-group">
+                    <label class="form-label">Kayıt No</label>
+                    <input type="number" id="rec-no" class="form-input" value="1">
+                </div>
+                <!-- Coordinates (UTM ED50) -->
+                <div class="form-group" style="padding: 10px 0;">
+                    <label class="form-label">Y</label>
+                    <input type="text" id="rec-y" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">X</label>
+                    <input type="text" id="rec-x" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Z</label>
+                    <input type="text" id="rec-z" class="form-input" readonly>
+                </div>
+                <!-- Structural Data -->
+                <div class="form-group">
+                    <label class="form-label">Strike</label>
+                    <input type="text" id="rec-strike" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dip</label>
+                    <input type="text" id="rec-dip" class="form-input" readonly>
+                </div>
+                <!-- Note -->
+                <div class="form-group" style="align-items: flex-start;">
+                    <label class="form-label" style="margin-top: 5px;">Not</label>
+                    <textarea id="rec-note" class="form-input" placeholder="Formasyon, vs..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-modal-cancel">İptal</button>
+                <button class="modal-btn btn-confirm" id="btn-modal-save">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Options Modal -->
+    <div id="options-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 320px;">
+            <div class="modal-header">
+                <h2>Ek Seçenekler</h2>
+            </div>
+            <div class="modal-body" style="padding: 20px 0;">
+                <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Yönetimsel
+                    işlemler için aşağıdaki araçları kullanın.</div>
+                <button class="save-btn ready" id="btn-delete-selected"
+                    style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold;">
+                    🗑️ Seçilen Kayıtları Sil
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-options-cancel">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 320px;">
+            <div class="modal-header">
+                <h2>Verileri Paylaş</h2>
+            </div>
+            <div class="modal-body" style="padding: 20px 0;">
+                <div style="margin-bottom: 20px;">
+                    <div
+                        style="font-weight: bold; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                        Tüm Kayıtlar</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="save-btn ready" id="btn-share-all-csv" style="flex: 1;">CSV</button>
+                        <button class="save-btn ready" id="btn-share-all-kml" style="flex: 1;">KML</button>
+                    </div>
+                </div>
+                <div>
+                    <div
+                        style="font-weight: bold; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                        Seçilen Kayıtlar</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="save-btn ready" id="btn-share-sel-csv" style="flex: 1;">CSV</button>
+                        <button class="save-btn ready" id="btn-share-sel-kml" style="flex: 1;">KML</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-share-cancel">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-item active" data-target="view-compass">
+            <span class="nav-icon">🧭</span>
+            <span>Pusula</span>
+        </button>
+        <button class="nav-item" data-target="view-map">
+            <span class="nav-icon">🗺️</span>
+            <span>Harita</span>
+        </button>
+        <button class="nav-item" data-target="view-records">
+            <span class="nav-icon">📝</span>
+            <span>Kayıtlar</span>
+        </button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
