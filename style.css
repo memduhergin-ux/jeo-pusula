@@ -1023,51 +1023,46 @@ textarea.form-input {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.marker-id-label {
-    position: absolute;
-    background: #2196f3;
-    color: white;
-    padding: 1px 5px;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: bold;
-    white-space: nowrap;
-    border: 1px solid white;
-    pointer-events: none;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+/* Cleaned old pins */
+
+/* Pin Marker V3 (Raptiye) */
+.geology-marker-pin {
+    background: none !important;
+    border: none !important;
 }
 
-/* Position ID label relative to icon */
-.marker-id-label.pos-tr {
-    top: -5px;
-    right: -15px;
+.pin-container {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.marker-id-label.pos-tl {
-    top: -5px;
-    left: -15px;
+/* Pin Head */
+.pin-icon {
+    font-size: 24px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    transition: transform 0.3s;
 }
 
-.marker-id-label.pos-br {
-    bottom: -5px;
-    right: -15px;
-}
-
-.marker-id-label.pos-bl {
-    bottom: -5px;
-    left: -15px;
-}
-
-/* Live Location Red Triangle */
+/* Red Triangle (Live Location) - Visible ONLY when followMe is active */
 .live-marker {
+    display: none;
+    /* Hidden by default */
     width: 0;
     height: 0;
     border-left: 10px solid transparent;
     border-right: 10px solid transparent;
     border-bottom: 18px solid #ff5252;
-    filter: drop-shadow(0 0 5px rgba(255, 82, 82, 0.6));
-    animation: pulse-red 2s infinite ease-in-out;
+    filter: drop-shadow(0 0 8px rgba(255, 82, 82, 0.8));
+    animation: pulse-red 1.5s infinite ease-in-out;
+    z-index: 2000;
+}
+
+.live-marker.visible {
+    display: block;
 }
 
 @keyframes pulse-red {
@@ -1077,12 +1072,26 @@ textarea.form-input {
     }
 
     50% {
-        transform: scale(1.2);
-        opacity: 0.8;
+        transform: scale(1.3);
+        opacity: 0.7;
     }
 
     100% {
         transform: scale(1);
         opacity: 1;
     }
+}
+
+.marker-id-label-v3 {
+    position: absolute;
+    top: -10px;
+    right: -15px;
+    background: #4caf50;
+    color: white;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    border: 1px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }

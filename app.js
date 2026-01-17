@@ -11,6 +11,20 @@ const calibrationWarning = document.getElementById('calibration-warning');
 const ringTicks = document.querySelector('.ring-ticks');
 const btnHoldStrike = document.getElementById('btn-hold-strike');
 const btnHoldDip = document.getElementById('btn-hold-dip');
+const btnSave = document.getElementById('btn-save');
+const btnFollowMe = document.getElementById('btn-follow-me');
+const btnMoreOptions = document.getElementById('btn-more-options');
+const btnShare = document.getElementById('btn-share');
+const btnToggleLock = document.getElementById('btn-toggle-lock');
+const btnToggleRecords = document.getElementById('btn-toggle-records');
+const recordModal = document.getElementById('record-modal');
+const optionsModal = document.getElementById('options-modal');
+const shareModal = document.getElementById('share-modal');
+const calibModal = document.getElementById('calibration-modal');
+const btnCalibrate = document.getElementById('btn-calibrate');
+const recordSearch = document.getElementById('record-search');
+const selectAllCheckbox = document.getElementById('select-all-records');
+const btnDeleteSelected = document.getElementById('btn-delete-selected');
 
 // Generate Dial Ticks (Responsive)
 function generateTicks() {
@@ -420,6 +434,16 @@ if ('geolocation' in navigator) {
             } else {
                 liveMarker.setLatLng(livePos);
             }
+
+            // Show/Hide triangle based on followMe
+            const el = liveMarker.getElement();
+            if (el) {
+                const triangle = el.querySelector('.live-marker');
+                if (triangle) {
+                    if (followMe) triangle.classList.add('visible');
+                    else triangle.classList.remove('visible');
+                }
+            }
         }
 
         // Follow-Me logic
@@ -432,11 +456,6 @@ if ('geolocation' in navigator) {
 }
 
 // Save & Modal
-const btnSave = document.getElementById('btn-save');
-const recordModal = document.getElementById('record-modal');
-const btnCalibrate = document.getElementById('btn-calibrate');
-const calibModal = document.getElementById('calibration-modal');
-
 if (btnSave) btnSave.addEventListener('click', () => {
     // Populate Modal Fields (Locked values if active)
     editingRecordId = null; // Reset edit mode
@@ -612,7 +631,6 @@ function initMap() {
 
 // Show/Hide Records State
 let showRecordsOnMap = true;
-const btnToggleRecords = document.getElementById('btn-toggle-records');
 
 function updateMapMarkers() {
     if (!map || !markerGroup) return;
@@ -635,17 +653,17 @@ function updateMapMarkers() {
             const labelPosClass = positions[r.id % 4];
 
             const iconHtml = `
-                <div class="marker-symbol-container">
-                    <img src="icon-192.png" class="marker-app-icon" style="transform: rotate(${strikeAngle}deg)">
-                    <div class="marker-id-label ${labelPosClass}" style="transform: rotate(0deg)">#${r.id}</div>
+                <div class="pin-container">
+                    <div class="pin-icon" style="transform: rotate(${strikeAngle}deg)">📍</div>
+                    <div class="marker-id-label-v3">#${r.id}</div>
                 </div>
             `;
 
             const geologicalIcon = L.divIcon({
-                className: 'geology-marker-v2',
+                className: 'geology-marker-pin',
                 html: iconHtml,
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
             });
 
             const marker = L.marker([r.lat, r.lon], { icon: geologicalIcon });
@@ -677,7 +695,6 @@ if (btnToggleRecords) {
 }
 
 // Search Logic
-const recordSearch = document.getElementById('record-search');
 if (recordSearch) {
     recordSearch.addEventListener('input', (e) => {
         renderRecords(e.target.value);
@@ -685,11 +702,23 @@ if (recordSearch) {
 }
 
 // Follow-Me Logic
-const btnFollowMe = document.getElementById('btn-follow-me');
 if (btnFollowMe) {
     btnFollowMe.addEventListener('click', () => {
         followMe = !followMe;
         btnFollowMe.classList.toggle('active', followMe);
+
+        // Update live marker triangle visibility immediately
+        if (liveMarker) {
+            const el = liveMarker.getElement();
+            if (el) {
+                const triangle = el.querySelector('.live-marker');
+                if (triangle) {
+                    if (followMe) triangle.classList.add('visible');
+                    else triangle.classList.remove('visible');
+                }
+            }
+        }
+
         if (followMe && currentCoords.lat) {
             map.setView([currentCoords.lat, currentCoords.lon], 17);
         }
@@ -719,11 +748,9 @@ document.getElementById('records-body').addEventListener('click', (e) => {
 // Selection Logic
 function updateShareButtonState() {
     const selectedCount = document.querySelectorAll('.record-select:checked').length;
-    const btnShare = document.getElementById('btn-share');
     if (btnShare) btnShare.disabled = selectedCount === 0;
 }
 
-const selectAllCheckbox = document.getElementById('select-all-records');
 if (selectAllCheckbox) {
     selectAllCheckbox.addEventListener('change', (e) => {
         const checked = e.target.checked;
@@ -832,9 +859,6 @@ function exportData(type) {
 }
 
 // Share Modal Control
-const btnShare = document.getElementById('btn-share');
-const shareModal = document.getElementById('share-modal');
-
 if (btnShare) {
     btnShare.addEventListener('click', () => {
         if (!btnShare.disabled) shareModal.classList.add('active');
@@ -849,9 +873,6 @@ if (document.getElementById('btn-share-cancel')) {
 document.getElementById('btn-share-csv').addEventListener('click', () => { exportData('csv'); shareModal.classList.remove('active'); });
 document.getElementById('btn-share-kml').addEventListener('click', () => { exportData('kml'); shareModal.classList.remove('active'); });
 // Options Modal Control
-const btnMoreOptions = document.getElementById('btn-more-options');
-const optionsModal = document.getElementById('options-modal');
-
 if (btnMoreOptions) {
     btnMoreOptions.addEventListener('click', () => {
         optionsModal.classList.add('active');
@@ -863,7 +884,6 @@ if (document.getElementById('btn-options-cancel')) {
 }
 
 // Updated Delete Logic Location (Now inside Options Modal)
-const btnDeleteSelected = document.getElementById('btn-delete-selected');
 if (btnDeleteSelected) {
     btnDeleteSelected.addEventListener('click', () => {
         const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
@@ -889,7 +909,6 @@ function downloadFile(content, filename, type) {
 }
 
 // Lock Toggle Logic
-const btnToggleLock = document.getElementById('btn-toggle-lock');
 function updateLockUI() {
     if (!btnToggleLock) return;
     if (isRecordsLocked) {
