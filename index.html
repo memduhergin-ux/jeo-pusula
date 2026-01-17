@@ -103,7 +103,11 @@
         <div class="panel" style="margin-top: 10px; height: calc(100% - 20px); padding: 5px; position: relative;">
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
             <button id="btn-follow-me" class="map-fab" title="Konumu Takip Et">
-                <i class="icon-location">🎯</i>
+                <div class="crosshair-wrapper">
+                    <div class="crosshair-circle"></div>
+                    <div class="crosshair-line-v"></div>
+                    <div class="crosshair-line-h"></div>
+                </div>
             </button>
         </div>
     </div>
@@ -125,7 +129,7 @@
                 <table class="records-table">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" id="select-all-records"></th>
+                            <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
                             <th>No</th>
                             <th>Y</th>
                             <th>X</th>
@@ -133,6 +137,7 @@
                             <th>Strike</th>
                             <th>Dip</th>
                             <th>Note</th>
+                            <th id="edit-th">Düzelt</th>
                         </tr>
                     </thead>
                     <tbody id="records-body">

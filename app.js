@@ -324,17 +324,29 @@ requestAnimationFrame(animateCompass);
 if (btnWgs) btnWgs.addEventListener('click', () => { currentMode = 'wgs'; btnWgs.classList.add('active'); btnUtm.classList.remove('active'); updateDisplay(); });
 if (btnUtm) btnUtm.addEventListener('click', () => { currentMode = 'utm'; btnUtm.classList.add('active'); btnWgs.classList.remove('active'); updateDisplay(); });
 
+// Update Save Button State
+function updateSaveButtonState() {
+    if (!btnSave) return;
+    if (lockStrike && lockDip) {
+        btnSave.classList.add('ready');
+    } else {
+        btnSave.classList.remove('ready');
+    }
+}
+
 // Hold Logic
 if (btnHoldStrike) {
     btnHoldStrike.addEventListener('click', () => {
         lockStrike = !lockStrike;
         btnHoldStrike.classList.toggle('locked', lockStrike);
+        updateSaveButtonState();
     });
 }
 if (btnHoldDip) {
     btnHoldDip.addEventListener('click', () => {
         lockDip = !lockDip;
         btnHoldDip.classList.toggle('locked', lockDip);
+        updateSaveButtonState();
     });
 }
 
@@ -345,30 +357,21 @@ function requestPermissions() {
             if (r === 'granted') {
                 window.addEventListener('deviceorientation', handleOrientation, true);
                 if (permissionBtn) permissionBtn.style.display = 'none';
-            } else {
-                alert("Sensör izni reddedildi. Sayfayı yenileyip tekrar deneyin.");
             }
         }).catch(err => {
             console.error(err);
-            alert("İzin istenirken hata oluştu.");
         });
     } else {
         // Android & Others
-        // Bazı tarayıcılar gesture beklediği için hem burada hem load'da deniyoruz
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
         window.addEventListener('deviceorientation', handleOrientation, true);
-
-        // Android'de pusula izni butonu genelde gerekmez ama butona basılmışsa gizle
         if (permissionBtn) permissionBtn.style.display = 'none';
-
-        // GPS izni de isteyelim hazır basılmışken
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(() => { }, () => { });
-        }
     }
 }
 if (permissionBtn) {
-    permissionBtn.addEventListener('click', requestPermissions);
+    permissionBtn.addEventListener('click', () => {
+        requestPermissions();
+    });
 }
 
 // Otomatik Başlatma Denemesi (Android için)
@@ -378,22 +381,20 @@ function autoInitSensors() {
     if (isIOS) {
         if (permissionBtn) {
             permissionBtn.style.display = 'block';
-            permissionBtn.textContent = 'Pusula Sensörünü Başlat';
+            permissionBtn.textContent = 'Pusulayı Başlat (Tıklayın)';
         }
     } else {
-        // Android: Hemen dinlemeye başla
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
         window.addEventListener('deviceorientation', handleOrientation, true);
 
-        // 2 saniye bekletip veri gelmezse butonu zorla göster
         setTimeout(() => {
             if (sensorSource === null) {
                 if (permissionBtn) {
                     permissionBtn.style.display = 'block';
-                    permissionBtn.textContent = 'Pusula Sensörünü Başlat';
+                    permissionBtn.textContent = 'Pusulayı Başlat (Tıklayın)';
                 }
             }
-        }, 2000);
+        }, 3000);
     }
 }
 autoInitSensors();
@@ -404,7 +405,6 @@ if ('geolocation' in navigator) {
         currentCoords.lat = p.coords.latitude;
         currentCoords.lon = p.coords.longitude;
         currentCoords.alt = p.coords.altitude;
-        if (btnSave) btnSave.classList.add('ready');
 
         // Update Live Marker (Red Triangle)
         if (map && currentCoords.lat) {
@@ -518,7 +518,13 @@ function saveRecords() {
 
 function renderRecords(filter = '') {
     const tableBody = document.getElementById('records-body');
+    const selectAllTh = document.getElementById('select-all-th');
+    const editTh = document.getElementById('edit-th');
     if (!tableBody) return;
+
+    // Sync Header Visibility
+    if (selectAllTh) selectAllTh.classList.toggle('locked-hidden', isRecordsLocked);
+    if (editTh) editTh.classList.toggle('locked-hidden', isRecordsLocked);
 
     let displayRecords = records;
     if (filter) {
@@ -530,7 +536,8 @@ function renderRecords(filter = '') {
     }
 
     if (displayRecords.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="9">${filter ? 'Eşleşen kayıt bulunamadı' : 'Henüz kayıt yok'}</td></tr>`;
+        const colCount = isRecordsLocked ? 7 : 9;
+        tableBody.innerHTML = `<tr><td colspan="${colCount}">${filter ? 'Eşleşen kayıt bulunamadı' : 'Henüz kayıt yok'}</td></tr>`;
         return;
     }
 
@@ -543,12 +550,11 @@ function renderRecords(filter = '') {
             <td>${r.z}</td>
             <td>${r.strike}</td>
             <td>${r.dip}</td>
-            <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
+            <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">✏️</button></td>
         </tr>
     `).join('');
 
-    // Update share button if filter results change
     updateShareButtonState();
 }
 renderRecords();
