@@ -1,25 +1,13 @@
 {
-    "id": "/jeo-pusula/",
     "name": "JeoCompass",
     "short_name": "JeoCompass",
     "description": "Jeolojik arazi çalışmaları için dijital pusula ve veri kayıt uygulaması",
-    "start_url": "/jeo-pusula/index.html",
-    "scope": "/jeo-pusula/",
+    "start_url": "index.html",
     "display": "standalone",
     "background_color": "#121212",
     "theme_color": "#1a1a1a",
     "orientation": "portrait",
-    "categories": [
-        "productivity",
-        "education"
-    ],
     "icons": [
-        {
-            "src": "icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
         {
             "src": "icon-512.png",
             "sizes": "512x512",
@@ -32,7 +20,5 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ],
-    "lang": "tr-TR",
-    "dir": "ltr"
+    ]
 }
