@@ -334,21 +334,63 @@ if (btnHoldDip) {
 
 function requestPermissions() {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS
         DeviceOrientationEvent.requestPermission().then(r => {
             if (r === 'granted') {
-                // iOS için pusula yönelimi
-                window.addEventListener('deviceorientation', handleOrientation);
+                window.addEventListener('deviceorientation', handleOrientation, true);
                 if (permissionBtn) permissionBtn.style.display = 'none';
+            } else {
+                alert("Sensör izni reddedildi. Sayfayı yenileyip tekrar deneyin.");
             }
+        }).catch(err => {
+            console.error(err);
+            alert("İzin istenirken hata oluştu.");
         });
     } else {
-        // Android için 'absolute' öncelikli (Manyetik kuzey için daha net)
+        // Android & Others
+        // Bazı tarayıcılar gesture beklediği için hem burada hem load'da deniyoruz
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
         window.addEventListener('deviceorientation', handleOrientation, true);
+
+        // Android'de pusula izni butonu genelde gerekmez ama butona basılmışsa gizle
         if (permissionBtn) permissionBtn.style.display = 'none';
+
+        // GPS izni de isteyelim hazır basılmışken
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(() => { }, () => { });
+        }
     }
 }
-if (permissionBtn) permissionBtn.addEventListener('click', requestPermissions);
+if (permissionBtn) {
+    permissionBtn.addEventListener('click', requestPermissions);
+}
+
+// Otomatik Başlatma Denemesi (Android için)
+function autoInitSensors() {
+    const isIOS = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+    if (isIOS) {
+        if (permissionBtn) {
+            permissionBtn.style.display = 'block';
+            permissionBtn.textContent = 'Pusula Sensörünü Başlat';
+        }
+    } else {
+        // Android: Hemen dinlemeye başla
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+
+        // 2 saniye bekletip veri gelmezse butonu zorla göster
+        setTimeout(() => {
+            if (sensorSource === null) {
+                if (permissionBtn) {
+                    permissionBtn.style.display = 'block';
+                    permissionBtn.textContent = 'Pusula Sensörünü Başlat';
+                }
+            }
+        }, 2000);
+    }
+}
+autoInitSensors();
 
 // Geolocation
 if ('geolocation' in navigator) {
@@ -840,12 +882,7 @@ window.addEventListener('beforeunload', () => {
     isRecordsLocked = true;
 });
 
-// Initial check
-if (!(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')) {
-    requestPermissions();
-} else {
-    if (permissionBtn) permissionBtn.style.display = 'block';
-}
+// Initial flow is handled by autoInitSensors() in the mid-section.
 
 // Desktop Sim
 setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setInterval(() => { targetHeading = (targetHeading + 1) % 360; }, 50); } }, 2000);
