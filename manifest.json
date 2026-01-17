@@ -1,8 +1,10 @@
 {
+    "id": "com.jeocompass.app",
     "name": "JeoCompass",
     "short_name": "JeoCompass",
     "description": "Jeolojik arazi çalışmaları için dijital pusula ve veri kayıt uygulaması",
-    "start_url": "index.html",
+    "start_url": "/jeo-pusula/",
+    "scope": "/jeo-pusula/",
     "display": "standalone",
     "background_color": "#121212",
     "theme_color": "#1a1a1a",
