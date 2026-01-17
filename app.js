@@ -602,12 +602,28 @@ function initMap() {
     L.control.layers(baseMaps, overlayMaps).addTo(map);
     markerGroup = L.layerGroup().addTo(map);
 
+    // Zoom listener for scale-based visibility
+    map.on('zoomend', () => {
+        updateMapMarkers();
+    });
+
     updateMapMarkers();
 }
+
+// Show/Hide Records State
+let showRecordsOnMap = true;
+const btnToggleRecords = document.getElementById('btn-toggle-records');
 
 function updateMapMarkers() {
     if (!map || !markerGroup) return;
     markerGroup.clearLayers();
+
+    if (!showRecordsOnMap) return;
+
+    // Scale-based visibility: Only show if zoom is 14 or higher
+    if (map.getZoom() < 14) {
+        return;
+    }
 
     const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
     const dataToRender = selectedIds.length > 0 ? records.filter(r => selectedIds.includes(r.id)) : records;
@@ -619,15 +635,14 @@ function updateMapMarkers() {
             const labelPosClass = positions[r.id % 4];
 
             const iconHtml = `
-                <div class="marker-symbol" style="transform: rotate(${strikeAngle}deg)">
-                    <div class="marker-strike-line"></div>
-                    <div class="marker-dip-tick"></div>
-                    <div class="marker-id-label ${labelPosClass}" style="transform: rotate(${-strikeAngle}deg)">#${r.id}</div>
+                <div class="marker-symbol-container">
+                    <img src="icon-192.png" class="marker-app-icon" style="transform: rotate(${strikeAngle}deg)">
+                    <div class="marker-id-label ${labelPosClass}" style="transform: rotate(0deg)">#${r.id}</div>
                 </div>
             `;
 
             const geologicalIcon = L.divIcon({
-                className: 'geology-marker',
+                className: 'geology-marker-v2',
                 html: iconHtml,
                 iconSize: [40, 40],
                 iconAnchor: [20, 20]
@@ -650,6 +665,15 @@ function updateMapMarkers() {
         const group = new L.featureGroup(markerGroup.getLayers());
         map.fitBounds(group.getBounds().pad(0.2));
     }
+}
+
+if (btnToggleRecords) {
+    btnToggleRecords.classList.toggle('active', showRecordsOnMap);
+    btnToggleRecords.addEventListener('click', () => {
+        showRecordsOnMap = !showRecordsOnMap;
+        btnToggleRecords.classList.toggle('active', showRecordsOnMap);
+        updateMapMarkers();
+    });
 }
 
 // Search Logic
@@ -745,8 +769,10 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         // Auto-lock when leaving or entering views (security first)
         if (!isRecordsLocked) {
             isRecordsLocked = true;
-            updateLockUI();
-            renderRecords();
+            try {
+                updateLockUI();
+                renderRecords();
+            } catch (e) { console.error("Lock error", e); }
         }
 
         // Update Nav UI

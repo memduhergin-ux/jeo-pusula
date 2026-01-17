@@ -922,7 +922,8 @@ textarea.form-input {
 /* Map FAB (Follow-Me Button) */
 .map-fab {
     position: absolute;
-    bottom: 30px;
+    bottom: 85px;
+    /* Moved up to avoid nav overlap */
     right: 20px;
     width: 46px;
     height: 46px;
@@ -938,6 +939,19 @@ textarea.form-input {
     align-items: center;
     justify-content: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.records-toggle-fab {
+    bottom: 145px;
+    /* Positioned above follow-me */
+    background: rgba(33, 150, 243, 0.15);
+    color: #2196f3;
+}
+
+.records-toggle-fab.active {
+    background: #2196f3 !important;
+    color: #fff !important;
+    border-color: #64b5f6 !important;
 }
 
 .map-fab:active {
@@ -985,13 +999,13 @@ textarea.form-input {
     height: 2px;
 }
 
-/* Geology Marker */
-.geology-marker {
+/* Geology Marker V2 (Icon Based) */
+.geology-marker-v2 {
     background: none !important;
     border: none !important;
 }
 
-.marker-symbol {
+.marker-symbol-container {
     width: 40px;
     height: 40px;
     position: relative;
@@ -1000,57 +1014,49 @@ textarea.form-input {
     justify-content: center;
 }
 
-.marker-strike-line {
-    width: 32px;
-    height: 3px;
-    background: #2196f3;
-    border-radius: 2px;
-    box-shadow: 0 0 5px rgba(33, 150, 243, 0.8);
-}
-
-.marker-dip-tick {
-    position: absolute;
-    width: 14px;
-    height: 3px;
-    background: #ff5252;
-    top: 50%;
-    left: 50%;
-    transform-origin: 0 50%;
-    /* Positioned perpendicular to strike via JS */
+.marker-app-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .marker-id-label {
     position: absolute;
-    background: rgba(0, 0, 0, 0.85);
+    background: #2196f3;
     color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
     white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid white;
     pointer-events: none;
     z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Collision Avoidance Positions */
+/* Position ID label relative to icon */
 .marker-id-label.pos-tr {
-    top: -20px;
-    left: 20px;
+    top: -5px;
+    right: -15px;
 }
 
 .marker-id-label.pos-tl {
-    top: -20px;
-    right: 20px;
+    top: -5px;
+    left: -15px;
 }
 
 .marker-id-label.pos-br {
-    bottom: -20px;
-    left: 20px;
+    bottom: -5px;
+    right: -15px;
 }
 
 .marker-id-label.pos-bl {
-    bottom: -20px;
-    right: 20px;
+    bottom: -5px;
+    left: -15px;
 }
 
 /* Live Location Red Triangle */
