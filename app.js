@@ -293,9 +293,15 @@ function updateSensorUI() {
     if (sensorSource === 'ios' || sensorSource === 'absolute') {
         statusEl.textContent = "BAĞLI: Hassas (Manyetik Kuzey)";
         statusEl.style.color = "#4caf50";
-    } else {
+        if (permissionBtn) permissionBtn.style.display = 'none';
+        if (calibrationWarning) calibrationWarning.style.display = 'none';
+    } else if (sensorSource === 'relative') {
         statusEl.textContent = "BAĞLI: Tahmini (Kalibrasyon Gerekli)";
         statusEl.style.color = "#ff9800";
+        if (calibrationWarning) calibrationWarning.style.display = 'block';
+    } else {
+        statusEl.textContent = "BEKLENİYOR: Lütfen Butona Basın";
+        statusEl.style.color = "#f44336";
     }
 }
 
@@ -410,7 +416,7 @@ if ('geolocation' in navigator) {
                     iconSize: [20, 20],
                     iconAnchor: [10, 10]
                 });
-                liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(map);
+                liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
             } else {
                 liveMarker.setLatLng(livePos);
             }
@@ -548,10 +554,11 @@ function renderRecords(filter = '') {
 renderRecords();
 
 // Map Logic
+let liveLayer = L.layerGroup(); // Layer for live location
+
 function initMap() {
     if (map) return;
 
-    // Default View (Center of Turkey if no GPS)
     const initialLat = currentCoords.lat || 39.9334;
     const initialLon = currentCoords.lon || 32.8597;
 
@@ -573,15 +580,20 @@ function initMap() {
         attribution: '© Google'
     });
 
-    osm.addTo(map); // Default
+    osm.addTo(map);
+    liveLayer.addTo(map);
 
     const baseMaps = {
-        "Standart (OSM)": osm,
-        "Google Arazi": googleTerrain,
-        "Google Uydu": googleSat
+        "Sokak (OSM)": osm,
+        "Arazi (Google)": googleTerrain,
+        "Uydu (Google)": googleSat
     };
 
-    L.control.layers(baseMaps).addTo(map);
+    const overlayMaps = {
+        "Canlı Konumum": liveLayer
+    };
+
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
     markerGroup = L.layerGroup().addTo(map);
 
     updateMapMarkers();
@@ -596,9 +608,7 @@ function updateMapMarkers() {
 
     dataToRender.forEach(r => {
         if (r.lat && r.lon) {
-            // Create Oriented Icon
             const strikeAngle = parseFloat(r.strike) || 0;
-            // Collision Avoidance: Alternate label positions based on ID
             const positions = ['pos-tr', 'pos-tl', 'pos-br', 'pos-bl'];
             const labelPosClass = positions[r.id % 4];
 
@@ -630,7 +640,6 @@ function updateMapMarkers() {
         }
     });
 
-    // Fit bounds if markers exist and were filtered
     if (dataToRender.length > 0 && selectedIds.length > 0) {
         const group = new L.featureGroup(markerGroup.getLayers());
         map.fitBounds(group.getBounds().pad(0.2));
