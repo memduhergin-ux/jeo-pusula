@@ -152,8 +152,9 @@ function updateDisplay() {
         valStrike.textContent = formatStrike(displayedHeading);
     }
 
-    let dip = Math.sqrt(currentTilt.beta ** 2 + currentTilt.gamma ** 2);
-    dip = Math.min(90, dip);
+    const rad = Math.PI / 180;
+    let dip = Math.acos(Math.abs(Math.cos(currentTilt.beta * rad) * Math.cos(currentTilt.gamma * rad))) / rad;
+
     if (!lockDip && valDip) {
         valDip.textContent = Math.round(dip);
     }
@@ -459,8 +460,11 @@ if ('geolocation' in navigator) {
 if (btnSave) btnSave.addEventListener('click', () => {
     // Populate Modal Fields (Locked values if active)
     editingRecordId = null; // Reset edit mode
-    const currentStrike = formatStrike(displayedHeading);
-    const currentDip = Math.round(Math.sqrt(currentTilt.beta ** 2 + currentTilt.gamma ** 2));
+    const currentStrike = lockStrike ? valStrike.textContent : formatStrike(displayedHeading);
+
+    const rad = Math.PI / 180;
+    const calcDip = Math.acos(Math.abs(Math.cos(currentTilt.beta * rad) * Math.cos(currentTilt.gamma * rad))) / rad;
+    const currentDip = lockDip ? parseInt(valDip.textContent) : Math.round(calcDip);
 
     document.getElementById('rec-no').value = nextId;
     document.getElementById('rec-strike').value = currentStrike;
@@ -821,40 +825,49 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     });
 });
 
-// Export Logic Refactored (Selected only)
-function exportData(type) {
-    const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
-    const dataToExport = records.filter(r => selectedIds.includes(r.id));
+// Export Logic Refactored (Scope: 'all' or 'selected')
+function exportData(type, scope = 'selected') {
+    let dataToExport = [];
+    if (scope === 'all') {
+        dataToExport = records;
+    } else {
+        const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+        dataToExport = records.filter(r => selectedIds.includes(r.id));
+    }
 
-    if (dataToExport.length === 0) return;
+    if (dataToExport.length === 0) {
+        alert("Dışa aktarılacak kayıt bulunamadı.");
+        return;
+    }
 
+    const timestamp = new Date().getTime();
     if (type === 'csv') {
         const header = ["No", "Y", "X", "Z", "Strike", "Dip", "Note"];
         const csvRows = [header.join(',')];
         dataToExport.forEach(r => {
             const row = [r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
-            csvRows.push(row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+            csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
         });
-        downloadFile(csvRows.join('\n'), `JeoCompass_Secilenler_${new Date().getTime()}.csv`, 'text/csv');
+        downloadFile(csvRows.join('\n'), `JeoCompass_${scope === 'all' ? 'Tum_Kayitlar' : 'Secilenler'}_${timestamp}.csv`, 'text/csv');
     } else if (type === 'kml') {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>JeoCompass Secilen Kayitlar</name>`;
+    <name>JeoCompass ${scope === 'all' ? 'Tüm Kayıtlar' : 'Seçilenler'}</name>`;
         dataToExport.forEach(r => {
             kml += `
     <Placemark>
       <name>Kayıt ${r.id}</name>
-      <description>Doğrultu: ${r.strike}, Eğim: ${r.dip}, Not: ${r.note}</description>
+      <description>Doğrultu: ${r.strike}, Eğim: ${r.dip}, Not: ${r.note || ''}</description>
       <Point>
-        <coordinates>${r.lon},${r.lat},${r.z || 0}</coordinates>
+        <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
       </Point>
     </Placemark>`;
         });
         kml += `
   </Document>
 </kml>`;
-        downloadFile(kml, `JeoCompass_Secilenler_${new Date().getTime()}.kml`, 'application/vnd.google-earth.kml+xml');
+        downloadFile(kml, `JeoCompass_${scope === 'all' ? 'Tum_Kayitlar' : 'Secilenler'}_${timestamp}.kml`, 'application/vnd.google-earth.kml+xml');
     }
 }
 
@@ -869,9 +882,16 @@ if (document.getElementById('btn-share-cancel')) {
     document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
 }
 
-// Share Actions
-document.getElementById('btn-share-csv').addEventListener('click', () => { exportData('csv'); shareModal.classList.remove('active'); });
-document.getElementById('btn-share-kml').addEventListener('click', () => { exportData('kml'); shareModal.classList.remove('active'); });
+// Share Actions (Fixed Button IDs)
+const btnShareAllCsv = document.getElementById('btn-share-all-csv');
+const btnShareAllKml = document.getElementById('btn-share-all-kml');
+const btnShareSelCsv = document.getElementById('btn-share-sel-csv');
+const btnShareSelKml = document.getElementById('btn-share-sel-kml');
+
+if (btnShareAllCsv) btnShareAllCsv.addEventListener('click', () => { exportData('csv', 'all'); shareModal.classList.remove('active'); });
+if (btnShareAllKml) btnShareAllKml.addEventListener('click', () => { exportData('kml', 'all'); shareModal.classList.remove('active'); });
+if (btnShareSelCsv) btnShareSelCsv.addEventListener('click', () => { exportData('csv', 'selected'); shareModal.classList.remove('active'); });
+if (btnShareSelKml) btnShareSelKml.addEventListener('click', () => { exportData('kml', 'selected'); shareModal.classList.remove('active'); });
 // Options Modal Control
 if (btnMoreOptions) {
     btnMoreOptions.addEventListener('click', () => {
