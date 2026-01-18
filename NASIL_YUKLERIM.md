@@ -65,6 +65,18 @@ Bu yöntemle uygulamanız internette yayınlanacak ve sensörler düzgün çalı
 
 ---
 
+## 🔄 GÜNCELLEME NASIL YAPILIR?
+
+Uygulamada bir değişiklik yaptığınızda (veya benim yaptığım düzeltmeleri yüklemek istediğinizde):
+
+1.  GitHub repository sayfanıza gidin.
+2.  **"Add file"** > **"Upload files"** butonuna tıklayın.
+3.  Güncellenen dosyaları (genellikle `app.js` ve `sw.js`) kutucuğa sürükleyin.
+4.  En alttaki **"Commit changes"** butonuna tıklayın.
+5.  Telefonunuzda uygulamayı açıp **sayfayı yenileyin**. Yeni sürüm otomatik olarak yüklenecektir.
+
+---
+
 ## 🚀 Alternatif: Netlify Drop (En Kolay Online Yöntem)
 
 1. Netlify Drop sayfasını açın: https://app.netlify.com/drop
