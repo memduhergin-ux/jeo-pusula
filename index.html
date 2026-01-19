@@ -109,6 +109,9 @@
                     <div class="crosshair-line-h"></div>
                 </div>
             </button>
+            <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Kayıtları Göster/Gizle">
+                <span class="fab-icon">📍</span>
+            </button>
         </div>
     </div>
 
@@ -130,7 +133,7 @@
                     <thead>
                         <tr>
                             <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
-                            <th>No</th>
+                            <th>Label</th>
                             <th>Y</th>
                             <th>X</th>
                             <th>Z</th>
@@ -197,8 +200,8 @@
             <div class="modal-body">
                 <!-- Record No -->
                 <div class="form-group">
-                    <label class="form-label">Kayıt No</label>
-                    <input type="number" id="rec-no" class="form-input" value="1">
+                    <label class="form-label">Label</label>
+                    <input type="text" id="rec-label" class="form-input" value="1">
                 </div>
                 <!-- Coordinates (UTM ED50) -->
                 <div class="form-group" style="padding: 10px 0;">

@@ -97,6 +97,14 @@ let followMe = false;
 let editingRecordId = null;
 let isRecordsLocked = true; // Kayıtlar varsayılan olarak kilitli başlar
 
+// Stabilization Variables
+let headingBuffer = [];
+const BUFFER_SIZE = 5;
+let isStationary = false;
+let lastRotations = [];
+const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
+const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
+
 // Setup Proj4 Definitions
 proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_defs");
 
@@ -152,8 +160,8 @@ function updateDisplay() {
         valStrike.textContent = formatStrike(displayedHeading);
     }
 
-    const rad = Math.PI / 180;
-    let dip = Math.acos(Math.abs(Math.cos(currentTilt.beta * rad) * Math.cos(currentTilt.gamma * rad))) / rad;
+    let dip = Math.abs(currentTilt.beta);
+    if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
         valDip.textContent = Math.round(dip);
@@ -285,20 +293,88 @@ function handleOrientation(event) {
         rawHeading = (rawHeading + manualDeclination) % 360;
         if (rawHeading < 0) rawHeading += 360;
 
-        if (firstReading) {
-            targetHeading = rawHeading;
-            displayedHeading = rawHeading;
-            firstReading = false;
-        } else {
-            let diff = rawHeading - targetHeading;
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-            targetHeading += diff * 0.15;
-        }
-
         currentTilt.beta = event.beta || 0;
         currentTilt.gamma = event.gamma || 0;
+
+        // --- STABILIZASYON MANTIĞI ---
+
+        // 1. Median Filter (Gürültü Temizleme)
+        // Arabelleğe ekle
+        headingBuffer.push(rawHeading);
+        if (headingBuffer.length > BUFFER_SIZE) headingBuffer.shift();
+
+        // Medyan bul
+        let sorted = [...headingBuffer].sort((a, b) => a - b);
+        let medianHeading = sorted[Math.floor(sorted.length / 2)];
+
+        // 0-360 geçişinde (kuzeyde) medyan filtresi sapıtabilir, bunu düzelt:
+        // Eğer değerler arasında çok fark varsa (örn. 359 ve 1), medyanı iptal et ham veriyi kullan
+        if (sorted[sorted.length - 1] - sorted[0] > 180) {
+            medianHeading = rawHeading;
+        }
+
+        // 2. Stationary Lock (Sabitlik Kilidi)
+        if (isStationary) {
+            // Cihaz "sabit" modundaysa, pusulayı çok yavaş hareket ettir (Low Pass Filter)
+            // Sadece gerçekten büyük bir değişim varsa tepki ver
+            let diff = medianHeading - targetHeading;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+
+            if (Math.abs(diff) > 2.0) {
+                // Büyük hareket (kullanıcı döndü), kilidi hemen aç
+                targetHeading = medianHeading;
+            } else {
+                // Küçük hareket (titreme), çok agresif yumuşat
+                targetHeading += diff * 0.05;
+            }
+        } else {
+            // Cihaz hareketli, normal tepki ver
+            if (firstReading) {
+                targetHeading = medianHeading;
+                displayedHeading = medianHeading;
+                firstReading = false;
+            } else {
+                let diff = medianHeading - targetHeading;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                targetHeading += diff * 0.15;
+            }
+        }
     }
+}
+
+// Motion Listener (Jiroskop ile Sabitlik Algılama)
+function handleMotion(event) {
+    if (!event.rotationRate) return;
+
+    // Toplam dönme hareketi büyüklüğü
+    const alpha = event.rotationRate.alpha || 0;
+    const beta = event.rotationRate.beta || 0;
+    const gamma = event.rotationRate.gamma || 0;
+    const magnitude = Math.sqrt(alpha * alpha + beta * beta + gamma * gamma);
+
+    lastRotations.push(magnitude);
+    if (lastRotations.length > STATIONARY_FRAMES) lastRotations.shift();
+
+    // Son N karedeki ortalama hareket eşiğin altındaysa "SABİT" kabul et
+    const avgMotion = lastRotations.reduce((a, b) => a + b, 0) / lastRotations.length;
+
+    if (avgMotion < STATIONARY_THRESHOLD) {
+        if (!isStationary) {
+            // console.log("Stationary Lock ENGAGED");
+            isStationary = true;
+        }
+    } else {
+        if (isStationary) {
+            // console.log("Stationary Lock RELEASED");
+            isStationary = false;
+        }
+    }
+}
+
+if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', handleMotion, true);
 }
 
 function updateSensorUI() {
@@ -462,11 +538,19 @@ if (btnSave) btnSave.addEventListener('click', () => {
     editingRecordId = null; // Reset edit mode
     const currentStrike = lockStrike ? valStrike.textContent : formatStrike(displayedHeading);
 
-    const rad = Math.PI / 180;
-    const calcDip = Math.acos(Math.abs(Math.cos(currentTilt.beta * rad) * Math.cos(currentTilt.gamma * rad))) / rad;
+    let calcDip = Math.abs(currentTilt.beta);
+    if (calcDip > 90) calcDip = 180 - calcDip;
     const currentDip = lockDip ? parseInt(valDip.textContent) : Math.round(calcDip);
 
-    document.getElementById('rec-no').value = nextId;
+    // Label Logic: Use existing nextId for new, or existing label for edit
+    if (editingRecordId === null) {
+        document.getElementById('rec-label').value = nextId;
+    } else {
+        // This part is handled in the edit click handler, but for safety in reset:
+        const currentRec = records.find(r => r.id === editingRecordId);
+        document.getElementById('rec-label').value = currentRec ? (currentRec.label || currentRec.id) : nextId;
+    }
+
     document.getElementById('rec-strike').value = currentStrike;
     document.getElementById('rec-dip').value = currentDip;
     document.getElementById('rec-note').value = '';
@@ -494,7 +578,8 @@ if (document.getElementById('btn-modal-cancel')) {
 
 if (document.getElementById('btn-modal-save')) {
     document.getElementById('btn-modal-save').addEventListener('click', () => {
-        const id = parseInt(document.getElementById('rec-no').value);
+        // ID is internal only now, Label is user-facing
+        const label = document.getElementById('rec-label').value;
         const y = document.getElementById('rec-y').value;
         const x = document.getElementById('rec-x').value;
         const z = document.getElementById('rec-z').value;
@@ -506,12 +591,14 @@ if (document.getElementById('btn-modal-save')) {
             // Update existing
             const index = records.findIndex(r => r.id === editingRecordId);
             if (index !== -1) {
-                records[index] = { ...records[index], strike: strikeLine, dip, note, y, x, z };
+                records[index] = { ...records[index], label, strike: strikeLine, dip, note, y, x, z };
             }
         } else {
             // Create new
+            const id = nextId; // Use current nextId global
             const newRecord = {
                 id: id,
+                label: label || id.toString(), // Fallback
                 y: y,
                 x: x,
                 z: z,
@@ -523,7 +610,8 @@ if (document.getElementById('btn-modal-save')) {
             };
 
             records.push(newRecord);
-            if (id >= nextId) nextId = id + 1;
+            // Only increment ID if we used the global counter for a new record
+            nextId++;
             localStorage.setItem('jeoNextId', nextId);
         }
 
@@ -567,7 +655,7 @@ function renderRecords(filter = '') {
     tableBody.innerHTML = displayRecords.map(r => `
         <tr data-id="${r.id}">
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><input type="checkbox" class="record-select" data-id="${r.id}"></td>
-            <td>${r.id}</td>
+            <td>${r.label || r.id}</td>
             <td>${r.y}</td>
             <td>${r.x}</td>
             <td>${r.z}</td>
@@ -659,7 +747,7 @@ function updateMapMarkers() {
             const iconHtml = `
                 <div class="pin-container">
                     <div class="pin-icon" style="transform: rotate(${strikeAngle}deg)">📍</div>
-                    <div class="marker-id-label-v3">#${r.id}</div>
+                    <div class="marker-id-label-v3">#${r.label || r.id}</div>
                 </div>
             `;
 
@@ -673,7 +761,7 @@ function updateMapMarkers() {
             const marker = L.marker([r.lat, r.lon], { icon: geologicalIcon });
             marker.bindPopup(`
                 <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
-                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt #${r.id}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt #${r.label || r.id}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Doğrultu/Eğim:</b> ${r.strike} / ${r.dip}°</div>
                     <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic;">"${r.note || 'Not yok'}"</div>
@@ -737,7 +825,7 @@ document.getElementById('records-body').addEventListener('click', (e) => {
         const record = records.find(r => r.id === id);
         if (record) {
             editingRecordId = id;
-            document.getElementById('rec-no').value = record.id;
+            document.getElementById('rec-label').value = record.label || record.id;
             document.getElementById('rec-strike').value = record.strike;
             document.getElementById('rec-dip').value = record.dip;
             document.getElementById('rec-note').value = record.note;
