@@ -97,6 +97,12 @@ let followMe = false;
 let editingRecordId = null;
 let isRecordsLocked = true; // Kayıtlar varsayılan olarak kilitli başlar
 
+// Shape Persistence
+let pendingGeometry = null;
+let pendingGeometryType = null;
+let pendingLat = null;
+let pendingLon = null;
+
 // Stabilization Variables
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
@@ -629,20 +635,33 @@ if (document.getElementById('btn-modal-save')) {
         } else {
             // Create new
             const id = nextId; // Use current nextId global
+
+            // If we have pending coords (from measurement or pin drop), use them.
+            // Otherwise use live GPS.
+            const recordLat = pendingLat !== null ? pendingLat : currentCoords.lat;
+            const recordLon = pendingLon !== null ? pendingLon : currentCoords.lon;
+
             const newRecord = {
                 id: id,
                 label: label || id.toString(), // Fallback
                 y: y,
                 x: x,
                 z: z,
-                lat: currentCoords.lat,
-                lon: currentCoords.lon,
+                lat: recordLat,
+                lon: recordLon,
                 strike: strikeLine,
                 dip: dip,
-                note: note
+                note: note,
+                geom: pendingGeometry, // Saved shape
+                geomType: pendingGeometryType
             };
 
             records.push(newRecord);
+            // Reset pending
+            pendingGeometry = null;
+            pendingGeometryType = null;
+            pendingLat = null;
+            pendingLon = null;
             // Only increment ID if we used the global counter for a new record
             nextId++;
             localStorage.setItem('jeoNextId', nextId);
@@ -752,6 +771,10 @@ function initMap() {
     };
 
     L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+    // Custom Scale Control (Bottom Left)
+    initCustomScale();
+
     markerGroup = L.layerGroup().addTo(map);
 
     // Zoom listener for scale-based visibility
@@ -823,6 +846,60 @@ function initMap() {
     updateMapMarkers();
 }
 
+/** Custom Scale Control (0 - X m style) **/
+function initCustomScale() {
+    const CustomScale = L.Control.extend({
+        options: { position: 'bottomleft' },
+        onAdd: function (map) {
+            const div = L.DomUtil.create('div', 'custom-scale-control');
+            div.innerHTML = `
+                <div class="scale-labels">
+                    <span class="label-zero">0</span>
+                    <span id="scale-mid" class="label-mid"></span>
+                    <span id="scale-end" class="label-end"></span>
+                </div>
+                <div class="scale-bars">
+                    <div class="scale-segment"></div>
+                    <div class="scale-segment"></div>
+                </div>
+            `;
+            return div;
+        }
+    });
+    new CustomScale().addTo(map);
+    map.on('zoomend moveend', updateScaleValues);
+    updateScaleValues();
+}
+
+function updateScaleValues() {
+    if (!map) return;
+    const midPoint = map.getCenter();
+    const pCenter = map.latLngToContainerPoint(midPoint);
+
+    // We assume 40px is roughly 1cm (for 100dpi screens)
+    // 2cm = 80px total width
+    const pMid = L.point(pCenter.x + 40, pCenter.y);
+    const pEnd = L.point(pCenter.x + 80, pCenter.y);
+
+    const latLngMid = map.containerPointToLatLng(pMid);
+    const latLngEnd = map.containerPointToLatLng(pEnd);
+
+    const distMid = map.distance(midPoint, latLngMid);
+    const distEnd = map.distance(midPoint, latLngEnd);
+
+    const midEl = document.getElementById('scale-mid');
+    const endEl = document.getElementById('scale-end');
+
+    if (midEl) midEl.innerText = formatScaleDist(distMid);
+    if (endEl) endEl.innerText = formatScaleDist(distEnd);
+}
+
+function formatScaleDist(d) {
+    if (d < 1) return d.toFixed(1) + " m";
+    if (d < 1000) return Math.round(d) + " m";
+    return (d / 1000).toFixed(1) + " km";
+}
+
 // Show/Hide Records State
 let showRecordsOnMap = true;
 
@@ -842,14 +919,40 @@ function updateMapMarkers() {
 
     dataToRender.forEach(r => {
         if (r.lat && r.lon) {
+            const labelText = r.label || r.id;
             const strikeAngle = parseFloat(r.strike) || 0;
-            const positions = ['pos-tr', 'pos-tl', 'pos-br', 'pos-bl'];
-            const labelPosClass = positions[r.id % 4];
 
+            // 1. Draw Geometry (if exists)
+            if (r.geom && r.geom.length > 0) {
+                let shape;
+                if (r.geomType === 'polygon') {
+                    shape = L.polygon(r.geom, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 });
+                } else {
+                    shape = L.polyline(r.geom, { color: '#ffeb3b', weight: 4 });
+                }
+
+                shape.bindPopup(`
+                    <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
+                        <b style="color: #2196f3; font-size: 1.1rem;">Ölçüm: #${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                        <div style="font-size: 0.95rem;">${r.note || 'Not yok'}</div>
+                    </div>
+                `);
+
+                // Always-visible label for shape
+                shape.bindTooltip(labelText.toString(), {
+                    permanent: true,
+                    direction: 'center',
+                    className: 'marker-label'
+                });
+
+                markerGroup.addLayer(shape);
+            }
+
+            // 2. Draw Marker
             const iconHtml = `
                 <div class="pin-container">
                     <div class="pin-icon" style="transform: rotate(${strikeAngle}deg)">📍</div>
-                    <div class="marker-id-label-v3">#${r.label || r.id}</div>
+                    <div class="marker-id-label-v3">#${labelText}</div>
                 </div>
             `;
 
@@ -863,12 +966,21 @@ function updateMapMarkers() {
             const marker = L.marker([r.lat, r.lon], { icon: geologicalIcon });
             marker.bindPopup(`
                 <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
-                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt #${r.label || r.id}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt #${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Doğrultu/Eğim:</b> ${r.strike} / ${r.dip}°</div>
                     <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic;">"${r.note || 'Not yok'}"</div>
                 </div>
             `);
+
+            // Always-visible label for marker (Tooltip)
+            marker.bindTooltip(labelText.toString(), {
+                permanent: true,
+                direction: 'bottom',
+                offset: [0, 10],
+                className: 'marker-label'
+            });
+
             markerGroup.addLayer(marker);
         }
     });
@@ -1249,6 +1361,10 @@ if (btnAddGps) {
 }
 
 function openRecordModalWithCoords(lat, lon, note) {
+    // Save pending coords for modal save
+    pendingLat = lat;
+    pendingLon = lon;
+
     // Convert to UTM
     let utmY, utmX;
     try {
@@ -1432,6 +1548,10 @@ function calculateAndDisplayMeasurement() {
 
 function saveMeasurement() {
     if (measurePoints.length === 0) return;
+
+    // Save geometry for persistence
+    pendingGeometry = measurePoints.map(p => [p.lat, p.lng]);
+    pendingGeometryType = isPolygon ? 'polygon' : 'polyline';
 
     // Open Modal
     editingRecordId = null;
