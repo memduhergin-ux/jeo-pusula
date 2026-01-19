@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
 </head>
 
 <body>
@@ -101,6 +103,15 @@
     <!-- View 2: Map (Harita) -->
     <div id="view-map" class="view-section">
         <div class="panel" style="margin-top: 10px; height: calc(100% - 20px); padding: 5px; position: relative;">
+
+            <!-- Measurement Info Box -->
+            <div id="measure-info"
+                style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 20px; z-index: 2000; color: white; border: 1px solid #444; font-size: 0.9rem; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                <span id="measure-text" style="font-family: monospace; font-size: 1rem;">0 m</span>
+                <button id="btn-measure-clear"
+                    style="background: #f44336; border: none; color: white; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 5px;">✕</button>
+            </div>
+
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
             <button id="btn-follow-me" class="map-fab" title="Konumu Takip Et">
                 <div class="crosshair-wrapper">
@@ -112,6 +123,16 @@
             <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Kayıtları Göster/Gizle">
                 <span class="fab-icon">📍</span>
             </button>
+            <button id="btn-layers" class="map-fab" style="bottom: 160px;" title="Katmanlar">
+                <span class="fab-icon">📂</span>
+            </button>
+            <button id="btn-measure" class="map-fab" style="bottom: 230px;" title="Mesafe Ölç">
+                <span class="fab-icon">📏</span>
+            </button>
+            <button id="btn-add-point" class="map-fab" style="bottom: 300px;" title="Nokta Ekle">
+                <span class="fab-icon">➕</span>
+            </button>
+            <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
         </div>
     </div>
 
@@ -286,6 +307,27 @@
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-cancel" id="btn-share-cancel">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layers Modal -->
+    <div id="layers-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Katmanlar</h2>
+            </div>
+            <div class="modal-body" style="min-height: 200px;">
+                <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Layers will be injected here -->
+                    <div style="color: #666; font-style: italic; text-align: center; padding: 20px;">
+                        Henüz harici katman yok.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button class="modal-btn btn-cancel" id="btn-layers-close">Kapat</button>
+                <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Dosya Yükle (+)</button>
             </div>
         </div>
     </div>

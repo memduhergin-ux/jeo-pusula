@@ -1095,3 +1095,64 @@ textarea.form-input {
     border: 1px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+
+/* Heartbeat Triangle Marker */
+.heartbeat-container {
+    position: relative;
+    width: 32px;
+    height: 32px;
+}
+
+.heartbeat-triangle {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 20px solid #2196f3;
+    /* Blue triangle */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.heartbeat-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(33, 150, 243, 0.5);
+    border-radius: 50%;
+    z-index: 1;
+    animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+    0% {
+        width: 10px;
+        height: 10px;
+        opacity: 0.8;
+    }
+
+    70% {
+        width: 60px;
+        height: 60px;
+        opacity: 0;
+    }
+
+    100% {
+        width: 60px;
+        height: 60px;
+        opacity: 0;
+    }
+}
+
+/* Add Point Active State */
+.map-fab.active-add-point {
+    background-color: #ff9800 !important;
+    /* Orange */
+    color: white;
+    border-color: #ffb74d !important;
+}

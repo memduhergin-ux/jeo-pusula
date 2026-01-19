@@ -99,11 +99,26 @@ let isRecordsLocked = true; // Kayıtlar varsayılan olarak kilitli başlar
 
 // Stabilization Variables
 let headingBuffer = [];
+let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 5;
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
+
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
+
+// Measurement State
+let isMeasuring = false;
+let measurePoints = [];
+let measureMarkers = [];
+let measureLine = null;
+
+// Add Point State
+let isAddingPoint = false;
+
+// KML/KMZ Layers State
+let externalLayers = []; // { id, name, layer, filled: true, visible: true }
+let layerIdCounter = 1;
 
 // Setup Proj4 Definitions
 proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_defs");
@@ -160,7 +175,7 @@ function updateDisplay() {
         valStrike.textContent = formatStrike(displayedHeading);
     }
 
-    let dip = Math.abs(currentTilt.beta);
+    let dip = Math.abs(currentTilt.beta); // currentTilt.beta is now stabilized in handleOrientation
     if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
@@ -293,19 +308,31 @@ function handleOrientation(event) {
         rawHeading = (rawHeading + manualDeclination) % 360;
         if (rawHeading < 0) rawHeading += 360;
 
-        currentTilt.beta = event.beta || 0;
+        // currentTilt.beta = event.beta || 0; // REMOVED: Managed below
         currentTilt.gamma = event.gamma || 0;
 
         // --- STABILIZASYON MANTIĞI ---
 
         // 1. Median Filter (Gürültü Temizleme)
-        // Arabelleğe ekle
+        // Heading Buffer
         headingBuffer.push(rawHeading);
         if (headingBuffer.length > BUFFER_SIZE) headingBuffer.shift();
 
-        // Medyan bul
+        // Beta Buffer (Dip için)
+        let rawBeta = event.beta || 0;
+        betaBuffer.push(rawBeta);
+        if (betaBuffer.length > BUFFER_SIZE) betaBuffer.shift();
+
+        // Heading Medyan
         let sorted = [...headingBuffer].sort((a, b) => a - b);
         let medianHeading = sorted[Math.floor(sorted.length / 2)];
+
+        // Beta Medyan
+        let sortedBeta = [...betaBuffer].sort((a, b) => a - b);
+        let medianBeta = sortedBeta[Math.floor(sortedBeta.length / 2)];
+
+        // Update Global Beta State with Stabilized Value
+        currentTilt.beta = medianBeta;
 
         // 0-360 geçişinde (kuzeyde) medyan filtresi sapıtabilir, bunu düzelt:
         // Eğer değerler arasında çok fark varsa (örn. 359 ve 1), medyanı iptal et ham veriyi kullan
@@ -497,19 +524,24 @@ if ('geolocation' in navigator) {
         currentCoords.lon = p.coords.longitude;
         currentCoords.alt = p.coords.altitude;
 
-        // Update Live Marker (Red Triangle)
+        // Update Live Marker (Heartbeat Triangle)
         if (map && currentCoords.lat) {
             const livePos = [currentCoords.lat, currentCoords.lon];
             if (!liveMarker) {
                 const liveIcon = L.divIcon({
-                    className: 'geology-marker',
-                    html: '<div class="live-marker"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
+                    className: 'heartbeat-container',
+                    html: '<div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16] // Center
                 });
                 liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
             } else {
                 liveMarker.setLatLng(livePos);
+                // Also ensure icon is correct if returning users have old marker? No need, simple refresh.
+            }
+
+            if (followMe) {
+                map.panTo(livePos);
             }
 
             // Show/Hide triangle based on followMe
@@ -538,7 +570,7 @@ if (btnSave) btnSave.addEventListener('click', () => {
     editingRecordId = null; // Reset edit mode
     const currentStrike = lockStrike ? valStrike.textContent : formatStrike(displayedHeading);
 
-    let calcDip = Math.abs(currentTilt.beta);
+    let calcDip = Math.abs(currentTilt.beta); // Uses stabilized beta
     if (calcDip > 90) calcDip = 180 - calcDip;
     const currentDip = lockDip ? parseInt(valDip.textContent) : Math.round(calcDip);
 
@@ -639,11 +671,13 @@ function renderRecords(filter = '') {
 
     let displayRecords = records;
     if (filter) {
+        // Global Search: Check all values in the record
         const q = filter.toLowerCase();
-        displayRecords = records.filter(r =>
-            r.id.toString().includes(q) ||
-            (r.note && r.note.toLowerCase().includes(q))
-        );
+        displayRecords = records.filter(r => {
+            return Object.values(r).some(val =>
+                String(val).toLowerCase().includes(q)
+            );
+        });
     }
 
     if (displayRecords.length === 0) {
@@ -679,20 +713,26 @@ function initMap() {
     const initialLat = currentCoords.lat || 39.9334;
     const initialLon = currentCoords.lon || 32.8597;
 
-    map = L.map('map-container').setView([initialLat, initialLon], 15);
+    map = L.map('map-container', {
+        maxZoom: 23 // Allow zooming way in (digital zoom)
+    }).setView([initialLat, initialLon], 15);
 
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 23,
+        maxNativeZoom: 19, // Tiles stop at 19, stretch after that
         attribution: '© OpenStreetMap'
     });
 
     const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
+        maxZoom: 23,
+        maxNativeZoom: 20, // Google typically goes to 20-21
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         attribution: '© Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
+        maxZoom: 23,
+        maxNativeZoom: 20, // Stretch satellite tiles beyond 20
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         attribution: '© Google'
     });
@@ -716,6 +756,60 @@ function initMap() {
     // Zoom listener for scale-based visibility
     map.on('zoomend', () => {
         updateMapMarkers();
+    });
+
+    // Map Click Handler for Interactions
+    map.on('click', (e) => {
+        if (isMeasuring) {
+            updateMeasurement(e.latlng);
+        } else if (isAddingPoint) {
+            // Open Modal with Clicked Coordinates
+            const clickedLat = e.latlng.lat;
+            const clickedLon = e.latlng.lng;
+
+            // Convert to UTM
+            let utmY, utmX;
+            try {
+                const zone = Math.floor((clickedLon + 180) / 6) + 1;
+                const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+                const utm = proj4('WGS84', utmZoneDef, [clickedLon, clickedLat]);
+                utmY = Math.round(utm[0]); // Easting (Y in UI?) - Checks UI labels. UI says Y/X usually Easting/Northing.
+                utmX = Math.round(utm[1]); // Northing
+            } catch (err) {
+                console.error("UTM conversion failed", err);
+                utmY = clickedLon.toFixed(6);
+                utmX = clickedLat.toFixed(6);
+            }
+
+            // Populate Modal Manually
+            editingRecordId = null; // Ensure new record mode
+
+            // We need to trigger the modal opening logic but override values.
+            // Simplified: Just set values and open.
+
+            // 1. Reset/Init Label
+            document.getElementById('rec-label').value = nextId;
+
+            // 2. Set Coords
+            document.getElementById('rec-y').value = utmY;
+            document.getElementById('rec-x').value = utmX;
+            document.getElementById('rec-z').value = 0; // Default elevation
+
+            // 3. Set Strike/Dip (Default or 0)
+            document.getElementById('rec-strike').value = 0;
+            document.getElementById('rec-dip').value = 0;
+
+            // 4. Note
+            document.getElementById('rec-note').value = "Haritadan seçildi";
+
+            // Open Modal
+            recordModal.classList.add('active');
+
+            // Turn off mode
+            isAddingPoint = false;
+            if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
+            map.getContainer().style.cursor = '';
+        }
     });
 
     updateMapMarkers();
@@ -879,6 +973,301 @@ if (declinationInput) {
 
 // Navigation Logic
 const views = document.querySelectorAll('.view-section');
+
+// --------------------------------------------------------------------------
+// KML/KMZ Import & Layer Management
+// --------------------------------------------------------------------------
+
+// DOM Elements
+const btnLayers = document.getElementById('btn-layers');
+const layersModal = document.getElementById('layers-modal');
+const btnLayersClose = document.getElementById('btn-layers-close');
+const btnImportLayerTrigger = document.getElementById('btn-import-layer-trigger');
+const fileImportInput = document.getElementById('file-import-input');
+const layersList = document.getElementById('layers-list');
+
+if (btnLayers) {
+    btnLayers.addEventListener('click', () => {
+        renderLayerList();
+        layersModal.classList.add('active');
+    });
+}
+
+if (btnLayersClose) {
+    btnLayersClose.addEventListener('click', () => {
+        layersModal.classList.remove('active');
+    });
+}
+
+if (btnImportLayerTrigger) {
+    btnImportLayerTrigger.addEventListener('click', () => {
+        fileImportInput.click();
+    });
+}
+
+if (fileImportInput) {
+    fileImportInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const fileName = file.name;
+            const extension = fileName.split('.').pop().toLowerCase();
+            let geojsonData = null;
+
+            if (extension === 'kml') {
+                const text = await file.text();
+                const parser = new DOMParser();
+                const kml = parser.parseFromString(text, 'text/xml');
+                geojsonData = toGeoJSON.kml(kml);
+            } else if (extension === 'kmz') {
+                const zip = await JSZip.loadAsync(file);
+                // Find the first .kml file in the zip
+                const kmlFile = Object.values(zip.files).find(f => f.name.toLowerCase().endsWith('.kml'));
+                if (kmlFile) {
+                    const text = await kmlFile.async('string');
+                    const parser = new DOMParser();
+                    const kml = parser.parseFromString(text, 'text/xml');
+                    geojsonData = toGeoJSON.kml(kml);
+                }
+            }
+
+            if (geojsonData) {
+                addExternalLayer(fileName, geojsonData);
+                layersModal.classList.remove('active');
+            } else {
+                alert("Geçerli bir KML bulunamadı.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Dosya okunamadı: " + err.message);
+        }
+        fileImportInput.value = ''; // Reset
+    });
+}
+
+function addExternalLayer(name, geojson) {
+    if (!map) return;
+
+    // Default Style: Blue outline, semi-transparent blue fill
+    const style = {
+        color: '#2196f3',
+        weight: 2,
+        opacity: 1,
+        fillColor: '#2196f3',
+        fillOpacity: 0.4 // Default Filled
+    };
+
+    const layer = L.geoJSON(geojson, {
+        style: style,
+        onEachFeature: (feature, layer) => {
+            if (feature.properties && feature.properties.name) {
+                layer.bindPopup(feature.properties.name);
+            }
+        }
+    }).addTo(map);
+
+    const layerObj = {
+        id: layerIdCounter++,
+        name: name,
+        layer: layer,
+        filled: true,
+        visible: true
+    };
+    externalLayers.push(layerObj);
+
+    // Zoom to layer
+    try {
+        map.fitBounds(layer.getBounds());
+    } catch (e) {
+        // Empty layer
+    }
+}
+
+function renderLayerList() {
+    layersList.innerHTML = '';
+
+    if (externalLayers.length === 0) {
+        layersList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">Henüz harici katman yok.</div>';
+        return;
+    }
+
+    externalLayers.forEach(l => {
+        const item = document.createElement('div');
+        item.className = 'layer-item';
+        item.style.background = '#333';
+        item.style.padding = '10px';
+        item.style.borderRadius = '8px';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '10px';
+        item.style.border = '1px solid #444';
+
+        item.innerHTML = `
+            <div style="flex:1; overflow:hidden;">
+                <div style="font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${l.name}</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
+                    <input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}>
+                    Dolgu
+                </label>
+                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
+            </div>
+        `;
+        layersList.appendChild(item);
+    });
+
+    // Attach listeners
+    document.querySelectorAll('.layer-fill-toggle').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            toggleLayerFill(id, e.target.checked);
+        });
+    });
+
+    document.querySelectorAll('.layer-delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            removeLayer(id);
+        });
+    });
+}
+
+function toggleLayerFill(id, isFilled) {
+    const l = externalLayers.find(x => x.id === id);
+    if (!l) return;
+
+    l.filled = isFilled;
+    l.layer.setStyle({
+        fillOpacity: isFilled ? 0.4 : 0
+    });
+}
+
+function removeLayer(id) {
+    const index = externalLayers.findIndex(x => x.id === id);
+    if (index === -1) return;
+
+    const l = externalLayers[index];
+    if (map) map.removeLayer(l.layer);
+
+    externalLayers.splice(index, 1);
+    renderLayerList();
+}
+
+// --------------------------------------------------------------------------
+// Measurement Tool Logic
+// --------------------------------------------------------------------------
+const btnMeasure = document.getElementById('btn-measure');
+const btnAddPoint = document.getElementById('btn-add-point');
+const measureInfo = document.getElementById('measure-info');
+const measureText = document.getElementById('measure-text');
+const btnMeasureClear = document.getElementById('btn-measure-clear');
+
+if (btnAddPoint) {
+    btnAddPoint.addEventListener('click', () => {
+        isAddingPoint = !isAddingPoint;
+
+        if (isAddingPoint) {
+            // Disable measure mode if active
+            if (isMeasuring) {
+                isMeasuring = false;
+                if (btnMeasure) btnMeasure.style.background = '';
+                if (measureInfo) measureInfo.style.display = 'none';
+                if (map) map.getContainer().style.cursor = '';
+            }
+
+            btnAddPoint.classList.add('active-add-point');
+            if (map) map.getContainer().style.cursor = 'pointer';
+
+            alert("Haritada nokta eklemek istediğiniz yere dokunun.");
+        } else {
+            btnAddPoint.classList.remove('active-add-point');
+            if (map) map.getContainer().style.cursor = '';
+        }
+    });
+}
+
+if (btnMeasure) {
+    btnMeasure.addEventListener('click', () => {
+        isMeasuring = !isMeasuring;
+
+        if (isMeasuring) {
+            // Disable Add Point mode if active
+            if (isAddingPoint) {
+                isAddingPoint = false;
+                if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
+            }
+
+            btnMeasure.style.background = '#f44336'; // Active Red
+            measureInfo.style.display = 'flex';
+            measureText.textContent = "Nokta seçin...";
+            if (map) {
+                map.getContainer().style.cursor = 'crosshair';
+                map.dragging.disable(); // Mobil için dragging açık kalmalı, cursor style çok etki etmez ama masaüstü için iyi. map.dragging.enable(); 
+            }
+        } else {
+            // Exit mode.
+            btnMeasure.style.background = ''; // Reset
+            if (map) map.getContainer().style.cursor = '';
+            measureInfo.style.display = 'none';
+            // Optional: Clear measurement on exit? No, user might want to see it.
+        }
+    });
+}
+
+if (btnMeasureClear) {
+    btnMeasureClear.addEventListener('click', () => {
+        clearMeasurement();
+    });
+}
+
+function clearMeasurement() {
+    measurePoints = [];
+    if (measureLine) {
+        map.removeLayer(measureLine);
+        measureLine = null;
+    }
+    measureMarkers.forEach(m => map.removeLayer(m));
+    measureMarkers = [];
+    measureText.textContent = "0 m";
+}
+
+function updateMeasurement(latlng) {
+    if (!map) return;
+
+    // Add Point
+    measurePoints.push(latlng);
+
+    // Add Marker
+    const marker = L.circleMarker(latlng, {
+        radius: 4,
+        color: '#ffeb3b',
+        fillColor: '#ffeb3b',
+        fillOpacity: 1
+    }).addTo(map);
+    measureMarkers.push(marker);
+
+    // Draw/Update Line
+    if (!measureLine) {
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+    } else {
+        measureLine.setLatLngs(measurePoints);
+    }
+
+    // Calculate Total Distance
+    let totalDistance = 0;
+    for (let i = 0; i < measurePoints.length - 1; i++) {
+        totalDistance += measurePoints[i].distanceTo(measurePoints[i + 1]);
+    }
+
+    // Display
+    if (totalDistance < 1000) {
+        measureText.textContent = Math.round(totalDistance) + " m";
+    } else {
+        measureText.textContent = (totalDistance / 1000).toFixed(2) + " km";
+    }
+}
 
 // View Control
 document.querySelectorAll('.nav-item').forEach(btn => {
