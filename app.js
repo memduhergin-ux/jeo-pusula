@@ -562,13 +562,15 @@ if ('geolocation' in navigator) {
             }
         }
 
-        // Follow-Me logic
-        if (followMe && map) {
+        // Consolidated Follow-Me logic
+        if (followMe && map && currentCoords.lat) {
             map.panTo([currentCoords.lat, currentCoords.lon]);
         }
 
         updateDisplay();
-    }, null, { enableHighAccuracy: true });
+    }, (err) => {
+        console.error("Konum hatası:", err);
+    }, { enableHighAccuracy: true });
 }
 
 // Save & Modal
@@ -844,6 +846,7 @@ function initMap() {
     });
 
     updateMapMarkers();
+    loadExternalLayers();
 }
 
 /** Custom Scale Control (0 - X m style) **/
@@ -903,6 +906,21 @@ function formatScaleDist(d) {
 // Show/Hide Records State
 let showRecordsOnMap = true;
 
+/** Parallel Labeling Helpers **/
+function getSegmentAngle(p1, p2) {
+    const p1Container = map.latLngToContainerPoint(p1);
+    const p2Container = map.latLngToContainerPoint(p2);
+    const angle = Math.atan2(p2Container.y - p1Container.y, p2Container.x - p1Container.x) * 180 / Math.PI;
+    // Normalize to [-90, 90] to keep text from being upside down
+    if (angle > 90) return angle - 180;
+    if (angle < -90) return angle + 180;
+    return angle;
+}
+
+function getSegmentMidpoint(p1, p2) {
+    return L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+}
+
 function updateMapMarkers() {
     if (!map || !markerGroup) return;
     markerGroup.clearLayers();
@@ -920,15 +938,61 @@ function updateMapMarkers() {
     dataToRender.forEach(r => {
         if (r.lat && r.lon) {
             const labelText = r.label || r.id;
-            const strikeAngle = parseFloat(r.strike) || 0;
 
             // 1. Draw Geometry (if exists)
             if (r.geom && r.geom.length > 0) {
+                const latlngs = r.geom.map(p => L.latLng(p[0], p[1]));
                 let shape;
                 if (r.geomType === 'polygon') {
-                    shape = L.polygon(r.geom, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 });
+                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 });
+
+                    // Labelling Polygon Edges
+                    for (let i = 0; i < latlngs.length; i++) {
+                        const nextIndex = (i + 1) % latlngs.length;
+                        const p1 = latlngs[i];
+                        const p2 = latlngs[nextIndex];
+                        const dist = p1.distanceTo(p2);
+                        const mid = getSegmentMidpoint(p1, p2);
+                        const angle = getSegmentAngle(p1, p2);
+
+                        const edgeLabel = L.marker(mid, {
+                            icon: L.divIcon({
+                                className: 'segment-label-container',
+                                html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                                iconSize: [1, 1],
+                                iconAnchor: [0, 0]
+                            }),
+                            interactive: false
+                        });
+                        markerGroup.addLayer(edgeLabel);
+                    }
                 } else {
-                    shape = L.polyline(r.geom, { color: '#ffeb3b', weight: 4 });
+                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4 });
+
+                    // Labelling Total Length for Polyline (at the middle of the path)
+                    let totalLen = 0;
+                    for (let i = 0; i < latlngs.length - 1; i++) {
+                        totalLen += latlngs[i].distanceTo(latlngs[i + 1]);
+                    }
+
+                    // Find midpoint segment
+                    const midIndex = Math.floor(latlngs.length / 2);
+                    const p1 = latlngs[midIndex - 1];
+                    const p2 = latlngs[midIndex];
+                    if (p1 && p2) {
+                        const mid = getSegmentMidpoint(p1, p2);
+                        const angle = getSegmentAngle(p1, p2);
+                        const pathLabel = L.marker(mid, {
+                            icon: L.divIcon({
+                                className: 'segment-label-container',
+                                html: `<div class="segment-label" style="transform: rotate(${angle}deg)">TOPLAM: ${formatScaleDist(totalLen)}</div>`,
+                                iconSize: [1, 1],
+                                iconAnchor: [0, 0]
+                            }),
+                            interactive: false
+                        });
+                        markerGroup.addLayer(pathLabel);
+                    }
                 }
 
                 shape.bindPopup(`
@@ -938,17 +1002,13 @@ function updateMapMarkers() {
                     </div>
                 `);
 
-                // Always-visible label for shape
-                shape.bindTooltip(labelText.toString(), {
-                    permanent: true,
-                    direction: 'center',
-                    className: 'marker-label'
-                });
-
                 markerGroup.addLayer(shape);
+                // SKIP THE PIN for geometries as requested
+                return;
             }
 
-            // 2. Draw Marker
+            // 2. Draw Marker (Only for Point Records)
+            const strikeAngle = parseFloat(r.strike) || 0;
             const iconHtml = `
                 <div class="pin-container">
                     <div class="pin-icon" style="transform: rotate(${strikeAngle}deg)">📍</div>
@@ -1154,6 +1214,7 @@ if (fileImportInput) {
 
             if (geojsonData) {
                 addExternalLayer(fileName, geojsonData);
+                saveExternalLayers(); // Persist
                 layersModal.classList.remove('active');
             } else {
                 alert("Geçerli bir KML bulunamadı.");
@@ -1211,6 +1272,7 @@ function addExternalLayer(name, geojson) {
         id: layerIdCounter++,
         name: name,
         layer: layer,
+        geojson: geojson, // Store for persistence
         filled: true,
         visible: true
     };
@@ -1248,6 +1310,9 @@ function renderLayerList() {
                 <div style="font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${l.name}</div>
             </div>
             <div style="display:flex; gap:10px;">
+                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;" title="Görünürlük">
+                    ${l.visible ? '👁️' : '🕶️'}
+                </button>
                 <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
                     <input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}>
                     Dolgu
@@ -1259,6 +1324,13 @@ function renderLayerList() {
     });
 
     // Attach listeners
+    document.querySelectorAll('.layer-toggle-vis').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.dataset.id);
+            toggleLayerVisibility(id);
+        });
+    });
+
     document.querySelectorAll('.layer-fill-toggle').forEach(cb => {
         cb.addEventListener('change', (e) => {
             const id = parseInt(e.target.dataset.id);
@@ -1268,31 +1340,72 @@ function renderLayerList() {
 
     document.querySelectorAll('.layer-delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = parseInt(e.target.dataset.id);
+            const id = parseInt(e.currentTarget.dataset.id);
             removeLayer(id);
         });
     });
 }
 
+function toggleLayerVisibility(id) {
+    const l = externalLayers.find(x => x.id === id);
+    if (!l) return;
+    l.visible = !l.visible;
+    if (l.visible) {
+        l.layer.addTo(map);
+    } else {
+        map.removeLayer(l.layer);
+    }
+    saveExternalLayers();
+    renderLayerList();
+}
+
 function toggleLayerFill(id, isFilled) {
     const l = externalLayers.find(x => x.id === id);
     if (!l) return;
-
     l.filled = isFilled;
-    l.layer.setStyle({
-        fillOpacity: isFilled ? 0.4 : 0
-    });
+    l.layer.setStyle({ fillOpacity: isFilled ? 0.4 : 0 });
+    saveExternalLayers();
 }
 
 function removeLayer(id) {
     const index = externalLayers.findIndex(x => x.id === id);
     if (index === -1) return;
-
     const l = externalLayers[index];
     if (map) map.removeLayer(l.layer);
-
     externalLayers.splice(index, 1);
+    saveExternalLayers();
     renderLayerList();
+}
+
+function saveExternalLayers() {
+    const dataToSave = externalLayers.map(l => ({
+        name: l.name,
+        geojson: l.geojson,
+        visible: l.visible,
+        filled: l.filled
+    }));
+    localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
+}
+
+function loadExternalLayers() {
+    const saved = localStorage.getItem('jeoExternalLayers');
+    if (!saved) return;
+    try {
+        const data = JSON.parse(saved);
+        data.forEach(d => {
+            addExternalLayer(d.name, d.geojson);
+            const last = externalLayers[externalLayers.length - 1];
+            if (last) {
+                last.visible = d.visible;
+                last.filled = d.filled;
+                if (!last.visible) map.removeLayer(last.layer);
+                last.layer.setStyle({ fillOpacity: last.filled ? 0.4 : 0 });
+            }
+        });
+        renderLayerList();
+    } catch (e) {
+        console.error("KML yükleme hatası:", e);
+    }
 }
 
 // --------------------------------------------------------------------------

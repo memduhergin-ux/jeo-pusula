@@ -1187,7 +1187,8 @@ textarea.form-input {
 
 /* Custom 2-Segment Scale Control (0 - 1cm - 2cm) */
 .custom-scale-control {
-    margin-bottom: 30px !important;
+    margin-bottom: 85px !important;
+    /* Raised to clear bottom-nav */
     margin-left: 20px !important;
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(4px);
@@ -1238,4 +1239,25 @@ textarea.form-input {
 
 .scale-segment:first-child {
     border-right: none;
+}
+
+/* Parallel Segment/Edge Labels */
+.segment-label-container {
+    pointer-events: none;
+}
+
+.segment-label {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 1px 4px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    white-space: nowrap;
+    text-shadow: 0 0 2px #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    margin-top: -8px;
+    /* Offset it slightly away from the line */
+    transition: transform 0.1s ease-out;
 }
