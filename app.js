@@ -112,6 +112,7 @@ let isMeasuring = false;
 let measurePoints = [];
 let measureMarkers = [];
 let measureLine = null;
+let isPolygon = false; // New: Track if shape is closed
 
 // Add Point State
 let isAddingPoint = false;
@@ -805,10 +806,17 @@ function initMap() {
             // Open Modal
             recordModal.classList.add('active');
 
-            // Turn off mode
-            isAddingPoint = false;
-            if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
-            map.getContainer().style.cursor = '';
+            // Old map click logic for Add Point removed/disabled in favor of Center Crosshair
+            // If we want to keep tap-to-add as secondary, we can leave it.
+            // But user requested "no touching screen".
+            // Let's disable this block effectively.
+            /* 
+            // Open Modal with Clicked Coordinates
+            const clickedLat = e.latlng.lat;
+            const clickedLon = e.latlng.lng;
+            openRecordModalWithCoords(clickedLat, clickedLon, "Haritadan seçildi (Tıklama)");
+             */
+            // Reset mode if they tap map? No, usually annoying.
         }
     });
 
@@ -1064,6 +1072,26 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindPopup(feature.properties.name);
             }
+
+            // Pass clicks to map handler if in special modes
+            layer.on('click', (e) => {
+                if (isMeasuring) {
+                    L.DomEvent.stopPropagation(e); // Stop popup
+                    updateMeasurement(e.latlng);
+                } else if (isAddingPoint) {
+                    L.DomEvent.stopPropagation(e); // Stop popup
+                    // We need to trigger the same logic as map click.
+                    // Since the map click handler is anonymous, let's extract it or copy the logic.
+                    // Copying logic for stability (or we could fire a map click event?)
+                    // e.target.closePopup();
+
+                    // Trigger map click logic manually or refactor. 
+                    // Simpler: Fire a synthetic click on the map?
+                    // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
+                    // Let's just run the logic directly or fire map click.
+                    map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                }
+            });
         }
     }).addTo(map);
 
@@ -1166,6 +1194,9 @@ const btnMeasureClear = document.getElementById('btn-measure-clear');
 
 if (btnAddPoint) {
     btnAddPoint.addEventListener('click', () => {
+        const btnConfirmPoint = document.getElementById('btn-confirm-point');
+        const crosshair = document.getElementById('map-center-crosshair');
+
         isAddingPoint = !isAddingPoint;
 
         if (isAddingPoint) {
@@ -1178,14 +1209,69 @@ if (btnAddPoint) {
             }
 
             btnAddPoint.classList.add('active-add-point');
-            if (map) map.getContainer().style.cursor = 'pointer';
-
-            alert("Haritada nokta eklemek istediğiniz yere dokunun.");
+            // Show Crosshair and Confirm Button
+            if (crosshair) crosshair.style.display = 'block';
+            if (btnConfirmPoint) btnConfirmPoint.style.display = 'block';
         } else {
             btnAddPoint.classList.remove('active-add-point');
-            if (map) map.getContainer().style.cursor = '';
+            if (crosshair) crosshair.style.display = 'none';
+            if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
         }
     });
+}
+
+const btnConfirmPoint = document.getElementById('btn-confirm-point');
+const crosshair = document.getElementById('map-center-crosshair');
+const btnAddGps = document.getElementById('btn-add-gps');
+
+if (btnConfirmPoint) {
+    btnConfirmPoint.addEventListener('click', () => {
+        if (!map) return;
+        const center = map.getCenter();
+        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)");
+
+        // Reset Mode
+        isAddingPoint = false;
+        btnAddPoint.classList.remove('active-add-point');
+        if (crosshair) crosshair.style.display = 'none';
+        if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+    });
+}
+
+if (btnAddGps) {
+    btnAddGps.addEventListener('click', () => {
+        if (currentCoords.lat !== 0) {
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Konumu");
+        } else {
+            alert("Konum verisi bekleniyor...");
+        }
+    });
+}
+
+function openRecordModalWithCoords(lat, lon, note) {
+    // Convert to UTM
+    let utmY, utmX;
+    try {
+        const zone = Math.floor((lon + 180) / 6) + 1;
+        const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+        const utm = proj4('WGS84', utmZoneDef, [lon, lat]);
+        utmY = Math.round(utm[0]);
+        utmX = Math.round(utm[1]);
+    } catch (err) {
+        console.error("UTM conversion failed", err);
+        return;
+    }
+
+    editingRecordId = null;
+    document.getElementById('rec-label').value = nextId;
+    document.getElementById('rec-y').value = utmY;
+    document.getElementById('rec-x').value = utmX;
+    document.getElementById('rec-z').value = 0;
+    document.getElementById('rec-strike').value = 0;
+    document.getElementById('rec-dip').value = 0;
+    document.getElementById('rec-note').value = note;
+
+    recordModal.classList.add('active');
 }
 
 if (btnMeasure) {
@@ -1197,23 +1283,32 @@ if (btnMeasure) {
             if (isAddingPoint) {
                 isAddingPoint = false;
                 if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
+                if (crosshair) crosshair.style.display = 'none';
+                if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
             }
 
             btnMeasure.style.background = '#f44336'; // Active Red
             measureInfo.style.display = 'flex';
-            measureText.textContent = "Nokta seçin...";
-            if (map) {
-                map.getContainer().style.cursor = 'crosshair';
-                map.dragging.disable(); // Mobil için dragging açık kalmalı, cursor style çok etki etmez ama masaüstü için iyi. map.dragging.enable(); 
-            }
+            map.dragging.enable();
         } else {
             // Exit mode.
             btnMeasure.style.background = ''; // Reset
             if (map) map.getContainer().style.cursor = '';
             measureInfo.style.display = 'none';
-            // Optional: Clear measurement on exit? No, user might want to see it.
         }
     });
+}
+
+// New Buttons
+const btnMeasureUndo = document.getElementById('btn-measure-undo');
+const btnMeasureSave = document.getElementById('btn-measure-save');
+
+if (btnMeasureUndo) {
+    btnMeasureUndo.addEventListener('click', undoMeasurement);
+}
+
+if (btnMeasureSave) {
+    btnMeasureSave.addEventListener('click', saveMeasurement);
 }
 
 if (btnMeasureClear) {
@@ -1230,11 +1325,166 @@ function clearMeasurement() {
     }
     measureMarkers.forEach(m => map.removeLayer(m));
     measureMarkers = [];
+
+    isPolygon = false;
     measureText.textContent = "0 m";
+    updateMeasureButtons();
+}
+
+function updateMeasureButtons() {
+    if (measurePoints.length > 0) {
+        btnMeasureUndo.style.display = 'inline-block';
+        btnMeasureSave.style.display = 'inline-block';
+    } else {
+        btnMeasureUndo.style.display = 'none';
+        btnMeasureSave.style.display = 'none';
+    }
+}
+
+function undoMeasurement() {
+    if (measurePoints.length === 0) return;
+
+    // Remove last point
+    measurePoints.pop();
+
+    // Remove last marker
+    const lastMarker = measureMarkers.pop();
+    if (lastMarker) map.removeLayer(lastMarker);
+
+    // If it was a polygon, it's now a line (or less)
+    if (isPolygon) {
+        isPolygon = false;
+        // The last point popped was the duplicate of the first.
+        // We need to re-render as polyline.
+        if (measureLine) map.removeLayer(measureLine);
+        measureLine = null; // Will be created in redraw
+    }
+
+    redrawMeasurement();
+}
+
+function redrawMeasurement() {
+    if (!map) return;
+
+    // Clear Line
+    if (measureLine) {
+        map.removeLayer(measureLine);
+        measureLine = null;
+    }
+
+    if (measurePoints.length === 0) {
+        measureText.textContent = "0 m";
+        updateMeasureButtons();
+        return;
+    }
+
+    // Re-draw Polyline or Polygon
+    if (isPolygon) {
+        measureLine = L.polygon(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+    } else {
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+    }
+
+    calculateAndDisplayMeasurement();
+    updateMeasureButtons();
+}
+
+function calculateAndDisplayMeasurement() {
+    // Total Distance (Perimeter)
+    let totalDistance = 0;
+    for (let i = 0; i < measurePoints.length - 1; i++) {
+        totalDistance += measurePoints[i].distanceTo(measurePoints[i + 1]);
+    }
+
+    let text = "";
+    if (totalDistance < 1000) text = Math.round(totalDistance) + " m";
+    else text = (totalDistance / 1000).toFixed(2) + " km";
+
+    if (isPolygon) {
+        // Calculate Area using UTM (Planar) approximation
+        // Convert all points to UTM
+        const utmPoints = measurePoints.map(p => {
+            const zone = Math.floor((p.lng + 180) / 6) + 1;
+            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+            return proj4('WGS84', utmZoneDef, [p.lng, p.lat]);
+        });
+
+        // Shoelace Formula
+        let area = 0;
+        let j = utmPoints.length - 1;
+        for (let i = 0; i < utmPoints.length; i++) {
+            area += (utmPoints[j][0] + utmPoints[i][0]) * (utmPoints[j][1] - utmPoints[i][1]);
+            j = i;
+        }
+        area = Math.abs(area / 2.0);
+
+        // Append Area Text
+        let areaText = "";
+        if (area < 10000) areaText = Math.round(area) + " m²";
+        else if (area < 1000000) areaText = (area / 10000).toFixed(2) + " ha";
+        else areaText = (area / 1000000).toFixed(2) + " km²";
+
+        measureText.innerHTML = `${text}<br><span style="font-size:0.8em; color:#ddd">Alan: ${areaText}</span>`;
+    } else {
+        measureText.textContent = text;
+    }
+}
+
+function saveMeasurement() {
+    if (measurePoints.length === 0) return;
+
+    // Open Modal
+    editingRecordId = null;
+    document.getElementById('rec-label').value = nextId;
+
+    // Coords: Use Last Point
+    const lastP = measurePoints[measurePoints.length - 1];
+
+    // UTM Conversion
+    const zone = Math.floor((lastP.lng + 180) / 6) + 1;
+    const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+    const utm = proj4('WGS84', utmZoneDef, [lastP.lng, lastP.lat]);
+
+    document.getElementById('rec-y').value = Math.round(utm[0]);
+    document.getElementById('rec-x').value = Math.round(utm[1]);
+    document.getElementById('rec-z').value = 0;
+    document.getElementById('rec-strike').value = 0;
+    document.getElementById('rec-dip').value = 0;
+
+    // Note
+    let note = measureText.textContent.replace("mAlan", "m, Alan"); // Simple fix for line break
+    note = "Ölçüm: " + measureText.innerText.replace(/\n/g, ", ");
+    document.getElementById('rec-note').value = note;
+
+    recordModal.classList.add('active');
 }
 
 function updateMeasurement(latlng) {
     if (!map) return;
+
+    // Check Snapping (Close Polygon)
+    if (measurePoints.length > 2 && !isPolygon) {
+        const startPoint = measurePoints[0];
+        const dist = latlng.distanceTo(startPoint);
+        // If closer than 20 meters (approx click tolerance on zoom), close it.
+        // Actually, let's use screen pixels if possible, but meters is easier here.
+        // 20m depends on zoom level. 
+        // Let's rely on user intention. If they click VERY close to start.
+        if (dist < 20) {
+            // Close Loop
+            measurePoints.push(startPoint); // Close logic
+            isPolygon = true;
+            redrawMeasurement();
+            return;
+        }
+    }
+
+    if (isPolygon) {
+        // Cannot add more points after close (unless we implement 'insert'). 
+        // For now, restarting or undo is the way.
+        alert("Alan kapandı. Değiştirmek için 'Geri Al' kullanın.");
+        return;
+    }
 
     // Add Point
     measurePoints.push(latlng);
@@ -1248,25 +1498,7 @@ function updateMeasurement(latlng) {
     }).addTo(map);
     measureMarkers.push(marker);
 
-    // Draw/Update Line
-    if (!measureLine) {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
-    } else {
-        measureLine.setLatLngs(measurePoints);
-    }
-
-    // Calculate Total Distance
-    let totalDistance = 0;
-    for (let i = 0; i < measurePoints.length - 1; i++) {
-        totalDistance += measurePoints[i].distanceTo(measurePoints[i + 1]);
-    }
-
-    // Display
-    if (totalDistance < 1000) {
-        measureText.textContent = Math.round(totalDistance) + " m";
-    } else {
-        measureText.textContent = (totalDistance / 1000).toFixed(2) + " km";
-    }
+    redrawMeasurement();
 }
 
 // View Control

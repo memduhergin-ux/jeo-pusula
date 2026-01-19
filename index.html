@@ -107,31 +107,57 @@
             <!-- Measurement Info Box -->
             <div id="measure-info"
                 style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 20px; z-index: 2000; color: white; border: 1px solid #444; font-size: 0.9rem; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                <button id="btn-measure-undo" title="Geri Al"
+                    style="display:none; background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem; margin-right: 5px;">↩️</button>
                 <span id="measure-text" style="font-family: monospace; font-size: 1rem;">0 m</span>
+                <button id="btn-measure-save" title="Kaydet"
+                    style="display:none; background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem; margin-left: 5px;">💾</button>
+                <div style="width: 1px; height: 16px; background: #666; margin: 0 5px;"></div>
                 <button id="btn-measure-clear"
-                    style="background: #f44336; border: none; color: white; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 5px;">✕</button>
+                    style="background: #f44336; border: none; color: white; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;">✕</button>
             </div>
 
+            <div id="map-center-crosshair"
+                style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1500;">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5));">
+                    <circle cx="20" cy="20" r="18" stroke="white" stroke-width="2" stroke-dasharray="4 4" />
+                    <circle cx="20" cy="20" r="3" fill="#ff5252" />
+                    <line x1="20" y1="0" x2="20" y2="40" stroke="white" stroke-width="1.5" />
+                    <line x1="0" y1="20" x2="40" y2="20" stroke="white" stroke-width="1.5" />
+                </svg>
+            </div>
+
+            <button id="btn-confirm-point"
+                style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2000; cursor: pointer;">
+                ✅ Buraya Ekle
+            </button>
+
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
-            <button id="btn-follow-me" class="map-fab" title="Konumu Takip Et">
-                <div class="crosshair-wrapper">
-                    <div class="crosshair-circle"></div>
-                    <div class="crosshair-line-v"></div>
-                    <div class="crosshair-line-h"></div>
-                </div>
-            </button>
-            <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Kayıtları Göster/Gizle">
-                <span class="fab-icon">📍</span>
-            </button>
-            <button id="btn-layers" class="map-fab" style="bottom: 160px;" title="Katmanlar">
-                <span class="fab-icon">📂</span>
-            </button>
-            <button id="btn-measure" class="map-fab" style="bottom: 230px;" title="Mesafe Ölç">
-                <span class="fab-icon">📏</span>
-            </button>
-            <button id="btn-add-point" class="map-fab" style="bottom: 300px;" title="Nokta Ekle">
-                <span class="fab-icon">➕</span>
-            </button>
+            <div class="map-fab-container">
+                <button id="btn-add-gps" class="map-fab" title="Konumuma Ekle">
+                    <span class="fab-icon">📍+</span>
+                </button>
+                <button id="btn-add-point" class="map-fab" title="Nokta Ekle (Haritadan)">
+                    <span class="fab-icon">🎯</span>
+                </button>
+                <button id="btn-measure" class="map-fab" title="Mesafe Ölç">
+                    <span class="fab-icon">📏</span>
+                </button>
+                <button id="btn-layers" class="map-fab" title="Katmanlar">
+                    <span class="fab-icon">📂</span>
+                </button>
+                <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Kayıtları Göster/Gizle">
+                    <span class="fab-icon">📍</span>
+                </button>
+                <button id="btn-follow-me" class="map-fab" title="Konumu Takip Et">
+                    <div class="crosshair-wrapper">
+                        <div class="crosshair-circle"></div>
+                        <div class="crosshair-line-v"></div>
+                        <div class="crosshair-line-h"></div>
+                    </div>
+                </button>
+            </div>
             <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
         </div>
     </div>
