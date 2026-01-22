@@ -1201,13 +1201,11 @@ textarea.form-input {
 .scale-labels {
     display: flex;
     justify-content: flex-start;
-    /* Change to start for absolute-like control */
     font-size: 11px;
     font-weight: 900;
     color: #fff;
     margin-bottom: 2px;
-    width: 120px;
-    /* Increased width */
+    width: 140px;
     position: relative;
 }
 
@@ -1218,8 +1216,7 @@ textarea.form-input {
 
 .label-mid {
     position: absolute;
-    left: 60px;
-    /* Exact middle of 120px */
+    left: 70px;
     transform: translateX(-50%);
     text-align: center;
     white-space: nowrap;
@@ -1227,8 +1224,7 @@ textarea.form-input {
 
 .label-end {
     position: absolute;
-    left: 120px;
-    /* End of 120px */
+    left: 140px;
     transform: translateX(-50%);
     text-align: center;
     white-space: nowrap;
@@ -1236,8 +1232,7 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 120px;
-    /* Match new width */
+    width: 140px;
 }
 
 .scale-segment {

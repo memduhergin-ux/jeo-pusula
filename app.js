@@ -106,7 +106,7 @@ let pendingLon = null;
 // Stabilization Variables
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
-const CACHE_NAME = 'jeocompass-v30';
+const CACHE_NAME = 'jeocompass-v34';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -885,26 +885,20 @@ function initCustomScale() {
 
 function updateScaleValues() {
     if (!map) return;
-    const midPoint = map.getCenter();
-    const pCenter = map.latLngToContainerPoint(midPoint);
-
-    // We assume 40px is roughly 1cm (for 100dpi screens)
-    // 2cm = 80px total width
-    // We assume 60px is segment 1, 120px total width
-    const pMid = L.point(pCenter.x + 60, pCenter.y);
-    const pEnd = L.point(pCenter.x + 120, pCenter.y);
-
-    const latLngMid = map.containerPointToLatLng(pMid);
+    const width = 140; // Total width in pixels
+    const centerLatLng = map.getCenter();
+    const pCenter = map.latLngToContainerPoint(centerLatLng);
+    const pEnd = L.point(pCenter.x + width, pCenter.y);
     const latLngEnd = map.containerPointToLatLng(pEnd);
+    const distance = map.distance(centerLatLng, latLngEnd);
 
-    const distMid = map.distance(midPoint, latLngMid);
-    const distEnd = map.distance(midPoint, latLngEnd);
+    let midVal = distance / 2;
+    let endVal = distance;
 
     const midEl = document.getElementById('scale-mid');
     const endEl = document.getElementById('scale-end');
-
-    if (midEl) midEl.innerText = formatScaleDist(distMid);
-    if (endEl) endEl.innerText = formatScaleDist(distEnd);
+    if (midEl) midEl.textContent = formatScaleDist(midVal);
+    if (endEl) endEl.textContent = formatScaleDist(endVal);
 }
 
 function formatScaleDist(d) {
@@ -959,8 +953,14 @@ function updateMapMarkers() {
             // 1. Draw Geometry (if exists)
             if (r.geom && r.geom.length > 0) {
                 const latlngs = r.geom.map(p => L.latLng(p[0], p[1]));
+                let totalLen = 0;
+                for (let i = 0; i < latlngs.length - 1; i++) {
+                    totalLen += latlngs[i].distanceTo(latlngs[i + 1]);
+                }
+
                 let shape;
                 if (r.geomType === 'polygon') {
+                    totalLen += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
                     shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 });
 
                     // Labelling Polygon Edges
@@ -1017,7 +1017,7 @@ function updateMapMarkers() {
 
                 let popupContent = `
                     <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 180px;">
-                        <b style="color: #2196f3; font-size: 1.1rem;">Ölçüm: #${labelText}</b>
+                        <b style="color: #2196f3; font-size: 1.1rem;">Ölçüm: ${labelText}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                         <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'Not yok'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
@@ -1051,7 +1051,7 @@ function updateMapMarkers() {
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
             marker.bindPopup(`
                 <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
-                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt #${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Doğrultu/Eğim:</b> ${r.strike} / ${r.dip}°</div>
                     <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'Not yok'}"</div>
@@ -1338,25 +1338,19 @@ function renderLayerList() {
 
         item.innerHTML = `
             <div style="flex:1; overflow:hidden;">
-                <div style="font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${l.name}</div>
+                <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px;">
+                    <span>📁</span> ${l.name}
+                </div>
             </div>
-            <div style="display:flex; flex-wrap: wrap; gap: 5px;">
-                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
-                    <input type="checkbox" class="layer-visible-toggle" data-id="${l.id}" ${l.visible ? 'checked' : ''}>
-                    Katman
-                </label>
-                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
-                    <input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}>
-                    Noktalar
-                </label>
-                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
-                    <input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}>
-                    Alanlar
-                </label>
-                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
-                    <input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}>
-                    Dolgu
-                </label>
+            <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
+                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Görünürlük">
+                    ${l.visible ? '👁️' : '🕶️'}
+                </button>
+                <div style="display:flex; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Nokta</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Alan</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Dolgu</span></label>
+                </div>
                 <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
         `;
@@ -1364,10 +1358,14 @@ function renderLayerList() {
     });
 
     // Attach listeners
-    document.querySelectorAll('.layer-visible-toggle').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            toggleLayerVisibility(id, e.target.checked);
+    document.querySelectorAll('.layer-toggle-vis').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.dataset.id);
+            l = externalLayers.find(x => x.id === id);
+            if (l) {
+                toggleLayerVisibility(id, !l.visible);
+                renderLayerList(); // Redraw to update eye icon
+            }
         });
     });
 
@@ -1433,6 +1431,10 @@ function toggleLayerPoints(id, showPoints) {
         if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
             if (layer.getElement()) {
                 layer.getElement().style.display = showPoints ? '' : 'none';
+            }
+            // Also handle shadows if any (Leaflet standard markers)
+            if (layer._shadow && layer._shadow.style) {
+                layer._shadow.style.display = showPoints ? '' : 'none';
             }
         }
     });
