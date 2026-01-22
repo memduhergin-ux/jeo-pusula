@@ -1284,23 +1284,42 @@ textarea.form-input {
     display: none !important;
 }
 
-/* KML Compact Popup */
-.kml-popup-container {
+/* Standard Map Popup Container */
+.map-popup-container {
     font-family: 'Inter', sans-serif;
-    max-width: 25vw;
-    max-height: 25vh;
-    overflow: auto;
+    max-width: 220px;
+    max-height: 30vh;
+    overflow-y: auto;
     padding: 5px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    color: #333;
     scrollbar-width: thin;
 }
 
-.kml-popup-container table {
-    width: 100%;
+.map-popup-container b {
+    color: #2196f3;
 }
 
-/* Ensure Leaflet popup wrapper doesn't force a large width */
+.map-popup-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.map-popup-container tr {
+    border-bottom: 1px solid #eee;
+}
+
+.map-popup-container td {
+    padding: 4px 0;
+}
+
+/* Ensure Leaflet popup wrapper is compact */
 .leaflet-popup-content-wrapper {
-    max-width: 30vw;
-    /* Small margin for the wrapper itself */
+    max-width: 240px;
+    border-radius: 8px;
+    padding: 0;
+}
+
+.leaflet-popup-content {
+    margin: 8px;
 }

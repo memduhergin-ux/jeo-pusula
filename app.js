@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v46';
+const CACHE_NAME = 'jeocompass-v50';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -896,19 +896,22 @@ function updateScaleValues() {
     const latLngEnd = map.containerPointToLatLng(pEnd);
     const distance = map.distance(centerLatLng, latLngEnd);
 
-    let midVal = distance / 2;
-    let endVal = distance;
-
     const midEl = document.getElementById('scale-mid');
     const endEl = document.getElementById('scale-end');
-    if (midEl) midEl.textContent = formatScaleDist(midVal);
-    if (endEl) endEl.textContent = formatScaleDist(endVal);
+    if (midEl) midEl.textContent = formatScaleDist(midVal, true); // No unit
+    if (endEl) endEl.textContent = formatScaleDist(endVal, false); // With unit
 }
 
-function formatScaleDist(d) {
-    if (d < 1) return d.toFixed(1) + " m";
-    if (d < 1000) return Math.round(d) + " m";
-    return (d / 1000).toFixed(2) + " km";
+function formatScaleDist(d, noUnit = false) {
+    let val, unit;
+    if (d < 1000) {
+        val = Math.round(d);
+        unit = "m";
+    } else {
+        val = (d / 1000).toFixed(2);
+        unit = "km";
+    }
+    return noUnit ? val : val + " " + unit;
 }
 
 // Show/Hide Records State
@@ -1046,8 +1049,8 @@ function updateMapMarkers() {
                 }
 
                 let popupContent = `
-                    <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 180px;">
-                        <b style="color: #2196f3; font-size: 1.1rem;">Ölçüm: ${labelText}</b>
+                    <div class="map-popup-container">
+                        <b style="font-size: 1.1rem;">Ölçüm: ${labelText}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                         <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'Not yok'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
@@ -1069,9 +1072,9 @@ function updateMapMarkers() {
             const markerIcon = L.divIcon({
                 className: 'geology-marker-pin',
                 html: `
-                    <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px;">
-                        <span class="pin-icon" style="font-size:${24 * scaleFactor}px; transform: rotate(${strikeAngle}deg)">📍</span>
-                        <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${5 * scaleFactor}px; right:-${8 * scaleFactor}px;">${labelText}</div>
+                    <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <div class="red-dot-symbol" style="width:${12 * scaleFactor}px; height:${12 * scaleFactor}px; background-color: #f44336; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+                        <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${4 * scaleFactor}px; right:-${6 * scaleFactor}px;">${labelText}</div>
                     </div>
                 `,
                 iconSize: [iconBaseSize, iconBaseSize],
@@ -1080,8 +1083,8 @@ function updateMapMarkers() {
 
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
             marker.bindPopup(`
-                <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
-                    <b style="color: #2196f3; font-size: 1.1rem;">Kayit ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                <div class="map-popup-container">
+                    <b style="font-size: 1.1rem;">Kayit ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Dogrultu/Egim:</b> ${r.strike} / ${r.dip}</div>
                     <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'Not yok'}"</div>
@@ -1089,13 +1092,15 @@ function updateMapMarkers() {
                 </div>
             `);
 
-            // Always-visible label for marker (Tooltip)
+            // Always-visible label for marker (Tooltip) - REMOVED per user request
+            /*
             marker.bindTooltip(labelText.toString(), {
                 permanent: true,
                 direction: 'bottom',
                 offset: [0, 10],
                 className: 'marker-label'
             });
+            */
 
             markerGroup.addLayer(marker);
         }
@@ -1298,7 +1303,7 @@ function addExternalLayer(name, geojson) {
     const layer = L.geoJSON(geojson, {
         style: style,
         onEachFeature: (feature, layer) => {
-            let popupContent = `<div class="kml-popup-container">`;
+            let popupContent = `<div class="map-popup-container">`;
             if (feature.properties) {
                 if (feature.properties.name) {
                     popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
@@ -1866,8 +1871,8 @@ function redrawMeasurement() {
         }
         if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
 
-        let popupText = `<div style="font-family:'Inter', sans-serif; padding:10px; min-width:150px;">`;
-        popupText += `<div style="font-weight:bold; color:#ff9800; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Çokgen Ölçümü' : 'Mesafe Ölçümü'}</div>`;
+        let popupText = `<div class="map-popup-container">`;
+        popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Çokgen Ölçümü' : 'Mesafe Ölçümü'}</div>`;
         popupText += `<hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
         popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Çevre:</b> ${formatScaleDist(totalLen)}</div>`;
         if (isPolygon) {
@@ -1978,7 +1983,8 @@ function updateMeasurement(latlng) {
         radius: 4,
         color: '#ffeb3b',
         fillColor: '#ffeb3b',
-        fillOpacity: 1
+        fillOpacity: 1,
+        interactive: false // Allow map clicks to pass through to the map for snapping
     }).addTo(map);
     measureMarkers.push(marker);
 
