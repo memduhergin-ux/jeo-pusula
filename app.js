@@ -106,7 +106,7 @@ let pendingLon = null;
 // Stabilization Variables
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
-const BUFFER_SIZE = 5;
+const CACHE_NAME = 'jeocompass-v30';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -118,14 +118,15 @@ let isMeasuring = false;
 let measurePoints = [];
 let measureMarkers = [];
 let measureLine = null;
-let isPolygon = false; // Track if shape is closed
+let activeMeasureLabels = []; // Track segment labels during active measurement
+let isPolygon = false;
 let measureMode = 'line'; // 'line' or 'polygon'
 
 // Add Point State
 let isAddingPoint = false;
 
 // KML/KMZ Layers State
-let externalLayers = []; // { id, name, layer, filled: true, visible: true, pointsVisible: true }
+let externalLayers = []; // { id, name, layer, filled: true, visible: true, pointsVisible: true, areasVisible: true }
 let layerIdCounter = 1;
 
 // Setup Proj4 Definitions
@@ -675,6 +676,13 @@ if (document.getElementById('btn-modal-save')) {
         updateMapMarkers();
         recordModal.classList.remove('active');
         editingRecordId = null;
+
+        // Clear measurement state if we just saved one
+        if (measurePoints.length > 0) {
+            clearMeasurement();
+            isMeasuring = false;
+            updateMeasureModeUI();
+        }
     });
 }
 
@@ -882,8 +890,9 @@ function updateScaleValues() {
 
     // We assume 40px is roughly 1cm (for 100dpi screens)
     // 2cm = 80px total width
-    const pMid = L.point(pCenter.x + 40, pCenter.y);
-    const pEnd = L.point(pCenter.x + 80, pCenter.y);
+    // We assume 60px is segment 1, 120px total width
+    const pMid = L.point(pCenter.x + 60, pCenter.y);
+    const pEnd = L.point(pCenter.x + 120, pCenter.y);
 
     const latLngMid = map.containerPointToLatLng(pMid);
     const latLngEnd = map.containerPointToLatLng(pEnd);
@@ -928,10 +937,17 @@ function updateMapMarkers() {
 
     if (!showRecordsOnMap) return;
 
-    // Scale-based visibility: Only show if zoom is 14 or higher
-    if (map.getZoom() < 14) {
-        return;
+    // Remove fixed zoom limit, we will use dynamic scaling instead
+    const zoom = map.getZoom();
+
+    // Scale factor: normal size at zoom 17+, smaller at lower zooms
+    // Zoom 10 -> factor 0.3, Zoom 14 -> factor 0.6, Zoom 17 -> factor 1.0
+    let scaleFactor = 1.0;
+    if (zoom < 17) {
+        scaleFactor = Math.max(0.2, (zoom - 6) / 11);
     }
+    const iconBaseSize = 32 * scaleFactor;
+    const labelFontSize = Math.max(8, 10 * scaleFactor);
 
     const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
     const dataToRender = selectedIds.length > 0 ? records.filter(r => selectedIds.includes(r.id)) : records;
@@ -971,37 +987,47 @@ function updateMapMarkers() {
                     shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4 });
 
                     // Labelling Total Length for Polyline (at the middle of the path)
-                    let totalLen = 0;
-                    for (let i = 0; i < latlngs.length - 1; i++) {
-                        totalLen += latlngs[i].distanceTo(latlngs[i + 1]);
-                    }
+                    // DRAW SEGMENT LABELS FOR POLYLINE
+                    if (r.geomType === 'polyline') {
+                        for (let i = 0; i < latlngs.length - 1; i++) {
+                            const p1 = latlngs[i];
+                            const p2 = latlngs[i + 1];
+                            const dist = map.distance(p1, p2);
+                            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
 
-                    // Find midpoint segment
-                    const midIndex = Math.floor(latlngs.length / 2);
-                    const p1 = latlngs[midIndex - 1];
-                    const p2 = latlngs[midIndex];
-                    if (p1 && p2) {
-                        const mid = getSegmentMidpoint(p1, p2);
-                        const angle = getSegmentAngle(p1, p2);
-                        const pathLabel = L.marker(mid, {
-                            icon: L.divIcon({
-                                className: 'segment-label-container',
-                                html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                                iconSize: [1, 1],
-                                iconAnchor: [0, 0]
-                            }),
-                            interactive: false
-                        });
-                        markerGroup.addLayer(pathLabel);
+                            // Calculate angle for labels
+                            const point1 = map.latLngToContainerPoint(p1);
+                            const point2 = map.latLngToContainerPoint(p2);
+                            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+                            if (angle > 90 || angle < -90) angle += 180;
+
+                            const segmentLabel = L.marker(mid, {
+                                icon: L.divIcon({
+                                    className: 'segment-label-container',
+                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                                    iconSize: [1, 1],
+                                    iconAnchor: [0, 0]
+                                }),
+                                interactive: false
+                            });
+                            markerGroup.addLayer(segmentLabel);
+                        }
                     }
                 }
 
-                shape.bindPopup(`
-                    <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
-                        <b style="color: #2196f3; font-size: 1.1rem;">Ölçüm: #${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                        <div style="font-size: 0.95rem;">${r.note || 'Not yok'}</div>
+                let popupContent = `
+                    <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 180px;">
+                        <b style="color: #2196f3; font-size: 1.1rem;">Ölçüm: #${labelText}</b>
+                        <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'Not yok'}</div>
+                        <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
+                            ${r.geomType === 'polygon' ? `<b>Çevre:</b> ${formatScaleDist(totalLen)}` : `<b>Uzunluk:</b> ${formatScaleDist(totalLen)}`}
+                        </div>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Sil</button>
                     </div>
-                `);
+                `;
+
+                shape.bindPopup(popupContent);
 
                 markerGroup.addLayer(shape);
                 // SKIP THE PIN for geometries as requested
@@ -1010,27 +1036,26 @@ function updateMapMarkers() {
 
             // 2. Draw Marker (Only for Point Records)
             const strikeAngle = parseFloat(r.strike) || 0;
-            const iconHtml = `
-                <div class="pin-container">
-                    <div class="pin-icon" style="transform: rotate(${strikeAngle}deg)">📍</div>
-                    <div class="marker-id-label-v3">#${labelText}</div>
-                </div>
-            `;
-
-            const geologicalIcon = L.divIcon({
+            const markerIcon = L.divIcon({
                 className: 'geology-marker-pin',
-                html: iconHtml,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
+                html: `
+                    <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px;">
+                        <span class="pin-icon" style="font-size:${24 * scaleFactor}px; transform: rotate(${strikeAngle}deg)">📍</span>
+                        <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${5 * scaleFactor}px; right:-${8 * scaleFactor}px;">#${labelText}</div>
+                    </div>
+                `,
+                iconSize: [iconBaseSize, iconBaseSize],
+                iconAnchor: [iconBaseSize / 2, iconBaseSize / 2]
             });
 
-            const marker = L.marker([r.lat, r.lon], { icon: geologicalIcon });
+            const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
             marker.bindPopup(`
                 <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
                     <b style="color: #2196f3; font-size: 1.1rem;">Kayıt #${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Doğrultu/Eğim:</b> ${r.strike} / ${r.dip}°</div>
                     <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
-                    <div style="font-size: 0.9rem; color: #666; font-style: italic;">"${r.note || 'Not yok'}"</div>
+                    <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'Not yok'}"</div>
+                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Sil</button>
                 </div>
             `);
 
@@ -1276,7 +1301,8 @@ function addExternalLayer(name, geojson) {
         geojson: geojson, // Store for persistence
         filled: true,
         visible: true,
-        pointsVisible: true
+        pointsVisible: true,
+        areasVisible: true
     };
     externalLayers.push(layerObj);
 
@@ -1286,6 +1312,9 @@ function addExternalLayer(name, geojson) {
     } catch (e) {
         // Empty layer
     }
+
+    saveExternalLayers();
+    renderLayerList();
 }
 
 function renderLayerList() {
@@ -1311,17 +1340,22 @@ function renderLayerList() {
             <div style="flex:1; overflow:hidden;">
                 <div style="font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${l.name}</div>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;" title="Görünürlük">
-                    ${l.visible ? '👁️' : '🕶️'}
-                </button>
+            <div style="display:flex; flex-wrap: wrap; gap: 5px;">
                 <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
-                    <input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}>
-                    Dolgu
+                    <input type="checkbox" class="layer-visible-toggle" data-id="${l.id}" ${l.visible ? 'checked' : ''}>
+                    Katman
                 </label>
                 <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
                     <input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}>
                     Noktalar
+                </label>
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
+                    <input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}>
+                    Alanlar
+                </label>
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
+                    <input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}>
+                    Dolgu
                 </label>
                 <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
@@ -1330,10 +1364,10 @@ function renderLayerList() {
     });
 
     // Attach listeners
-    document.querySelectorAll('.layer-toggle-vis').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = parseInt(e.currentTarget.dataset.id);
-            toggleLayerVisibility(id);
+    document.querySelectorAll('.layer-visible-toggle').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            toggleLayerVisibility(id, e.target.checked);
         });
     });
 
@@ -1351,6 +1385,13 @@ function renderLayerList() {
         });
     });
 
+    document.querySelectorAll('.layer-areas-toggle').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            toggleLayerAreas(id, e.target.checked);
+        });
+    });
+
     document.querySelectorAll('.layer-delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = parseInt(e.currentTarget.dataset.id);
@@ -1359,17 +1400,20 @@ function renderLayerList() {
     });
 }
 
-function toggleLayerVisibility(id) {
+function toggleLayerVisibility(id, isVisible) {
     const l = externalLayers.find(x => x.id === id);
     if (!l) return;
-    l.visible = !l.visible;
+    l.visible = isVisible;
     if (l.visible) {
         l.layer.addTo(map);
+        // Reapply sub-layer visibility based on their individual toggles
+        toggleLayerPoints(id, l.pointsVisible);
+        toggleLayerAreas(id, l.areasVisible);
     } else {
         map.removeLayer(l.layer);
     }
     saveExternalLayers();
-    renderLayerList();
+    // No need to re-render list, just update the internal state
 }
 
 function toggleLayerFill(id, isFilled) {
@@ -1385,17 +1429,26 @@ function toggleLayerPoints(id, showPoints) {
     if (!l) return;
     l.pointsVisible = showPoints;
 
-    // In Leaflet geoJSON, we can't easily filter pointToLayer after creation
-    // So we iterate through each layer and hide markers if it's a point
     l.layer.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
-            if (showPoints) {
-                if (!l.layer.hasLayer(layer)) l.layer.addLayer(layer);
-                // For Marker, we might need to update opacity if addLayer doesn't work as expected with sub-layers
-                if (layer.getElement()) layer.getElement().style.display = '';
-            } else {
-                // l.layer.removeLayer(layer); -> Removing might be permanent if not careful
-                if (layer.getElement()) layer.getElement().style.display = 'none';
+            if (layer.getElement()) {
+                layer.getElement().style.display = showPoints ? '' : 'none';
+            }
+        }
+    });
+    saveExternalLayers();
+}
+
+function toggleLayerAreas(id, showAreas) {
+    const l = externalLayers.find(x => x.id === id);
+    if (!l) return;
+    l.areasVisible = showAreas;
+
+    l.layer.eachLayer(layer => {
+        // Check if it's a path (polyline, polygon) and not a marker/circlemarker
+        if (layer instanceof L.Path && !(layer instanceof L.Marker || layer instanceof L.CircleMarker)) {
+            if (layer.getElement()) {
+                layer.getElement().style.display = showAreas ? '' : 'none';
             }
         }
     });
@@ -1418,7 +1471,8 @@ function saveExternalLayers() {
         geojson: l.geojson,
         visible: l.visible,
         filled: l.filled,
-        pointsVisible: l.pointsVisible
+        pointsVisible: l.pointsVisible,
+        areasVisible: l.areasVisible
     }));
     localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
 }
@@ -1435,9 +1489,11 @@ function loadExternalLayers() {
                 last.visible = d.visible;
                 last.filled = d.filled;
                 last.pointsVisible = d.pointsVisible !== undefined ? d.pointsVisible : true;
+                last.areasVisible = d.areasVisible !== undefined ? d.areasVisible : true;
                 if (!last.visible) map.removeLayer(last.layer);
                 last.layer.setStyle({ fillOpacity: last.filled ? 0.4 : 0 });
                 toggleLayerPoints(last.id, last.pointsVisible);
+                toggleLayerAreas(last.id, last.areasVisible);
             }
         });
         renderLayerList();
@@ -1616,8 +1672,13 @@ function clearMeasurement() {
     }
     measureMarkers.forEach(m => map.removeLayer(m));
     measureMarkers = [];
-
+    measurePoints = [];
     isPolygon = false;
+
+    // Clear Labels
+    activeMeasureLabels.forEach(l => map.removeLayer(l));
+    activeMeasureLabels = [];
+
     measureText.textContent = "0 m";
     updateMeasureButtons();
 }
@@ -1671,9 +1732,64 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        measureLine = L.polygon(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 };
+        measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
         measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+    }
+
+    // DRAW SEGMENT LABELS (For both Line and Polygon)
+    // Clear old labels first
+    activeMeasureLabels.forEach(l => map.removeLayer(l));
+    activeMeasureLabels = [];
+
+    if (measurePoints.length > 1) {
+        for (let i = 0; i < measurePoints.length - 1; i++) {
+            const p1 = measurePoints[i];
+            const p2 = measurePoints[i + 1];
+            const dist = map.distance(p1, p2);
+            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+
+            const point1 = map.latLngToContainerPoint(p1);
+            const point2 = map.latLngToContainerPoint(p2);
+            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+            if (angle > 90 || angle < -90) angle += 180;
+
+            const lab = L.marker(mid, {
+                icon: L.divIcon({
+                    className: 'segment-label-container',
+                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                    iconSize: [1, 1],
+                    iconAnchor: [0, 0]
+                }),
+                interactive: false
+            }).addTo(map);
+            activeMeasureLabels.push(lab);
+        }
+
+        // If polygon and closed, add the closing segment label
+        if (isPolygon) {
+            const p1 = measurePoints[measurePoints.length - 1];
+            const p2 = measurePoints[0];
+            const dist = map.distance(p1, p2);
+            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+
+            const point1 = map.latLngToContainerPoint(p1);
+            const point2 = map.latLngToContainerPoint(p2);
+            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+            if (angle > 90 || angle < -90) angle += 180;
+
+            const lab = L.marker(mid, {
+                icon: L.divIcon({
+                    className: 'segment-label-container',
+                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                    iconSize: [1, 1],
+                    iconAnchor: [0, 0]
+                }),
+                interactive: false
+            }).addTo(map);
+            activeMeasureLabels.push(lab);
+        }
     }
 
     calculateAndDisplayMeasurement();
@@ -1757,16 +1873,15 @@ function updateMeasurement(latlng) {
     if (!map) return;
 
     // Check Snapping (Close Polygon)
-    if (measurePoints.length > 2 && !isPolygon) {
+    if (measurePoints.length > 2) {
         const startPoint = measurePoints[0];
-        const dist = latlng.distanceTo(startPoint);
-        // If closer than 20 meters (approx click tolerance on zoom), close it.
-        // Actually, let's use screen pixels if possible, but meters is easier here.
-        // 20m depends on zoom level. 
-        // Let's rely on user intention. If they click VERY close to start.
-        if (dist < 20) {
+        const dist = map.distance(latlng, startPoint);
+
+        // Snapping Tolerance: 30 meters or significant pixel distance
+        // Depends on zoom, but 30m is usually good for outdoors. 
+        // For polygon mode, we want it to be snappy.
+        if (dist < 30) {
             // Close Loop automatically if clicked near start
-            measurePoints.push(startPoint); // Close logic
             isPolygon = true;
             redrawMeasurement();
             return;
@@ -1930,6 +2045,17 @@ if (btnDeleteSelected) {
         }
     });
 }
+
+/** Global delete helper for Map Popups **/
+window.deleteRecordFromMap = function (id) {
+    if (confirm(`Kayıt #${id} silinecek. Emin misiniz?`)) {
+        records = records.filter(r => r.id !== id);
+        saveRecords();
+        renderRecords();
+        updateMapMarkers();
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    }
+};
 
 function downloadFile(content, filename, type) {
     const blob = new Blob([content], { type: type });
