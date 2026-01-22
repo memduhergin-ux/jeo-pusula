@@ -118,13 +118,14 @@ let isMeasuring = false;
 let measurePoints = [];
 let measureMarkers = [];
 let measureLine = null;
-let isPolygon = false; // New: Track if shape is closed
+let isPolygon = false; // Track if shape is closed
+let measureMode = 'line'; // 'line' or 'polygon'
 
 // Add Point State
 let isAddingPoint = false;
 
 // KML/KMZ Layers State
-let externalLayers = []; // { id, name, layer, filled: true, visible: true }
+let externalLayers = []; // { id, name, layer, filled: true, visible: true, pointsVisible: true }
 let layerIdCounter = 1;
 
 // Setup Proj4 Definitions
@@ -737,7 +738,7 @@ function initMap() {
 
     map = L.map('map-container', {
         maxZoom: 23 // Allow zooming way in (digital zoom)
-    }).setView([initialLat, initialLon], 15);
+    }).setView([initialLat, initialLon], currentCoords.lat ? 17 : 15);
 
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 23,
@@ -900,7 +901,7 @@ function updateScaleValues() {
 function formatScaleDist(d) {
     if (d < 1) return d.toFixed(1) + " m";
     if (d < 1000) return Math.round(d) + " m";
-    return (d / 1000).toFixed(1) + " km";
+    return (d / 1000).toFixed(2) + " km";
 }
 
 // Show/Hide Records State
@@ -985,7 +986,7 @@ function updateMapMarkers() {
                         const pathLabel = L.marker(mid, {
                             icon: L.divIcon({
                                 className: 'segment-label-container',
-                                html: `<div class="segment-label" style="transform: rotate(${angle}deg)">TOPLAM: ${formatScaleDist(totalLen)}</div>`,
+                                html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
                                 iconSize: [1, 1],
                                 iconAnchor: [0, 0]
                             }),
@@ -1274,7 +1275,8 @@ function addExternalLayer(name, geojson) {
         layer: layer,
         geojson: geojson, // Store for persistence
         filled: true,
-        visible: true
+        visible: true,
+        pointsVisible: true
     };
     externalLayers.push(layerObj);
 
@@ -1317,6 +1319,10 @@ function renderLayerList() {
                     <input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}>
                     Dolgu
                 </label>
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#aaa; cursor:pointer;">
+                    <input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}>
+                    Noktalar
+                </label>
                 <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
         `;
@@ -1335,6 +1341,13 @@ function renderLayerList() {
         cb.addEventListener('change', (e) => {
             const id = parseInt(e.target.dataset.id);
             toggleLayerFill(id, e.target.checked);
+        });
+    });
+
+    document.querySelectorAll('.layer-points-toggle').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            toggleLayerPoints(id, e.target.checked);
         });
     });
 
@@ -1367,6 +1380,28 @@ function toggleLayerFill(id, isFilled) {
     saveExternalLayers();
 }
 
+function toggleLayerPoints(id, showPoints) {
+    const l = externalLayers.find(x => x.id === id);
+    if (!l) return;
+    l.pointsVisible = showPoints;
+
+    // In Leaflet geoJSON, we can't easily filter pointToLayer after creation
+    // So we iterate through each layer and hide markers if it's a point
+    l.layer.eachLayer(layer => {
+        if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+            if (showPoints) {
+                if (!l.layer.hasLayer(layer)) l.layer.addLayer(layer);
+                // For Marker, we might need to update opacity if addLayer doesn't work as expected with sub-layers
+                if (layer.getElement()) layer.getElement().style.display = '';
+            } else {
+                // l.layer.removeLayer(layer); -> Removing might be permanent if not careful
+                if (layer.getElement()) layer.getElement().style.display = 'none';
+            }
+        }
+    });
+    saveExternalLayers();
+}
+
 function removeLayer(id) {
     const index = externalLayers.findIndex(x => x.id === id);
     if (index === -1) return;
@@ -1382,7 +1417,8 @@ function saveExternalLayers() {
         name: l.name,
         geojson: l.geojson,
         visible: l.visible,
-        filled: l.filled
+        filled: l.filled,
+        pointsVisible: l.pointsVisible
     }));
     localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
 }
@@ -1398,8 +1434,10 @@ function loadExternalLayers() {
             if (last) {
                 last.visible = d.visible;
                 last.filled = d.filled;
+                last.pointsVisible = d.pointsVisible !== undefined ? d.pointsVisible : true;
                 if (!last.visible) map.removeLayer(last.layer);
                 last.layer.setStyle({ fillOpacity: last.filled ? 0.4 : 0 });
+                toggleLayerPoints(last.id, last.pointsVisible);
             }
         });
         renderLayerList();
@@ -1412,6 +1450,7 @@ function loadExternalLayers() {
 // Measurement Tool Logic
 // --------------------------------------------------------------------------
 const btnMeasure = document.getElementById('btn-measure');
+const btnPolygon = document.getElementById('id-btn-polygon');
 const btnAddPoint = document.getElementById('btn-add-point');
 const measureInfo = document.getElementById('measure-info');
 const measureText = document.getElementById('measure-text');
@@ -1505,27 +1544,50 @@ function openRecordModalWithCoords(lat, lon, note) {
 
 if (btnMeasure) {
     btnMeasure.addEventListener('click', () => {
-        isMeasuring = !isMeasuring;
-
-        if (isMeasuring) {
-            // Disable Add Point mode if active
-            if (isAddingPoint) {
-                isAddingPoint = false;
-                if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
-                if (crosshair) crosshair.style.display = 'none';
-                if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
-            }
-
-            btnMeasure.style.background = '#f44336'; // Active Red
-            measureInfo.style.display = 'flex';
-            map.dragging.enable();
+        if (isMeasuring && measureMode === 'line') {
+            isMeasuring = false;
         } else {
-            // Exit mode.
-            btnMeasure.style.background = ''; // Reset
-            if (map) map.getContainer().style.cursor = '';
-            measureInfo.style.display = 'none';
+            isMeasuring = true;
+            measureMode = 'line';
         }
+
+        updateMeasureModeUI();
     });
+}
+
+if (btnPolygon) {
+    btnPolygon.addEventListener('click', () => {
+        if (isMeasuring && measureMode === 'polygon') {
+            isMeasuring = false;
+        } else {
+            isMeasuring = true;
+            measureMode = 'polygon';
+        }
+
+        updateMeasureModeUI();
+    });
+}
+
+function updateMeasureModeUI() {
+    // Reset buttons
+    if (btnMeasure) btnMeasure.style.background = '';
+    if (btnPolygon) btnPolygon.style.background = '';
+    if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
+    if (crosshair) crosshair.style.display = 'none';
+    if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+    isAddingPoint = false;
+
+    if (isMeasuring) {
+        if (measureMode === 'line') {
+            btnMeasure.style.background = '#f44336'; // Active Red
+        } else {
+            btnPolygon.style.background = '#f44336'; // Active Red
+        }
+        measureInfo.style.display = 'flex';
+        map.dragging.enable();
+    } else {
+        measureInfo.style.display = 'none';
+    }
 }
 
 // New Buttons
@@ -1685,8 +1747,7 @@ function saveMeasurement() {
     document.getElementById('rec-dip').value = 0;
 
     // Note
-    let note = measureText.textContent.replace("mAlan", "m, Alan"); // Simple fix for line break
-    note = "Ölçüm: " + measureText.innerText.replace(/\n/g, ", ");
+    let note = measureText.innerText.replace(/\n/g, ", ");
     document.getElementById('rec-note').value = note;
 
     recordModal.classList.add('active');
@@ -1704,7 +1765,7 @@ function updateMeasurement(latlng) {
         // 20m depends on zoom level. 
         // Let's rely on user intention. If they click VERY close to start.
         if (dist < 20) {
-            // Close Loop
+            // Close Loop automatically if clicked near start
             measurePoints.push(startPoint); // Close logic
             isPolygon = true;
             redrawMeasurement();
@@ -1713,14 +1774,19 @@ function updateMeasurement(latlng) {
     }
 
     if (isPolygon) {
-        // Cannot add more points after close (unless we implement 'insert'). 
-        // For now, restarting or undo is the way.
-        alert("Alan kapandı. Değiştirmek için 'Geri Al' kullanın.");
+        alert("Alan zaten kapalı. Değiştirmek için 'Geri Al' kullanın.");
         return;
     }
 
+    // Force polygon mode to close if second point matches start (not applicable)
     // Add Point
     measurePoints.push(latlng);
+
+    // If we are in line mode, we only allow 2 points? No, ruler can have multiple segments too.
+    // If user intended 'polygon', they should use polygon button.
+    if (measureMode === 'polygon' && measurePoints.length > 2) {
+        // Just keep adding, user will close it by clicking start.
+    }
 
     // Add Marker
     const marker = L.circleMarker(latlng, {
@@ -1740,6 +1806,9 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         const target = btn.dataset.target; // Changed from 'view' to 'target' to match existing logic
 
         // Auto-lock when leaving or entering views (security first)
+        isMeasuring = false;
+        updateMeasureModeUI();
+
         if (!isRecordsLocked) {
             isRecordsLocked = true;
             try {

@@ -1190,21 +1190,21 @@ textarea.form-input {
     margin-bottom: 85px !important;
     /* Raised to clear bottom-nav */
     margin-left: 20px !important;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(4px);
-    padding: 4px 8px;
-    border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 6px 10px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .scale-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 900;
-    color: #333;
-    margin-bottom: 1px;
+    color: #fff;
+    margin-bottom: 2px;
     width: 80px;
     /* 2 segments of 40px each */
     position: relative;
@@ -1232,8 +1232,8 @@ textarea.form-input {
 
 .scale-segment {
     flex: 1;
-    height: 6px;
-    border: 2px solid #333;
+    height: 8px;
+    border: 2px solid #fff;
     border-top: none;
 }
 
@@ -1260,4 +1260,10 @@ textarea.form-input {
     margin-top: -8px;
     /* Offset it slightly away from the line */
     transition: transform 0.1s ease-out;
+}
+
+/* KML Point Hiding Helper */
+.leaflet-marker-icon.hidden-point,
+.leaflet-marker-shadow.hidden-point {
+    display: none !important;
 }
