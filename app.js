@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v50';
+const CACHE_NAME = 'jeocompass-v51';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -895,6 +895,9 @@ function updateScaleValues() {
     const pEnd = L.point(pCenter.x + width, pCenter.y);
     const latLngEnd = map.containerPointToLatLng(pEnd);
     const distance = map.distance(centerLatLng, latLngEnd);
+
+    let midVal = distance / 2;
+    let endVal = distance;
 
     const midEl = document.getElementById('scale-mid');
     const endEl = document.getElementById('scale-end');
