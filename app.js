@@ -106,7 +106,8 @@ let pendingLon = null;
 // Stabilization Variables
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
-const CACHE_NAME = 'jeocompass-v41';
+const BUFFER_SIZE = 10;
+const CACHE_NAME = 'jeocompass-v42';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -1077,8 +1078,8 @@ function updateMapMarkers() {
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
             marker.bindPopup(`
                 <div style="font-family: 'Inter', sans-serif; color: #333; min-width: 150px;">
-                    <b style="color: #2196f3; font-size: 1.1rem;">Kayıt ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                    <div style="margin-bottom: 5px;"><b>Doğrultu/Eğim:</b> ${r.strike} / ${r.dip}°</div>
+                    <b style="color: #2196f3; font-size: 1.1rem;">Kayit ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    <div style="margin-bottom: 5px;"><b>Dogrultu/Egim:</b> ${r.strike} / ${r.dip}</div>
                     <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'Not yok'}"</div>
                     <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Sil</button>
@@ -1243,8 +1244,10 @@ if (fileImportInput) {
         if (!file) return;
 
         try {
-            const fileName = file.name;
-            const extension = fileName.split('.').pop().toLowerCase();
+            let fileName = file.name;
+            // Remove extension for display
+            fileName = fileName.replace(/\.[^/.]+$/, "");
+            const extension = file.name.split('.').pop().toLowerCase();
             let geojsonData = null;
 
             if (extension === 'kml') {
@@ -1417,10 +1420,10 @@ function renderLayerList() {
     document.querySelectorAll('.layer-toggle-vis').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = parseInt(e.currentTarget.dataset.id);
-            l = externalLayers.find(x => x.id === id);
+            const l = externalLayers.find(x => x.id === id);
             if (l) {
                 toggleLayerVisibility(id, !l.visible);
-                renderLayerList(); // Redraw to update eye icon
+                renderLayerList(); // Redraw to update icon
             }
         });
     });
@@ -1873,7 +1876,7 @@ function redrawMeasurement() {
         popupText += `</div>`;
 
         const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
-        measureLine.bindPopup(popupText, { closeButton: true }).openPopup(popupPos);
+        measureLine.bindPopup(popupText, { closeButton: true });
     }
 
     updateMeasureButtons();
@@ -1890,12 +1893,13 @@ function calculateAndDisplayMeasurement() {
     if (totalDistance < 1000) text = Math.round(totalDistance) + " m";
     else text = (totalDistance / 1000).toFixed(2) + " km";
 
-    if (isPolygon) {
+    measureText.innerHTML = text;
+
+    // Show area info also during line drawing if more than 2 points
+    if (measurePoints.length > 2) {
         let area = calculateAreaHelper(measurePoints);
         let areaText = formatArea(area);
-        measureText.innerHTML = `${text}<br><span style="font-size:0.8em; color:#ddd">Alan: ${areaText}</span>`;
-    } else {
-        measureText.textContent = text;
+        measureText.innerHTML += `<br><span style="font-size:0.8em; color:#ddd">${isPolygon ? 'Alan' : 'Hayali Alan'}: ${areaText}</span>`;
     }
 }
 
@@ -1948,11 +1952,6 @@ function updateMeasurement(latlng) {
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
                 redrawMeasurement();
-                // Automatically open info popup
-                if (measureLine) {
-                    const center = measureLine.getBounds().getCenter();
-                    measureLine.openPopup(center);
-                }
             }
             return;
         }
