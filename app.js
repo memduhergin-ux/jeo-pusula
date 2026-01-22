@@ -106,7 +106,7 @@ let pendingLon = null;
 // Stabilization Variables
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
-const CACHE_NAME = 'jeocompass-v38';
+const CACHE_NAME = 'jeocompass-v41';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -946,9 +946,9 @@ function calculateAreaHelper(latlngs) {
 }
 
 function formatArea(area) {
-    if (area < 10000) return Math.round(area) + " m²";
+    if (area < 10000) return Math.round(area) + " m2";
     if (area < 1000000) return (area / 10000).toFixed(2) + " ha";
-    return (area / 1000000).toFixed(2) + " km²";
+    return (area / 1000000).toFixed(2) + " km2";
 }
 
 function updateMapMarkers() {
@@ -1394,11 +1394,9 @@ function renderLayerList() {
         item.style.marginBottom = '8px';
 
         item.innerHTML = `
-            <div style="flex:1; overflow:hidden;">
-                <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px;">
-                    <span style="font-size:1.2rem;">📁</span> <span>${l.name}</span>
-                </div>
-                <div style="font-size:0.65rem; color:#888; margin-top:2px;">KML Katmanı</div>
+            <div style="flex:1; overflow:hidden; display:flex; align-items:center; gap:8px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2196f3"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; font-size:0.9rem;">${l.name}</div>
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Görünürlük">
@@ -1487,12 +1485,14 @@ function toggleLayerPoints(id, showPoints) {
 
     l.layer.eachLayer(layer => {
         if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
-            if (layer.getElement()) {
-                layer.getElement().style.display = showPoints ? '' : 'none';
-            }
-            // Also handle shadows if any (Leaflet standard markers)
-            if (layer._shadow && layer._shadow.style) {
-                layer._shadow.style.display = showPoints ? '' : 'none';
+            if (showPoints) {
+                if (layer.getElement()) layer.getElement().style.display = '';
+                if (layer._shadow && layer._shadow.style) layer._shadow.style.display = '';
+                if (layer.setOpacity) layer.setOpacity(1);
+            } else {
+                if (layer.getElement()) layer.getElement().style.display = 'none';
+                if (layer._shadow && layer._shadow.style) layer._shadow.style.display = 'none';
+                if (layer.setOpacity) layer.setOpacity(0);
             }
         }
     });
@@ -1862,16 +1862,18 @@ function redrawMeasurement() {
         }
         if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
 
-        let popupText = `<div style="font-family:'Inter', sans-serif; padding:5px;">`;
-        popupText += `<b style="color:#ff9800;">${isPolygon ? 'Çokgen Ölçümü' : 'Mesafe Ölçümü'}</b><hr style="border:0; border-top:1px solid #eee; margin:5px 0;">`;
-        popupText += `<div><b>Çevre:</b> ${formatScaleDist(totalLen)}</div>`;
+        let popupText = `<div style="font-family:'Inter', sans-serif; padding:10px; min-width:150px;">`;
+        popupText += `<div style="font-weight:bold; color:#ff9800; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Çokgen Ölçümü' : 'Mesafe Ölçümü'}</div>`;
+        popupText += `<hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
+        popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Çevre:</b> ${formatScaleDist(totalLen)}</div>`;
         if (isPolygon) {
-            popupText += `<div><b>Alan:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
+            popupText += `<div style="font-size:0.9rem; color:#2196f3;"><b>Alan:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
         }
-        popupText += `<div style="font-size:0.75rem; color:#888; margin-top:5px;">(Kaydetmek için alt paneli kullanın)</div>`;
+        popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Kaydetmek için alt paneli kullanın)</div>`;
         popupText += `</div>`;
 
-        measureLine.bindPopup(popupText);
+        const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
+        measureLine.bindPopup(popupText, { closeButton: true }).openPopup(popupPos);
     }
 
     updateMeasureButtons();
@@ -1941,9 +1943,17 @@ function updateMeasurement(latlng) {
         // Depends on zoom, but 30m is usually good for outdoors. 
         // For polygon mode, we want it to be snappy.
         if (dist < 30) {
-            // Close Loop automatically if clicked near start
-            isPolygon = true;
-            redrawMeasurement();
+            if (confirm("Çokgen kapatılsın mı? (Alan hesaplanacak)")) {
+                // Close the polygon
+                measurePoints.push(measurePoints[0]);
+                isPolygon = true;
+                redrawMeasurement();
+                // Automatically open info popup
+                if (measureLine) {
+                    const center = measureLine.getBounds().getCenter();
+                    measureLine.openPopup(center);
+                }
+            }
             return;
         }
     }
