@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v42';
+const CACHE_NAME = 'jeocompass-v46';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -886,7 +886,10 @@ function initCustomScale() {
 
 function updateScaleValues() {
     if (!map) return;
-    const width = 140; // Total width in pixels
+    const scaleContainer = document.querySelector('.scale-bars');
+    if (!scaleContainer) return;
+
+    const width = scaleContainer.getBoundingClientRect().width; // Measure actual pixel width of 2cm
     const centerLatLng = map.getCenter();
     const pCenter = map.latLngToContainerPoint(centerLatLng);
     const pEnd = L.point(pCenter.x + width, pCenter.y);
@@ -1245,8 +1248,6 @@ if (fileImportInput) {
 
         try {
             let fileName = file.name;
-            // Remove extension for display
-            fileName = fileName.replace(/\.[^/.]+$/, "");
             const extension = file.name.split('.').pop().toLowerCase();
             let geojsonData = null;
 
@@ -1297,7 +1298,7 @@ function addExternalLayer(name, geojson) {
     const layer = L.geoJSON(geojson, {
         style: style,
         onEachFeature: (feature, layer) => {
-            let popupContent = `<div style="font-family:'Inter', sans-serif; min-width:200px;">`;
+            let popupContent = `<div class="kml-popup-container">`;
             if (feature.properties) {
                 if (feature.properties.name) {
                     popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;

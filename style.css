@@ -1169,14 +1169,15 @@ textarea.form-input {
 
 /* Marker Always-Visible Label Styling */
 .marker-label {
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    padding: 2px 6px;
+    background: none !important;
+    border: none !important;
+    padding: 0;
     font-size: 11px;
     font-weight: 800;
-    color: #1a1a1a;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    /* White text for contrast */
+    text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+    box-shadow: none !important;
     white-space: nowrap;
 }
 
@@ -1203,12 +1204,14 @@ textarea.form-input {
     justify-content: flex-start;
     font-size: 11px;
     font-weight: 900;
-    color: #fff;
+    color: #ffeb3b;
+    /* Brand Yellow */
     margin-bottom: 2px;
-    width: 140px;
+    width: 2cm;
+    /* Fixed physical width */
     position: relative;
-    /* Ensure labels don't have extra padding */
     padding: 0;
+    text-shadow: 1px 1px 2px #000;
 }
 
 .label-zero {
@@ -1221,7 +1224,7 @@ textarea.form-input {
 
 .label-mid {
     position: absolute;
-    left: 70px;
+    left: 50%;
     transform: translateX(-50%);
     /* Center over the middle line */
     text-align: center;
@@ -1230,7 +1233,7 @@ textarea.form-input {
 
 .label-end {
     position: absolute;
-    left: 140px;
+    left: 100%;
     transform: translateX(-50%);
     /* Center over the end line */
     text-align: center;
@@ -1239,13 +1242,14 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 140px;
+    width: 2cm;
+    /* Fixed physical width */
 }
 
 .scale-segment {
     flex: 1;
     height: 8px;
-    border: 2px solid #fff;
+    border: 2px solid #ffeb3b;
     border-top: none;
 }
 
@@ -1278,4 +1282,25 @@ textarea.form-input {
 .leaflet-marker-icon.hidden-point,
 .leaflet-marker-shadow.hidden-point {
     display: none !important;
+}
+
+/* KML Compact Popup */
+.kml-popup-container {
+    font-family: 'Inter', sans-serif;
+    max-width: 25vw;
+    max-height: 25vh;
+    overflow: auto;
+    padding: 5px;
+    font-size: 0.8rem;
+    scrollbar-width: thin;
+}
+
+.kml-popup-container table {
+    width: 100%;
+}
+
+/* Ensure Leaflet popup wrapper doesn't force a large width */
+.leaflet-popup-content-wrapper {
+    max-width: 30vw;
+    /* Small margin for the wrapper itself */
 }
