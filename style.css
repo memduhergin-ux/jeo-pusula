@@ -1207,17 +1207,23 @@ textarea.form-input {
     margin-bottom: 2px;
     width: 140px;
     position: relative;
+    /* Ensure labels don't have extra padding */
+    padding: 0;
 }
 
 .label-zero {
     position: absolute;
     left: 0;
+    transform: translateX(-50%);
+    /* Center over the start line */
+    text-align: center;
 }
 
 .label-mid {
     position: absolute;
     left: 70px;
     transform: translateX(-50%);
+    /* Center over the middle line */
     text-align: center;
     white-space: nowrap;
 }
@@ -1226,6 +1232,7 @@ textarea.form-input {
     position: absolute;
     left: 140px;
     transform: translateX(-50%);
+    /* Center over the end line */
     text-align: center;
     white-space: nowrap;
 }

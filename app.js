@@ -106,7 +106,7 @@ let pendingLon = null;
 // Stabilization Variables
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
-const CACHE_NAME = 'jeocompass-v34';
+const CACHE_NAME = 'jeocompass-v38';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -925,6 +925,32 @@ function getSegmentMidpoint(p1, p2) {
     return L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
 }
 
+function calculateAreaHelper(latlngs) {
+    if (latlngs.length < 3) return 0;
+    // Convert to UTM for planar area calculation
+    const utmPoints = latlngs.map(p => {
+        const zone = Math.floor((p.lng + 180) / 6) + 1;
+        const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+        return proj4('WGS84', utmZoneDef, [p.lng, p.lat]);
+    });
+
+    // Shoelace Formula
+    let area = 0;
+    let j = utmPoints.length - 1;
+    for (let i = 0; i < utmPoints.length; i++) {
+        area += (utmPoints[j][0] + utmPoints[i][0]) * (utmPoints[j][1] - utmPoints[i][1]);
+        j = i;
+    }
+    area = Math.abs(area / 2.0);
+    return area;
+}
+
+function formatArea(area) {
+    if (area < 10000) return Math.round(area) + " m²";
+    if (area < 1000000) return (area / 10000).toFixed(2) + " ha";
+    return (area / 1000000).toFixed(2) + " km²";
+}
+
 function updateMapMarkers() {
     if (!map || !markerGroup) return;
     markerGroup.clearLayers();
@@ -1021,7 +1047,7 @@ function updateMapMarkers() {
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                         <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'Not yok'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
-                            ${r.geomType === 'polygon' ? `<b>Çevre:</b> ${formatScaleDist(totalLen)}` : `<b>Uzunluk:</b> ${formatScaleDist(totalLen)}`}
+                            ${r.geomType === 'polygon' ? `<b>Çevre:</b> ${formatScaleDist(totalLen)}<br><b>Alan:</b> ${formatArea(calculateAreaHelper(latlngs))}` : `<b>Uzunluk:</b> ${formatScaleDist(totalLen)}`}
                         </div>
                         <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Sil</button>
                     </div>
@@ -1041,7 +1067,7 @@ function updateMapMarkers() {
                 html: `
                     <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px;">
                         <span class="pin-icon" style="font-size:${24 * scaleFactor}px; transform: rotate(${strikeAngle}deg)">📍</span>
-                        <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${5 * scaleFactor}px; right:-${8 * scaleFactor}px;">#${labelText}</div>
+                        <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${5 * scaleFactor}px; right:-${8 * scaleFactor}px;">${labelText}</div>
                     </div>
                 `,
                 iconSize: [iconBaseSize, iconBaseSize],
@@ -1268,9 +1294,37 @@ function addExternalLayer(name, geojson) {
     const layer = L.geoJSON(geojson, {
         style: style,
         onEachFeature: (feature, layer) => {
-            if (feature.properties && feature.properties.name) {
-                layer.bindPopup(feature.properties.name);
+            let popupContent = `<div style="font-family:'Inter', sans-serif; min-width:200px;">`;
+            if (feature.properties) {
+                if (feature.properties.name) {
+                    popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
+                }
+                popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
+                for (let key in feature.properties) {
+                    if (['name', 'styleUrl', 'styleHash', 'styleMapHash', 'description'].indexOf(key) === -1) {
+                        popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
+                    }
+                }
+
+                // Add area for polygons
+                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                    try {
+                        let latlngs = layer.getLatLngs();
+                        if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
+                        else latlngs = latlngs[0][0];
+                        const area = calculateAreaHelper(latlngs);
+                        popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Alan:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
+                    } catch (e) {
+                        console.error("KML Area calculation failed", e);
+                    }
+                }
+                popupContent += `</table>`;
+                if (feature.properties.description) {
+                    popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
+                }
             }
+            popupContent += `</div>`;
+            layer.bindPopup(popupContent);
 
             // Pass clicks to map handler if in special modes
             layer.on('click', (e) => {
@@ -1336,11 +1390,15 @@ function renderLayerList() {
         item.style.gap = '10px';
         item.style.border = '1px solid #444';
 
+        item.style.borderLeft = '4px solid #2196f3'; // Folder-like accent
+        item.style.marginBottom = '8px';
+
         item.innerHTML = `
             <div style="flex:1; overflow:hidden;">
                 <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px;">
-                    <span>📁</span> ${l.name}
+                    <span style="font-size:1.2rem;">📁</span> <span>${l.name}</span>
                 </div>
+                <div style="font-size:0.65rem; color:#888; margin-top:2px;">KML Katmanı</div>
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Görünürlük">
@@ -1795,6 +1853,27 @@ function redrawMeasurement() {
     }
 
     calculateAndDisplayMeasurement();
+
+    // Add Popup to active measure line for "sorgulama"
+    if (measureLine) {
+        let totalLen = 0;
+        for (let i = 0; i < measurePoints.length - 1; i++) {
+            totalLen += measurePoints[i].distanceTo(measurePoints[i + 1]);
+        }
+        if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
+
+        let popupText = `<div style="font-family:'Inter', sans-serif; padding:5px;">`;
+        popupText += `<b style="color:#ff9800;">${isPolygon ? 'Çokgen Ölçümü' : 'Mesafe Ölçümü'}</b><hr style="border:0; border-top:1px solid #eee; margin:5px 0;">`;
+        popupText += `<div><b>Çevre:</b> ${formatScaleDist(totalLen)}</div>`;
+        if (isPolygon) {
+            popupText += `<div><b>Alan:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
+        }
+        popupText += `<div style="font-size:0.75rem; color:#888; margin-top:5px;">(Kaydetmek için alt paneli kullanın)</div>`;
+        popupText += `</div>`;
+
+        measureLine.bindPopup(popupText);
+    }
+
     updateMeasureButtons();
 }
 
@@ -1810,29 +1889,8 @@ function calculateAndDisplayMeasurement() {
     else text = (totalDistance / 1000).toFixed(2) + " km";
 
     if (isPolygon) {
-        // Calculate Area using UTM (Planar) approximation
-        // Convert all points to UTM
-        const utmPoints = measurePoints.map(p => {
-            const zone = Math.floor((p.lng + 180) / 6) + 1;
-            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-            return proj4('WGS84', utmZoneDef, [p.lng, p.lat]);
-        });
-
-        // Shoelace Formula
-        let area = 0;
-        let j = utmPoints.length - 1;
-        for (let i = 0; i < utmPoints.length; i++) {
-            area += (utmPoints[j][0] + utmPoints[i][0]) * (utmPoints[j][1] - utmPoints[i][1]);
-            j = i;
-        }
-        area = Math.abs(area / 2.0);
-
-        // Append Area Text
-        let areaText = "";
-        if (area < 10000) areaText = Math.round(area) + " m²";
-        else if (area < 1000000) areaText = (area / 10000).toFixed(2) + " ha";
-        else areaText = (area / 1000000).toFixed(2) + " km²";
-
+        let area = calculateAreaHelper(measurePoints);
+        let areaText = formatArea(area);
         measureText.innerHTML = `${text}<br><span style="font-size:0.8em; color:#ddd">Alan: ${areaText}</span>`;
     } else {
         measureText.textContent = text;
