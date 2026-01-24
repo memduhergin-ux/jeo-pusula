@@ -1197,6 +1197,10 @@ textarea.form-input {
     margin-bottom: calc(37px + 2mm) !important;
     /* Raised by 2mm */
     margin-left: 20px !important;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     pointer-events: none;
     z-index: 1000 !important;
 }
@@ -1206,7 +1210,7 @@ textarea.form-input {
     background: none;
     backdrop-filter: none;
     padding: 0;
-    margin: 0 !important;
+    margin: 0 0 2mm 0 !important;
     pointer-events: none;
     display: flex;
     flex-direction: column;
@@ -1280,12 +1284,8 @@ textarea.form-input {
     font-weight: 900;
     color: #ffeb3b;
     text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 4px 10px;
-    border-radius: 4px;
     white-space: nowrap;
     display: block;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .scale-bars {
