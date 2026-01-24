@@ -1196,7 +1196,7 @@ textarea.form-input {
     justify-content: flex-start;
     gap: 10mm;
     position: absolute;
-    bottom: calc(50px - 2.5mm);
+    bottom: calc(50px - 3mm);
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
@@ -1284,7 +1284,7 @@ textarea.form-input {
 }
 
 .map-utm-coords-new {
-    font-size: 12px;
+    font-size: 11px;
     font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
