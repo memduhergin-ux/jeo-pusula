@@ -118,7 +118,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v104';
+const CACHE_NAME = 'jeocompass-v105';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -841,7 +841,7 @@ function initMap() {
             // 2. Set Coords
             document.getElementById('rec-y').value = utmY;
             document.getElementById('rec-x').value = utmX;
-            document.getElementById('rec-z').value = 0; // Default elevation
+            document.getElementById('rec-z').value = cachedElevation; // Use fetched elevation
 
             // 3. Set Strike/Dip (Default or 0)
             document.getElementById('rec-strike').value = 0;
@@ -902,7 +902,45 @@ function initMapControls() {
 
     new MapControls().addTo(map);
     map.on('zoomend moveend move', updateScaleValues);
+    map.on('moveend', () => {
+        if (isAddingPoint) {
+            fetchElevation(map.getCenter());
+        }
+    });
     updateScaleValues();
+}
+
+let lastElevationFetch = 0;
+let cachedElevation = 0;
+
+function fetchElevation(latlng) {
+    const now = Date.now();
+    if (now - lastElevationFetch < 1000) return; // Debounce 1s
+    lastElevationFetch = now;
+
+    // Use Open-Elevation API (Free/Public)
+    const url = `https://api.open-elevation.com/api/v1/lookup?locations=${latlng.lat},${latlng.lng}`;
+
+    // Show loading indicator in Z
+    const zEl = document.querySelector('#map-utm-coords span:nth-of-type(6)');
+    // nth-of-type 6 corresponds to the Z value span based on updateScaleValues HTML structure:
+    // Y label (1), Y val (2), X label (3), X val (4), Z label (5), Z val(6)
+    if (zEl) zEl.style.opacity = '0.5';
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.results && data.results.length > 0) {
+                cachedElevation = Math.round(data.results[0].elevation);
+                updateScaleValues(); // Refresh display
+            }
+        })
+        .catch(err => {
+            console.log('Elevation fetch failed', err);
+        })
+        .finally(() => {
+            if (zEl) zEl.style.opacity = '1';
+        });
 }
 
 function updateScaleValues() {
@@ -942,7 +980,7 @@ function updateScaleValues() {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            displayAlt = 0; // Altitude isn't known for map center without DEM
+            displayAlt = cachedElevation; // Use fetched elevation
         }
 
         if (displayLat) {
