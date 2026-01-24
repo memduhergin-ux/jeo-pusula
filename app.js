@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v111';
+const CACHE_NAME = 'jeocompass-v112';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -1766,7 +1766,7 @@ if (btnConfirmPoint) {
     btnConfirmPoint.addEventListener('click', () => {
         if (!map) return;
         const center = map.getCenter();
-        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)");
+        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)", cachedElevation);
 
         // Reset Mode
         isAddingPoint = false;
@@ -1779,14 +1779,15 @@ if (btnConfirmPoint) {
 if (btnAddGps) {
     btnAddGps.addEventListener('click', () => {
         if (currentCoords.lat !== 0) {
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Konumu");
+            const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Konumu", gpsAlt);
         } else {
             alert("Konum verisi bekleniyor...");
         }
     });
 }
 
-function openRecordModalWithCoords(lat, lon, note) {
+function openRecordModalWithCoords(lat, lon, note, alt = null) {
     // Save pending coords for modal save
     pendingLat = lat;
     pendingLon = lon;
@@ -1808,7 +1809,8 @@ function openRecordModalWithCoords(lat, lon, note) {
     document.getElementById('rec-label').value = nextId;
     document.getElementById('rec-y').value = utmY;
     document.getElementById('rec-x').value = utmX;
-    document.getElementById('rec-z').value = cachedElevation; // Use fetched elevation
+    // Use provided alt if available (GPS), otherwise fallback to cached (Map) or 0
+    document.getElementById('rec-z').value = alt !== null ? Math.round(alt) : cachedElevation;
     document.getElementById('rec-strike').value = 0;
     document.getElementById('rec-dip').value = 0;
     document.getElementById('rec-note').value = note;
