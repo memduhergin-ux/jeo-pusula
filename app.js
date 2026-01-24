@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v100';
+const CACHE_NAME = 'jeocompass-v101';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -574,7 +574,7 @@ if ('geolocation' in navigator) {
         updateDisplay();
     }, (err) => {
         console.error("Konum hatası:", err);
-    }, { enableHighAccuracy: true });
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
 }
 
 // Save & Modal
