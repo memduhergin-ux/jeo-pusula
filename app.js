@@ -7,7 +7,6 @@ window.addEventListener('load', () => {
             setTimeout(() => splash.remove(), 1000);
         }
     }, 2500);
-}, 2500);
 });
 
 // Wake Lock
@@ -137,7 +136,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v108';
+const CACHE_NAME = 'jeocompass-v109';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
