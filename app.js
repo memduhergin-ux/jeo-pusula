@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v120';
+const CACHE_NAME = 'jeocompass-v121';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -944,43 +944,7 @@ function initMapControls() {
 
     new MapControls().addTo(map);
     map.on('zoomend moveend move', updateScaleValues);
-    map.on('moveend', () => {
-        if (isAddingPoint) {
-            fetchElevation(map.getCenter());
-        }
-    });
     updateScaleValues();
-}
-
-let lastElevationFetch = 0;
-let cachedElevation = 0;
-
-function fetchElevation(latlng) {
-    const now = Date.now();
-    if (now - lastElevationFetch < 1000) return; // Debounce 1s
-    lastElevationFetch = now;
-
-    // Use Open-Meteo Elevation API (Roboust & Free)
-    const url = `https://api.open-meteo.com/v1/elevation?latitude=${latlng.lat}&longitude=${latlng.lng}`;
-
-    // Show loading indicator in Z
-    const zEl = document.querySelector('#map-utm-coords span:nth-of-type(6)');
-    if (zEl) zEl.style.opacity = '0.5';
-
-    fetch(url)
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.elevation && data.elevation.length > 0) {
-                cachedElevation = Math.round(data.elevation[0]);
-                updateScaleValues(); // Refresh display
-            }
-        })
-        .catch(err => {
-            console.log('Elevation fetch failed', err);
-        })
-        .finally(() => {
-            if (zEl) zEl.style.opacity = '1';
-        });
 }
 
 function updateScaleValues() {
@@ -1020,7 +984,7 @@ function updateScaleValues() {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            displayAlt = cachedElevation; // Use fetched elevation
+            // displayAlt stays as current device altitude (GPS/Baro)
         }
 
         if (displayLat) {
@@ -1033,9 +997,9 @@ function updateScaleValues() {
                 const modeLabel = isAddingPoint ? "🎯" : "📍";
                 // Simplified display to prevent overflow and ensure icon is visible
                 utmEl.innerHTML = `
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:1mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Z:</span><span style="margin-right:0.2mm;">${displayAlt}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:0.5mm;">${northPart}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Z:</span><span style="margin-right:0mm;">${displayAlt}</span>
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
@@ -1769,7 +1733,8 @@ if (btnConfirmPoint) {
     btnConfirmPoint.addEventListener('click', () => {
         if (!map) return;
         const center = map.getCenter();
-        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)", cachedElevation);
+        const currentAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
+        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)", currentAlt);
 
         // Reset Mode
         isAddingPoint = false;
