@@ -1194,8 +1194,10 @@ textarea.form-input {
     display: flex !important;
     align-items: center;
     /* Vertical center for group */
-    justify-content: space-between;
-    /* Push scale far left, UTM far right */
+    justify-content: flex-start;
+    /* Align all content to the left */
+    gap: 10mm;
+    /* Gap between scale and coordinates */
     position: absolute;
     bottom: calc(50px - 3mm);
     left: 0;
