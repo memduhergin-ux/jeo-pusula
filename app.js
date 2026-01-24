@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v117';
+const CACHE_NAME = 'jeocompass-v118';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -1028,7 +1028,6 @@ function updateScaleValues() {
             const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
             try {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
-                const eastPart = Math.round(easting);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "🎯" : "📍";
