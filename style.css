@@ -1196,7 +1196,7 @@ textarea.form-input {
     justify-content: flex-start;
     gap: 10mm;
     position: absolute;
-    bottom: calc(50px - 3mm);
+    bottom: calc(50px - 2.5mm);
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
@@ -1238,8 +1238,8 @@ textarea.form-input {
     height: 15px;
     margin-bottom: 0mm;
     /* Closer to the line */
-    width: 2cm;
-    /* Verified 2cm width */
+    width: 2.85cm;
+    /* Adjusted for screen DPI (Target 2cm) */
     position: relative;
     padding: 0;
     text-shadow: 1px 1px 2px #000;
@@ -1280,11 +1280,11 @@ textarea.form-input {
 
 .scale-unit {
     position: absolute;
-    left: calc(2cm + 6px);
+    left: calc(2.85cm + 6px);
     /* Right of the bar */
     bottom: 0px;
     /* Aligned with the bottom line */
-    font-size: 11px;
+    font-size: 8px;
     font-weight: 900;
     color: #ffeb3b;
     pointer-events: none;
@@ -1304,8 +1304,8 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 2cm;
-    /* Verified 2cm width */
+    width: 2.85cm;
+    /* Adjusted for screen DPI */
     box-sizing: border-box;
     position: relative;
 }
