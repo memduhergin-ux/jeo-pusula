@@ -785,8 +785,8 @@ function initMap() {
 
     L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-    // Custom Scale Control (Bottom Left)
-    initCustomScale();
+    // Combined Scale and UTM Control (Bottom Left)
+    initMapControls();
 
     markerGroup = L.layerGroup().addTo(map);
 
@@ -860,45 +860,38 @@ function initMap() {
     loadExternalLayers();
 }
 
-/** Custom Scale Control (0 - X m style) **/
-function initCustomScale() {
-    const CustomScale = L.Control.extend({
-        options: { position: 'bottomleft' },
-        onAdd: function (map) {
-            const div = L.DomUtil.create('div', 'custom-scale-control');
-            div.innerHTML = `
-                <div class="scale-labels">
-                    <span class="label-zero">0</span>
-                    <span id="scale-mid" class="label-mid"></span>
-                    <span id="scale-end" class="label-end"></span>
-                </div>
-                <div class="scale-bars">
-                    <div class="scale-segment"></div>
-                    <div class="scale-segment"></div>
-                </div>
-                <span id="scale-unit" class="scale-unit"></span>
-            `;
-            return div;
-        }
-    });
-    new CustomScale().addTo(map);
-    map.on('zoomend moveend move', updateScaleValues); // Added 'move' for real-time target follow
-    updateScaleValues();
-    initUtmControl();
-}
+/** Combined Map Controls (Scale + UTM) **/
+function initMapControls() {
+    if (document.querySelector('.custom-scale-wrapper')) return;
 
-/** UTM Coordinate Control **/
-function initUtmControl() {
-    if (document.querySelector('.utm-control-container')) return;
-    const UtmControl = L.Control.extend({
+    const MapControls = L.Control.extend({
         options: { position: 'bottomleft' },
         onAdd: function (map) {
-            const div = L.DomUtil.create('div', 'utm-control-container');
-            div.innerHTML = `<div id="map-utm-coords" class="map-utm-coords-new">Konum bekleniyor...</div>`;
-            return div;
+            const wrapper = L.DomUtil.create('div', 'custom-scale-wrapper');
+            wrapper.innerHTML = `
+                <div class="custom-scale-control">
+                    <div class="scale-labels">
+                        <span class="label-zero">0</span>
+                        <span id="scale-mid" class="label-mid"></span>
+                        <span id="scale-end" class="label-end"></span>
+                    </div>
+                    <div class="scale-bars">
+                        <div class="scale-segment"></div>
+                        <div class="scale-segment"></div>
+                    </div>
+                    <span id="scale-unit" class="scale-unit"></span>
+                </div>
+                <div class="utm-control-container">
+                    <div id="map-utm-coords" class="map-utm-coords-new">Konum bekleniyor...</div>
+                </div>
+            `;
+            return wrapper;
         }
     });
-    new UtmControl().addTo(map);
+
+    new MapControls().addTo(map);
+    map.on('zoomend moveend move', updateScaleValues);
+    updateScaleValues();
 }
 
 function updateScaleValues() {

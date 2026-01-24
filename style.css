@@ -1189,35 +1189,33 @@ textarea.form-input {
     display: none;
 }
 
-/* Custom 2-Segment Scale Control (0 - 1cm - 2cm) */
+/* Grouping Scale and UTM side-by-side */
+.custom-scale-wrapper {
+    display: flex !important;
+    align-items: flex-end;
+    gap: 10mm;
+    margin-bottom: calc(37px + 2mm) !important;
+    /* Raised by 2mm */
+    margin-left: 20px !important;
+    pointer-events: none;
+    z-index: 1000 !important;
+}
+
 .custom-scale-control {
     position: relative;
-    margin-bottom: 37px !important;
-    /* Adjusted 0.5cm (approx 19px) down from 56px */
-    /* Raised to clear bottom-nav (Adjusted for 50px height) */
-    margin-left: 20px !important;
     background: none;
     backdrop-filter: none;
     padding: 0;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
+    margin: 0 !important;
     pointer-events: none;
-    overflow: visible !important;
-    /* Critical for UTM label */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    z-index: 1000 !important;
-    /* Force high priority */
 }
 
 .utm-control-container {
-    margin-bottom: 37px !important;
-    /* Kept same height as scale for symmetry */
-    margin-right: 20px !important;
+    margin: 0 !important;
     pointer-events: none;
-    z-index: 1001 !important;
 }
 
 .scale-labels {
