@@ -1193,16 +1193,15 @@ textarea.form-input {
 .custom-scale-wrapper {
     display: flex !important;
     align-items: center;
-    /* Vertical center for group */
     justify-content: flex-start;
-    /* Align all content to the left */
     gap: 10mm;
-    /* Gap between scale and coordinates */
     position: absolute;
     bottom: calc(50px - 3mm);
-    left: 0;
+    left: 0 !important;
+    right: 0 !important;
     width: 100vw;
-    padding: 2px 0;
+    padding: 2px 0 2px 3px;
+    margin: 0 !important;
     background: rgba(0, 0, 0, 0.75);
     pointer-events: none;
     z-index: 1000 !important;
