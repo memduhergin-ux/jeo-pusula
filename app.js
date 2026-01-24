@@ -118,7 +118,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v105';
+const CACHE_NAME = 'jeocompass-v107';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -781,20 +781,27 @@ function initMap() {
         attribution: '© Google'
     });
 
-    osm.addTo(map);
-    liveLayer.addTo(map);
-
     const baseMaps = {
         "Sokak (OSM)": osm,
         "Arazi (Google)": googleTerrain,
         "Uydu (Google)": googleSat
     };
 
+    // Load saved layer preference
+    const savedLayerName = localStorage.getItem('jeoMapLayer') || "Sokak (OSM)";
+    let initialLayer = baseMaps[savedLayerName] || osm;
+    initialLayer.addTo(map);
+
     const overlayMaps = {
         "Canlı Konumum": liveLayer
     };
 
     L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+    // Persist layer selection
+    map.on('baselayerchange', (e) => {
+        localStorage.setItem('jeoMapLayer', e.name);
+    });
 
     // Combined Scale and UTM Control (Bottom Left)
     initMapControls();
