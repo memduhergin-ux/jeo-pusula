@@ -1247,16 +1247,20 @@ textarea.form-input {
 
 .label-zero {
     position: absolute;
-    left: 1.5px;
-    /* Center of the 3px left border */
+    left: 0;
+    /* Left border position */
+    top: -2px;
+    /* Above the tick mark */
     transform: translateX(-50%);
     text-align: center;
 }
 
 .label-mid {
     position: absolute;
-    left: calc(50% + 1.5px);
-    /* Center of the middle 3px border */
+    left: 50%;
+    /* Middle border position */
+    top: -2px;
+    /* Above the tick mark */
     transform: translateX(-50%);
     text-align: center;
     white-space: nowrap;
@@ -1264,8 +1268,10 @@ textarea.form-input {
 
 .label-end {
     position: absolute;
-    left: calc(100% - 1.5px);
-    /* Center of the 3px right border */
+    left: 100%;
+    /* Right border position */
+    top: -2px;
+    /* Above the tick mark */
     transform: translateX(-50%);
     text-align: center;
     white-space: nowrap;
@@ -1275,8 +1281,8 @@ textarea.form-input {
     position: absolute;
     left: calc(2.65cm + 6px);
     /* Right of the bar */
-    bottom: 0px;
-    /* Aligned with the horizontal bar line */
+    bottom: 2px;
+    /* Aligned with the center of the horizontal bar line */
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
