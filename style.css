@@ -1216,7 +1216,7 @@ textarea.form-input {
     background: none;
     backdrop-filter: none;
     padding: 0;
-    margin: 0 0 0 5px !important;
+    margin: 0 !important;
     /* Reset margin for auto-centering in flex band */
     pointer-events: none;
     display: flex;
