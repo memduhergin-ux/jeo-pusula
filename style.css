@@ -1200,7 +1200,8 @@ textarea.form-input {
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
-    padding: 2px 0 2px 3px;
+    padding: 6px 0 4px 3px;
+    /* Adjusted padding for proper height with labels 3mm above bar */
     margin: 0 !important;
     background: rgba(0, 0, 0, 0.75);
     pointer-events: none;
@@ -1274,13 +1275,14 @@ textarea.form-input {
     position: absolute;
     left: calc(2.65cm + 6px);
     /* Right of the bar */
-    bottom: -4px;
-    /* Centered vertically on the horizontal bar line */
+    bottom: 0px;
+    /* Aligned with the horizontal bar line */
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
     pointer-events: none;
     z-index: 1001 !important;
+    text-shadow: 1px 1px 2px #000;
 }
 
 .map-utm-coords-new {
