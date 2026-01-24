@@ -10,7 +10,11 @@ function initApp() {
     }, 2500);
 
     // 2. Request Wake Lock (Screen On)
-    requestWakeLock();
+    try {
+        requestWakeLock();
+    } catch (e) {
+        console.warn('Wake Lock request failed', e);
+    }
 }
 
 // Ensure init runs
@@ -147,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v110';
+const CACHE_NAME = 'jeocompass-v111';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
