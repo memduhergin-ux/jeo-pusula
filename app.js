@@ -118,7 +118,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v106';
+const CACHE_NAME = 'jeocompass-v105';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -1766,7 +1766,7 @@ function openRecordModalWithCoords(lat, lon, note) {
     document.getElementById('rec-label').value = nextId;
     document.getElementById('rec-y').value = utmY;
     document.getElementById('rec-x').value = utmX;
-    document.getElementById('rec-z').value = 0;
+    document.getElementById('rec-z').value = cachedElevation; // Use fetched elevation
     document.getElementById('rec-strike').value = 0;
     document.getElementById('rec-dip').value = 0;
     document.getElementById('rec-note').value = note;
