@@ -118,7 +118,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v105';
+const CACHE_NAME = 'jeocompass-v106';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -918,20 +918,18 @@ function fetchElevation(latlng) {
     if (now - lastElevationFetch < 1000) return; // Debounce 1s
     lastElevationFetch = now;
 
-    // Use Open-Elevation API (Free/Public)
-    const url = `https://api.open-elevation.com/api/v1/lookup?locations=${latlng.lat},${latlng.lng}`;
+    // Use Open-Meteo Elevation API (Roboust & Free)
+    const url = `https://api.open-meteo.com/v1/elevation?latitude=${latlng.lat}&longitude=${latlng.lng}`;
 
     // Show loading indicator in Z
     const zEl = document.querySelector('#map-utm-coords span:nth-of-type(6)');
-    // nth-of-type 6 corresponds to the Z value span based on updateScaleValues HTML structure:
-    // Y label (1), Y val (2), X label (3), X val (4), Z label (5), Z val(6)
     if (zEl) zEl.style.opacity = '0.5';
 
     fetch(url)
         .then(res => res.json())
         .then(data => {
-            if (data && data.results && data.results.length > 0) {
-                cachedElevation = Math.round(data.results[0].elevation);
+            if (data && data.elevation && data.elevation.length > 0) {
+                cachedElevation = Math.round(data.elevation[0]);
                 updateScaleValues(); // Refresh display
             }
         })
