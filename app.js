@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v122';
+const CACHE_NAME = 'jeocompass-v123';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -840,6 +840,7 @@ function initMap() {
     const savedLayerName = localStorage.getItem('jeoMapLayer') || "Sokak (OSM)";
     let initialLayer = baseMaps[savedLayerName] || osm;
     initialLayer.addTo(map);
+    liveLayer.addTo(map);
 
     const overlayMaps = {
         "Canlı Konumum": liveLayer
