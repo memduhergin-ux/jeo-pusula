@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v59';
+const CACHE_NAME = 'jeocompass-v61';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -887,12 +887,11 @@ function initCustomScale() {
     initUtmControl();
 }
 
-const CACHE_NAME = 'jeocompass-v60';
 /** UTM Coordinate Control **/
 function initUtmControl() {
     if (document.querySelector('.utm-control-container')) return;
     const UtmControl = L.Control.extend({
-        options: { position: 'bottomright' },
+        options: { position: 'bottomleft' },
         onAdd: function (map) {
             const div = L.DomUtil.create('div', 'utm-control-container');
             div.innerHTML = `<div id="map-utm-coords" class="map-utm-coords-new">Konum bekleniyor...</div>`;
