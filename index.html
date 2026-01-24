@@ -387,21 +387,36 @@
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => {
-                    console.log('Service Worker registered');
-                    // Check for updates every 5 minutes
-                    setInterval(() => {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => {
+                        console.log('Service Worker registered');
+
+                        // Check for updates immediately on load
                         reg.update();
-                    }, 1000 * 60 * 5);
-                })
-                .catch(err => console.log('Service Worker failed', err));
+
+                        // Check for updates every 1 minute for faster response
+                        setInterval(() => {
+                            reg.update();
+                        }, 1000 * 60);
+                    })
+                    .catch(err => console.log('Service Worker failed', err));
+            });
 
             // Reload page when Service Worker sends update message
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data === 'sw-updated') {
+                    console.log('New version detected and activated. Reloading...');
                     window.location.reload();
                 }
+            });
+
+            // Fallback: If controller changes, it also means update happened
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
             });
         }
     </script>
