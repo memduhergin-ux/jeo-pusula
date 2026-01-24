@@ -1235,6 +1235,7 @@ textarea.form-input {
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
+    height: 15px;
     margin-bottom: 3mm;
     /* 3mm above the line */
     width: 2.65cm;
@@ -1249,7 +1250,7 @@ textarea.form-input {
     position: absolute;
     left: 0;
     /* Left border position */
-    top: -2px;
+    top: 0;
     /* Above the tick mark */
     transform: translateX(-50%);
     text-align: center;
@@ -1259,7 +1260,7 @@ textarea.form-input {
     position: absolute;
     left: 50%;
     /* Middle border position */
-    top: -2px;
+    top: 0;
     /* Above the tick mark */
     transform: translateX(-50%);
     text-align: center;
@@ -1270,7 +1271,7 @@ textarea.form-input {
     position: absolute;
     left: 100%;
     /* Right border position */
-    top: -2px;
+    top: 0;
     /* Above the tick mark */
     transform: translateX(-50%);
     text-align: center;
@@ -1306,18 +1307,27 @@ textarea.form-input {
     width: 2.65cm;
     /* Compensated width */
     box-sizing: border-box;
+    position: relative;
 }
 
 .scale-segment {
     flex: 1;
-    height: 8px;
-    border: 3px solid #ffeb3b;
-    /* Thickened from 2px */
+    height: 10px;
+    border-bottom: 3px solid #ffeb3b;
+    /* Only bottom border for horizontal line */
+    border-left: 3px solid #ffeb3b;
+    /* Left tick mark */
     box-sizing: border-box;
 }
 
 .scale-segment:first-child {
-    border-right: none;
+    border-left: 3px solid #ffeb3b;
+    /* Left tick */
+}
+
+.scale-segment:last-child {
+    border-right: 3px solid #ffeb3b;
+    /* Right tick */
 }
 
 /* Parallel Segment/Edge Labels */
