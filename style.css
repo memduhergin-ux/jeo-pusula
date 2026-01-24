@@ -1188,6 +1188,8 @@ textarea.form-input {
 
 /* Custom 2-Segment Scale Control (0 - 1cm - 2cm) */
 .custom-scale-control {
+    position: relative;
+    /* Ensure children are anchored correctly */
     margin-bottom: 85px !important;
     /* Raised to clear bottom-nav */
     margin-left: 20px !important;
@@ -1197,6 +1199,8 @@ textarea.form-input {
     border-radius: 0;
     box-shadow: none;
     border: none;
+    pointer-events: none;
+    /* Don't block map interactions if transparent */
 }
 
 .scale-labels {
@@ -1244,10 +1248,10 @@ textarea.form-input {
 
 .scale-unit {
     position: absolute;
-    right: -20px;
-    /* Adjusted to fit after the thicker end line */
+    left: calc(2cm + 10px);
+    /* Strictly to the right of the 2cm bar */
     bottom: -1.5px;
-    /* Half of 3px line thickness to center it with the horizontal line */
+    /* Aligned with horizontal line */
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
@@ -1255,14 +1259,19 @@ textarea.form-input {
 }
 
 .map-utm-coords {
-    margin-top: 10px;
-    /* Space below the scale bar */
-    font-size: 12px;
+    margin-top: 12px;
+    font-size: 13px;
+    /* Slightly larger for visibility */
     font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
-    text-shadow: 1px 1px 2px #000;
+    text-shadow: 2px 2px 3px #000, -1px -1px 3px #000;
+    /* Stronger outline-like shadow for hybrid maps */
     white-space: nowrap;
+    display: block;
+    width: auto;
+    min-width: 150px;
+    /* Ensure enough space */
 }
 
 .scale-bars {
