@@ -1300,6 +1300,8 @@ textarea.form-input {
     text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
     white-space: nowrap;
     display: block;
+    padding-right: 20px;
+    /* Move Z away from edge */
 }
 
 .scale-bars {
