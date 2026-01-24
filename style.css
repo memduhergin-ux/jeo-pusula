@@ -1189,7 +1189,6 @@ textarea.form-input {
 /* Custom 2-Segment Scale Control (0 - 1cm - 2cm) */
 .custom-scale-control {
     position: relative;
-    /* Ensure children are anchored correctly */
     margin-bottom: 85px !important;
     /* Raised to clear bottom-nav */
     margin-left: 20px !important;
@@ -1200,7 +1199,11 @@ textarea.form-input {
     box-shadow: none;
     border: none;
     pointer-events: none;
-    /* Don't block map interactions if transparent */
+    overflow: visible !important;
+    /* Critical for UTM label */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .scale-labels {
@@ -1259,19 +1262,23 @@ textarea.form-input {
 }
 
 .map-utm-coords {
-    margin-top: 12px;
+    margin-top: 15px;
+    /* Give it space below the scale bar */
     font-size: 13px;
-    /* Slightly larger for visibility */
     font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
-    text-shadow: 2px 2px 3px #000, -1px -1px 3px #000;
-    /* Stronger outline-like shadow for hybrid maps */
+    /* Extra strong text shadow for hybrid map visibility */
+    text-shadow:
+        2px 2px 0px #000,
+        -1px -1px 0px #000,
+        1px -1px 0px #000,
+        -1px 1px 0px #000,
+        0px 0px 5px rgba(0, 0, 0, 0.8);
     white-space: nowrap;
     display: block;
-    width: auto;
-    min-width: 150px;
-    /* Ensure enough space */
+    width: fit-content;
+    z-index: 1000;
 }
 
 .scale-bars {
