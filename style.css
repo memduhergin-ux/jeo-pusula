@@ -25,7 +25,8 @@ body {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 60px;
+    height: 50px;
+    /* Reduced from 60px */
     background: #1a1a1a;
     display: flex;
     justify-content: space-around;
@@ -58,14 +59,16 @@ body {
 }
 
 .nav-icon {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
+    /* Increased from 1.8rem */
     margin-bottom: 0;
 }
 
 /* View Sections */
 .view-section {
     display: none;
-    padding-bottom: 70px;
+    padding-bottom: 60px;
+    /* Adjusted from 70px to match shorter nav */
     /* Space for nav */
     width: 100%;
     height: 100%;
@@ -1189,8 +1192,8 @@ textarea.form-input {
 /* Custom 2-Segment Scale Control (0 - 1cm - 2cm) */
 .custom-scale-control {
     position: relative;
-    margin-bottom: 85px !important;
-    /* Raised to clear bottom-nav */
+    margin-bottom: 75px !important;
+    /* Raised to clear bottom-nav (Adjusted for 50px height) */
     margin-left: 20px !important;
     background: none;
     backdrop-filter: none;
@@ -1260,25 +1263,22 @@ textarea.form-input {
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
-    text-shadow: 1px 1px 2px #000;
+    pointer-events: none;
+    z-index: 1001 !important;
 }
 
-.map-utm-coords {
-    margin-top: 15px;
-    /* Give it space below the scale bar */
-    font-size: 13px;
+.map-utm-coords-new {
+    font-size: 14px;
     font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
-    /* Extra strong text shadow and semi-transparent background for readability */
-    text-shadow: 1px 1px 1px #000;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 3px 8px;
+    text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 10px;
     border-radius: 4px;
     white-space: nowrap;
     display: block;
-    width: fit-content;
-    z-index: 1001;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .scale-bars {
