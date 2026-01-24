@@ -1189,23 +1189,18 @@ textarea.form-input {
     display: none;
 }
 
-/* Grouping Scale and UTM with automatic centering at the bottom */
+/* Grouping Scale and UTM with automatic edge-to-edge layout */
 .custom-scale-wrapper {
     display: flex !important;
     align-items: center;
     /* Vertical center for group */
-    justify-content: center;
-    /* Center everything horizontally */
-    gap: 15mm;
-    /* Sufficient gap between scale and coordinates */
+    justify-content: space-between;
+    /* Push scale far left, UTM far right */
     position: absolute;
     bottom: calc(50px - 3mm);
-    /* Shifted 3mm down from bottom nav top */
     left: 0;
     width: 100vw;
-    /* Full width to allow centering */
     padding: 2px 20px;
-    /* Slimmer height */
     background: rgba(0, 0, 0, 0.75);
     pointer-events: none;
     z-index: 1000 !important;
@@ -1228,7 +1223,8 @@ textarea.form-input {
 }
 
 .utm-control-container {
-    margin: 0 !important;
+    margin: 0 5mm 0 0 !important;
+    /* Fixed 5mm right margin to shift content left */
     pointer-events: none;
 }
 
@@ -1240,8 +1236,8 @@ textarea.form-input {
     color: #ffeb3b;
     margin-bottom: 3mm;
     /* 3mm above the line */
-    width: 2.5cm;
-    /* Compensated for 1.6->2.0 scaling */
+    width: 2.65cm;
+    /* Compensated for physical 2.0 accuracy */
     position: relative;
     padding: 0;
     text-shadow: 1px 1px 2px #000;
@@ -1276,7 +1272,7 @@ textarea.form-input {
 
 .scale-unit {
     position: absolute;
-    left: calc(2.5cm + 6px);
+    left: calc(2.65cm + 6px);
     /* Right of the bar */
     bottom: -4px;
     /* Centered vertically on the horizontal bar line */
@@ -1299,7 +1295,7 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 2.5cm;
+    width: 2.65cm;
     /* Compensated width */
     box-sizing: border-box;
 }
