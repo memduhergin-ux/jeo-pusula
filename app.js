@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v118';
+const CACHE_NAME = 'jeocompass-v120';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -1035,7 +1035,7 @@ function updateScaleValues() {
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:1mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Z:</span><span style="margin-right:1mm;">${displayAlt}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Z:</span><span style="margin-right:0.2mm;">${displayAlt}</span>
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
