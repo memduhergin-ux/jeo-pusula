@@ -7,7 +7,26 @@ window.addEventListener('load', () => {
             setTimeout(() => splash.remove(), 1000);
         }
     }, 2500);
+}, 2500);
 });
+
+// Wake Lock
+let wakeLock = null;
+async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            // Re-acquire on visibility change
+            document.addEventListener('visibilitychange', async () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            });
+        } catch (err) {
+            console.log(`${err.name}, ${err.message}`);
+        }
+    }
+}
 
 // DOM Elements
 const compassNeedle = document.getElementById('compass-needle');
@@ -118,7 +137,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v107';
+const CACHE_NAME = 'jeocompass-v108';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -496,6 +515,7 @@ function requestPermissions() {
         DeviceOrientationEvent.requestPermission().then(r => {
             if (r === 'granted') {
                 window.addEventListener('deviceorientation', handleOrientation, true);
+                requestWakeLock();
                 if (permissionBtn) permissionBtn.style.display = 'none';
             }
         }).catch(err => {
@@ -526,6 +546,7 @@ function autoInitSensors() {
     } else {
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
         window.addEventListener('deviceorientation', handleOrientation, true);
+        requestWakeLock(); // Keep screen on
 
         setTimeout(() => {
             if (sensorSource === null) {
