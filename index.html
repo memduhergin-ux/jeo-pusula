@@ -308,8 +308,12 @@
                 <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Yönetimsel
                     işlemler için aşağıdaki araçları kullanın.</div>
                 <button class="save-btn ready" id="btn-delete-selected"
-                    style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold;">
+                    style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
                     🗑️ Seçilen Kayıtları Sil
+                </button>
+                <button class="save-btn ready" onclick="forceAppUpdate()"
+                    style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold;">
+                    🔄 Uygulamayı Güncellemeye Zorla
                 </button>
             </div>
             <div class="modal-footer">
@@ -386,38 +390,44 @@
 
     <script src="app.js"></script>
     <script>
+        const JEO_VERSION = '76';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                // Register with version query to bypass browser cache of sw.js
+                navigator.serviceWorker.register(`sw.js?v=${JEO_VERSION}`)
                     .then(reg => {
                         console.log('Service Worker registered');
-
-                        // Check for updates immediately on load
                         reg.update();
-
-                        // Check for updates every 1 minute for faster response
-                        setInterval(() => {
-                            reg.update();
-                        }, 1000 * 60);
+                        setInterval(() => { reg.update(); }, 1000 * 60);
                     })
                     .catch(err => console.log('Service Worker failed', err));
             });
 
-            // Reload page when Service Worker sends update message
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data === 'sw-updated') {
-                    console.log('New version detected and activated. Reloading...');
+                    console.log('New version detected. Reloading...');
                     window.location.reload();
                 }
             });
 
-            // Fallback: If controller changes, it also means update happened
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (refreshing) return;
                 refreshing = true;
                 window.location.reload();
             });
+        }
+
+        function forceAppUpdate() {
+            if ('serviceWorker' in navigator) {
+                caches.keys().then(names => {
+                    for (let name of names) caches.delete(name);
+                }).then(() => {
+                    location.reload(true);
+                });
+            } else {
+                location.reload(true);
+            }
         }
     </script>
 </body>
