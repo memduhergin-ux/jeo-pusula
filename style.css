@@ -1189,19 +1189,21 @@ textarea.form-input {
     display: none;
 }
 
-/* Grouping Scale and UTM with automatic spacing and compact banding */
+/* Grouping Scale and UTM with automatic centering at the bottom */
 .custom-scale-wrapper {
     display: flex !important;
     align-items: center;
     /* Vertical center for group */
-    justify-content: space-between;
-    /* Scale far left, UTM far right */
+    justify-content: center;
+    /* Center everything horizontally */
+    gap: 15mm;
+    /* Sufficient gap between scale and coordinates */
     position: absolute;
     bottom: calc(50px - 3mm);
     /* Shifted 3mm down from bottom nav top */
     left: 0;
     width: 100vw;
-    /* Hard enforcement of viewport width */
+    /* Full width to allow centering */
     padding: 2px 20px;
     /* Slimmer height */
     background: rgba(0, 0, 0, 0.75);
