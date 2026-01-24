@@ -1196,13 +1196,13 @@ textarea.form-input {
     /* Vertical center for group */
     justify-content: flex-start;
     /* Align all content to the left */
-    gap: 10mm;
+    gap: 15mm;
     /* Gap between scale and coordinates */
     position: absolute;
     bottom: calc(50px - 3mm);
     left: 0;
     width: 100vw;
-    padding: 2px 10px 2px 5px;
+    padding: 2px 0;
     background: rgba(0, 0, 0, 0.75);
     pointer-events: none;
     z-index: 1000 !important;
@@ -1216,7 +1216,7 @@ textarea.form-input {
     background: none;
     backdrop-filter: none;
     padding: 0;
-    margin: 0 !important;
+    margin: 0 0 0 5px !important;
     /* Reset margin for auto-centering in flex band */
     pointer-events: none;
     display: flex;
@@ -1225,7 +1225,7 @@ textarea.form-input {
 }
 
 .utm-control-container {
-    margin: 0 !important;
+    margin: 0 5px 0 0 !important;
     pointer-events: none;
 }
 
@@ -1285,13 +1285,14 @@ textarea.form-input {
 }
 
 .map-utm-coords-new {
-    font-size: 14px;
+    font-size: 13px;
     font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
     text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-    white-space: nowrap;
+    white-space: normal;
     display: block;
+    line-height: 1.2;
 }
 
 .scale-bars {
