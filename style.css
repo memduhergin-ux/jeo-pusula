@@ -1240,7 +1240,8 @@ textarea.form-input {
     color: #ffeb3b;
     margin-bottom: 3mm;
     /* 3mm above the line */
-    width: 2cm;
+    width: 2.5cm;
+    /* Compensated for 1.6->2.0 scaling */
     position: relative;
     padding: 0;
     text-shadow: 1px 1px 2px #000;
@@ -1275,8 +1276,8 @@ textarea.form-input {
 
 .scale-unit {
     position: absolute;
-    left: calc(2cm + 6px);
-    /* Right of the 2cm bar */
+    left: calc(2.5cm + 6px);
+    /* Right of the bar */
     bottom: -4px;
     /* Centered vertically on the horizontal bar line */
     font-size: 11px;
@@ -1298,8 +1299,8 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 2cm;
-    /* Fixed physical width */
+    width: 2.5cm;
+    /* Compensated width */
     box-sizing: border-box;
 }
 
