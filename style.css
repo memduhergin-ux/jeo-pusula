@@ -1189,21 +1189,28 @@ textarea.form-input {
     display: none;
 }
 
-/* Grouping Scale and UTM side-by-side */
+/* Grouping Scale and UTM side-by-side with full-width band */
 .custom-scale-wrapper {
     display: flex !important;
     align-items: flex-end;
     gap: 10mm;
-    margin-bottom: calc(37px + 2mm) !important;
-    /* Raised group by 2mm */
-    margin-left: 20px !important;
-    padding: 10px 15px;
-    /* Increased padding to extend the band */
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    position: absolute;
+    bottom: 50px;
+    /* Bottom nav height */
+    left: 0;
+    width: 100%;
+    /* Full screen width */
+    padding: 8px 20px;
+    /* Height and horizontal padding */
+    justify-content: center;
+    /* Center items horizontally */
+    background: rgba(0, 0, 0, 0.7);
+    /* Slightly darker for better readability */
     pointer-events: none;
     z-index: 1000 !important;
+    box-sizing: border-box;
+    border-radius: 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .custom-scale-control {
@@ -1211,8 +1218,8 @@ textarea.form-input {
     background: none;
     backdrop-filter: none;
     padding: 0;
-    margin: 0 0 3mm 0 !important;
-    /* Scale specifically raised 1mm more (total 3mm) */
+    margin: 0 0 2mm 0 !important;
+    /* Shifted 1mm down (from 3mm to 2mm) */
     pointer-events: none;
     display: flex;
     flex-direction: column;
