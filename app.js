@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v124';
+const CACHE_NAME = 'jeocompass-v126';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -583,7 +583,7 @@ if ('geolocation' in navigator) {
             currentCoords.acc = p.coords.accuracy;
             currentCoords.alt = p.coords.altitude;
 
-            // Update Live Marker (Heartbeat Triangle) IMMEDIATELY
+            // Update Live Marker (Heartbeat Triangle)
             if (map && currentCoords.lat) {
                 const livePos = [currentCoords.lat, currentCoords.lon];
                 if (!liveMarker) {
@@ -596,16 +596,6 @@ if ('geolocation' in navigator) {
                     liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
                 } else {
                     liveMarker.setLatLng(livePos);
-                }
-
-                // Show/Hide triangle based on followMe
-                const el = liveMarker.getElement();
-                if (el) {
-                    const triangle = el.querySelector('.heartbeat-triangle');
-                    if (triangle) {
-                        if (followMe) triangle.style.display = 'block';
-                        else triangle.style.display = 'none';
-                    }
                 }
 
                 if (followMe) {
@@ -1290,7 +1280,9 @@ if (btnFollowMe) {
     btnFollowMe.addEventListener('click', () => {
         followMe = !followMe;
         btnFollowMe.classList.toggle('active', followMe);
-
+        if (followMe && currentCoords.lat !== 0) {
+            map.panTo([currentCoords.lat, currentCoords.lon]);
+        }
         // Update live marker triangle visibility immediately
         if (liveMarker) {
             const el = liveMarker.getElement();
