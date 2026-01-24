@@ -1200,7 +1200,7 @@ textarea.form-input {
     bottom: calc(50px - 3mm);
     left: 0;
     width: 100vw;
-    padding: 2px 20px;
+    padding: 2px 10px;
     background: rgba(0, 0, 0, 0.75);
     pointer-events: none;
     z-index: 1000 !important;
@@ -1223,8 +1223,7 @@ textarea.form-input {
 }
 
 .utm-control-container {
-    margin: 0 5mm 0 0 !important;
-    /* Fixed 5mm right margin to shift content left */
+    margin: 0 !important;
     pointer-events: none;
 }
 
