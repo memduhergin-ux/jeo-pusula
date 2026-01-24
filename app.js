@@ -1,3 +1,14 @@
+// Splash Screen Logic
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.classList.add('hidden');
+            setTimeout(() => splash.remove(), 1000);
+        }
+    }, 2500);
+});
+
 // DOM Elements
 const compassNeedle = document.getElementById('compass-needle');
 const valStrike = document.getElementById('val-strike');
@@ -107,7 +118,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v101';
+const CACHE_NAME = 'jeocompass-v102';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
