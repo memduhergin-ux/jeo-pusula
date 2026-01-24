@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v123';
+const CACHE_NAME = 'jeocompass-v124';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -577,61 +577,58 @@ autoInitSensors();
 // Geolocation
 if ('geolocation' in navigator) {
     navigator.geolocation.watchPosition((p) => {
-        currentCoords.lat = p.coords.latitude;
-        currentCoords.lon = p.coords.longitude;
-        currentCoords.acc = p.coords.accuracy; // Added from instruction
-        currentCoords.alt = p.coords.altitude;
+        try {
+            currentCoords.lat = p.coords.latitude;
+            currentCoords.lon = p.coords.longitude;
+            currentCoords.acc = p.coords.accuracy;
+            currentCoords.alt = p.coords.altitude;
 
-        // Fetch online DEM altitude for current position periodically
-        const now = Date.now();
-        if (onlineMyAlt === null || (now - lastFetches.me > 60000)) { // Every 60s
-            fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
-                if (alt !== null) {
-                    onlineMyAlt = alt;
-                    lastFetches.me = Date.now();
+            // Update Live Marker (Heartbeat Triangle) IMMEDIATELY
+            if (map && currentCoords.lat) {
+                const livePos = [currentCoords.lat, currentCoords.lon];
+                if (!liveMarker) {
+                    const liveIcon = L.divIcon({
+                        className: 'heartbeat-container',
+                        html: '<div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+                    liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
+                } else {
+                    liveMarker.setLatLng(livePos);
                 }
-            });
-        }
 
-        processHeadingAndDip(); // Added from instruction
+                // Show/Hide triangle based on followMe
+                const el = liveMarker.getElement();
+                if (el) {
+                    const triangle = el.querySelector('.heartbeat-triangle');
+                    if (triangle) {
+                        if (followMe) triangle.style.display = 'block';
+                        else triangle.style.display = 'none';
+                    }
+                }
 
-        // Update Live Marker (Heartbeat Triangle)
-        if (map && currentCoords.lat) {
-            const livePos = [currentCoords.lat, currentCoords.lon];
-            if (!liveMarker) {
-                const liveIcon = L.divIcon({
-                    className: 'heartbeat-container',
-                    html: '<div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16] // Center
+                if (followMe) {
+                    map.panTo(livePos);
+                }
+            }
+
+            // Background altitude fetch
+            const now = Date.now();
+            if (onlineMyAlt === null || (now - lastFetches.me > 60000)) {
+                fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
+                    if (alt !== null) {
+                        onlineMyAlt = alt;
+                        lastFetches.me = Date.now();
+                    }
                 });
-                liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
-            } else {
-                liveMarker.setLatLng(livePos);
-                // Also ensure icon is correct if returning users have old marker? No need, simple refresh.
             }
 
-            if (followMe) {
-                map.panTo(livePos);
-            }
-
-            // Show/Hide triangle based on followMe
-            const el = liveMarker.getElement();
-            if (el) {
-                const triangle = el.querySelector('.live-marker');
-                if (triangle) {
-                    if (followMe) triangle.classList.add('visible');
-                    else triangle.classList.remove('visible');
-                }
-            }
+            processHeadingAndDip();
+            updateDisplay();
+        } catch (e) {
+            console.error("WatchPosition error:", e);
         }
-
-        // Consolidated Follow-Me logic
-        if (followMe && map && currentCoords.lat) {
-            map.panTo([currentCoords.lat, currentCoords.lon]);
-        }
-
-        updateDisplay();
     }, (err) => {
         console.error("Konum hatası:", err);
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
