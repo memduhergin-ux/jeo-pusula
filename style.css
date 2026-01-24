@@ -1192,7 +1192,8 @@ textarea.form-input {
 /* Custom 2-Segment Scale Control (0 - 1cm - 2cm) */
 .custom-scale-control {
     position: relative;
-    margin-bottom: 75px !important;
+    margin-bottom: 37px !important;
+    /* Adjusted 0.5cm (approx 19px) down from 56px */
     /* Raised to clear bottom-nav (Adjusted for 50px height) */
     margin-left: 20px !important;
     background: none;

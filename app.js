@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v57';
+const CACHE_NAME = 'jeocompass-v59';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -882,7 +882,7 @@ function initCustomScale() {
         }
     });
     new CustomScale().addTo(map);
-    map.on('zoomend moveend', updateScaleValues);
+    map.on('zoomend moveend move', updateScaleValues); // Added 'move' for real-time target follow
     updateScaleValues();
     initUtmControl();
 }
@@ -928,15 +928,28 @@ function updateScaleValues() {
     if (endEl) endEl.textContent = formattedEnd.val;
     if (unitEl) unitEl.textContent = formattedEnd.unit;
 
-    // Update UTM display (Current Location)
+    // Update UTM display (Current or Target?)
     if (utmEl) {
-        if (currentCoords.lat) {
-            const zone = Math.floor((currentCoords.lon + 180) / 6) + 1;
+        let displayLat = currentCoords.lat;
+        let displayLon = currentCoords.lon;
+        let displayAlt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0);
+
+        if (isAddingPoint && map) {
+            const center = map.getCenter();
+            displayLat = center.lat;
+            displayLon = center.lng;
+            displayAlt = 0; // Altitude isn't known for map center without DEM
+        }
+
+        if (displayLat) {
+            const zone = Math.floor((displayLon + 180) / 6) + 1;
             const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
             try {
-                const [easting, northing] = proj4('WGS84', utmZoneDef, [currentCoords.lon, currentCoords.lat]);
-                const alt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0);
-                utmEl.textContent = `${Math.round(easting)}  ${Math.round(northing)}  ${alt}`;
+                const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
+                const eastPart = Math.round(easting);
+                const northPart = Math.round(northing);
+                const modeLabel = isAddingPoint ? "🎯" : "📍";
+                utmEl.innerHTML = `<span style="font-size:0.8em; margin-right:5px;">${modeLabel}</span> ${eastPart}  ${northPart}  ${displayAlt}`;
             } catch (e) {
                 utmEl.textContent = "UTM Hatası";
             }
