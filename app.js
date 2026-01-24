@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v112';
+const CACHE_NAME = 'jeocompass-v113';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -1751,10 +1751,12 @@ if (btnAddPoint) {
             // Show Crosshair and Confirm Button
             if (crosshair) crosshair.style.display = 'block';
             if (btnConfirmPoint) btnConfirmPoint.style.display = 'block';
+            updateScaleValues(); // Refresh UI labels
         } else {
             btnAddPoint.classList.remove('active-add-point');
             if (crosshair) crosshair.style.display = 'none';
             if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+            updateScaleValues(); // Refresh UI labels
         }
     });
 }
