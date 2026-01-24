@@ -1189,23 +1189,23 @@ textarea.form-input {
     display: none;
 }
 
-/* Grouping Scale and UTM side-by-side with full-width band */
+/* Grouping Scale and UTM with automatic spacing and compact banding */
 .custom-scale-wrapper {
     display: flex !important;
-    align-items: flex-end;
-    gap: 10mm;
+    align-items: center;
+    /* Compact banding vertical center */
+    justify-content: space-between;
+    /* Push scale left, UTM right */
     position: absolute;
     bottom: 50px;
     /* Bottom nav height */
     left: 0;
     width: 100%;
     /* Full screen width */
-    padding: 8px 20px;
-    /* Height and horizontal padding */
-    justify-content: center;
-    /* Center items horizontally */
-    background: rgba(0, 0, 0, 0.7);
-    /* Slightly darker for better readability */
+    padding: 5px 20px;
+    /* Compact height, healthy horizontal padding */
+    background: rgba(0, 0, 0, 0.75);
+    /* Slightly darker for contrast */
     pointer-events: none;
     z-index: 1000 !important;
     box-sizing: border-box;
@@ -1218,8 +1218,8 @@ textarea.form-input {
     background: none;
     backdrop-filter: none;
     padding: 0;
-    margin: 0 0 2mm 0 !important;
-    /* Shifted 1mm down (from 3mm to 2mm) */
+    margin: 0 !important;
+    /* Reset margin for auto-centering in flex band */
     pointer-events: none;
     display: flex;
     flex-direction: column;
@@ -1238,8 +1238,8 @@ textarea.form-input {
     font-weight: 900;
     color: #ffeb3b;
     /* Brand Yellow */
-    margin-bottom: 5mm;
-    /* Increased from 2px by adding 3mm (~11px) */
+    margin-bottom: 2px;
+    /* Balanced for compact banding */
     width: 2cm;
     /* Fixed physical width */
     position: relative;
