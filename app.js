@@ -887,11 +887,12 @@ function initCustomScale() {
     initUtmControl();
 }
 
+const CACHE_NAME = 'jeocompass-v60';
 /** UTM Coordinate Control **/
 function initUtmControl() {
     if (document.querySelector('.utm-control-container')) return;
     const UtmControl = L.Control.extend({
-        options: { position: 'bottomleft' },
+        options: { position: 'bottomright' },
         onAdd: function (map) {
             const div = L.DomUtil.create('div', 'utm-control-container');
             div.innerHTML = `<div id="map-utm-coords" class="map-utm-coords-new">Konum bekleniyor...</div>`;

@@ -1212,6 +1212,14 @@ textarea.form-input {
     /* Force high priority */
 }
 
+.utm-control-container {
+    margin-bottom: 37px !important;
+    /* Kept same height as scale for symmetry */
+    margin-right: 20px !important;
+    pointer-events: none;
+    z-index: 1001 !important;
+}
+
 .scale-labels {
     display: flex;
     justify-content: flex-start;
