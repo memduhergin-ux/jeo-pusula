@@ -1195,9 +1195,10 @@ textarea.form-input {
     align-items: flex-end;
     gap: 10mm;
     margin-bottom: calc(37px + 2mm) !important;
-    /* Raised by 2mm */
+    /* Raised group by 2mm */
     margin-left: 20px !important;
-    padding: 6px 12px;
+    padding: 10px 15px;
+    /* Increased padding to extend the band */
     background: rgba(0, 0, 0, 0.6);
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
@@ -1210,7 +1211,8 @@ textarea.form-input {
     background: none;
     backdrop-filter: none;
     padding: 0;
-    margin: 0 0 2mm 0 !important;
+    margin: 0 0 3mm 0 !important;
+    /* Scale specifically raised 1mm more (total 3mm) */
     pointer-events: none;
     display: flex;
     flex-direction: column;
