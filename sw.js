@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeocompass-v72';
+const CACHE_NAME = 'jeocompass-v73';
 const ASSETS = [
     './',
     'index.html',
@@ -34,6 +34,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // Network-First strategy for the main page (navigation requests)
+    // This makes the "Refresh" button in the browser actually fetch the latest version
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) => {
+                    return caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, networkResponse.clone());
+                        return networkResponse;
+                    });
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Cache-First for other assets (styles, scripts, icons)
     event.respondWith(
         caches.match(event.request).then((response) => response || fetch(event.request))
     );
