@@ -205,6 +205,7 @@ function updateDisplay() {
     }
 
     renderCoordinates();
+    updateScaleValues();
 }
 
 function renderCoordinates() {
@@ -875,6 +876,8 @@ function initCustomScale() {
                     <div class="scale-segment"></div>
                     <div class="scale-segment"></div>
                 </div>
+                <span id="scale-unit" class="scale-unit"></span>
+                <div id="map-utm-coords" class="map-utm-coords"></div>
             `;
             return div;
         }
@@ -901,11 +904,31 @@ function updateScaleValues() {
 
     const midEl = document.getElementById('scale-mid');
     const endEl = document.getElementById('scale-end');
-    if (midEl) midEl.textContent = formatScaleDist(midVal, true); // No unit
-    if (endEl) endEl.textContent = formatScaleDist(endVal, false); // With unit
+    const unitEl = document.getElementById('scale-unit');
+    const utmEl = document.getElementById('map-utm-coords');
+
+    const formattedMid = formatScaleDistParts(midVal);
+    const formattedEnd = formatScaleDistParts(endVal);
+
+    if (midEl) midEl.textContent = formattedMid.val;
+    if (endEl) endEl.textContent = formattedEnd.val;
+    if (unitEl) unitEl.textContent = formattedEnd.unit;
+
+    // Update UTM display (Current Location)
+    if (utmEl && currentCoords.lat) {
+        const zone = Math.floor((currentCoords.lon + 180) / 6) + 1;
+        const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+        try {
+            const [easting, northing] = proj4('WGS84', utmZoneDef, [currentCoords.lon, currentCoords.lat]);
+            const alt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0);
+            utmEl.textContent = `${Math.round(easting)}  ${Math.round(northing)}  ${alt}`;
+        } catch (e) {
+            utmEl.textContent = "";
+        }
+    }
 }
 
-function formatScaleDist(d, noUnit = false) {
+function formatScaleDistParts(d) {
     let val, unit;
     if (d < 1000) {
         val = Math.round(d);
@@ -914,7 +937,7 @@ function formatScaleDist(d, noUnit = false) {
         val = (d / 1000).toFixed(2);
         unit = "km";
     }
-    return noUnit ? val : val + " " + unit;
+    return { val, unit };
 }
 
 // Show/Hide Records State
