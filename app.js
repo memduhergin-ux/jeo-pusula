@@ -1,5 +1,6 @@
-// Splash Screen Logic
-window.addEventListener('load', () => {
+// App Initialization & Splash Screen
+function initApp() {
+    // 1. Remove Splash Screen
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) {
@@ -7,9 +8,19 @@ window.addEventListener('load', () => {
             setTimeout(() => splash.remove(), 1000);
         }
     }, 2500);
-});
 
-// Wake Lock
+    // 2. Request Wake Lock (Screen On)
+    requestWakeLock();
+}
+
+// Ensure init runs
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
+
+// Wake Lock Logic
 let wakeLock = null;
 async function requestWakeLock() {
     if ('wakeLock' in navigator) {
@@ -136,7 +147,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v109';
+const CACHE_NAME = 'jeocompass-v110';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
