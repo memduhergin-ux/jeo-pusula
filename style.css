@@ -1193,19 +1193,18 @@ textarea.form-input {
 .custom-scale-wrapper {
     display: flex !important;
     align-items: center;
-    /* Compact banding vertical center */
+    /* Vertical center for group */
     justify-content: space-between;
-    /* Push scale left, UTM right */
+    /* Scale far left, UTM far right */
     position: absolute;
-    bottom: 50px;
-    /* Bottom nav height */
+    bottom: calc(50px - 3mm);
+    /* Shifted 3mm down from bottom nav top */
     left: 0;
-    width: 100%;
-    /* Full screen width */
-    padding: 5px 20px;
-    /* Compact height, healthy horizontal padding */
+    width: 100vw;
+    /* Hard enforcement of viewport width */
+    padding: 2px 20px;
+    /* Slimmer height */
     background: rgba(0, 0, 0, 0.75);
-    /* Slightly darker for contrast */
     pointer-events: none;
     z-index: 1000 !important;
     box-sizing: border-box;
@@ -1237,11 +1236,9 @@ textarea.form-input {
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
-    /* Brand Yellow */
-    margin-bottom: 2px;
-    /* Balanced for compact banding */
+    margin-bottom: 3mm;
+    /* 3mm above the line */
     width: 2cm;
-    /* Fixed physical width */
     position: relative;
     padding: 0;
     text-shadow: 1px 1px 2px #000;
@@ -1276,10 +1273,10 @@ textarea.form-input {
 
 .scale-unit {
     position: absolute;
-    left: calc(2cm + 10px);
-    /* Strictly to the right of the 2cm bar */
-    bottom: -1.5px;
-    /* Aligned with horizontal line */
+    left: calc(2cm + 6px);
+    /* Right of the 2cm bar */
+    bottom: -4px;
+    /* Centered vertically on the horizontal bar line */
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
