@@ -1202,7 +1202,7 @@ textarea.form-input {
     bottom: calc(50px - 3mm);
     left: 0;
     width: 100vw;
-    padding: 2px 10px;
+    padding: 2px 10px 2px 5px;
     background: rgba(0, 0, 0, 0.75);
     pointer-events: none;
     z-index: 1000 !important;

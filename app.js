@@ -107,7 +107,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v82';
+const CACHE_NAME = 'jeocompass-v83';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -944,9 +944,9 @@ function updateScaleValues() {
                 const modeLabel = isAddingPoint ? "🎯" : "📍";
                 utmEl.innerHTML = `
                     <span style="font-size:0.8em; margin-right:2mm;">${modeLabel}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:2px;">Y:</span>${eastPart} 
-                    <span style="font-size:0.75em; color:#ddd; margin-left:2mm; margin-right:2px;">X:</span>${northPart} 
-                    <span style="font-size:0.75em; color:#ddd; margin-left:3mm; margin-right:2px;">Z:</span>${displayAlt}
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:3mm;">${northPart}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Z:</span>${displayAlt}
                 `;
             } catch (e) {
                 utmEl.textContent = "UTM Hatası";
