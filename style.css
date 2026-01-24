@@ -1305,7 +1305,6 @@ textarea.form-input {
     height: 8px;
     border: 3px solid #ffeb3b;
     /* Thickened from 2px */
-    border-top: none;
     box-sizing: border-box;
 }
 
