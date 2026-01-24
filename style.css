@@ -1236,10 +1236,10 @@ textarea.form-input {
     font-weight: 900;
     color: #ffeb3b;
     height: 15px;
-    margin-bottom: 3mm;
-    /* 3mm above the line */
-    width: 2.65cm;
-    /* Compensated for physical 2.0 accuracy */
+    margin-bottom: 0mm;
+    /* Closer to the line */
+    width: 2cm;
+    /* Verified 2cm width */
     position: relative;
     padding: 0;
     text-shadow: 1px 1px 2px #000;
@@ -1280,10 +1280,10 @@ textarea.form-input {
 
 .scale-unit {
     position: absolute;
-    left: calc(2.65cm + 6px);
+    left: calc(2cm + 6px);
     /* Right of the bar */
-    bottom: 2px;
-    /* Aligned with the center of the horizontal bar line */
+    bottom: 0px;
+    /* Aligned with the bottom line */
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
@@ -1304,8 +1304,8 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 2.65cm;
-    /* Compensated width */
+    width: 2cm;
+    /* Verified 2cm width */
     box-sizing: border-box;
     position: relative;
 }
