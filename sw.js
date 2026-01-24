@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeocompass-v61';
+const CACHE_NAME = 'jeocompass-v62';
 const ASSETS = [
     './',
     'index.html',
@@ -22,6 +22,13 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
             );
+        }).then(() => {
+            return self.clients.claim();
+        }).then(() => {
+            // Send message to all clients to reload
+            return self.clients.matchAll().then(clients => {
+                clients.forEach(client => client.postMessage('sw-updated'));
+            });
         })
     );
 });

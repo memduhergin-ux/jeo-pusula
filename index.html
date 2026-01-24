@@ -388,8 +388,21 @@
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker registered'))
+                .then(reg => {
+                    console.log('Service Worker registered');
+                    // Check for updates every 5 minutes
+                    setInterval(() => {
+                        reg.update();
+                    }, 1000 * 60 * 5);
+                })
                 .catch(err => console.log('Service Worker failed', err));
+
+            // Reload page when Service Worker sends update message
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data === 'sw-updated') {
+                    window.location.reload();
+                }
+            });
         }
     </script>
 </body>
