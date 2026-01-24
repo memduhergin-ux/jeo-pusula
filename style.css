@@ -1196,7 +1196,7 @@ textarea.form-input {
     /* Vertical center for group */
     justify-content: flex-start;
     /* Align all content to the left */
-    gap: 15mm;
+    gap: 10mm;
     /* Gap between scale and coordinates */
     position: absolute;
     bottom: calc(50px - 3mm);
@@ -1285,14 +1285,13 @@ textarea.form-input {
 }
 
 .map-utm-coords-new {
-    font-size: 13px;
+    font-size: 12px;
     font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
     text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-    white-space: normal;
+    white-space: nowrap;
     display: block;
-    line-height: 1.2;
 }
 
 .scale-bars {
