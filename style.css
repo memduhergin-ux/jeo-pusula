@@ -1300,8 +1300,8 @@ textarea.form-input {
     text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
     white-space: nowrap;
     display: block;
-    padding-right: 35px;
-    /* Shifting further left as requested */
+    padding-right: 42px;
+    /* Shifting further left (approx +1.5mm) */
 }
 
 .scale-bars {

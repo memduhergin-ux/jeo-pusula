@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v121';
+const CACHE_NAME = 'jeocompass-v122';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -579,7 +579,21 @@ if ('geolocation' in navigator) {
     navigator.geolocation.watchPosition((p) => {
         currentCoords.lat = p.coords.latitude;
         currentCoords.lon = p.coords.longitude;
+        currentCoords.acc = p.coords.accuracy; // Added from instruction
         currentCoords.alt = p.coords.altitude;
+
+        // Fetch online DEM altitude for current position periodically
+        const now = Date.now();
+        if (onlineMyAlt === null || (now - lastFetches.me > 60000)) { // Every 60s
+            fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
+                if (alt !== null) {
+                    onlineMyAlt = alt;
+                    lastFetches.me = Date.now();
+                }
+            });
+        }
+
+        processHeadingAndDip(); // Added from instruction
 
         // Update Live Marker (Heartbeat Triangle)
         if (map && currentCoords.lat) {
@@ -944,7 +958,36 @@ function initMapControls() {
 
     new MapControls().addTo(map);
     map.on('zoomend moveend move', updateScaleValues);
+    map.on('moveend', () => {
+        if (isAddingPoint) {
+            fetchElevation(map.getCenter().lat, map.getCenter().lng, (alt) => {
+                onlineCenterAlt = alt;
+                updateScaleValues();
+            });
+        }
+    });
     updateScaleValues();
+}
+
+/** Hybrid Elevation Logic **/
+let onlineMyAlt = null;
+let onlineCenterAlt = null;
+let lastFetches = { me: 0, center: 0 };
+
+function fetchElevation(lat, lon, callback) {
+    if (!navigator.onLine) return callback(null);
+
+    const url = `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`;
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.elevation && data.elevation.length > 0) {
+                callback(Math.round(data.elevation[0]));
+            } else {
+                callback(null);
+            }
+        })
+        .catch(() => callback(null));
 }
 
 function updateScaleValues() {
@@ -978,13 +1021,15 @@ function updateScaleValues() {
     if (utmEl) {
         let displayLat = currentCoords.lat;
         let displayLon = currentCoords.lon;
-        let displayAlt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0);
+        // Logic: Online First, then Baro, then GPS
+        let myBestAlt = onlineMyAlt !== null ? onlineMyAlt : (currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0));
+        let displayAlt = myBestAlt;
 
         if (isAddingPoint && map) {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            // displayAlt stays as current device altitude (GPS/Baro)
+            displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : myBestAlt;
         }
 
         if (displayLat) {
@@ -1733,8 +1778,9 @@ if (btnConfirmPoint) {
     btnConfirmPoint.addEventListener('click', () => {
         if (!map) return;
         const center = map.getCenter();
-        const currentAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
-        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)", currentAlt);
+        const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
+        const bestAlt = onlineCenterAlt !== null ? onlineCenterAlt : (onlineMyAlt !== null ? onlineMyAlt : gpsAlt);
+        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)", bestAlt);
 
         // Reset Mode
         isAddingPoint = false;
@@ -1748,7 +1794,8 @@ if (btnAddGps) {
     btnAddGps.addEventListener('click', () => {
         if (currentCoords.lat !== 0) {
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Konumu", gpsAlt);
+            const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Konumu", bestAlt);
         } else {
             alert("Konum verisi bekleniyor...");
         }
