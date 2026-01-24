@@ -1031,10 +1031,11 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "🎯" : "📍";
+                const zSource = isAddingPoint ? "(Net)" : "(GPS)";
                 utmEl.innerHTML = `
                     <span style="font-size:0.7em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1.5mm;">${eastPart}</span>
                     <span style="font-size:0.7em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:1mm;">${northPart}</span>
-                    <span style="font-size:0.7em; color:#ddd; margin-right:1px;">Z:</span><span style="margin-right:0.5mm;">${displayAlt}</span>
+                    <span style="font-size:0.7em; color:#ddd; margin-right:1px;">Z${zSource}:</span><span style="margin-right:0.5mm;">${displayAlt}</span>
                     <span style="font-size:0.75em;">${modeLabel}</span>
                 `;
             } catch (e) {
