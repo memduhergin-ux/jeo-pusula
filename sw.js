@@ -1,12 +1,12 @@
 const CACHE_NAME = 'jeocompass-v61';
 const ASSETS = [
-    '/jeo-pusula/',
-    '/jeo-pusula/index.html',
-    '/jeo-pusula/style.css',
-    '/jeo-pusula/app.js',
-    '/jeo-pusula/manifest.json',
-    '/jeo-pusula/icon-192.png',
-    '/jeo-pusula/icon-512.png'
+    './',
+    'index.html',
+    'style.css',
+    'app.js',
+    'manifest.json',
+    'icon-192.png',
+    'icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {

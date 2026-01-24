@@ -971,6 +971,11 @@ function formatScaleDistParts(d) {
     return { val, unit };
 }
 
+function formatScaleDist(d) {
+    const parts = formatScaleDistParts(d);
+    return `${parts.val} ${parts.unit}`;
+}
+
 // Show/Hide Records State
 let showRecordsOnMap = true;
 
