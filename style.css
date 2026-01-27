@@ -1503,3 +1503,12 @@ textarea.form-input {
     transform: scale(0.95);
     filter: brightness(0.9);
 }
+.btn-social-disabled {
+    background: #444 !important;
+    border-color: #555 !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    filter: grayscale(1) !important;
+    opacity: 0.6 !important;
+}

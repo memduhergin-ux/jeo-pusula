@@ -23,7 +23,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geolog</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v126</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v133</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -49,7 +49,7 @@
 
             <!-- Calibration Button (Top Left - Symmetric) -->
             <div class="calib-container">
-                <button id="btn-calibrate" class="calibrate-btn">KAL</button>
+                <button id="btn-calibrate" class="calibrate-btn">Cal</button>
             </div>
 
             <!-- Signature Tag (Top Right - Symmetric) -->
@@ -78,7 +78,7 @@
                 <div class="instrument-cluster cluster-strike">
                     <button id="btn-hold-strike" class="hold-btn">H</button>
                     <div class="display-box">
-                        <span class="data-label">Doğrultu</span>
+                        <span class="data-label">Strike</span>
                         <span class="data-value" id="val-strike">0</span>
                     </div>
                 </div>
@@ -86,7 +86,7 @@
                 <!-- Dip Instrument (Right) -->
                 <div class="instrument-cluster cluster-dip">
                     <div class="display-box">
-                        <span class="data-label">Eğim</span>
+                        <span class="data-label">Dip</span>
                         <span class="data-value" id="val-dip">0</span>
                     </div>
                     <button id="btn-hold-dip" class="hold-btn">H</button>
@@ -203,19 +203,19 @@
                     <thead>
                         <tr>
                             <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
-                            <th>Etiket</th>
-                            <th>Y</th>
-                            <th>X</th>
-                            <th>Z</th>
-                            <th>Doğrultu</th>
-                            <th>Eğim</th>
-                            <th>Not</th>
-                            <th id="edit-th">Dzn</th>
+                            <th>Etiket (Label)</th>
+                            <th>Y (Y East)</th>
+                            <th>X (X North)</th>
+                            <th>Z (Z Altitude)</th>
+                            <th>Strike</th>
+                            <th>Dip</th>
+                            <th>Note</th>
+                            <th id="edit-th">Edit</th>
                         </tr>
                     </thead>
                     <tbody id="records-body">
                         <tr>
-                            <td colspan="8">Henüz kayıt yok</td>
+                            <td colspan="8">No records yet</td>
                         </tr>
                     </tbody>
                 </table>
@@ -228,7 +228,7 @@
     <div id="calibration-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Pusula Kalibrasyonu</h2>
+                <h2>Pusula Cal</h2>
             </div>
             <div class="modal-body" style="color:#ccc; line-height:1.5;">
                 <div style="text-align: center; margin-bottom: 20px;">
@@ -288,11 +288,11 @@
                 </div>
                 <!-- Structural Data -->
                 <div class="form-group">
-                    <label class="form-label">Doğrultu / Çizgisellik</label>
+                    <label class="form-label">Strike</label>
                     <input type="text" id="rec-strike" class="form-input" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Eğim / Dalım</label>
+                    <label class="form-label">Dip</label>
                     <input type="text" id="rec-dip" class="form-input" readonly>
                 </div>
                 <!-- Note -->
@@ -338,35 +338,45 @@
             <div class="modal-header">
                 <h2>Verileri Paylaş</h2>
             </div>
-            <div class="modal-body" style="padding: 20px 0;">
-                <div style="margin-bottom: 20px;">
-                    <div
-                        style="font-weight: bold; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                        Tüm Kayıtlar</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="save-btn ready" id="btn-share-all-csv" style="flex: 1;">CSV</button>
-                        <button class="save-btn ready" id="btn-share-all-kml" style="flex: 1;">KML</button>
+            <div class="modal-body" style="padding: 15px 0;">
+                <!-- Format Selection -->
+                <div
+                    style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+                    <div style="font-weight: bold; color: #fff; margin-bottom: 12px; font-size: 0.95rem;">Lütfen Format
+                        Seçin</div>
+                    <div style="display: flex; gap: 20px; justify-content: space-around;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="chk-share-csv" checked
+                                style="width: 20px; height: 20px; accent-color: #4caf50;">
+                            <span>CSV</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="chk-share-kml"
+                                style="width: 20px; height: 20px; accent-color: #4caf50;">
+                            <span>KML</span>
+                        </label>
                     </div>
                 </div>
+
+                <!-- Action: Download -->
+                <div style="margin-bottom: 25px;">
+                    <button class="save-btn ready" id="btn-share-download"
+                        style="width: 100%; padding: 12px; font-weight: bold;">
+                        📥 Telefona İndir
+                    </button>
+                </div>
+
+                <!-- Action: Social -->
                 <div>
                     <div
-                        style="font-weight: bold; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                        Seçilen Kayıtlar</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="save-btn ready" id="btn-share-sel-csv" style="flex: 1;">CSV</button>
-                        <button class="save-btn ready" id="btn-share-sel-kml" style="flex: 1;">KML</button>
-                    </div>
-                </div>
-                <div style="margin-top: 20px;">
-                    <div
-                        style="font-weight: bold; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                        Sosyal Paylaşım (Seçilenler)</div>
+                        style="font-weight: bold; color: #aaa; margin-bottom: 12px; font-size: 0.85rem; text-align: center;">
+                        Veya Şununla Paylaş:</div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="save-btn ready btn-social-share" id="btn-share-whatsapp"
+                        <button class="save-btn btn-social-share" id="btn-share-whatsapp"
                             style="flex: 1; background: #25D366; border-color: #25D366;">WhatsApp</button>
-                        <button class="save-btn ready btn-social-share" id="btn-share-telegram"
+                        <button class="save-btn btn-social-share" id="btn-share-telegram"
                             style="flex: 1; background: #0088cc; border-color: #0088cc;">Telegram</button>
-                        <button class="save-btn ready btn-social-share" id="btn-share-mail"
+                        <button class="save-btn btn-social-share" id="btn-share-mail"
                             style="flex: 1; background: #ea4335; border-color: #ea4335;">Mail</button>
                     </div>
                 </div>

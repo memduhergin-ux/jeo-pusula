@@ -762,7 +762,7 @@ function renderRecords(filter = '') {
 
     if (displayRecords.length === 0) {
         const colCount = isRecordsLocked ? 7 : 9;
-        tableBody.innerHTML = `<tr><td colspan="${colCount}">${filter ? 'Eşleşen kayıt bulunamadı' : 'Henüz kayıt yok'}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${colCount}">${filter ? 'No matching records found' : 'No records yet'}</td></tr>`;
         return;
     }
 
@@ -2200,7 +2200,7 @@ function exportData(type, scope = 'selected') {
 
     const timestamp = new Date().getTime();
     if (type === 'csv') {
-        const header = ["No", "Y", "X", "Z", "Doğrultu", "Eğim", "Not"];
+        const header = ["Etiket (Label)", "Y (Y East)", "X (X North)", "Z (Z Altitude)", "Strike", "Dip", "Note"];
         const csvRows = [header.join(',')];
         dataToExport.forEach(r => {
             const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
@@ -2240,40 +2240,108 @@ if (document.getElementById('btn-share-cancel')) {
     document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
 }
 
-// Share Actions (Fixed Button IDs)
-const btnShareAllCsv = document.getElementById('btn-share-all-csv');
-const btnShareAllKml = document.getElementById('btn-share-all-kml');
-const btnShareSelCsv = document.getElementById('btn-share-sel-csv');
-const btnShareSelKml = document.getElementById('btn-share-sel-kml');
+// Update Share Actions (New Redesign)
+const chkShareCsv = document.getElementById('chk-share-csv');
+const chkShareKml = document.getElementById('chk-share-kml');
+const btnShareDownload = document.getElementById('btn-share-download');
+const btnShareWhatsapp = document.getElementById('btn-share-whatsapp');
+const btnShareTelegram = document.getElementById('btn-share-telegram');
+const btnShareMail = document.getElementById('btn-share-mail');
 
-if (btnShareAllCsv) btnShareAllCsv.addEventListener('click', () => { exportData('csv', 'all'); shareModal.classList.remove('active'); });
-if (btnShareAllKml) btnShareAllKml.addEventListener('click', () => { exportData('kml', 'all'); shareModal.classList.remove('active'); });
-if (btnShareSelCsv) btnShareSelCsv.addEventListener('click', () => { exportData('csv', 'selected'); shareModal.classList.remove('active'); });
-if (btnShareSelKml) btnShareSelKml.addEventListener('click', () => { exportData('kml', 'selected'); shareModal.classList.remove('active'); });
+function updateSocialButtonsState() {
+    const isAnyFormatSelected = (chkShareCsv && chkShareCsv.checked) || (chkShareKml && chkShareKml.checked);
+    const socialButtons = [btnShareWhatsapp, btnShareTelegram, btnShareMail];
+    socialButtons.forEach(btn => {
+        if (btn) {
+            if (isAnyFormatSelected) {
+                btn.classList.remove('btn-social-disabled');
+                btn.style.opacity = "1";
+                btn.style.pointerEvents = "auto";
+            } else {
+                btn.classList.add('btn-social-disabled');
+                btn.style.opacity = "0.5";
+                btn.style.pointerEvents = "none";
+            }
+        }
+    });
+}
 
-// Social Sharing Logic
-async function socialShare(platform, scope = 'selected') {
+if (chkShareCsv) chkShareCsv.addEventListener('change', updateSocialButtonsState);
+if (chkShareKml) chkShareKml.addEventListener('change', updateSocialButtonsState);
+
+if (btnShareDownload) {
+    btnShareDownload.addEventListener('click', () => {
+        const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+        const dataToExport = records.filter(r => selectedIds.includes(r.id));
+
+        if (dataToExport.length === 0) {
+            alert("İndirilecek kayıt seçilmedi. Lütfen tablodan kayıt işaretleyin.");
+            return;
+        }
+
+        if (chkShareCsv && chkShareCsv.checked) exportData('csv', 'selected');
+        if (chkShareKml && chkShareKml.checked) exportData('kml', 'selected');
+
+        shareModal.classList.remove('active');
+    });
+}
+
+// Initial state
+setTimeout(updateSocialButtonsState, 100);
+
+// Updated socialShare handles formats based on checkboxes
+async function socialShare(platform) {
     const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
     const dataToShare = records.filter(r => selectedIds.includes(r.id));
 
     if (dataToShare.length === 0) {
-        alert("Paylaşılacak kayıt bulunamadı.");
+        alert("Paylaşılacak kayıt seçilmedi. Lütfen tablodan kayıt işaretleyin.");
+        return;
+    }
+
+    if (!chkShareCsv.checked && !chkShareKml.checked) {
+        alert("Lütfen en az bir format seçin (CSV veya KML).");
         return;
     }
 
     const timestamp = new Date().getTime();
-    const fileName = `JeoCompass_Secilenler_${timestamp}.csv`;
+    const filesToShare = [];
 
-    // Prepare CSV content for file sharing
-    const header = ["No", "Y", "X", "Z", "Doğrultu", "Eğim", "Not"];
-    const csvRows = [header.join(',')];
-    dataToShare.forEach(r => {
-        const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
-        csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
-    });
-    const csvContent = csvRows.join('\n');
+    // Prepare CSV if selected
+    if (chkShareCsv.checked) {
+        const header = ["Etiket (Label)", "Y (Y East)", "X (X North)", "Z (Z Altitude)", "Strike", "Dip", "Note"];
+        const csvRows = [header.join(',')];
+        dataToShare.forEach(r => {
+            const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
+            csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+        });
+        const csvContent = csvRows.join('\n');
+        filesToShare.push(new File([csvContent], `JeoCompass_Secilenler_${timestamp}.csv`, { type: 'text/csv' }));
+    }
 
-    // Prepare text summary for fallback
+    // Prepare KML if selected
+    if (chkShareKml.checked) {
+        let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>JeoCompass Seçilenler</name>`;
+        dataToShare.forEach(r => {
+            kml += `
+    <Placemark>
+      <name>${r.label || r.id}</name>
+      <description>Strike: ${r.strike}, Dip: ${r.dip}, Note: ${r.note || ''}</description>
+      <Point>
+        <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
+      </Point>
+    </Placemark>`;
+        });
+        kml += `
+  </Document>
+</kml>`;
+        filesToShare.push(new File([kml], `JeoCompass_Secilenler_${timestamp}.kml`, { type: 'application/vnd.google-earth.kml+xml' }));
+    }
+
+    // Prepare text summary
     let textSummary = `JeoCompass Kayıtları (${dataToShare.length} adet):\n\n`;
     dataToShare.forEach(r => {
         textSummary += `${r.label || r.id} | ${r.strike}/${r.dip} | Y:${r.y} X:${r.x} | ${r.note || ''}\n`;
@@ -2281,16 +2349,18 @@ async function socialShare(platform, scope = 'selected') {
 
     if (navigator.share && navigator.canShare) {
         try {
-            const file = new File([csvContent], fileName, { type: 'text/csv' });
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'JeoCompass Kayıtları',
-                    text: textSummary
-                });
-                shareModal.classList.remove('active');
-                return;
+            const shareData = {
+                title: 'JeoCompass Kayıtları',
+                text: textSummary
+            };
+            if (filesToShare.length > 0) {
+                if (navigator.canShare({ files: filesToShare })) {
+                    shareData.files = filesToShare;
+                }
             }
+            await navigator.share(shareData);
+            shareModal.classList.remove('active');
+            return;
         } catch (err) {
             console.error("Navigator share failed", err);
         }
