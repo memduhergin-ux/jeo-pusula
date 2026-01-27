@@ -817,9 +817,11 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/tile/{z}/{y}/{x}', {
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
+        layers: '0',
+        format: 'image/png',
+        transparent: true,
         maxZoom: 23,
-        maxNativeZoom: 18,
         attribution: '© TKGM'
     });
 
@@ -2247,7 +2249,7 @@ if (document.getElementById('btn-share-cancel')) {
     document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
 }
 
-// Update Share Actions (New Redesign v143)
+// Update Share Actions (New Redesign v147)
 const chkShareCsv = document.getElementById('chk-share-csv');
 const chkShareKml = document.getElementById('chk-share-kml');
 const btnShareNext = document.getElementById('btn-share-next');
