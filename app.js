@@ -817,20 +817,27 @@ function initMap() {
         attribution: '© Google'
     });
 
+    const tkgmParsel = L.tileLayer('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 23,
+        maxNativeZoom: 18,
+        attribution: '© TKGM'
+    });
+
     const baseMaps = {
-        "Sokak (OSM)": osm,
-        "Arazi (Google)": googleTerrain,
-        "Uydu (Google)": googleSat
+        "Street (OSM)": osm,
+        "Terrain (Google)": googleTerrain,
+        "Satellite (Google)": googleSat
     };
 
     // Load saved layer preference
-    const savedLayerName = localStorage.getItem('jeoMapLayer') || "Sokak (OSM)";
+    const savedLayerName = localStorage.getItem('jeoMapLayer') || "Street (OSM)";
     let initialLayer = baseMaps[savedLayerName] || osm;
     initialLayer.addTo(map);
     liveLayer.addTo(map);
 
     const overlayMaps = {
-        "Canlı Konumum": liveLayer
+        "Live Location": liveLayer,
+        "Cadastre (TKGM)": tkgmParsel
     };
 
     L.control.layers(baseMaps, overlayMaps).addTo(map);
@@ -892,7 +899,7 @@ function initMap() {
             document.getElementById('rec-dip').value = 0;
 
             // 4. Note
-            document.getElementById('rec-note').value = "Haritadan seçildi";
+            document.getElementById('rec-note').value = "Selected from map";
 
             // Open Modal
             recordModal.classList.add('active');

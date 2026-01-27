@@ -23,7 +23,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v143</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v146</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -336,7 +336,7 @@
     <div id="share-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 330px;">
             <div class="modal-header">
-                <h2 id="share-modal-title">Dışa Aktar</h2>
+                <h2 id="share-modal-title">Export</h2>
             </div>
 
             <div class="modal-body" style="padding: 15px 0;">
@@ -345,18 +345,18 @@
                     <div
                         style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
                         <div style="font-weight: bold; color: #fff; margin-bottom: 15px; font-size: 0.9rem;">
-                            Aktarılacak formatı seçin:
+                            Select export format:
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                                 <input type="radio" name="share-format" id="chk-share-csv" checked
                                     style="width: 22px; height: 22px; accent-color: #4caf50;">
-                                <span style="font-size: 1rem;">CSV (Veri Tablosu)</span>
+                                <span style="font-size: 1rem;">CSV (Data Table)</span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                                 <input type="radio" name="share-format" id="chk-share-kml"
                                     style="width: 22px; height: 22px; accent-color: #4caf50;">
-                                <span style="font-size: 1rem;">KML (Harita Dosyası)</span>
+                                <span style="font-size: 1rem;">KML (Map File)</span>
                             </label>
                         </div>
                     </div>
@@ -365,19 +365,19 @@
                 <!-- Step 2: Confirmation -->
                 <div id="share-step-2" style="display: none; text-align: center; padding: 10px 0;">
                     <div style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; line-height: 1.4;">
-                        Seçilen noktalar paylaşılsın mı?
+                        Share selected points?
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer" id="share-footer-1">
-                <button class="modal-btn btn-cancel" id="btn-share-cancel">İptal</button>
-                <button class="modal-btn btn-confirm" id="btn-share-next">Devam</button>
+                <button class="modal-btn btn-cancel" id="btn-share-cancel">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-share-next">Next</button>
             </div>
 
             <div class="modal-footer" id="share-footer-2" style="display: none;">
-                <button class="modal-btn btn-cancel" id="btn-share-back">Vazgeç</button>
-                <button class="modal-btn btn-confirm" id="btn-share-accept">Kabul</button>
+                <button class="modal-btn btn-cancel" id="btn-share-back">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-share-accept">Accept</button>
             </div>
         </div>
     </div>
