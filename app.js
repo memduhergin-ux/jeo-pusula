@@ -2249,7 +2249,7 @@ if (document.getElementById('btn-share-cancel')) {
     document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
 }
 
-// Update Share Actions (New Redesign v147)
+// Update Share Actions (New Redesign v148)
 const chkShareCsv = document.getElementById('chk-share-csv');
 const chkShareKml = document.getElementById('chk-share-kml');
 const btnShareNext = document.getElementById('btn-share-next');
@@ -2298,7 +2298,7 @@ async function socialShare() {
     const dataToShare = records.filter(r => selectedIds.includes(r.id));
 
     if (dataToShare.length === 0) {
-        alert("Paylaşılacak kayıt seçilmedi. Lütfen tablodan kayıt işaretleyin.");
+        alert("No records selected for sharing. Please select records from the table.");
         return;
     }
 
