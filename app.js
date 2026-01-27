@@ -1197,13 +1197,13 @@ function updateMapMarkers() {
 
                 let popupContent = `
                     <div class="map-popup-container">
-                        <b style="font-size: 1.1rem;">Ölçüm: ${labelText}</b>
+                        <b style="font-size: 1.1rem;">Measurement: ${labelText}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'Not yok'}</div>
+                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'No note'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
-                            ${r.geomType === 'polygon' ? `<b>Çevre:</b> ${formatScaleDist(totalLen)}<br><b>Alan:</b> ${formatArea(calculateAreaHelper(latlngs))}` : `<b>Uzunluk:</b> ${formatScaleDist(totalLen)}`}
+                            ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Sil</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                     </div>
                 `;
 
@@ -1231,11 +1231,11 @@ function updateMapMarkers() {
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
             marker.bindPopup(`
                 <div class="map-popup-container">
-                    <b style="font-size: 1.1rem;">Kayit ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                    <div style="margin-bottom: 5px;"><b>Dogrultu/Egim:</b> ${r.strike} / ${r.dip}</div>
-                    <div style="margin-bottom: 5px;"><b>Koordinat:</b> ${r.y}, ${r.x}</div>
-                    <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'Not yok'}"</div>
-                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Sil</button>
+                    <b style="font-size: 1.1rem;">Record ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    <div style="margin-bottom: 5px;"><b>Strike / Dip:</b> ${r.strike} / ${r.dip}</div>
+                    <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
+                    <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'No note'}"</div>
+                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                 </div>
             `);
 
@@ -1473,7 +1473,7 @@ function addExternalLayer(name, geojson) {
                         const area = calculateAreaHelper(latlngs);
                         popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Alan:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
                     } catch (e) {
-                        console.error("KML Area calculation failed", e);
+                        console.error("GIS Area calculation failed", e);
                     }
                 }
                 popupContent += `</table>`;
@@ -2194,16 +2194,16 @@ function exportData(type, scope = 'selected') {
     }
 
     if (dataToExport.length === 0) {
-        alert("Dışa aktarılacak kayıt bulunamadı.");
+        alert("No records found to export.");
         return;
     }
 
     const timestamp = new Date().getTime();
     if (type === 'csv') {
-        const header = ["No", "Y", "X", "Z", "Strike", "Dip", "Note"];
+        const header = ["No", "Y", "X", "Z", "Doğrultu", "Eğim", "Not"];
         const csvRows = [header.join(',')];
         dataToExport.forEach(r => {
-            const row = [r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
+            const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
             csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
         });
         downloadFile(csvRows.join('\n'), `JeoCompass_${scope === 'all' ? 'Tum_Kayitlar' : 'Secilenler'}_${timestamp}.csv`, 'text/csv');
@@ -2215,7 +2215,7 @@ function exportData(type, scope = 'selected') {
         dataToExport.forEach(r => {
             kml += `
     <Placemark>
-      <name>Kayıt ${r.id}</name>
+      <name>${r.label || r.id}</name>
       <description>Doğrultu: ${r.strike}, Eğim: ${r.dip}, Not: ${r.note || ''}</description>
       <Point>
         <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
@@ -2250,6 +2250,77 @@ if (btnShareAllCsv) btnShareAllCsv.addEventListener('click', () => { exportData(
 if (btnShareAllKml) btnShareAllKml.addEventListener('click', () => { exportData('kml', 'all'); shareModal.classList.remove('active'); });
 if (btnShareSelCsv) btnShareSelCsv.addEventListener('click', () => { exportData('csv', 'selected'); shareModal.classList.remove('active'); });
 if (btnShareSelKml) btnShareSelKml.addEventListener('click', () => { exportData('kml', 'selected'); shareModal.classList.remove('active'); });
+
+// Social Sharing Logic
+async function socialShare(platform, scope = 'selected') {
+    const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+    const dataToShare = records.filter(r => selectedIds.includes(r.id));
+
+    if (dataToShare.length === 0) {
+        alert("Paylaşılacak kayıt bulunamadı.");
+        return;
+    }
+
+    const timestamp = new Date().getTime();
+    const fileName = `JeoCompass_Secilenler_${timestamp}.csv`;
+
+    // Prepare CSV content for file sharing
+    const header = ["No", "Y", "X", "Z", "Doğrultu", "Eğim", "Not"];
+    const csvRows = [header.join(',')];
+    dataToShare.forEach(r => {
+        const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
+        csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+    });
+    const csvContent = csvRows.join('\n');
+
+    // Prepare text summary for fallback
+    let textSummary = `JeoCompass Kayıtları (${dataToShare.length} adet):\n\n`;
+    dataToShare.forEach(r => {
+        textSummary += `${r.label || r.id} | ${r.strike}/${r.dip} | Y:${r.y} X:${r.x} | ${r.note || ''}\n`;
+    });
+
+    if (navigator.share && navigator.canShare) {
+        try {
+            const file = new File([csvContent], fileName, { type: 'text/csv' });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'JeoCompass Kayıtları',
+                    text: textSummary
+                });
+                shareModal.classList.remove('active');
+                return;
+            }
+        } catch (err) {
+            console.error("Navigator share failed", err);
+        }
+    }
+
+    // Fallback URL schemes
+    let url = "";
+    const encodedText = encodeURIComponent(textSummary);
+    if (platform === 'whatsapp') {
+        url = `https://wa.me/?text=${encodedText}`;
+    } else if (platform === 'telegram') {
+        url = `https://t.me/share/url?url=${window.location.href}&text=${encodedText}`;
+    } else if (platform === 'mail') {
+        url = `mailto:?subject=JeoCompass Kayıtları&body=${encodedText}`;
+    }
+
+    if (url) {
+        window.open(url, '_blank');
+        shareModal.classList.remove('active');
+    }
+}
+
+const btnWhatsapp = document.getElementById('btn-share-whatsapp');
+const btnTelegram = document.getElementById('btn-share-telegram');
+const btnMail = document.getElementById('btn-share-mail');
+
+if (btnWhatsapp) btnWhatsapp.addEventListener('click', () => socialShare('whatsapp'));
+if (btnTelegram) btnTelegram.addEventListener('click', () => socialShare('telegram'));
+if (btnMail) btnMail.addEventListener('click', () => socialShare('mail'));
+
 // Options Modal Control
 if (btnMoreOptions) {
     btnMoreOptions.addEventListener('click', () => {
@@ -2267,7 +2338,7 @@ if (btnDeleteSelected) {
         const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
         if (selectedIds.length === 0) return;
 
-        if (confirm(`${selectedIds.length} kaydı silmek istediğinize emin misiniz?`)) {
+        if (confirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
             records = records.filter(r => !selectedIds.includes(r.id));
             saveRecords();
             renderRecords();
@@ -2280,7 +2351,7 @@ if (btnDeleteSelected) {
 
 /** Global delete helper for Map Popups **/
 window.deleteRecordFromMap = function (id) {
-    if (confirm(`Kayıt #${id} silinecek. Emin misiniz?`)) {
+    if (confirm(`Record #${id} will be deleted. Are you sure?`)) {
         records = records.filter(r => r.id !== id);
         saveRecords();
         renderRecords();
@@ -2303,11 +2374,11 @@ function updateLockUI() {
     if (isRecordsLocked) {
         btnToggleLock.innerHTML = '🔒';
         btnToggleLock.classList.remove('unlocked');
-        btnToggleLock.title = 'Kilidi Aç';
+        btnToggleLock.title = 'Unlock';
     } else {
         btnToggleLock.innerHTML = '🔓';
         btnToggleLock.classList.add('unlocked');
-        btnToggleLock.title = 'Kilitle';
+        btnToggleLock.title = 'Lock';
     }
 }
 

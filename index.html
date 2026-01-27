@@ -21,7 +21,7 @@
         <div class="splash-content">
             <img src="icon-512.png" alt="JeoCompass Logo" class="splash-logo">
             <h1 class="splash-title">JeoCompass</h1>
-            <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
+            <div class="splash-credit">Designed by <span class="splash-role">Geolog</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
             <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v126</div>
         </div>
@@ -49,7 +49,7 @@
 
             <!-- Calibration Button (Top Left - Symmetric) -->
             <div class="calib-container">
-                <button id="btn-calibrate" class="calibrate-btn">CAL</button>
+                <button id="btn-calibrate" class="calibrate-btn">KAL</button>
             </div>
 
             <!-- Signature Tag (Top Right - Symmetric) -->
@@ -78,7 +78,7 @@
                 <div class="instrument-cluster cluster-strike">
                     <button id="btn-hold-strike" class="hold-btn">H</button>
                     <div class="display-box">
-                        <span class="data-label">Strike</span>
+                        <span class="data-label">Doğrultu</span>
                         <span class="data-value" id="val-strike">0</span>
                     </div>
                 </div>
@@ -86,7 +86,7 @@
                 <!-- Dip Instrument (Right) -->
                 <div class="instrument-cluster cluster-dip">
                     <div class="display-box">
-                        <span class="data-label">Dip</span>
+                        <span class="data-label">Eğim</span>
                         <span class="data-value" id="val-dip">0</span>
                     </div>
                     <button id="btn-hold-dip" class="hold-btn">H</button>
@@ -140,21 +140,21 @@
 
             <button id="btn-confirm-point"
                 style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2000; cursor: pointer;">
-                ✅ Buraya Ekle
+                ✅ Buraya Nokta Ekle
             </button>
 
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
             <div class="map-fab-container">
-                <button id="btn-add-gps" class="map-fab" title="Konumuma Ekle">
+                <button id="btn-add-gps" class="map-fab" title="GPS Konumuna Ekle">
                     <span class="fab-icon">📍+</span>
                 </button>
-                <button id="btn-add-point" class="map-fab" title="Nokta Ekle (Haritadan)">
+                <button id="btn-add-point" class="map-fab" title="Nokta Ekle (Harita Hedefi)">
                     <span class="fab-icon">🎯</span>
                 </button>
-                <button id="btn-measure" class="map-fab" title="Mesafe Ölç (Cetvel)">
+                <button id="btn-measure" class="map-fab" title="Mesafe Ölç">
                     <span class="fab-icon">📏</span>
                 </button>
-                <button id="id-btn-polygon" class="map-fab" title="Alan Ölç (Poligon)">
+                <button id="id-btn-polygon" class="map-fab" title="Alan Ölç (Çokgen)">
                     <span class="fab-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 2L4.5 9L7 21H17L19.5 9L12 2Z" stroke="currentColor" stroke-width="2"
@@ -173,7 +173,7 @@
                 <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Kayıtları Göster/Gizle">
                     <span class="fab-icon">📍</span>
                 </button>
-                <button id="btn-follow-me" class="map-fab" title="Konumu Takip Et">
+                <button id="btn-follow-me" class="map-fab" title="Beni Takip Et">
                     <div class="crosshair-wrapper">
                         <div class="crosshair-circle"></div>
                         <div class="crosshair-line-v"></div>
@@ -190,7 +190,7 @@
         <div class="panel wide-panel" style="margin-top: 10px;">
             <div class="records-header">
                 <button class="save-btn ready" id="btn-more-options" title="Seçenekler">⋮</button>
-                <button class="save-btn ready" id="btn-toggle-lock" title="Kilidi Aç/Kapat">🔒</button>
+                <button class="save-btn ready" id="btn-toggle-lock" title="Kilitle/Aç">🔒</button>
 
                 <div class="search-container">
                     <input type="text" id="record-search" placeholder="Ara..." class="form-input">
@@ -203,14 +203,14 @@
                     <thead>
                         <tr>
                             <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
-                            <th>Label</th>
+                            <th>Etiket</th>
                             <th>Y</th>
                             <th>X</th>
                             <th>Z</th>
-                            <th>Strike</th>
-                            <th>Dip</th>
-                            <th>Note</th>
-                            <th id="edit-th">Düzelt</th>
+                            <th>Doğrultu</th>
+                            <th>Eğim</th>
+                            <th>Not</th>
+                            <th id="edit-th">Dzn</th>
                         </tr>
                     </thead>
                     <tbody id="records-body">
@@ -265,40 +265,40 @@
     <div class="modal-overlay" id="record-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Veri Kaydı</h2>
+                <h2>Kayıt Bilgileri</h2>
             </div>
             <div class="modal-body">
                 <!-- Record No -->
                 <div class="form-group">
-                    <label class="form-label">Label</label>
+                    <label class="form-label">No / Etiket</label>
                     <input type="text" id="rec-label" class="form-input" value="1">
                 </div>
                 <!-- Coordinates (UTM ED50) -->
                 <div class="form-group" style="padding: 10px 0;">
-                    <label class="form-label">Y</label>
+                    <label class="form-label">Sağa (Y)</label>
                     <input type="text" id="rec-y" class="form-input" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">X</label>
+                    <label class="form-label">Yukarı (X)</label>
                     <input type="text" id="rec-x" class="form-input" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Z</label>
+                    <label class="form-label">Kot (Z)</label>
                     <input type="text" id="rec-z" class="form-input" readonly>
                 </div>
                 <!-- Structural Data -->
                 <div class="form-group">
-                    <label class="form-label">Strike</label>
+                    <label class="form-label">Doğrultu / Çizgisellik</label>
                     <input type="text" id="rec-strike" class="form-input" readonly>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Dip</label>
+                    <label class="form-label">Eğim / Dalım</label>
                     <input type="text" id="rec-dip" class="form-input" readonly>
                 </div>
                 <!-- Note -->
                 <div class="form-group" style="align-items: flex-start;">
                     <label class="form-label" style="margin-top: 5px;">Not</label>
-                    <textarea id="rec-note" class="form-input" placeholder="Formasyon, vs..."></textarea>
+                    <textarea id="rec-note" class="form-input" placeholder="Formasyon vb..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -312,18 +312,18 @@
     <div id="options-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 320px;">
             <div class="modal-header">
-                <h2>Ek Seçenekler</h2>
+                <h2>Daha Fazla Seçenek</h2>
             </div>
             <div class="modal-body" style="padding: 20px 0;">
-                <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Yönetimsel
-                    işlemler için aşağıdaki araçları kullanın.</div>
+                <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Lütfen bir işlem
+                    seçin.</div>
                 <button class="save-btn ready" id="btn-delete-selected"
                     style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
-                    🗑️ Seçilen Kayıtları Sil
+                    🗑️ Delete Selected Records
                 </button>
                 <button class="save-btn ready" onclick="forceAppUpdate()"
                     style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold;">
-                    🔄 Uygulamayı Güncellemeye Zorla
+                    🔄 Güncellemeye Zorla
                 </button>
             </div>
             <div class="modal-footer">
@@ -357,6 +357,19 @@
                         <button class="save-btn ready" id="btn-share-sel-kml" style="flex: 1;">KML</button>
                     </div>
                 </div>
+                <div style="margin-top: 20px;">
+                    <div
+                        style="font-weight: bold; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                        Sosyal Paylaşım (Seçilenler)</div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="save-btn ready btn-social-share" id="btn-share-whatsapp"
+                            style="flex: 1; background: #25D366; border-color: #25D366;">WhatsApp</button>
+                        <button class="save-btn ready btn-social-share" id="btn-share-telegram"
+                            style="flex: 1; background: #0088cc; border-color: #0088cc;">Telegram</button>
+                        <button class="save-btn ready btn-social-share" id="btn-share-mail"
+                            style="flex: 1; background: #ea4335; border-color: #ea4335;">Mail</button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-cancel" id="btn-share-cancel">Kapat</button>
@@ -368,13 +381,13 @@
     <div id="layers-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Katmanlar</h2>
+                <h2>Harita Katmanları</h2>
             </div>
             <div class="modal-body" style="min-height: 200px;">
                 <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Layers will be injected here -->
                     <div style="color: #666; font-style: italic; text-align: center; padding: 20px;">
-                        Henüz harici katman yok.
+                        Harici katman bulunamadı.
                     </div>
                 </div>
             </div>
