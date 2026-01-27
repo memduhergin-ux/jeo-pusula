@@ -1039,7 +1039,7 @@ function updateScaleValues() {
                 utmEl.textContent = "UTM Hatası";
             }
         } else {
-            utmEl.textContent = "Konum bekleniyor...";
+            utmEl.textContent = "Waiting for location...";
         }
     }
 }
@@ -1471,7 +1471,7 @@ function addExternalLayer(name, geojson) {
                         if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
                         else latlngs = latlngs[0][0];
                         const area = calculateAreaHelper(latlngs);
-                        popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Alan:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
+                        popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
                     } catch (e) {
                         console.error("GIS Area calculation failed", e);
                     }
@@ -1533,7 +1533,7 @@ function renderLayerList() {
     layersList.innerHTML = '';
 
     if (externalLayers.length === 0) {
-        layersList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">Henüz harici katman yok.</div>';
+        layersList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">No external layers yet.</div>';
         return;
     }
 
@@ -1557,13 +1557,13 @@ function renderLayerList() {
                 <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; font-size:0.9rem;">${l.name}</div>
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
-                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Görünürlük">
+                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
                     ${l.visible ? '👁️' : '🕶️'}
                 </button>
                 <div style="display:flex; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Nokta</span></label>
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Alan</span></label>
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Dolgu</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Area</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
                 </div>
                 <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
@@ -2240,7 +2240,7 @@ if (document.getElementById('btn-share-cancel')) {
     document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
 }
 
-// Update Share Actions (New Redesign v136)
+// Update Share Actions (New Redesign v143)
 const chkShareCsv = document.getElementById('chk-share-csv');
 const chkShareKml = document.getElementById('chk-share-kml');
 const btnShareNext = document.getElementById('btn-share-next');
