@@ -23,7 +23,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geolog</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v133</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v136</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -203,10 +203,10 @@
                     <thead>
                         <tr>
                             <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
-                            <th>Etiket (Label)</th>
-                            <th>Y (Y East)</th>
-                            <th>X (X North)</th>
-                            <th>Z (Z Altitude)</th>
+                            <th>Label</th>
+                            <th>Y</th>
+                            <th>X</th>
+                            <th>Z</th>
                             <th>Strike</th>
                             <th>Dip</th>
                             <th>Note</th>
@@ -332,57 +332,52 @@
         </div>
     </div>
 
-    <!-- Share Modal -->
+    <!-- Share Modal (Redesigned v136) -->
     <div id="share-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-content" style="max-width: 330px;">
             <div class="modal-header">
-                <h2>Verileri Paylaş</h2>
+                <h2 id="share-modal-title">Dışa Aktar</h2>
             </div>
+
             <div class="modal-body" style="padding: 15px 0;">
-                <!-- Format Selection -->
-                <div
-                    style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
-                    <div style="font-weight: bold; color: #fff; margin-bottom: 12px; font-size: 0.95rem;">Lütfen Format
-                        Seçin</div>
-                    <div style="display: flex; gap: 20px; justify-content: space-around;">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="chk-share-csv" checked
-                                style="width: 20px; height: 20px; accent-color: #4caf50;">
-                            <span>CSV</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="chk-share-kml"
-                                style="width: 20px; height: 20px; accent-color: #4caf50;">
-                            <span>KML</span>
-                        </label>
+                <!-- Step 1: Format Selection -->
+                <div id="share-step-1">
+                    <div
+                        style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 15px; font-size: 0.9rem;">
+                            Aktarılacak formatı seçin:
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="radio" name="share-format" id="chk-share-csv" checked
+                                    style="width: 22px; height: 22px; accent-color: #4caf50;">
+                                <span style="font-size: 1rem;">CSV (Veri Tablosu)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="radio" name="share-format" id="chk-share-kml"
+                                    style="width: 22px; height: 22px; accent-color: #4caf50;">
+                                <span style="font-size: 1rem;">KML (Harita Dosyası)</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Action: Download -->
-                <div style="margin-bottom: 25px;">
-                    <button class="save-btn ready" id="btn-share-download"
-                        style="width: 100%; padding: 12px; font-weight: bold;">
-                        📥 Telefona İndir
-                    </button>
-                </div>
-
-                <!-- Action: Social -->
-                <div>
-                    <div
-                        style="font-weight: bold; color: #aaa; margin-bottom: 12px; font-size: 0.85rem; text-align: center;">
-                        Veya Şununla Paylaş:</div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="save-btn btn-social-share" id="btn-share-whatsapp"
-                            style="flex: 1; background: #25D366; border-color: #25D366;">WhatsApp</button>
-                        <button class="save-btn btn-social-share" id="btn-share-telegram"
-                            style="flex: 1; background: #0088cc; border-color: #0088cc;">Telegram</button>
-                        <button class="save-btn btn-social-share" id="btn-share-mail"
-                            style="flex: 1; background: #ea4335; border-color: #ea4335;">Mail</button>
+                <!-- Step 2: Confirmation -->
+                <div id="share-step-2" style="display: none; text-align: center; padding: 10px 0;">
+                    <div style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; line-height: 1.4;">
+                        Seçilen noktalar paylaşılsın mı?
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-cancel" id="btn-share-cancel">Kapat</button>
+
+            <div class="modal-footer" id="share-footer-1">
+                <button class="modal-btn btn-cancel" id="btn-share-cancel">İptal</button>
+                <button class="modal-btn btn-confirm" id="btn-share-next">Devam</button>
+            </div>
+
+            <div class="modal-footer" id="share-footer-2" style="display: none;">
+                <button class="modal-btn btn-cancel" id="btn-share-back">Vazgeç</button>
+                <button class="modal-btn btn-confirm" id="btn-share-accept">Kabul</button>
             </div>
         </div>
     </div>
