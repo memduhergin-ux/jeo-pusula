@@ -866,13 +866,13 @@ function initMap() {
             label.style.visibility = 'visible';
             const rect = label.getBoundingClientRect();
 
-            // Padding to increase the collision box slightly
-            const padding = 2;
+            // Minimum padding for precise collision
+            const padding = 0;
             const currentBox = {
-                top: rect.top - padding,
-                left: rect.left - padding,
-                bottom: rect.bottom + padding,
-                right: rect.right + padding
+                top: rect.top,
+                left: rect.left,
+                bottom: rect.bottom,
+                right: rect.right
             };
 
             let overlap = false;
@@ -1007,18 +1007,18 @@ function initMap() {
             const script = document.createElement('script');
             const params = new URLSearchParams({
                 f: 'json',
-                geometry: `${lon},${lat}`,
+                geometry: JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }),
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'visible:0',
-                tolerance: '50', // Exaggerated for best mobile experience
+                layers: 'all:0',
+                tolerance: '40',
                 mapExtent: `${lon - 0.02},${lat - 0.02},${lon + 0.02},${lat + 0.02}`,
                 imageDisplay: '1000,1000,96',
                 returnGeometry: false,
                 callback: callbackName
             });
 
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString() + `&_nocache=${Date.now()}`;
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
@@ -1597,7 +1597,7 @@ function addExternalLayer(name, geojson) {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, -4]
+                    offset: [0, 0]
                 });
             }
             let popupContent = `<div class="map-popup-container">`;
