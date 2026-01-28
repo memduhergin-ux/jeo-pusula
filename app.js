@@ -683,6 +683,7 @@ if (document.getElementById('btn-modal-save')) {
             // Update existing
             const index = records.findIndex(r => r.id === editingRecordId);
             if (index !== -1) {
+                // Keep the original creation time when editing
                 records[index] = { ...records[index], label, strike: strikeLine, dip, note, y, x, z };
             }
         } else {
@@ -761,7 +762,7 @@ function renderRecords(filter = '') {
     }
 
     if (displayRecords.length === 0) {
-        const colCount = isRecordsLocked ? 7 : 9;
+        const colCount = isRecordsLocked ? 8 : 10;
         tableBody.innerHTML = `<tr><td colspan="${colCount}">${filter ? 'No matching records found' : 'No records yet'}</td></tr>`;
         return;
     }
@@ -822,13 +823,18 @@ function initMap() {
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
+        maxNativeZoom: 18,
         attribution: '© TKGM'
     });
+
+    const googleSatTkgm = L.layerGroup([googleSat, tkgmParsel]);
 
     const baseMaps = {
         "Street (OSM)": osm,
         "Terrain (Google)": googleTerrain,
-        "Satellite (Google)": googleSat
+        "Satellite (Google)": googleSat,
+        "Satellite + TKGM": googleSatTkgm,
+        "Cadastre (TKGM)": tkgmParsel
     };
 
     // Load saved layer preference
@@ -838,8 +844,7 @@ function initMap() {
     liveLayer.addTo(map);
 
     const overlayMaps = {
-        "Live Location": liveLayer,
-        "Cadastre (TKGM)": tkgmParsel
+        "Live Location": liveLayer
     };
 
     L.control.layers(baseMaps, overlayMaps).addTo(map);
@@ -1460,7 +1465,25 @@ function addExternalLayer(name, geojson) {
 
     const layer = L.geoJSON(geojson, {
         style: style,
+        pointToLayer: (feature, latlng) => {
+            return L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "#2196f3",
+                color: "#fff",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+        },
         onEachFeature: (feature, layer) => {
+            if (feature.properties && feature.properties.name) {
+                layer.bindTooltip(feature.properties.name, {
+                    permanent: true,
+                    direction: 'top',
+                    className: 'kml-label',
+                    offset: [0, -5]
+                });
+            }
             let popupContent = `<div class="map-popup-container">`;
             if (feature.properties) {
                 if (feature.properties.name) {
@@ -1523,7 +1546,8 @@ function addExternalLayer(name, geojson) {
         filled: true,
         visible: true,
         pointsVisible: true,
-        areasVisible: true
+        areasVisible: true,
+        labelsVisible: true
     };
     externalLayers.push(layerObj);
 
@@ -1569,10 +1593,11 @@ function renderLayerList() {
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
                     ${l.visible ? '👁️' : '🕶️'}
                 </button>
-                <div style="display:flex; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
+                <div style="display:flex; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Area</span></label>
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
                 </div>
                 <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
@@ -1699,7 +1724,8 @@ function saveExternalLayers() {
         visible: l.visible,
         filled: l.filled,
         pointsVisible: l.pointsVisible,
-        areasVisible: l.areasVisible
+        areasVisible: l.areasVisible,
+        labelsVisible: l.labelsVisible
     }));
     localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
 }
@@ -1717,10 +1743,12 @@ function loadExternalLayers() {
                 last.filled = d.filled;
                 last.pointsVisible = d.pointsVisible !== undefined ? d.pointsVisible : true;
                 last.areasVisible = d.areasVisible !== undefined ? d.areasVisible : true;
+                last.labelsVisible = d.labelsVisible !== undefined ? d.labelsVisible : true;
                 if (!last.visible) map.removeLayer(last.layer);
                 last.layer.setStyle({ fillOpacity: last.filled ? 0.4 : 0 });
                 toggleLayerPoints(last.id, last.pointsVisible);
                 toggleLayerAreas(last.id, last.areasVisible);
+                toggleLayerLabels(last.id, last.labelsVisible);
             }
         });
         renderLayerList();
@@ -2212,10 +2240,11 @@ function exportData(type, scope = 'selected') {
         const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
         const csvRows = [header.join(',')];
         dataToExport.forEach(r => {
-            const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
+            const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
             csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
         });
-        downloadFile(csvRows.join('\n'), `JeoCompass_${scope === 'all' ? 'Tum_Kayitlar' : 'Secilenler'}_${timestamp}.csv`, 'text/csv');
+        const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.csv` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.csv`;
+        downloadFile(csvRows.join('\n'), finalFileName, 'text/csv');
     } else if (type === 'kml') {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -2225,7 +2254,7 @@ function exportData(type, scope = 'selected') {
             kml += `
     <Placemark>
       <name>${r.label || r.id}</name>
-      <description>Doğrultu: ${r.strike}, Eğim: ${r.dip}, Not: ${r.note || ''}</description>
+      <description>Strike: ${formatStrike(r.strike)}, Dip: ${r.dip}, Time: ${r.time || ''}, Note: ${r.note || ''}</description>
       <Point>
         <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
       </Point>
@@ -2234,7 +2263,8 @@ function exportData(type, scope = 'selected') {
         kml += `
   </Document>
 </kml>`;
-        downloadFile(kml, `JeoCompass_${scope === 'all' ? 'Tum_Kayitlar' : 'Secilenler'}_${timestamp}.kml`, 'application/vnd.google-earth.kml+xml');
+        const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.kml` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.kml`;
+        downloadFile(kml, finalFileName, 'application/vnd.google-earth.kml+xml');
     }
 }
 
@@ -2249,7 +2279,7 @@ if (document.getElementById('btn-share-cancel')) {
     document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
 }
 
-// Update Share Actions (New Redesign v148)
+// Update Share Actions (New Redesign v151)
 const chkShareCsv = document.getElementById('chk-share-csv');
 const chkShareKml = document.getElementById('chk-share-kml');
 const btnShareNext = document.getElementById('btn-share-next');
@@ -2315,11 +2345,11 @@ async function socialShare() {
         const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
         const csvRows = [header.join(',')];
         dataToShare.forEach(r => {
-            const row = [r.label || r.id, r.y, r.x, r.z, r.strike, r.dip, r.note];
+            const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
             csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
         });
         const csvContent = csvRows.join('\n');
-        fileName = `JeoCompass_Secilenler_${timestamp}.csv`;
+        fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
         fileType = 'text/csv';
         fileToShare = new File([csvContent], fileName, { type: fileType });
     } else if (isKml) {
@@ -2331,7 +2361,7 @@ async function socialShare() {
             kml += `
     <Placemark>
       <name>${r.label || r.id}</name>
-      <description>Strike: ${r.strike}, Dip: ${r.dip}, Note: ${r.note || ''}</description>
+      <description>Strike: ${formatStrike(r.strike)}, Dip: ${r.dip}, Time: ${r.time || ''}, Note: ${r.note || ''}</description>
       <Point>
         <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
       </Point>
@@ -2340,7 +2370,7 @@ async function socialShare() {
         kml += `
   </Document>
 </kml>`;
-        fileName = `JeoCompass_Secilenler_${timestamp}.kml`;
+        fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.kml` : `Selected_${timestamp}.kml`;
         fileType = 'application/vnd.google-earth.kml+xml';
         fileToShare = new File([kml], fileName, { type: fileType });
     }
