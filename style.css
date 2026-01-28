@@ -1546,8 +1546,8 @@ textarea.form-input {
 }
 
 .kml-marker-pin {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     background: rgba(33, 150, 243, 0.2);
     border: 1.5px solid #2196f3;
     border-radius: 50%;
@@ -1558,8 +1558,8 @@ textarea.form-input {
 }
 
 .kml-marker-dot {
-    width: 4px;
-    height: 4px;
+    width: 2.5px;
+    height: 2.5px;
     background: #fff;
     border-radius: 50%;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);

@@ -1014,15 +1014,15 @@ function initMap() {
                 geometry: `${lon},${lat}`,
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'all:0',
-                tolerance: '10',
+                layers: 'all:0,1,2,3',
+                tolerance: '20',
                 mapExtent: `${lon - 0.1},${lat - 0.1},${lon + 0.1},${lat + 0.1}`,
                 imageDisplay: '800,600,96',
                 returnGeometry: false,
                 callback: callbackName
             });
 
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
@@ -1590,8 +1590,8 @@ function addExternalLayer(name, geojson) {
             const icon = L.divIcon({
                 className: 'kml-custom-icon',
                 html: iconHtml,
-                iconSize: [10, 10], // Smaller icon size
-                iconAnchor: [5, 5]
+                iconSize: [8, 8], // Even smaller icon size
+                iconAnchor: [4, 4]
             });
             return L.marker(latlng, { icon: icon });
         },
@@ -1601,7 +1601,7 @@ function addExternalLayer(name, geojson) {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, 0]
+                    offset: [0, 8] // Moves label closer to center/icon
                 });
             }
             let popupContent = `<div class="map-popup-container">`;
@@ -1639,13 +1639,21 @@ function addExternalLayer(name, geojson) {
             // Pass clicks to map handler if in special modes
             layer.on('click', (e) => {
                 const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
-                // If polygon and not filled, don't show popup on interior clicks
+
+                // If polygon and not filled, ignore clicks inside
                 if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
                     const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
                     if (layerObj && !layerObj.filled) {
-                        // Leaflet handles stroke-only clicks if fill is false, 
-                        // but if we want to be safe, we can check.
-                        // Actually, if fill is false, e.target is the border.
+                        // Leaflet handles stroke-only clicks automatically if fill: false,
+                        // but since we might have generic handlers, we double check.
+                        if (e.originalEvent.target.classList.contains('leaflet-interactive') && !e.originalEvent.target.getAttribute('fill')) {
+                            // Border click? Continue. 
+                        } else {
+                            // Interior click on a transparent polygon - pass to map
+                            L.DomEvent.stopPropagation(e);
+                            map.fire('click', e);
+                            return;
+                        }
                     }
                 }
 
