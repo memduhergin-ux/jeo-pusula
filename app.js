@@ -825,7 +825,8 @@ function initMap() {
         maxZoom: 23,
         maxNativeZoom: 18,
         attribution: '© TKGM',
-        version: '1.3.0'
+        version: '1.3.0',
+        zIndex: 1000 // Ensure it stays on top of satellite
     });
 
     const baseMaps = {
@@ -850,6 +851,58 @@ function initMap() {
     // Persist layer selection
     map.on('baselayerchange', (e) => {
         localStorage.setItem('jeoMapLayer', e.name);
+    });
+
+    // Label Collision Prevention
+    function preventTooltipOverlap() {
+        // Only run if labels are being shown
+        const labels = Array.from(document.querySelectorAll('.kml-label'));
+        if (labels.length === 0) return;
+
+        const boxes = [];
+        // Sort by some criteria if needed, or just follow DOM order
+        labels.forEach(label => {
+            label.style.opacity = '1';
+            label.style.visibility = 'visible';
+            const rect = label.getBoundingClientRect();
+
+            // Padding to increase the collision box slightly
+            const padding = 2;
+            const currentBox = {
+                top: rect.top - padding,
+                left: rect.left - padding,
+                bottom: rect.bottom + padding,
+                right: rect.right + padding
+            };
+
+            let overlap = false;
+            for (const box of boxes) {
+                if (!(currentBox.right < box.left ||
+                    currentBox.left > box.right ||
+                    currentBox.bottom < box.top ||
+                    currentBox.top > box.bottom)) {
+                    overlap = true;
+                    break;
+                }
+            }
+
+            if (overlap) {
+                label.style.opacity = '0';
+                label.style.visibility = 'hidden';
+            } else {
+                boxes.push(currentBox);
+            }
+        });
+    }
+
+    map.on('zoomend moveend', () => {
+        // Small delay to allow Leaflet to position tooltips
+        setTimeout(preventTooltipOverlap, 100);
+    });
+
+    // Also run when layer sets are likely to have changed
+    map.on('overlayadd baselayerchange', () => {
+        setTimeout(preventTooltipOverlap, 500);
     });
 
     // Combined Scale and UTM Control (Bottom Left)
@@ -957,8 +1010,8 @@ function initMap() {
                 geometry: `${lon},${lat}`,
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'all:0',
-                tolerance: '40', // Max tolerance for best mobile experience
+                layers: 'visible:0',
+                tolerance: '50', // Exaggerated for best mobile experience
                 mapExtent: `${lon - 0.02},${lat - 0.02},${lon + 0.02},${lat + 0.02}`,
                 imageDisplay: '1000,1000,96',
                 returnGeometry: false,

@@ -1516,24 +1516,27 @@ textarea.form-input {
 
 /* KML Label and Marker Enhancements */
 .kml-label {
-    background: rgba(0, 0, 0, 0.5);
-    /* More transparent */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    color: #fff;
-    font-size: 10px;
-    /* Smaller */
-    font-weight: 500;
-    padding: 1px 4px;
-    /* Tighter */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    /* Ultra Bold */
+    text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000,
+        0px 0px 4px #000;
+    /* Strong outline + shadow */
     white-space: nowrap;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, visibility 0.3s;
 }
 
-.kml-label::before {
-    display: none;
+.leaflet-tooltip-pane .kml-label::before {
+    display: none !important;
 }
 
 /* Kibar KML Point Marker */
