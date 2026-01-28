@@ -953,10 +953,10 @@ function initMap() {
                 geometry: `${lon},${lat}`,
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'visible:0',
-                tolerance: '3',
-                mapExtent: `${lon - 0.005},${lat - 0.005},${lon + 0.005},${lat + 0.005}`,
-                imageDisplay: '800,600,96',
+                layers: 'all:0',
+                tolerance: '15', // Maximum tolerance for better matching
+                mapExtent: `${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}`,
+                imageDisplay: '1000,1000,96',
                 returnGeometry: false,
                 callback: callbackName
             });
