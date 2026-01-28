@@ -818,17 +818,21 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer('https://tkgmserver.tkgm.gov.tr/server/rest/services/Parsel/MapServer/tile/{z}/{y}/{x}', {
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
+        layers: '0',
+        format: 'image/png',
+        transparent: true,
         maxZoom: 23,
         maxNativeZoom: 18,
-        attribution: '© TKGM'
+        attribution: '© TKGM',
+        version: '1.3.0'
     });
 
     const baseMaps = {
-        "Sokak (OSM)": osm,
-        "Arazi (Google)": googleTerrain,
-        "Uydu (Google)": googleSat,
-        "TKGM Kadastro": tkgmParsel
+        "Street (OSM)": osm,
+        "Terrain (Google)": googleTerrain,
+        "Satellite (Google)": googleSat,
+        "Satellite + TKGM": L.layerGroup([googleSat, tkgmParsel])
     };
 
     // Load saved layer preference
@@ -954,14 +958,14 @@ function initMap() {
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
                 layers: 'all:0',
-                tolerance: '15', // Maximum tolerance for better matching
-                mapExtent: `${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}`,
+                tolerance: '40', // Max tolerance for best mobile experience
+                mapExtent: `${lon - 0.02},${lat - 0.02},${lon + 0.02},${lat + 0.02}`,
                 imageDisplay: '1000,1000,96',
                 returnGeometry: false,
                 callback: callbackName
             });
 
-            script.src = `https://tkgmserver.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
