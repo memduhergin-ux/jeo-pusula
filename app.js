@@ -818,13 +818,14 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
+    const tkgmParsel = L.tileLayer.wms('https://tkgmserver.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
         layers: '0',
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
         maxNativeZoom: 18,
-        attribution: '© TKGM'
+        attribution: '© TKGM',
+        styles: 'default'
     });
 
     const googleSatTkgm = L.layerGroup([googleSat, tkgmParsel]);
@@ -877,8 +878,18 @@ function initMap() {
             // Show Loading Popup
             const loadingPopup = L.popup()
                 .setLatLng(e.latlng)
-                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Sorgulanıyor...</div>')
+                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Veriler çekiliyor...</div>')
                 .openOn(map);
+
+            // Convert to UTM for fallback/display
+            let utmY, utmX, zone;
+            try {
+                zone = Math.floor((clickedLon + 180) / 6) + 1;
+                const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+                const utm = proj4('WGS84', utmZoneDef, [clickedLon, clickedLat]);
+                utmY = Math.round(utm[0]);
+                utmX = Math.round(utm[1]);
+            } catch (err) { }
 
             // Fetch Elevation and Parcel Data
             Promise.all([
@@ -888,34 +899,37 @@ function initMap() {
                 const zVal = alt !== null ? alt : "-";
 
                 let content = `
-                    <div class="map-popup-container" style="min-width: 200px;">
-                        <div style="font-weight:bold; color:#2196f3; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgisi</div>
+                    <div class="map-popup-container" style="min-width: 180px;">
+                        <div style="font-weight:bold; color:#2196f3; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgileri</div>
                 `;
 
                 if (parcel) {
                     content += `
-                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:8px;">
+                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:4px;">
                             <tr><td style="color:#aaa; padding:2px 0;">İl/İlçe:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">Mahalle:</td><td style="text-align:right;">${parcel.MAHALLE_AD || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Ada/Parsel:</td><td style="text-align:right; font-weight:bold;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Ada/Parsel:</td><td style="text-align:right; font-weight:bold; color:#fff;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">Nitelik:</td><td style="text-align:right;">${parcel.OZN_NITELIK || '-'}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">Mevkii:</td><td style="text-align:right;">${parcel.MEVKII || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Z (Alt):</td><td style="text-align:right;">${zVal} m</td></tr>
                         </table>
+                        <div style="font-size:0.75rem; color:#666; margin:8px 0; border-top:1px solid #333; padding-top:4px;">
+                            UTM: ${utmY}, ${utmX} (Z: ${zVal}m)
+                        </div>
                     `;
                 } else {
-                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bilgisi bulunamadı.</div>`;
                     content += `
-                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:8px;">
-                            <tr><td style="color:#aaa; padding:2px 0;">Z (Alt):</td><td style="text-align:right;">${zVal} m</td></tr>
+                        <div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadı.</div>
+                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+                            <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">X:</td><td style="text-align:right;">${utmX}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Z:</td><td style="text-align:right;">${zVal} m</td></tr>
                         </table>
                     `;
                 }
 
                 content += `
-                        <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:5px; border-radius:4px; font-size:0.8rem; cursor:pointer;">Kapat</button>
-                            <a href="https://parselsorgu.tkgm.gov.tr/#share/${clickedLat}/${clickedLon}" target="_blank" style="flex:1; background:#2196f3; color:white; text-decoration:none; text-align:center; padding:5px; border-radius:4px; font-size:0.8rem; font-weight:bold;">TKGM Git</a>
+                        <div style="margin-top:10px;">
+                            <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:6px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
                         </div>
                     </div>
                 `;
@@ -928,34 +942,50 @@ function initMap() {
     });
 
     async function fetchParcelData(lat, lon) {
-        try {
-            // ArcGIS Identify Query (Layer 0 is typically Parcels)
-            const url = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` +
-                new URLSearchParams({
-                    f: 'json',
-                    geometry: `${lon},${lat}`,
-                    geometryType: 'esriGeometryPoint',
-                    sr: '4326',
-                    layers: 'visible:0',
-                    tolerance: '2',
-                    mapExtent: `${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}`,
-                    imageDisplay: '800,600,96',
-                    returnGeometry: false
-                });
+        return new Promise((resolve) => {
+            const callbackName = 'arcgis_callback_' + Math.floor(Math.random() * 1000000);
+            window[callbackName] = function (data) {
+                delete window[callbackName];
+                document.body.removeChild(script);
+                if (data.results && data.results.length > 0) {
+                    resolve(data.results[0].attributes);
+                } else {
+                    resolve(null);
+                }
+            };
 
-            const res = await fetch(url);
-            const data = await res.json();
+            const script = document.createElement('script');
+            const params = new URLSearchParams({
+                f: 'json',
+                geometry: `${lon},${lat}`,
+                geometryType: 'esriGeometryPoint',
+                sr: '4326',
+                layers: 'visible:0',
+                tolerance: '3',
+                mapExtent: `${lon - 0.005},${lat - 0.005},${lon + 0.005},${lat + 0.005}`,
+                imageDisplay: '800,600,96',
+                returnGeometry: false,
+                callback: callbackName
+            });
 
-            if (data.results && data.results.length > 0) {
-                return data.results[0].attributes;
-            }
-            return null;
-        } catch (e) {
-            console.error("TKGM Identify failed", e);
-            return null;
-        }
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
+            script.onerror = () => {
+                delete window[callbackName];
+                try { document.body.removeChild(script); } catch (e) { }
+                resolve(null);
+            };
+            document.body.appendChild(script);
+
+            // Timeout fallback
+            setTimeout(() => {
+                if (window[callbackName]) {
+                    delete window[callbackName];
+                    try { document.body.removeChild(script); } catch (e) { }
+                    resolve(null);
+                }
+            }, 8000);
+        });
     }
-
     updateMapMarkers();
     loadExternalLayers();
 }

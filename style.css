@@ -1569,3 +1569,19 @@ textarea.form-input {
     transform: scale(1.1);
     transition: transform 0.2s;
 }
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner-small {
+    border: 2px solid rgba(255, 255, 255, .3);
+    border-top-color: #2196f3;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
