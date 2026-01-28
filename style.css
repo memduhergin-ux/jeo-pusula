@@ -1503,6 +1503,7 @@ textarea.form-input {
     transform: scale(0.95);
     filter: brightness(0.9);
 }
+
 .btn-social-disabled {
     background: #444 !important;
     border-color: #555 !important;
@@ -1511,4 +1512,60 @@ textarea.form-input {
     pointer-events: none !important;
     filter: grayscale(1) !important;
     opacity: 0.6 !important;
+}
+
+/* KML Label and Marker Enhancements */
+.kml-label {
+    background: rgba(0, 0, 0, 0.5);
+    /* More transparent */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    /* Smaller */
+    font-weight: 500;
+    padding: 1px 4px;
+    /* Tighter */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.kml-label::before {
+    display: none;
+}
+
+/* Kibar KML Point Marker */
+.kml-custom-icon {
+    background: transparent;
+    border: none;
+}
+
+.kml-marker-pin {
+    width: 14px;
+    /* Smaller */
+    height: 14px;
+    background: rgba(33, 150, 243, 0.2);
+    border: 1.5px solid #2196f3;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 5px rgba(33, 150, 243, 0.4);
+}
+
+.kml-marker-dot {
+    width: 6px;
+    /* Smaller */
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.kml-custom-icon:hover .kml-marker-pin {
+    background: rgba(33, 150, 243, 0.4);
+    transform: scale(1.1);
+    transition: transform 0.2s;
 }

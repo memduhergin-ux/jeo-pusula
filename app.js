@@ -869,61 +869,92 @@ function initMap() {
         if (isMeasuring) {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {
-            // Open Modal with Clicked Coordinates
+            // Handled by Crosshair
+        } else {
             const clickedLat = e.latlng.lat;
             const clickedLon = e.latlng.lng;
 
-            // Convert to UTM
-            let utmY, utmX;
-            try {
-                const zone = Math.floor((clickedLon + 180) / 6) + 1;
-                const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-                const utm = proj4('WGS84', utmZoneDef, [clickedLon, clickedLat]);
-                utmY = Math.round(utm[0]); // Easting (Y in UI?) - Checks UI labels. UI says Y/X usually Easting/Northing.
-                utmX = Math.round(utm[1]); // Northing
-            } catch (err) {
-                console.error("UTM conversion failed", err);
-                utmY = clickedLon.toFixed(6);
-                utmX = clickedLat.toFixed(6);
-            }
+            // Show Loading Popup
+            const loadingPopup = L.popup()
+                .setLatLng(e.latlng)
+                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Sorgulanıyor...</div>')
+                .openOn(map);
 
-            // Populate Modal Manually
-            editingRecordId = null; // Ensure new record mode
+            // Fetch Elevation and Parcel Data
+            Promise.all([
+                new Promise(resolve => fetchElevation(clickedLat, clickedLon, resolve)),
+                fetchParcelData(clickedLat, clickedLon)
+            ]).then(([alt, parcel]) => {
+                const zVal = alt !== null ? alt : "-";
 
-            // We need to trigger the modal opening logic but override values.
-            // Simplified: Just set values and open.
+                let content = `
+                    <div class="map-popup-container" style="min-width: 200px;">
+                        <div style="font-weight:bold; color:#2196f3; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgisi</div>
+                `;
 
-            // 1. Reset/Init Label
-            document.getElementById('rec-label').value = nextId;
+                if (parcel) {
+                    content += `
+                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:8px;">
+                            <tr><td style="color:#aaa; padding:2px 0;">İl/İlçe:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Mahalle:</td><td style="text-align:right;">${parcel.MAHALLE_AD || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Ada/Parsel:</td><td style="text-align:right; font-weight:bold;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Nitelik:</td><td style="text-align:right;">${parcel.OZN_NITELIK || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Mevkii:</td><td style="text-align:right;">${parcel.MEVKII || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Z (Alt):</td><td style="text-align:right;">${zVal} m</td></tr>
+                        </table>
+                    `;
+                } else {
+                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bilgisi bulunamadı.</div>`;
+                    content += `
+                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:8px;">
+                            <tr><td style="color:#aaa; padding:2px 0;">Z (Alt):</td><td style="text-align:right;">${zVal} m</td></tr>
+                        </table>
+                    `;
+                }
 
-            // 2. Set Coords
-            document.getElementById('rec-y').value = utmY;
-            document.getElementById('rec-x').value = utmX;
-            document.getElementById('rec-z').value = cachedElevation; // Use fetched elevation
+                content += `
+                        <div style="margin-top:10px; display:flex; gap:5px;">
+                            <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:5px; border-radius:4px; font-size:0.8rem; cursor:pointer;">Kapat</button>
+                            <a href="https://parselsorgu.tkgm.gov.tr/#share/${clickedLat}/${clickedLon}" target="_blank" style="flex:1; background:#2196f3; color:white; text-decoration:none; text-align:center; padding:5px; border-radius:4px; font-size:0.8rem; font-weight:bold;">TKGM Git</a>
+                        </div>
+                    </div>
+                `;
 
-            // 3. Set Strike/Dip (Default or 0)
-            document.getElementById('rec-strike').value = 0;
-            document.getElementById('rec-dip').value = 0;
-
-            // 4. Note
-            document.getElementById('rec-note').value = "Selected from map";
-
-            // Open Modal
-            recordModal.classList.add('active');
-
-            // Old map click logic for Add Point removed/disabled in favor of Center Crosshair
-            // If we want to keep tap-to-add as secondary, we can leave it.
-            // But user requested "no touching screen".
-            // Let's disable this block effectively.
-            /* 
-            // Open Modal with Clicked Coordinates
-            const clickedLat = e.latlng.lat;
-            const clickedLon = e.latlng.lng;
-            openRecordModalWithCoords(clickedLat, clickedLon, "Haritadan seçildi (Tıklama)");
-             */
-            // Reset mode if they tap map? No, usually annoying.
+                loadingPopup.setContent(content);
+            }).catch(err => {
+                loadingPopup.setContent("Sorgulama hatası.");
+            });
         }
     });
+
+    async function fetchParcelData(lat, lon) {
+        try {
+            // ArcGIS Identify Query (Layer 0 is typically Parcels)
+            const url = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` +
+                new URLSearchParams({
+                    f: 'json',
+                    geometry: `${lon},${lat}`,
+                    geometryType: 'esriGeometryPoint',
+                    sr: '4326',
+                    layers: 'visible:0',
+                    tolerance: '2',
+                    mapExtent: `${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}`,
+                    imageDisplay: '800,600,96',
+                    returnGeometry: false
+                });
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.results && data.results.length > 0) {
+                return data.results[0].attributes;
+            }
+            return null;
+        } catch (e) {
+            console.error("TKGM Identify failed", e);
+            return null;
+        }
+    }
 
     updateMapMarkers();
     loadExternalLayers();
@@ -1466,14 +1497,19 @@ function addExternalLayer(name, geojson) {
     const layer = L.geoJSON(geojson, {
         style: style,
         pointToLayer: (feature, latlng) => {
-            return L.circleMarker(latlng, {
-                radius: 5,
-                fillColor: "#2196f3",
-                color: "#fff",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
+            // Kibar Geological/Pin Icon
+            const iconHtml = `
+                <div class="kml-marker-pin">
+                    <div class="kml-marker-dot"></div>
+                </div>
+            `;
+            const icon = L.divIcon({
+                className: 'kml-custom-icon',
+                html: iconHtml,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
             });
+            return L.marker(latlng, { icon: icon });
         },
         onEachFeature: (feature, layer) => {
             if (feature.properties && feature.properties.name) {
@@ -1481,7 +1517,7 @@ function addExternalLayer(name, geojson) {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, -5]
+                    offset: [0, -4]
                 });
             }
             let popupContent = `<div class="map-popup-container">`;
@@ -1638,12 +1674,49 @@ function renderLayerList() {
         });
     });
 
+    document.querySelectorAll('.layer-labels-toggle').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            toggleLayerLabels(id, e.target.checked);
+        });
+    });
+
     document.querySelectorAll('.layer-delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = parseInt(e.currentTarget.dataset.id);
             removeLayer(id);
         });
     });
+}
+
+function toggleLayerLabels(id, showLabels) {
+    const l = externalLayers.find(x => x.id === id);
+    if (!l) return;
+    l.labelsVisible = showLabels;
+
+    l.layer.eachLayer(layer => {
+        const tooltip = layer.getTooltip();
+        if (tooltip) {
+            if (showLabels) {
+                layer.openTooltip();
+                const container = tooltip._container;
+                if (container) {
+                    container.style.display = '';
+                    container.style.opacity = '1';
+                    container.style.visibility = 'visible';
+                }
+            } else {
+                layer.closeTooltip();
+                const container = tooltip._container;
+                if (container) {
+                    container.style.display = 'none';
+                    container.style.opacity = '0';
+                    container.style.visibility = 'hidden';
+                }
+            }
+        }
+    });
+    saveExternalLayers();
 }
 
 function toggleLayerVisibility(id, isVisible) {
