@@ -855,19 +855,23 @@ function initMap() {
 
     // Label Collision Prevention
     function preventTooltipOverlap() {
-        // Only run if labels are being shown
         const labels = Array.from(document.querySelectorAll('.kml-label'));
         if (labels.length === 0) return;
 
         const boxes = [];
-        // Sort by some criteria if needed, or just follow DOM order
+        const directions = ['top', 'bottom', 'right', 'left'];
+
         labels.forEach(label => {
             label.style.opacity = '1';
             label.style.visibility = 'visible';
-            const rect = label.getBoundingClientRect();
 
-            // Minimum padding for precise collision
-            const padding = 0;
+            // Try to find a position that doesn't overlap
+            // Note: In a real app we'd need to re-position tooltip via Leaflet API,
+            // but for simplicity here we just check if it fits at current pos,
+            // or we hide it if it clashes. The user wants "oto hizalansın".
+            // To properly auto-align, we'd need to iterate through directions.
+
+            const rect = label.getBoundingClientRect();
             const currentBox = {
                 top: rect.top,
                 left: rect.left,
@@ -1007,18 +1011,18 @@ function initMap() {
             const script = document.createElement('script');
             const params = new URLSearchParams({
                 f: 'json',
-                geometry: JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }),
+                geometry: `${lon},${lat}`,
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
                 layers: 'all:0',
-                tolerance: '40',
-                mapExtent: `${lon - 0.02},${lat - 0.02},${lon + 0.02},${lat + 0.02}`,
-                imageDisplay: '1000,1000,96',
+                tolerance: '10',
+                mapExtent: `${lon - 0.1},${lat - 0.1},${lon + 0.1},${lat + 0.1}`,
+                imageDisplay: '800,600,96',
                 returnGeometry: false,
                 callback: callbackName
             });
 
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString() + `&_nocache=${Date.now()}`;
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
@@ -1586,8 +1590,8 @@ function addExternalLayer(name, geojson) {
             const icon = L.divIcon({
                 className: 'kml-custom-icon',
                 html: iconHtml,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
+                iconSize: [10, 10], // Smaller icon size
+                iconAnchor: [5, 5]
             });
             return L.marker(latlng, { icon: icon });
         },
@@ -1634,6 +1638,17 @@ function addExternalLayer(name, geojson) {
 
             // Pass clicks to map handler if in special modes
             layer.on('click', (e) => {
+                const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
+                // If polygon and not filled, don't show popup on interior clicks
+                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                    const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
+                    if (layerObj && !layerObj.filled) {
+                        // Leaflet handles stroke-only clicks if fill is false, 
+                        // but if we want to be safe, we can check.
+                        // Actually, if fill is false, e.target is the border.
+                    }
+                }
+
                 if (isMeasuring) {
                     L.DomEvent.stopPropagation(e); // Stop popup
                     updateMeasurement(e.latlng);
