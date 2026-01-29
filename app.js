@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v354';
+const CACHE_NAME = 'jeocompass-v355';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -956,18 +956,30 @@ function initMap() {
         updateMapMarkers();
     });
 
-    // --- Tracking System (v354) ---
-    let isTracking = false;
-    let trackPath = []; // Array of [lat, lon]
-    let trackPolyline = null;
-    const savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath') || '[]');
+    // --- Tracking System (v355 - Single Button) ---
+    // Function to check if tracking is active (for map feedback)
+    function updateTrackingButton() {
+        const btn = document.getElementById('btn-track-toggle');
+        if (!btn) return;
+
+        if (isTracking) {
+            btn.innerHTML = '<span class="fab-icon" style="color:#ff5252;">⏹</span>'; // Stop Icon
+            btn.classList.add('recording');
+        } else {
+            btn.innerHTML = '<span class="fab-icon">👣</span>'; // Footprint Icon
+            btn.classList.remove('recording');
+        }
+    }
 
     // Initialize Polyline
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
         trackPolyline = L.polyline(trackPath, { color: '#ff5722', weight: 4, dashArray: '10, 10' }).addTo(map);
-        document.getElementById('btn-track-save').style.display = 'block';
-        document.getElementById('btn-track-clear').style.display = 'block';
+        // If data exists but tracking is off, we are in "Paused/Finished" state but we don't have a UI for it.
+        // Let's assume on reload if we have data we show it, but don't resume unless saved state says so.
+        // For simplicity, just show it. Button implies "Start New" or if we want to continue?
+        // Let's assume button click starts NEW or CONTINUES? 
+        // User workflow: Start -> Stop -> Save.
     }
 
     function updateTrack(lat, lon) {
@@ -985,49 +997,55 @@ function initMap() {
 
         // Persist
         localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
-
-        // Show buttons if previously hidden
-        document.getElementById('btn-track-save').style.display = 'block';
-        document.getElementById('btn-track-clear').style.display = 'block';
     }
 
-    // Tracking Buttons Logic
-    const btnStart = document.getElementById('btn-track-start');
-    const btnSave = document.getElementById('btn-track-save');
-    const btnClear = document.getElementById('btn-track-clear');
-
-    if (btnStart) {
-        btnStart.addEventListener('click', () => {
+    // Single Toggle Button Logic
+    const btnTrackToggle = document.getElementById('btn-track-toggle');
+    if (btnTrackToggle) {
+        btnTrackToggle.addEventListener('click', () => {
             if (!isTracking) {
-                // Start
+                // START
                 isTracking = true;
-                btnStart.textContent = "STOP";
-                btnStart.classList.add('stop');
-                btnStart.classList.remove('start');
+                updateTrackingButton();
+                showToast("İz kaydı başladı.");
             } else {
-                // Confirm Stop
-                if (confirm("Stop recording?")) {
+                // STOP Request
+                // Ask to save
+                if (confirm("Kayıt durdurulsun mu? \n(Tamam: Kaydet ve Bitir / İptal: Devam Et)")) {
                     isTracking = false;
-                    btnStart.textContent = "START";
-                    btnStart.classList.add('start');
-                    btnStart.classList.remove('stop');
+                    updateTrackingButton();
+
+                    // Now ask to export
+                    if (confirm("İz dosyası (KML) olarak kaydedilsin mi?")) {
+                        exportKML();
+
+                        // Clear map after save?
+                        if (confirm("Haritadaki iz temizlensin mi?")) {
+                            clearTrack();
+                        }
+                    } else {
+                        // User didn't save. Ask to clear?
+                        if (confirm("İz silinsin mi? (Geri alınamaz)")) {
+                            clearTrack();
+                        }
+                    }
                 }
             }
         });
     }
 
-    if (btnSave) {
-        btnSave.addEventListener('click', () => {
-            if (trackPath.length === 0) return;
-            if (confirm("Save track to KML?")) {
-                const now = new Date();
-                // Format: YYYY-MM-DD_HH-MM
-                const dateStr = now.toISOString().slice(0, 10);
-                const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
-                const filename = `track_${dateStr}_${timeStr}.kml`;
+    function exportKML() {
+        if (trackPath.length === 0) {
+            showToast("Kaydedilecek veri yok.");
+            return;
+        }
 
-                // Create KML content
-                let kml = `<?xml version="1.0" encoding="UTF-8"?>
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
+        const filename = `track_${dateStr}_${timeStr}.kml`;
+
+        let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Track ${dateStr} ${timeStr}</name>
@@ -1044,122 +1062,43 @@ function initMap() {
         <tessellate>1</tessellate>
         <coordinates>
 `;
-                trackPath.forEach(pt => {
-                    kml += `${pt[1]},${pt[0]},0 `; // Blob is lon,lat
-                });
+        trackPath.forEach(pt => {
+            kml += `${pt[1]},${pt[0]},0 `;
+        });
 
-                kml += `
+        kml += `
         </coordinates>
       </LineString>
     </Placemark>
   </Document>
 </kml>`;
 
-                // Download
-                const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        });
+        const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
-    if (btnClear) {
-        btnClear.addEventListener('click', () => {
-            if (confirm("Clear track from map?")) {
-                if (trackPolyline) {
-                    map.removeLayer(trackPolyline);
-                    trackPolyline = null;
-                }
-                trackPath = [];
-                localStorage.removeItem('jeoTrackPath');
-                btnSave.style.display = 'none';
-                btnClear.style.display = 'none';
-
-                // Force reset state if was running
-                if (isTracking) {
-                    isTracking = false;
-                    btnStart.textContent = "START";
-                    btnStart.classList.add('start');
-                    btnStart.classList.remove('stop');
-                }
-            }
-        });
+    function clearTrack() {
+        if (trackPolyline) {
+            map.removeLayer(trackPolyline);
+            trackPolyline = null;
+        }
+        trackPath = [];
+        localStorage.removeItem('jeoTrackPath');
+        showToast("İz temizlendi.");
     }
 
-    // --- Map Lock System (v354) ---
-    const btnLock = document.getElementById('btn-map-lock');
-    let isMapLocked = false;
-
-    if (btnLock) {
-        btnLock.addEventListener('click', () => {
-            isMapLocked = !isMapLocked;
-            if (isMapLocked) {
-                // Lock
-                map.dragging.disable();
-                map.touchZoom.disable();
-                map.doubleClickZoom.disable();
-                map.scrollWheelZoom.disable();
-                map.boxZoom.disable();
-                map.keyboard.disable();
-                if (map.tap) map.tap.disable();
-
-                btnLock.textContent = "🔒";
-                btnLock.classList.add('locked');
-
-                // Hide other map controls to prevent touches
-                const zoomControl = document.querySelector('.leaflet-control-zoom');
-                if (zoomControl) zoomControl.style.display = 'none';
-                const layersControl = document.querySelector('.leaflet-control-layers');
-                if (layersControl) layersControl.style.display = 'none';
-                const trackingPanel = document.getElementById('tracking-panel');
-                if (trackingPanel) {
-                    trackingPanel.style.pointerEvents = 'none';
-                    trackingPanel.style.opacity = '0.5';
-                }
-
-                showToast("Harita KİLİTLENDİ. Açmak için kilide tekrar basın.");
-            } else {
-                // Unlock
-                map.dragging.enable();
-                map.touchZoom.enable();
-                map.doubleClickZoom.enable();
-                map.scrollWheelZoom.enable();
-                map.boxZoom.enable();
-                map.keyboard.enable();
-                if (map.tap) map.tap.enable();
-
-                btnLock.textContent = "🔓";
-                btnLock.classList.remove('locked');
-
-                // Show controls
-                const zoomControl = document.querySelector('.leaflet-control-zoom');
-                if (zoomControl) zoomControl.style.display = 'block';
-                const layersControl = document.querySelector('.leaflet-control-layers');
-                if (layersControl) layersControl.style.display = 'block';
-                const trackingPanel = document.getElementById('tracking-panel');
-                if (trackingPanel) {
-                    trackingPanel.style.pointerEvents = 'auto';
-                    trackingPanel.style.opacity = '1';
-                }
-
-                showToast("Harita KİLİDİ AÇILDI.");
-            }
-        });
-    }
+    /* REMOVED LOCK SYSTEM (v355) */
 
 
     // Map Click Handler for Interactions
     map.on('click', (e) => {
-        if (isMapLocked) {
-            showToast("Harita kilitli. Kilidi açmak için sağ üstteki kilit simgesine dokunun.");
-            return;
-        }
         if (isMeasuring) {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {

@@ -23,7 +23,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v354</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v355</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -105,21 +105,6 @@
             <div id="coord-display" class="panel" style="margin-top: 10px; font-size: 0.8rem;">
                 <div class="data-label">Konum bekleniyor...</div>
             </div>
-
-            <!-- Tracking Control Panel (v354) -->
-            <div id="tracking-panel" class="panel"
-                style="margin-top: 5px; display: flex; align-items: center; justify-content: space-between; padding: 8px 15px; background: rgba(0,0,0,0.6);">
-                <div style="display: flex; gap: 10px; width: 100%;">
-                    <button id="btn-track-start" class="track-btn start">START</button>
-                    <button id="btn-track-save" class="track-btn save" style="display:none;">SAVE</button>
-                    <button id="btn-track-clear" class="track-btn clear" style="display:none;">CLEAR</button>
-                </div>
-            </div>
-
-            <!-- Floating Lock Button -->
-            <button id="btn-map-lock" class="map-fab-btn" style="bottom: 140px; right: 15px;">
-                🔓
-            </button>
         </div>
 
         <!-- Permission Button -->
@@ -161,6 +146,9 @@
 
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
             <div class="map-fab-container">
+                <button id="btn-track-toggle" class="map-fab" title="İz Kaydı Başlat/Durdur">
+                    <span class="fab-icon">👣</span>
+                </button>
                 <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
                     <span class="fab-icon">📍+</span>
                 </button>
@@ -433,9 +421,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=354"></script>
+    <script src="app.js?v=355"></script>
     <script>
-        const JEO_VERSION = '354';
+        const JEO_VERSION = '355';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
