@@ -835,6 +835,29 @@ textarea.form-input {
     background: #1976d2;
 }
 
+/* Compass Coords Container (Restored) */
+.coords-container {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #333;
+}
+
+.coord-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    border-bottom: 1px solid #222;
+}
+
+.coord-row:last-child {
+    border-bottom: none;
+}
+
 /* Map & Records View Styles */
 #map-container {
     width: 100%;
