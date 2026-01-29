@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v347';
+const CACHE_NAME = 'jeocompass-v348';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -262,15 +262,6 @@ function showToast(message, duration = 3000) {
     }
     toast.textContent = message;
     toast.style.opacity = '1';
-
-    // Fallback Link Logic
-    if (message === "Parsel bulunamadı.") {
-        toast.innerHTML = `
-            Parsel bulunamadı. <br>
-            <a href="https://parselsorgu.tkgm.gov.tr/#ara/cografi/${currentCoords.lat}/${currentCoords.lon}" target="_blank" style="color:#4fc3f7; font-weight:bold; margin-top:5px; display:inline-block;">TKGM'de Aç ↗</a>
-        `;
-        duration = 6000; // Show longer
-    }
 
     setTimeout(() => { toast.style.opacity = '0'; }, duration);
 }
@@ -1148,8 +1139,10 @@ function initMap() {
 
 
             // ---------------------------------------------------------
-            // ROBUST FETCH STRATEGY: EPSG:3857 (Web Mercator)
+            // FINAL ROBUST STRATEGY: QUERY LAYER 0 (Direct Feature Access)
             // ---------------------------------------------------------
+            // We use the /0/query endpoint which relies on pure geometry intersection
+            // independent of screen pixels, map extent, or image display parameters.
 
             // 1. Projects Lat/Lon to EPSG:3857 (Meters)
             let point3857;
@@ -1157,15 +1150,9 @@ function initMap() {
                 // proj4(from, to, coords)
                 point3857 = proj4('WGS84', 'EPSG:3857', [lon, lat]);
             } catch (e) {
-                // Fallback to Leaflet internal if proj4 fails (unlikely)
                 const p = L.Projection.SphericalMercator.project(L.latLng(lat, lon));
                 point3857 = [p.x, p.y];
             }
-
-            // 2. Calculate Map Extent in 3857
-            // We use a small fixed buffer around the point to ensure the 'identify' hits valid extent
-            const buffer = 100; // meters
-            const extent = `${point3857[0] - buffer},${point3857[1] - buffer},${point3857[0] + buffer},${point3857[1] + buffer}`;
 
             const params = new URLSearchParams({
                 f: 'json',
@@ -1175,26 +1162,24 @@ function initMap() {
                     spatialReference: { wkid: 3857 }
                 }),
                 geometryType: 'esriGeometryPoint',
-                sr: '3857',
-                layers: 'top', // 'top' is safer than specific IDs often
-                tolerance: '50', // High tolerance for touch
-                mapExtent: extent,
-                imageDisplay: '1000,1000,96', // Dummy large display to ensure tolerance logic works
+                spatialRel: 'esriSpatialRelIntersects',
+                outFields: '*',
                 returnGeometry: true,
-                returnFieldName: true,
                 callback: callbackName
             });
 
-            // Log for debugging
-            console.log("TKGM Request:", `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString());
+            // Endpoint is specifically Layer 0 (Parsel)
+            const queryUrl = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/0/query?` + params.toString();
+            console.log("TKGM Query:", queryUrl);
 
             window[callbackName] = function (data) {
                 delete window[callbackName];
                 if (script.parentNode) document.body.removeChild(script);
-                if (data.results && data.results.length > 0) {
+
+                if (data.features && data.features.length > 0) {
                     resolve({
-                        attributes: data.results[0].attributes,
-                        geometry: data.results[0].geometry
+                        attributes: data.features[0].attributes,
+                        geometry: data.features[0].geometry
                     });
                 } else {
                     highlightLayer.clearLayers();
@@ -1204,7 +1189,7 @@ function initMap() {
             };
 
             const script = document.createElement('script');
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
+            script.src = queryUrl;
             script.onerror = () => {
                 delete window[callbackName];
                 if (script.parentNode) document.body.removeChild(script);
