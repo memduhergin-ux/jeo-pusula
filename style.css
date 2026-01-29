@@ -798,8 +798,91 @@ textarea.form-input {
 }
 
 .modal-footer {
+    padding: 15px;
     display: flex;
+    justify-content: flex-end;
     border-top: 1px solid #444;
+    background: #333;
+    gap: 10px;
+}
+
+/* Tracking Buttons (v354) */
+.track-btn {
+    flex: 1;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    color: white;
+}
+
+.track-btn.start {
+    background: #4caf50;
+    /* Green */
+}
+
+.track-btn.stop {
+    background: #f44336;
+    /* Red */
+    animation: pulse-border 2s infinite;
+}
+
+.track-btn.save {
+    background: #2196f3;
+    /* Blue */
+}
+
+.track-btn.clear {
+    background: #607d8b;
+    /* Grey */
+}
+
+.track-btn:active {
+    transform: translateY(2px);
+    opacity: 0.9;
+}
+
+/* Floating Action Button (Lock) */
+.map-fab-btn {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background: rgba(40, 40, 40, 0.9);
+    border: 1px solid #555;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    transition: all 0.3s;
+}
+
+.map-fab-btn.locked {
+    background: #f44336;
+    border-color: #d32f2f;
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+}
+
+@keyframes pulse-border {
+    0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(244, 67, 54, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    }
 }
 
 .modal-btn {
