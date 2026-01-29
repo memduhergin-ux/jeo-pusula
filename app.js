@@ -1138,11 +1138,11 @@ function initMap() {
                 geometry: `${lon},${lat}`,
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'all:0',
-                tolerance: '15', // Increased tolerance for better mobile touch response
-                mapExtent: `${lon - 0.001},${lat - 0.001},${lon + 0.001},${lat + 0.001}`,
-                imageDisplay: '800,600,96',
-                returnGeometry: true, // Crucial for boundaries
+                layers: 'all:0,1,2,3', // Reverted to include all sub-layers
+                tolerance: '20', // Increased tolerance for mobile reliability
+                mapExtent: `${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}`, // Wider extent
+                imageDisplay: '1024,768,96',
+                returnGeometry: true,
                 callback: callbackName
             });
 
