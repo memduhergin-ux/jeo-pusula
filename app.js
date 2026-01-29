@@ -151,11 +151,10 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v126';
+const CACHE_NAME = 'jeocompass-v345';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
-
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
 
 // Measurement State
@@ -1107,7 +1106,7 @@ function initMap() {
         };
 
         records.push(newRecord);
-        localStorage.setItem('jeocompass_records', JSON.stringify(records));
+        localStorage.setItem('jeoRecords', JSON.stringify(records));
         renderRecords();
         map.closePopup();
         showView('records');
@@ -1132,13 +1131,16 @@ function initMap() {
 
             const params = new URLSearchParams({
                 f: 'json',
-                geometry: JSON.stringify({ x: projected.x, y: projected.y, spatialReference: { wkid: 102100 } }),
+                geometry: JSON.stringify({
+                    x: projected.x,
+                    y: projected.y,
+                    spatialReference: { wkid: 102100 }
+                }),
                 geometryType: 'esriGeometryPoint',
                 sr: '102100', // inSR
-                inSR: '102100',
                 outSR: '102100',
                 layers: 'all:0,1,2,3',
-                tolerance: '10',
+                tolerance: '20', // Increased for mobile touch precision
                 mapExtent: mapExtent,
                 imageDisplay: imageDisplay,
                 returnGeometry: true,
