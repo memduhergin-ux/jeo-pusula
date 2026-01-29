@@ -787,7 +787,9 @@ renderRecords();
 
 // Map Logic
 let liveLayer = L.layerGroup(); // Layer for live location
+let highlightLayer = L.layerGroup(); // Layer for parcel boundaries
 let activeMapLayer = "Street (OSM)"; // Track active layer globally
+let lastSelectedParcel = null; // Track the last clicked parcel for two-stage check
 
 function initMap() {
     if (map) return;
@@ -819,8 +821,8 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
-        layers: '0', // Standard parcel boundary layer
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
+        layers: '0,1,2,3',
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
@@ -843,6 +845,7 @@ function initMap() {
     let initialLayer = baseMaps[savedLayerName] || osm;
     initialLayer.addTo(map);
     liveLayer.addTo(map);
+    highlightLayer.addTo(map);
 
     const overlayMaps = {
         "Live Location": liveLayer
@@ -975,20 +978,41 @@ function initMap() {
                 fetchParcelData(clickedLat, clickedLon)
             ];
 
-            Promise.all(tasks).then(([alt, parcel]) => {
+            Promise.all(tasks).then(([alt, parcelResult]) => {
                 const zVal = alt !== null ? alt : "-";
+                const parcel = parcelResult ? parcelResult.attributes : null;
+                const geometry = parcelResult ? parcelResult.geometry : null;
 
-                let content = `
-                    <div class="map-popup-container" style="min-width: 180px;">
-                `;
+                // Two-stage logic: Check if we should show boundaries or popup
+                const parcelId = parcel ? `${parcel.ADA_NO}-${parcel.PARSEL_NO}` : null;
 
-                if (isTkgmSelected) {
-                    content += `<div style="font-weight:bold; color:#2196f3; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgileri</div>`;
-                } else {
-                    content += `<div style="font-weight:bold; color:#ff9800; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">📍 Konum Bilgileri</div>`;
+                if (parcel && parcelId !== lastSelectedParcel) {
+                    // Stage 1: Show Boundaries
+                    highlightLayer.clearLayers();
+                    lastSelectedParcel = parcelId;
+
+                    if (geometry && geometry.rings) {
+                        const latlngs = geometry.rings[0].map(pt => [pt[1], pt[0]]);
+                        L.polygon(latlngs, {
+                            color: '#ff0000', // Red border
+                            weight: 3,
+                            fillColor: '#ff0000', // Red fill
+                            fillOpacity: 0.2
+                        }).addTo(highlightLayer);
+
+                        // Silent marking: Just close the loading popup
+                        map.closePopup();
+                    } else {
+                        map.closePopup();
+                    }
+                    return;
                 }
 
+                let content = `<div class="map-popup-container" style="min-width: 180px;">`;
+                content += `<div style="font-weight:bold; color:#ff0000; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgileri</div>`;
+
                 if (parcel) {
+                    const parcelStr = JSON.stringify(parcel).replace(/"/g, '&quot;');
                     content += `
                         <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:4px;">
                             <tr><td style="color:#aaa; padding:2px 0;">İl/İlçe:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
@@ -1000,37 +1024,25 @@ function initMap() {
                         <div style="font-size:0.75rem; color:#666; margin:8px 0; border-top:1px solid #333; padding-top:4px;">
                             UTM: ${utmY}, ${utmX} (Z: ${zVal}m)
                         </div>
-                    `;
-                } else {
-                    if (isTkgmSelected) {
-                        content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadı.</div>`;
-                    }
-                    content += `
-                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
-                            <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">X:</td><td style="text-align:right;">${utmX}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Z:</td><td style="text-align:right;">${zVal} m</td></tr>
-                        </table>
-                    `;
-                }
-
-                if (parcel) {
-                    const parcelStr = JSON.stringify(parcel).replace(/"/g, '&quot;');
-                    content += `
                         <div style="margin-top:10px; display:flex; gap:5px;">
                             <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">💾 Kaydet</button>
                             <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
                         </div>
                     `;
                 } else {
+                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadı.</div>`;
                     content += `
+                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+                            <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">X:</td><td style="text-align:right;">${utmX}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Z:</td><td style="text-align:right;">${zVal} m</td></tr>
+                        </table>
                         <div style="margin-top:10px;">
                             <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
                         </div>
                     `;
                 }
                 content += `</div>`;
-
                 loadingPopup.setContent(content);
             }).catch(err => {
                 loadingPopup.setContent("Sorgulama hatası.");
@@ -1080,8 +1092,13 @@ function initMap() {
                 delete window[callbackName];
                 document.body.removeChild(script);
                 if (data.results && data.results.length > 0) {
-                    resolve(data.results[0].attributes);
+                    resolve({
+                        attributes: data.results[0].attributes,
+                        geometry: data.results[0].geometry
+                    });
                 } else {
+                    highlightLayer.clearLayers();
+                    lastSelectedParcel = null;
                     resolve(null);
                 }
             };
@@ -1093,14 +1110,14 @@ function initMap() {
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
                 layers: 'all:0,1,2,3',
-                tolerance: '10', // More precise tolerance
-                mapExtent: `${lon - 0.001},${lat - 0.001},${lon + 0.001},${lat + 0.001}`, // Optimized extent for better response
+                tolerance: '10',
+                mapExtent: `${lon - 0.001},${lat - 0.001},${lon + 0.001},${lat + 0.001}`,
                 imageDisplay: '800,600,96',
-                returnGeometry: false,
+                returnGeometry: true, // Crucial for boundaries
                 callback: callbackName
             });
 
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
