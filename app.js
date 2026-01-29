@@ -859,24 +859,21 @@ function initMap() {
         if (labels.length === 0) return;
 
         const boxes = [];
-        const directions = ['top', 'bottom', 'right', 'left'];
 
         labels.forEach(label => {
+            const rect = label.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
             // Reset state
             label.style.opacity = '1';
             label.style.visibility = 'visible';
 
-            // Get the Leaflet layer associated with this tooltip if possible
-            // Actually, we can just manipulate the element since Leaflet doesn't easily expose the re-positioning logic here
-            // But better is to let Leaflet handle it by trying different directions if we were at the layer level.
-            // Since this runs after zoom/move, we check for overlaps.
-
-            let rect = label.getBoundingClientRect();
+            // Reduced buffer to 1px for more density
             let currentBox = {
-                top: rect.top - 2,
-                left: rect.left - 2,
-                bottom: rect.bottom + 2,
-                right: rect.right + 2
+                top: rect.top - 1,
+                left: rect.left - 1,
+                bottom: rect.bottom + 1,
+                right: rect.right + 1
             };
 
             let overlap = false;
@@ -929,6 +926,12 @@ function initMap() {
             const clickedLat = e.latlng.lat;
             const clickedLon = e.latlng.lng;
 
+            const currentLayerName = localStorage.getItem('jeoMapLayer') || "Street (OSM)";
+            const isTkgmSelected = currentLayerName === "Satellite + TKGM";
+
+            // If not TKGM, do nothing on map click (as requested in v323)
+            if (!isTkgmSelected) return;
+
             // Show Loading Popup
             const loadingPopup = L.popup()
                 .setLatLng(e.latlng)
@@ -946,15 +949,10 @@ function initMap() {
             } catch (err) { }
 
             // Fetch Elevation and Parcel Data
-            const currentLayerName = localStorage.getItem('jeoMapLayer') || "Street (OSM)";
-            const isTkgmSelected = currentLayerName === "Satellite + TKGM";
-
-            const tasks = [new Promise(resolve => fetchElevation(clickedLat, clickedLon, resolve))];
-            if (isTkgmSelected) {
-                tasks.push(fetchParcelData(clickedLat, clickedLon));
-            } else {
-                tasks.push(Promise.resolve(null));
-            }
+            const tasks = [
+                new Promise(resolve => fetchElevation(clickedLat, clickedLon, resolve)),
+                fetchParcelData(clickedLat, clickedLon)
+            ];
 
             Promise.all(tasks).then(([alt, parcel]) => {
                 const zVal = alt !== null ? alt : "-";
@@ -1613,9 +1611,9 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindTooltip(feature.properties.name, {
                     permanent: true,
-                    direction: 'auto', // Leaflet's auto direction for smart alignment
+                    direction: 'top', // 'top' is more reliable for point markers
                     className: 'kml-label',
-                    offset: [0, 0],
+                    offset: [0, -5], // Offset to prevent overlapping with its own icon
                     sticky: true
                 });
             }
