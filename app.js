@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v348';
+const CACHE_NAME = 'jeocompass-v350';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -835,22 +835,12 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
-        layers: '0,1,2,3',
-        format: 'image/png',
-        transparent: true,
-        maxZoom: 23,
-        maxNativeZoom: 18,
-        attribution: '© TKGM',
-        version: '1.3.0',
-        zIndex: 1000
-    });
 
     const baseMaps = {
         "Street (OSM)": osm,
         "Terrain (Google)": googleTerrain,
         "Satellite (Google)": googleSat,
-        "Satellite + TKGM": L.layerGroup([googleSat, tkgmParsel])
+        "Topographic (OpenTopo)": openTopo
     };
 
     // Load saved layer preference
@@ -871,35 +861,6 @@ function initMap() {
     map.on('baselayerchange', (e) => {
         activeMapLayer = e.name; // Update global tracker
         localStorage.setItem('jeoMapLayer', e.name);
-
-        if (e.name === "Satellite + TKGM") {
-            // Show toast notification for Auto-Identify mode
-            const toast = document.createElement('div');
-            toast.className = 'jeo-toast';
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 80px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: #ff0000;
-                padding: 10px 20px;
-                border-radius: 20px;
-                font-size: 0.9rem;
-                font-weight: bold;
-                z-index: 10000;
-                border: 1px solid #ff0000;
-                box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
-                pointer-events: none;
-                transition: opacity 0.5s;
-            `;
-            toast.innerHTML = '🎯 Parsel Sorgulama (İ) Aktif';
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => document.body.removeChild(toast), 500);
-            }, 3000);
-        }
     });
 
     // Label Collision Prevention & Auto Alignment
@@ -1095,118 +1056,7 @@ function initMap() {
         }
     });
 
-    window.saveParcelRecord = function (lat, lon, alt, parcel) {
-        const id = Date.now();
-        const label = `${parcel.ADA_NO || ''}/${parcel.PARSEL_NO || 'Parsel'}`;
-        const note = `${parcel.IL_AD || ''} ${parcel.ILCE_AD || ''} ${parcel.MAHALLE_AD || ''} ${parcel.OZN_NITELIK || ''}`.trim();
 
-        // Convert to UTM for record
-        let utmY = 0, utmX = 0;
-        try {
-            const zone = Math.floor((lon + 180) / 6) + 1;
-            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-            const utm = proj4('WGS84', utmZoneDef, [lon, lat]);
-            utmY = Math.round(utm[0]);
-            utmX = Math.round(utm[1]);
-        } catch (err) { }
-
-        const newRecord = {
-            id: id,
-            y: utmY,
-            x: utmX,
-            z: alt,
-            strike: "-",
-            dip: "-",
-            label: label,
-            note: note,
-            timestamp: new Date().toLocaleString()
-        };
-
-        records.push(newRecord);
-        localStorage.setItem('jeoRecords', JSON.stringify(records));
-        renderRecords();
-        map.closePopup();
-        showView('records');
-        alert("Parsel başarıyla kaydedildi.");
-    };
-
-    async function fetchParcelData(lat, lon) {
-        return new Promise((resolve) => {
-            const callbackName = 'arcgis_callback_' + Math.floor(Math.random() * 1000000);
-
-            const bounds = map.getBounds();
-            const size = map.getSize();
-
-
-            // ---------------------------------------------------------
-            // FINAL ROBUST STRATEGY: QUERY LAYER 0 (Direct Feature Access)
-            // ---------------------------------------------------------
-            // We use the /0/query endpoint which relies on pure geometry intersection
-            // independent of screen pixels, map extent, or image display parameters.
-
-            // 1. Projects Lat/Lon to EPSG:3857 (Meters)
-            let point3857;
-            try {
-                // proj4(from, to, coords)
-                point3857 = proj4('WGS84', 'EPSG:3857', [lon, lat]);
-            } catch (e) {
-                const p = L.Projection.SphericalMercator.project(L.latLng(lat, lon));
-                point3857 = [p.x, p.y];
-            }
-
-            const params = new URLSearchParams({
-                f: 'json',
-                geometry: JSON.stringify({
-                    x: point3857[0],
-                    y: point3857[1],
-                    spatialReference: { wkid: 3857 }
-                }),
-                geometryType: 'esriGeometryPoint',
-                spatialRel: 'esriSpatialRelIntersects',
-                outFields: '*',
-                returnGeometry: true,
-                callback: callbackName
-            });
-
-            // Endpoint is specifically Layer 0 (Parsel)
-            const queryUrl = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/0/query?` + params.toString();
-            console.log("TKGM Query:", queryUrl);
-
-            window[callbackName] = function (data) {
-                delete window[callbackName];
-                if (script.parentNode) document.body.removeChild(script);
-
-                if (data.features && data.features.length > 0) {
-                    resolve({
-                        attributes: data.features[0].attributes,
-                        geometry: data.features[0].geometry
-                    });
-                } else {
-                    highlightLayer.clearLayers();
-                    lastSelectedParcel = null;
-                    resolve(null);
-                }
-            };
-
-            const script = document.createElement('script');
-            script.src = queryUrl;
-            script.onerror = () => {
-                delete window[callbackName];
-                if (script.parentNode) document.body.removeChild(script);
-                resolve(null);
-            };
-            document.body.appendChild(script);
-
-            // Timeout fallback
-            setTimeout(() => {
-                if (window[callbackName]) {
-                    delete window[callbackName];
-                    if (script.parentNode) document.body.removeChild(script);
-                    resolve(null);
-                }
-            }, 8000);
-        });
-    }
     updateMapMarkers();
     loadExternalLayers();
 }
