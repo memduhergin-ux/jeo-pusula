@@ -821,7 +821,7 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
         layers: '0,1,2,3',
         format: 'image/png',
         transparent: true,
@@ -1117,9 +1117,37 @@ function initMap() {
     async function fetchParcelData(lat, lon) {
         return new Promise((resolve) => {
             const callbackName = 'arcgis_callback_' + Math.floor(Math.random() * 1000000);
+
+            const bounds = map.getBounds();
+            const size = map.getSize();
+
+            // Project Lat/Lon to EPSG:3857 (Web Mercator meters) for ArcGIS compliance
+            const latLng = L.latLng(lat, lon);
+            const projected = L.Projection.SphericalMercator.project(latLng);
+
+            const swProjected = L.Projection.SphericalMercator.project(bounds.getSouthWest());
+            const neProjected = L.Projection.SphericalMercator.project(bounds.getNorthEast());
+            const mapExtent = `${swProjected.x},${swProjected.y},${neProjected.x},${neProjected.y}`;
+            const imageDisplay = `${size.x},${size.y},96`;
+
+            const params = new URLSearchParams({
+                f: 'json',
+                geometry: JSON.stringify({ x: projected.x, y: projected.y, spatialReference: { wkid: 102100 } }),
+                geometryType: 'esriGeometryPoint',
+                sr: '102100', // inSR
+                inSR: '102100',
+                outSR: '102100',
+                layers: 'all:0,1,2,3',
+                tolerance: '10',
+                mapExtent: mapExtent,
+                imageDisplay: imageDisplay,
+                returnGeometry: true,
+                callback: callbackName
+            });
+
             window[callbackName] = function (data) {
                 delete window[callbackName];
-                document.body.removeChild(script);
+                if (script.parentNode) document.body.removeChild(script);
                 if (data.results && data.results.length > 0) {
                     resolve({
                         attributes: data.results[0].attributes,
@@ -1130,49 +1158,26 @@ function initMap() {
                     lastSelectedParcel = null;
                     resolve(null);
                 }
-                const bounds = map.getBounds();
-                const size = map.getSize();
+            };
 
-                // Project Lat/Lon to EPSG:3857 (Web Mercator meters) for ArcGIS compliance
-                const latLng = L.latLng(lat, lon);
-                const projected = L.Projection.SphericalMercator.project(latLng);
+            const script = document.createElement('script');
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
+            script.onerror = () => {
+                delete window[callbackName];
+                if (script.parentNode) document.body.removeChild(script);
+                resolve(null);
+            };
+            document.body.appendChild(script);
 
-                const swProjected = L.Projection.SphericalMercator.project(bounds.getSouthWest());
-                const neProjected = L.Projection.SphericalMercator.project(bounds.getNorthEast());
-                const mapExtent = `${swProjected.x},${swProjected.y},${neProjected.x},${neProjected.y}`;
-                const imageDisplay = `${size.x},${size.y},96`;
-
-                const params = new URLSearchParams({
-                    f: 'json',
-                    geometry: JSON.stringify({ x: projected.x, y: projected.y, spatialReference: { wkid: 102100 } }),
-                    geometryType: 'esriGeometryPoint',
-                    sr: '102100', // EPSG:3857
-                    layers: 'all:0,1,2,3',
-                    tolerance: '10',
-                    mapExtent: mapExtent,
-                    imageDisplay: imageDisplay,
-                    returnGeometry: true,
-                    callback: callbackName
-                });
-
-                // Standardized Identify URL with EPSG:3857 projection
-                script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
-                script.onerror = () => {
+            // Timeout fallback
+            setTimeout(() => {
+                if (window[callbackName]) {
                     delete window[callbackName];
-                    try { document.body.removeChild(script); } catch (e) { }
+                    if (script.parentNode) document.body.removeChild(script);
                     resolve(null);
-                };
-                document.body.appendChild(script);
-
-                // Timeout fallback
-                setTimeout(() => {
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                        try { document.body.removeChild(script); } catch (e) { }
-                        resolve(null);
-                    }
-                }, 8000);
-            });
+                }
+            }, 8000);
+        });
     }
     updateMapMarkers();
     loadExternalLayers();
