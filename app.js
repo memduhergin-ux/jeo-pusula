@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v345';
+const CACHE_NAME = 'jeocompass-v346';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15; // deg/s (Jiroskop hassasiyeti)
@@ -249,6 +249,20 @@ function updateDisplay() {
 
     renderCoordinates();
     updateScaleValues();
+}
+
+// Simple Toast System for User Feedback
+function showToast(message, duration = 3000) {
+    let toast = document.getElementById('jeo-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'jeo-toast';
+        toast.style.cssText = 'position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px 20px; border-radius:20px; font-size:0.9rem; z-index:10000; transition:opacity 0.3s; pointer-events:none;';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, duration);
 }
 
 function renderCoordinates() {
@@ -979,7 +993,7 @@ function initMap() {
             const clickedLat = e.latlng.lat;
             const clickedLon = e.latlng.lng;
 
-            const isTkgmSelected = activeMapLayer === "Satellite + TKGM";
+            const isTkgmSelected = activeMapLayer && activeMapLayer.includes("TKGM");
 
             // If not TKGM, do nothing on map click (as requested in v323)
             if (!isTkgmSelected) return;
@@ -1011,10 +1025,12 @@ function initMap() {
                 const parcel = parcelResult ? parcelResult.attributes : null;
                 const geometry = parcelResult ? parcelResult.geometry : null;
 
-                // Robust Two-stage logic: Precise Parcel Identity
-                const parcelId = parcel ? `${parcel.IL_AD}-${parcel.ILCE_AD}-${parcel.ADA_NO}-${parcel.PARSEL_NO}` : null;
+                if (!parcel) {
+                    showToast("Parsel bulunamadı.");
+                }
 
                 if (parcel && parcelId !== lastSelectedParcel) {
+                    showToast("Parsel sınırları yüklendi.");
                     // Stage 1: Show Boundaries
                     highlightLayer.clearLayers();
                     lastSelectedParcel = parcelId;
@@ -1129,20 +1145,24 @@ function initMap() {
             const mapExtent = `${swProjected.x},${swProjected.y},${neProjected.x},${neProjected.y}`;
             const imageDisplay = `${size.x},${size.y},96`;
 
+            const isTkgmSelected = activeMapLayer && activeMapLayer.includes("TKGM");
+            if (isTkgmSelected) showToast("Parsel sorgulanıyor...");
+
+            // Try with 4326 (WGS84) as it's often more robust for TKGM Identify
             const params = new URLSearchParams({
                 f: 'json',
                 geometry: JSON.stringify({
-                    x: projected.x,
-                    y: projected.y,
-                    spatialReference: { wkid: 102100 }
+                    x: lon,
+                    y: lat,
+                    spatialReference: { wkid: 4326 }
                 }),
                 geometryType: 'esriGeometryPoint',
-                sr: '102100', // inSR
-                outSR: '102100',
+                sr: '4326',
+                outSR: '4326',
                 layers: 'all:0,1,2,3',
-                tolerance: '20', // Increased for mobile touch precision
-                mapExtent: mapExtent,
-                imageDisplay: imageDisplay,
+                tolerance: '25', // More generous for touch
+                mapExtent: `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`,
+                imageDisplay: `${size.x},${size.y},96`,
                 returnGeometry: true,
                 callback: callbackName
             });
