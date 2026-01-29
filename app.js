@@ -821,8 +821,8 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
-        layers: '0',
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
+        layers: '0,1,2,3',
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
@@ -1135,19 +1135,19 @@ function initMap() {
             const script = document.createElement('script');
             const params = new URLSearchParams({
                 f: 'json',
-                geometry: `${lon},${lat}`,
+                geometry: JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }),
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'all:0',
-                tolerance: '10', // Stable tolerance
+                layers: 'all:0,1,2,3',
+                tolerance: '10',
                 mapExtent: `${lon - 0.001},${lat - 0.001},${lon + 0.001},${lat + 0.001}`,
                 imageDisplay: '800,600,96',
                 returnGeometry: true,
                 callback: callbackName
             });
 
-            // Reverted to Parsel/MapServer structure
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
+            // Official Identify URL with /rest/ path and JSON geometry
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
