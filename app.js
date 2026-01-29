@@ -857,6 +857,35 @@ function initMap() {
     map.on('baselayerchange', (e) => {
         activeMapLayer = e.name; // Update global tracker
         localStorage.setItem('jeoMapLayer', e.name);
+
+        if (e.name === "Satellite + TKGM") {
+            // Show toast notification for Auto-Identify mode
+            const toast = document.createElement('div');
+            toast.className = 'jeo-toast';
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: #ff0000;
+                padding: 10px 20px;
+                border-radius: 20px;
+                font-size: 0.9rem;
+                font-weight: bold;
+                z-index: 10000;
+                border: 1px solid #ff0000;
+                box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+                pointer-events: none;
+                transition: opacity 0.5s;
+            `;
+            toast.innerHTML = '🎯 Parsel Sorgulama (İ) Aktif';
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 500);
+            }, 3000);
+        }
     });
 
     // Label Collision Prevention & Auto Alignment
@@ -1117,6 +1146,7 @@ function initMap() {
                 callback: callbackName
             });
 
+            // Stabilized Identify URL with /rest/ path as it is usually more reliable for JSONP
             script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
