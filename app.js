@@ -819,15 +819,15 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
-        layers: '0',
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/services/WMS/MapServer/WMSServer', {
+        layers: 'parsel', // 'parsel' layer is often more reliable
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
         maxNativeZoom: 18,
         attribution: '© TKGM',
         version: '1.3.0',
-        zIndex: 1000 // Ensure it stays on top of satellite
+        zIndex: 1000
     });
 
     const baseMaps = {
@@ -871,12 +871,12 @@ function initMap() {
             label.style.opacity = '1';
             label.style.visibility = 'visible';
 
-            // No extra buffer for max density
+            // 0.5px buffer for precise collision detection
             let currentBox = {
-                top: rect.top,
-                left: rect.left,
-                bottom: rect.bottom,
-                right: rect.right
+                top: rect.top - 0.5,
+                left: rect.left - 0.5,
+                bottom: rect.bottom + 0.5,
+                right: rect.right + 0.5
             };
 
             let overlap = false;
@@ -1660,7 +1660,7 @@ function addExternalLayer(name, geojson) {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, 4], // Even closer to the point center
+                    offset: [0, 8], // Fine-tuned offset to look natural (close but not on top)
                     sticky: true
                 });
             }
