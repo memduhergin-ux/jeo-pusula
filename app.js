@@ -853,7 +853,7 @@ function initMap() {
         localStorage.setItem('jeoMapLayer', e.name);
     });
 
-    // Label Collision Prevention
+    // Label Collision Prevention & Auto Alignment
     function preventTooltipOverlap() {
         const labels = Array.from(document.querySelectorAll('.kml-label'));
         if (labels.length === 0) return;
@@ -862,21 +862,21 @@ function initMap() {
         const directions = ['top', 'bottom', 'right', 'left'];
 
         labels.forEach(label => {
+            // Reset state
             label.style.opacity = '1';
             label.style.visibility = 'visible';
 
-            // Try to find a position that doesn't overlap
-            // Note: In a real app we'd need to re-position tooltip via Leaflet API,
-            // but for simplicity here we just check if it fits at current pos,
-            // or we hide it if it clashes. The user wants "oto hizalansın".
-            // To properly auto-align, we'd need to iterate through directions.
+            // Get the Leaflet layer associated with this tooltip if possible
+            // Actually, we can just manipulate the element since Leaflet doesn't easily expose the re-positioning logic here
+            // But better is to let Leaflet handle it by trying different directions if we were at the layer level.
+            // Since this runs after zoom/move, we check for overlaps.
 
-            const rect = label.getBoundingClientRect();
-            const currentBox = {
-                top: rect.top,
-                left: rect.left,
-                bottom: rect.bottom,
-                right: rect.right
+            let rect = label.getBoundingClientRect();
+            let currentBox = {
+                top: rect.top - 2,
+                left: rect.left - 2,
+                bottom: rect.bottom + 2,
+                right: rect.right + 2
             };
 
             let overlap = false;
@@ -946,16 +946,28 @@ function initMap() {
             } catch (err) { }
 
             // Fetch Elevation and Parcel Data
-            Promise.all([
-                new Promise(resolve => fetchElevation(clickedLat, clickedLon, resolve)),
-                fetchParcelData(clickedLat, clickedLon)
-            ]).then(([alt, parcel]) => {
+            const currentLayerName = localStorage.getItem('jeoMapLayer') || "Street (OSM)";
+            const isTkgmSelected = currentLayerName === "Satellite + TKGM";
+
+            const tasks = [new Promise(resolve => fetchElevation(clickedLat, clickedLon, resolve))];
+            if (isTkgmSelected) {
+                tasks.push(fetchParcelData(clickedLat, clickedLon));
+            } else {
+                tasks.push(Promise.resolve(null));
+            }
+
+            Promise.all(tasks).then(([alt, parcel]) => {
                 const zVal = alt !== null ? alt : "-";
 
                 let content = `
                     <div class="map-popup-container" style="min-width: 180px;">
-                        <div style="font-weight:bold; color:#2196f3; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgileri</div>
                 `;
+
+                if (isTkgmSelected) {
+                    content += `<div style="font-weight:bold; color:#2196f3; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgileri</div>`;
+                } else {
+                    content += `<div style="font-weight:bold; color:#ff9800; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">📍 Konum Bilgileri</div>`;
+                }
 
                 if (parcel) {
                     content += `
@@ -971,8 +983,10 @@ function initMap() {
                         </div>
                     `;
                 } else {
+                    if (isTkgmSelected) {
+                        content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadı.</div>`;
+                    }
                     content += `
-                        <div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadı.</div>
                         <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
                             <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">X:</td><td style="text-align:right;">${utmX}</td></tr>
@@ -1599,9 +1613,10 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindTooltip(feature.properties.name, {
                     permanent: true,
-                    direction: 'top',
+                    direction: 'auto', // Leaflet's auto direction for smart alignment
                     className: 'kml-label',
-                    offset: [0, 8] // Moves label closer to center/icon
+                    offset: [0, 0],
+                    sticky: true
                 });
             }
             let popupContent = `<div class="map-popup-container">`;
