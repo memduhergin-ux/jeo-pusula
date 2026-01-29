@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v359';
+const CACHE_NAME = 'jeocompass-v360';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -726,6 +726,7 @@ if (document.getElementById('btn-modal-save')) {
                 strike: strikeLine,
                 dip: dip,
                 note: note,
+                time: new Date().toLocaleString('tr-TR'), // Added Time
                 geom: pendingGeometry, // Saved shape
                 geomType: pendingGeometryType
             };
@@ -796,6 +797,7 @@ function renderRecords(filter = '') {
             <td>${r.z}</td>
             <td>${r.strike}</td>
             <td>${r.dip}</td>
+            <td style="font-size:0.75rem; color:#aaa;">${r.time || ''}</td>
             <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">✏️</button></td>
         </tr>
@@ -2963,3 +2965,93 @@ window.addEventListener('beforeunload', () => {
 
 // Desktop Sim
 setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setInterval(() => { targetHeading = (targetHeading + 1) % 360; }, 50); } }, 2000);
+
+// -----------------------------------------------------------------
+// BACKUP & RESTORE EVENTS (Smart Merge)
+// -----------------------------------------------------------------
+if (document.getElementById('btn-backup-json')) {
+    document.getElementById('btn-backup-json').addEventListener('click', () => {
+        exportData('json', 'all');
+    });
+}
+
+if (document.getElementById('btn-restore-json')) {
+    document.getElementById('btn-restore-json').addEventListener('click', () => {
+        document.getElementById('restore-file-input').click();
+    });
+}
+
+if (document.getElementById('restore-file-input')) {
+    document.getElementById('restore-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                const incomingRecords = data.records || (Array.isArray(data) ? data : []);
+
+                if (incomingRecords.length === 0) {
+                    alert("❌ Dosyada kayıt bulunamadı.");
+                    return;
+                }
+
+                if (confirm(`🔄 BİRLEŞTİRME MODU\n\nDosyada ${incomingRecords.length} kayıt bulundu.\n\nMevcut veriler KORUNACAK.\nSadece telefonunuzda olmayan YENİ kayıtlar eklenecek.\n\nDevam edilsin mi?`)) {
+
+                    let addedCount = 0;
+                    let skippedCount = 0;
+
+                    incomingRecords.forEach(inc => {
+                        // DUPLICATE CHECK
+                        // 1. Check by Time (Best identifier)
+                        const existsByTime = inc.time && records.some(r => r.time === inc.time);
+
+                        // 2. Check by Content (Fallback)
+                        const existsByContent = records.some(r =>
+                            r.label === inc.label &&
+                            Math.abs(r.lat - inc.lat) < 0.000001 &&
+                            Math.abs(r.lon - inc.lon) < 0.000001 &&
+                            r.strike === inc.strike &&
+                            r.dip === inc.dip
+                        );
+
+                        if (existsByTime || existsByContent) {
+                            skippedCount++;
+                        } else {
+                            // NEW RECORD -> ADD
+                            const newRec = { ...inc };
+                            newRec.id = nextId++;
+                            records.push(newRec);
+                            addedCount++;
+                        }
+                    });
+
+                    // Update Declination ONLY if not set locally but present in backup
+                    if (manualDeclination === 0 && data.declination !== undefined && data.declination !== 0) {
+                        manualDeclination = data.declination;
+                        localStorage.setItem('jeoDeclination', manualDeclination);
+                        if (document.getElementById('declination-input')) {
+                            document.getElementById('declination-input').value = manualDeclination;
+                        }
+                    }
+
+                    // Save Result
+                    saveRecords();
+                    localStorage.setItem('jeoNextId', nextId);
+
+                    // Refresh UI
+                    renderRecords();
+                    updateMapMarkers();
+
+                    alert(`✅ İŞLEM TAMAMLANDI\n\n📥 Eklene​​n Yeni Kayıt: ${addedCount}\n⏭️ Atlanan (Mevcut): ${skippedCount}\n\nToplam Kayıt: ${records.length}`);
+                    optionsModal.classList.remove('active');
+                }
+            } catch (err) {
+                alert("❌ Hata: Dosya okunamadı!\n" + err);
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    });
+}
