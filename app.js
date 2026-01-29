@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v358';
+const CACHE_NAME = 'jeocompass-v359';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -635,6 +635,7 @@ if ('geolocation' in navigator) {
 
             processHeadingAndDip();
             updateDisplay();
+            updateTrack(currentCoords.lat, currentCoords.lon); // LIVE TRACKING DRAW
         } catch (e) {
             console.error("WatchPosition error:", e);
         }
@@ -2582,6 +2583,29 @@ function exportData(type, scope = 'selected') {
     }
 
     const timestamp = new Date().getTime();
+
+    // 1. JSON BACKUP (Full Database)
+    if (type === 'json') {
+        const backupData = {
+            version: '359',
+            timestamp: timestamp,
+            records: records,
+            nextId: nextId,
+            declination: manualDeclination,
+            tracking: {
+                path: trackPath,
+                saved: savedTrackPath
+            }
+        };
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const fileName = `JeoComp_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        downloadFile(jsonStr, fileName, 'application/json');
+        return;
+    }
+
+    // 2. CSV / KML Export (Table Data)
+    const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.${type}` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.${type}`;
+
     if (type === 'csv') {
         const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
         const csvRows = [header.join(',')];
@@ -2589,7 +2613,6 @@ function exportData(type, scope = 'selected') {
             const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
             csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
         });
-        const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.csv` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.csv`;
         downloadFile(csvRows.join('\n'), finalFileName, 'text/csv');
     } else if (type === 'kml') {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -2600,18 +2623,101 @@ function exportData(type, scope = 'selected') {
             kml += `
     <Placemark>
       <name>${r.label || r.id}</name>
-      <description>Strike: ${formatStrike(r.strike)}, Dip: ${r.dip}, Time: ${r.time || ''}, Note: ${r.note || ''}</description>
+      <description>Strike: ${r.strike}\nDip: ${r.dip}\nNote: ${r.note}</description>
       <Point>
-        <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
+        <coordinates>${r.lon},${r.lat},${r.z}</coordinates>
       </Point>
     </Placemark>`;
         });
         kml += `
   </Document>
 </kml>`;
-        const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.kml` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.kml`;
         downloadFile(kml, finalFileName, 'application/vnd.google-earth.kml+xml');
     }
+}
+
+function downloadFile(content, fileName, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+// -----------------------------------------------------------------
+// BACKUP & RESTORE EVENTS
+// -----------------------------------------------------------------
+if (document.getElementById('btn-backup-json')) {
+    document.getElementById('btn-backup-json').addEventListener('click', () => {
+        exportData('json', 'all');
+    });
+}
+
+if (document.getElementById('btn-restore-json')) {
+    document.getElementById('btn-restore-json').addEventListener('click', () => {
+        document.getElementById('restore-file-input').click();
+    });
+}
+
+if (document.getElementById('restore-file-input')) {
+    document.getElementById('restore-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+
+                const recordCount = data.records ? data.records.length : (Array.isArray(data) ? data.length : 0);
+
+                if (confirm(`⚠️ DİKKAT!\n\nBu işlem mevcut TÜM kayıtlarınızı silecektir.\nDosyadan ${recordCount} adet kayıt geri yüklenecek.\n\nOnaylıyor musunuz?`)) {
+
+                    // Restore Records
+                    if (data.records) {
+                        records = data.records;
+                    } else if (Array.isArray(data)) {
+                        records = data; // Legacy array support
+                    }
+
+                    // Restore ID Counter
+                    if (data.nextId) {
+                        nextId = data.nextId;
+                    } else {
+                        const maxId = records.reduce((max, r) => Math.max(max, parseInt(r.id)), 0);
+                        nextId = maxId + 1;
+                    }
+
+                    // Restore Declination
+                    if (data.declination !== undefined) {
+                        manualDeclination = data.declination;
+                        localStorage.setItem('jeoDeclination', manualDeclination);
+                        if (document.getElementById('declination-input')) {
+                            document.getElementById('declination-input').value = manualDeclination;
+                        }
+                    }
+
+                    // Save Everything
+                    saveRecords();
+                    localStorage.setItem('jeoNextId', nextId);
+
+                    // Refresh UI
+                    renderRecords();
+                    updateMapMarkers();
+                    alert("✅ Veritabanı başarıyla geri yüklendi!");
+                    optionsModal.classList.remove('active');
+                }
+            } catch (err) {
+                alert("❌ Hata: Geçersiz veya bozuk dosya!\n" + err);
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    });
 }
 
 // Share Modal Control

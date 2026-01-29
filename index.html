@@ -24,7 +24,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v358</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v359</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -328,9 +328,21 @@
                     🗑️ Delete Selected Records
                 </button>
                 <button class="save-btn ready" onclick="forceAppUpdate()"
-                    style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold;">
+                    style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold; margin-bottom: 20px;">
                     🔄 Force Update
                 </button>
+
+                <div style="border-top: 1px solid #444; padding-top: 15px;">
+                    <button class="save-btn ready" id="btn-backup-json"
+                        style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
+                        💾 Yedekle (Backup JSON)
+                    </button>
+                    <button class="save-btn ready" id="btn-restore-json"
+                        style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
+                        📂 Geri Yükle (Restore)
+                    </button>
+                    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-cancel" id="btn-options-cancel">Close</button>
@@ -422,9 +434,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=358"></script>
+    <script src="app.js?v=359"></script>
     <script>
-        const JEO_VERSION = '358';
+        const JEO_VERSION = '359';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
