@@ -821,8 +821,8 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
-        layers: '0,1,2,3',
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/services/UYGULAMA/PARSELSORGU/MapServer/WMSServer', {
+        layers: '0',
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
@@ -983,8 +983,8 @@ function initMap() {
                 const parcel = parcelResult ? parcelResult.attributes : null;
                 const geometry = parcelResult ? parcelResult.geometry : null;
 
-                // Two-stage logic: Check if we should show boundaries or popup
-                const parcelId = parcel ? `${parcel.ADA_NO}-${parcel.PARSEL_NO}` : null;
+                // Robust Two-stage logic: Precise Parcel Identity
+                const parcelId = parcel ? `${parcel.IL_AD}-${parcel.ILCE_AD}-${parcel.ADA_NO}-${parcel.PARSEL_NO}` : null;
 
                 if (parcel && parcelId !== lastSelectedParcel) {
                     // Stage 1: Show Boundaries
@@ -1109,8 +1109,8 @@ function initMap() {
                 geometry: `${lon},${lat}`,
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
-                layers: 'all:0,1,2,3',
-                tolerance: '10',
+                layers: 'all:0',
+                tolerance: '15', // Increased tolerance for better mobile touch response
                 mapExtent: `${lon - 0.001},${lat - 0.001},${lon + 0.001},${lat + 0.001}`,
                 imageDisplay: '800,600,96',
                 returnGeometry: true, // Crucial for boundaries
