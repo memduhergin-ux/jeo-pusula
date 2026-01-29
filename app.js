@@ -864,37 +864,56 @@ function initMap() {
         const boxes = [];
 
         labels.forEach(label => {
-            const rect = label.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
-
-            // Reset state
+            // Reset position/visibility
             label.style.opacity = '1';
             label.style.visibility = 'visible';
+            label.style.marginTop = '0px';
+            label.style.marginLeft = '0px';
 
-            // 0.5px buffer for precise collision detection
-            let currentBox = {
-                top: rect.top - 0.5,
-                left: rect.left - 0.5,
-                bottom: rect.bottom + 0.5,
-                right: rect.right + 0.5
-            };
+            const scenarios = [
+                { mt: 0, ml: 0 },       // Top (Default)
+                { mt: 15, ml: 40 },     // Right
+                { mt: 35, ml: 0 },      // Bottom
+                { mt: 15, ml: -40 }     // Left
+            ];
 
-            let overlap = false;
-            for (const box of boxes) {
-                if (!(currentBox.right < box.left ||
-                    currentBox.left > box.right ||
-                    currentBox.bottom < box.top ||
-                    currentBox.top > box.bottom)) {
-                    overlap = true;
+            let success = false;
+
+            for (const s of scenarios) {
+                label.style.marginTop = s.mt + 'px';
+                label.style.marginLeft = s.ml + 'px';
+
+                const rect = label.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) continue;
+
+                let currentBox = {
+                    top: rect.top - 1,
+                    left: rect.left - 1,
+                    bottom: rect.bottom + 1,
+                    right: rect.right + 1
+                };
+
+                let overlap = false;
+                for (const box of boxes) {
+                    if (!(currentBox.right < box.left ||
+                        currentBox.left > box.right ||
+                        currentBox.bottom < box.top ||
+                        currentBox.top > box.bottom)) {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap) {
+                    boxes.push(currentBox);
+                    success = true;
                     break;
                 }
             }
 
-            if (overlap) {
+            if (!success) {
                 label.style.opacity = '0';
                 label.style.visibility = 'hidden';
-            } else {
-                boxes.push(currentBox);
             }
         });
     }
