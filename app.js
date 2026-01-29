@@ -787,6 +787,7 @@ renderRecords();
 
 // Map Logic
 let liveLayer = L.layerGroup(); // Layer for live location
+let activeMapLayer = "Street (OSM)"; // Track active layer globally
 
 function initMap() {
     if (map) return;
@@ -838,6 +839,7 @@ function initMap() {
 
     // Load saved layer preference
     const savedLayerName = localStorage.getItem('jeoMapLayer') || "Street (OSM)";
+    activeMapLayer = savedLayerName; // Set global tracker
     let initialLayer = baseMaps[savedLayerName] || osm;
     initialLayer.addTo(map);
     liveLayer.addTo(map);
@@ -850,6 +852,7 @@ function initMap() {
 
     // Persist layer selection
     map.on('baselayerchange', (e) => {
+        activeMapLayer = e.name; // Update global tracker
         localStorage.setItem('jeoMapLayer', e.name);
     });
 
@@ -868,12 +871,12 @@ function initMap() {
             label.style.opacity = '1';
             label.style.visibility = 'visible';
 
-            // Reduced buffer to 1px for more density
+            // No extra buffer for max density
             let currentBox = {
-                top: rect.top - 1,
-                left: rect.left - 1,
-                bottom: rect.bottom + 1,
-                right: rect.right + 1
+                top: rect.top,
+                left: rect.left,
+                bottom: rect.bottom,
+                right: rect.right
             };
 
             let overlap = false;
@@ -926,8 +929,7 @@ function initMap() {
             const clickedLat = e.latlng.lat;
             const clickedLon = e.latlng.lng;
 
-            const currentLayerName = localStorage.getItem('jeoMapLayer') || "Street (OSM)";
-            const isTkgmSelected = currentLayerName === "Satellite + TKGM";
+            const isTkgmSelected = activeMapLayer === "Satellite + TKGM";
 
             // If not TKGM, do nothing on map click (as requested in v323)
             if (!isTkgmSelected) return;
@@ -1611,9 +1613,9 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindTooltip(feature.properties.name, {
                     permanent: true,
-                    direction: 'top', // 'top' is more reliable for point markers
+                    direction: 'top',
                     className: 'kml-label',
-                    offset: [0, -5], // Offset to prevent overlapping with its own icon
+                    offset: [0, 0], // Closer to the point
                     sticky: true
                 });
             }
