@@ -995,12 +995,22 @@ function initMap() {
                     `;
                 }
 
-                content += `
-                        <div style="margin-top:10px;">
-                            <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:6px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
+                if (parcel) {
+                    const parcelStr = JSON.stringify(parcel).replace(/"/g, '&quot;');
+                    content += `
+                        <div style="margin-top:10px; display:flex; gap:5px;">
+                            <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">💾 Kaydet</button>
+                            <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    content += `
+                        <div style="margin-top:10px;">
+                            <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
+                        </div>
+                    `;
+                }
+                content += `</div>`;
 
                 loadingPopup.setContent(content);
             }).catch(err => {
@@ -1008,6 +1018,41 @@ function initMap() {
             });
         }
     });
+
+    window.saveParcelRecord = function (lat, lon, alt, parcel) {
+        const id = Date.now();
+        const label = `${parcel.ADA_NO || ''}/${parcel.PARSEL_NO || 'Parsel'}`;
+        const note = `${parcel.IL_AD || ''} ${parcel.ILCE_AD || ''} ${parcel.MAHALLE_AD || ''} ${parcel.OZN_NITELIK || ''}`.trim();
+
+        // Convert to UTM for record
+        let utmY = 0, utmX = 0;
+        try {
+            const zone = Math.floor((lon + 180) / 6) + 1;
+            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+            const utm = proj4('WGS84', utmZoneDef, [lon, lat]);
+            utmY = Math.round(utm[0]);
+            utmX = Math.round(utm[1]);
+        } catch (err) { }
+
+        const newRecord = {
+            id: id,
+            y: utmY,
+            x: utmX,
+            z: alt,
+            strike: "-",
+            dip: "-",
+            label: label,
+            note: note,
+            timestamp: new Date().toLocaleString()
+        };
+
+        records.push(newRecord);
+        localStorage.setItem('jeocompass_records', JSON.stringify(records));
+        renderRecords();
+        map.closePopup();
+        showView('records');
+        alert("Parsel başarıyla kaydedildi.");
+    };
 
     async function fetchParcelData(lat, lon) {
         return new Promise((resolve) => {
@@ -1029,8 +1074,8 @@ function initMap() {
                 geometryType: 'esriGeometryPoint',
                 sr: '4326',
                 layers: 'all:0,1,2,3',
-                tolerance: '20',
-                mapExtent: `${lon - 0.1},${lat - 0.1},${lon + 0.1},${lat + 0.1}`,
+                tolerance: '10', // More precise tolerance
+                mapExtent: `${lon - 0.0001},${lat - 0.0001},${lon + 0.0001},${lat + 0.0001}`, // Much narrower extent
                 imageDisplay: '800,600,96',
                 returnGeometry: false,
                 callback: callbackName
@@ -1615,7 +1660,7 @@ function addExternalLayer(name, geojson) {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, 0], // Closer to the point
+                    offset: [0, 4], // Even closer to the point center
                     sticky: true
                 });
             }
