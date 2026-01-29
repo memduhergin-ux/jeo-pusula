@@ -819,8 +819,8 @@ function initMap() {
         attribution: '© Google'
     });
 
-    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/services/WMS/MapServer/WMSServer', {
-        layers: 'parsel', // 'parsel' layer is often more reliable
+    const tkgmParsel = L.tileLayer.wms('https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/WMSServer', {
+        layers: '0', // Standard parcel boundary layer
         format: 'image/png',
         transparent: true,
         maxZoom: 23,
@@ -1094,13 +1094,13 @@ function initMap() {
                 sr: '4326',
                 layers: 'all:0,1,2,3',
                 tolerance: '10', // More precise tolerance
-                mapExtent: `${lon - 0.0001},${lat - 0.0001},${lon + 0.0001},${lat + 0.0001}`, // Much narrower extent
+                mapExtent: `${lon - 0.001},${lat - 0.001},${lon + 0.001},${lat + 0.001}`, // Optimized extent for better response
                 imageDisplay: '800,600,96',
                 returnGeometry: false,
                 callback: callbackName
             });
 
-            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/UYGULAMA/PARSELSORGU/MapServer/identify?` + params.toString();
+            script.src = `https://parselsorgu.tkgm.gov.tr/server/rest/services/Parsel/MapServer/identify?` + params.toString();
             script.onerror = () => {
                 delete window[callbackName];
                 try { document.body.removeChild(script); } catch (e) { }
