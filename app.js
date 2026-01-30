@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v370';
+const CACHE_NAME = 'jeocompass-v371';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -888,9 +888,10 @@ function initMap() {
         const boxes = [];
 
         labels.forEach(label => {
-            // Reset position/visibility
+            // Reset position/visibility - FORCED for v371
             label.style.opacity = '1';
             label.style.visibility = 'visible';
+            label.style.display = 'block';
             label.style.transform = 'translate(0, 0)'; // Reset transform
 
             const rect = label.getBoundingClientRect();
