@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v368';
+const CACHE_NAME = 'jeocompass-v370';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -896,20 +896,14 @@ function initMap() {
             const rect = label.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return;
 
-            // Scenario displacement strategy: Try default (0,0) first, then 8 directions
-            const displacement = 12;
+            // Scenario displacement strategy: Tighter & Simpler (v370)
+            const displacement = 8;
             const diag = displacement * 0.707;
 
             const scenarios = [
                 { tx: 0, ty: 0 },               // Default TOP position (Highest Priority)
-                { tx: diag, ty: -diag },          // Top-Right
-                { tx: -diag, ty: -diag },         // Top-Left
-                { tx: displacement, ty: 0 },      // Right
-                { tx: -displacement, ty: 0 },     // Left
-                { tx: 0, ty: -displacement },     // Even higher Top
-                { tx: diag, ty: diag },           // Bottom-Right
-                { tx: -diag, ty: diag },          // Bottom-Left
-                { tx: 0, ty: displacement + 2 }   // Bottom (Below icon)
+                { tx: 0, ty: -displacement },     // Just a bit higher
+                { tx: 0, ty: displacement + 2 }   // Just a bit lower (Below icon)
             ];
 
             let success = false;

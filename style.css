@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --bg-color: #121212;
     --text-color: #e0e0e0;
     --accent-color: #00ffcc;
@@ -197,7 +197,7 @@ body {
     transform: translateY(-50%);
 }
 
-/* W sağda */
+/* W saÄŸda */
 /* Needle - Vertical Tapered Diamond (Previous Style) */
 .needle-container {
     position: absolute;
@@ -209,7 +209,7 @@ body {
     z-index: 10;
 }
 
-/* Üst Yarı - Beyaz (Kuzey) */
+/* Ãœst YarÄ± - Beyaz (Kuzey) */
 .needle-north {
     position: absolute;
     top: 0;
@@ -220,7 +220,7 @@ body {
     clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
 }
 
-/* Alt Yarı - Kırmızı (Güney) */
+/* Alt YarÄ± - KÄ±rmÄ±zÄ± (GÃ¼ney) */
 .needle-south {
     position: absolute;
     bottom: 0;
@@ -465,9 +465,9 @@ body {
     padding-right: 10px;
 }
 
-/* Sadece Dip değerine derece sembolü */
+/* Sadece Dip deÄŸerine derece sembolÃ¼ */
 #val-dip::after {
-    content: '°';
+    content: 'Â°';
     position: absolute;
     top: 2px;
     right: -8px;
@@ -521,7 +521,7 @@ body {
 
 /* Remove old .calibrate-btn styles */
 
-/* Save Button - Sağ Alt (Düzeç ile Simetrik) */
+/* Save Button - SaÄŸ Alt (DÃ¼zeÃ§ ile Simetrik) */
 .save-container {
     position: absolute;
     bottom: 15px;
@@ -1547,7 +1547,7 @@ textarea.form-input {
     border: none !important;
     box-shadow: none !important;
     color: #fff !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
     font-weight: 800 !important;
     /* Ultra Bold */
     text-shadow:
@@ -1559,7 +1559,7 @@ textarea.form-input {
     /* Strong outline + shadow */
     white-space: nowrap;
     pointer-events: none;
-    padding: 0px 2px !important;
+    padding: 0px 1px !important;
     /* tighter look */
     transition: opacity 0.3s, visibility 0.3s;
 }
