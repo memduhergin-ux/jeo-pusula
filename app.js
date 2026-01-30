@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v373';
+const CACHE_NAME = 'jeocompass-v374';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -185,7 +185,9 @@ proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_
 
 // Strike Logic
 function formatStrike(heading) {
-    return `N${Math.round(angle)}${direction}`;
+    let s = Math.round(heading);
+    if (s === 360) s = 0;
+    return s.toString().padStart(3, '0');
 }
 
 function getFeatureName(properties) {
@@ -224,14 +226,14 @@ function updateDisplay() {
     }
 
     if (!lockStrike && valStrike) {
-        valStrike.textContent = formatStrike(displayedHeading) + "°";
+        valStrike.textContent = formatStrike(displayedHeading);
     }
 
     let dip = Math.abs(currentTilt.beta); // currentTilt.beta is now stabilized in handleOrientation
     if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
-        valDip.textContent = Math.round(dip) + "°";
+        valDip.textContent = Math.round(dip);
     }
 
     if (levelBubble) {
@@ -890,12 +892,18 @@ function initMap() {
             if (rect.width === 0 || rect.height === 0) return;
 
             const displacement = 8;
+            const diag = displacement * 0.707;
+
             const scenarios = [
-                { tx: 0, ty: 0 },
-                { tx: 0, ty: -displacement },
-                { tx: 0, ty: displacement + 2 },
-                { tx: displacement, ty: 0 },
-                { tx: -displacement, ty: 0 }
+                { tx: 0, ty: 0 },               // Default TOP position (Highest Priority)
+                { tx: diag, ty: -diag },          // Top-Right
+                { tx: -diag, ty: -diag },         // Top-Left
+                { tx: displacement, ty: 0 },      // Right
+                { tx: -displacement, ty: 0 },     // Left
+                { tx: 0, ty: -displacement },     // Even higher Top
+                { tx: diag, ty: diag },           // Bottom-Right
+                { tx: -diag, ty: diag },          // Bottom-Left
+                { tx: 0, ty: displacement + 2 }   // Bottom (Below icon)
             ];
 
             let success = false;
@@ -2021,6 +2029,12 @@ function addExternalLayer(name, geojson) {
     externalLayers.push(layerObj);
 
     // Zoom to layer
+    try {
+        map.fitBounds(layer.getBounds());
+    } catch (e) {
+        // Empty layer
+    }
+
     saveExternalLayers();
     renderLayerList();
     setTimeout(preventTooltipOverlap, 500);
