@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v366';
+const CACHE_NAME = 'jeocompass-v368';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -896,19 +896,20 @@ function initMap() {
             const rect = label.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return;
 
-            // Scenario displacement strategy: Try 8 directions
-            const displacement = 15; // Base distance in pixels
+            // Scenario displacement strategy: Try default (0,0) first, then 8 directions
+            const displacement = 12;
             const diag = displacement * 0.707;
 
             const scenarios = [
-                { tx: 0, ty: -displacement },   // Top
+                { tx: 0, ty: 0 },               // Default TOP position (Highest Priority)
                 { tx: diag, ty: -diag },          // Top-Right
+                { tx: -diag, ty: -diag },         // Top-Left
                 { tx: displacement, ty: 0 },      // Right
-                { tx: diag, ty: diag },           // Bottom-Right
-                { tx: 0, ty: displacement },      // Bottom
-                { tx: -diag, ty: diag },          // Bottom-Left
                 { tx: -displacement, ty: 0 },     // Left
-                { tx: -diag, ty: -diag }          // Top-Left
+                { tx: 0, ty: -displacement },     // Even higher Top
+                { tx: diag, ty: diag },           // Bottom-Right
+                { tx: -diag, ty: diag },          // Bottom-Left
+                { tx: 0, ty: displacement + 2 }   // Bottom (Below icon)
             ];
 
             let success = false;
@@ -918,10 +919,10 @@ function initMap() {
 
                 const currentRect = label.getBoundingClientRect();
                 let currentBox = {
-                    top: currentRect.top - 2,
-                    left: currentRect.left - 2,
-                    bottom: currentRect.bottom + 2,
-                    right: currentRect.right + 2
+                    top: currentRect.top - 1,   // Lenient margin
+                    left: currentRect.left - 1,
+                    bottom: currentRect.bottom + 1,
+                    right: currentRect.right + 1
                 };
 
                 let overlap = false;
@@ -1052,7 +1053,7 @@ function initMap() {
             } else {
                 // STOP Request
                 // Ask to stop
-                if (confirm("Kayıt durdurulsun mu?")) {
+                if (confirm("Do you want to stop recording?")) {
                     isTracking = false;
                     updateTrackingButton();
 
@@ -1062,7 +1063,7 @@ function initMap() {
                         // AUTO CLEAR
                         clearTrack();
                     } else {
-                        showToast("Kayıt çok kısa, kaydedilmedi.");
+                        showToast("Recording is too short, not saved.");
                         clearTrack();
                     }
                 }
@@ -1072,7 +1073,7 @@ function initMap() {
 
     function exportKML() {
         if (trackPath.length === 0) {
-            showToast("Kaydedilecek veri yok.");
+            showToast("No data to save.");
             return;
         }
 
@@ -1627,7 +1628,7 @@ function renderTracks() {
     if (!tableBody) return;
 
     if (jeoTracks.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5">Henüz kayıtlı izlek yok</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5">No tracks saved yet</td></tr>';
         return;
     }
 
@@ -1638,8 +1639,8 @@ function renderTracks() {
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
             <td>
-                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="KML İndir">💾</button>
-                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Sil">🗑️</button>
+                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">💾</button>
+                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">🗑️</button>
             </td>
         </tr>
     `).join('');
@@ -1945,10 +1946,10 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindTooltip(feature.properties.name, {
                     permanent: true,
-                    direction: 'top', // Reverted to top for stability
+                    direction: 'top',
                     className: 'kml-label',
-                    offset: [0, -5], // Slight offset above the point
-                    sticky: true
+                    offset: [0, -5],
+                    sticky: false // Changed to false for better stability
                 });
             }
             let popupContent = `<div class="map-popup-container">`;

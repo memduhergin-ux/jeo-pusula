@@ -24,7 +24,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v366</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v368</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -194,8 +194,8 @@
     <div id="view-records" class="view-section">
         <div class="panel wide-panel" style="margin-top: 10px;">
             <div class="records-tabs">
-                <button id="tab-points" class="tab-btn active">📍 Noktalar</button>
-                <button id="tab-tracks" class="tab-btn">👣 İzlekler</button>
+                <button id="tab-points" class="tab-btn active">📍 Points</button>
+                <button id="tab-tracks" class="tab-btn">👣 Tracks</button>
             </div>
 
             <div id="container-points" class="records-container active">
@@ -239,16 +239,16 @@
                     <table class="records-table">
                         <thead>
                             <tr>
-                                <th>İzlek Adı</th>
-                                <th>Renk</th>
-                                <th>Görünür</th>
-                                <th>Tarih</th>
-                                <th>İşlem</th>
+                                <th>Name</th>
+                                <th>Color</th>
+                                <th>Visible</th>
+                                <th>Date</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="tracks-body">
                             <tr>
-                                <td colspan="5">Henüz kayıtlı izlek yok</td>
+                                <td colspan="5">No tracks saved yet</td>
                             </tr>
                         </tbody>
                     </table>
@@ -461,9 +461,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=366"></script>
+    <script src="app.js?v=368"></script>
     <script>
-        const JEO_VERSION = '366';
+        const JEO_VERSION = '368';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
