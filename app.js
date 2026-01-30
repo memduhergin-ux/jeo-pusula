@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v371';
+const CACHE_NAME = 'jeocompass-v372';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -880,6 +880,16 @@ function initMap() {
         localStorage.setItem('jeoMapLayer', e.name);
     });
 
+    // Feature property search helper
+    function getFeatureName(properties) {
+        if (!properties) return null;
+        const keys = ['name', 'Name', 'NAME', 'label', 'Label', 'LABEL', 'id', 'ID'];
+        for (const key of keys) {
+            if (properties[key]) return properties[key];
+        }
+        return null;
+    }
+
     // Label Collision Prevention & Auto Alignment
     function preventTooltipOverlap() {
         const labels = Array.from(document.querySelectorAll('.kml-label'));
@@ -888,44 +898,38 @@ function initMap() {
         const boxes = [];
 
         labels.forEach(label => {
-            // Reset position/visibility - FORCED for v371
-            label.style.opacity = '1';
-            label.style.visibility = 'visible';
-            label.style.display = 'block';
-            label.style.transform = 'translate(0, 0)'; // Reset transform
+            // Force visibility using setProperty with !important for v372
+            label.style.setProperty('opacity', '1', 'important');
+            label.style.setProperty('visibility', 'visible', 'important');
+            label.style.setProperty('display', 'block', 'important');
+            label.style.transform = 'translate(0, 0)';
 
             const rect = label.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return;
 
-            // Scenario displacement strategy: Tighter & Simpler (v370)
             const displacement = 8;
-            const diag = displacement * 0.707;
-
             const scenarios = [
-                { tx: 0, ty: 0 },               // Default TOP position (Highest Priority)
-                { tx: 0, ty: -displacement },     // Just a bit higher
-                { tx: 0, ty: displacement + 2 }   // Just a bit lower (Below icon)
+                { tx: 0, ty: 0 },
+                { tx: 0, ty: -displacement },
+                { tx: 0, ty: displacement + 2 },
+                { tx: displacement, ty: 0 },
+                { tx: -displacement, ty: 0 }
             ];
 
             let success = false;
-
             for (const s of scenarios) {
                 label.style.transform = `translate(${s.tx}px, ${s.ty}px)`;
-
                 const currentRect = label.getBoundingClientRect();
                 let currentBox = {
-                    top: currentRect.top - 1,   // Lenient margin
-                    left: currentRect.left - 1,
-                    bottom: currentRect.bottom + 1,
-                    right: currentRect.right + 1
+                    top: currentRect.top,
+                    left: currentRect.left,
+                    bottom: currentRect.bottom,
+                    right: currentRect.right
                 };
 
                 let overlap = false;
                 for (const box of boxes) {
-                    if (!(currentBox.right < box.left ||
-                        currentBox.left > box.right ||
-                        currentBox.bottom < box.top ||
-                        currentBox.top > box.bottom)) {
+                    if (!(currentBox.right < box.left || currentBox.left > box.right || currentBox.bottom < box.top || currentBox.top > box.bottom)) {
                         overlap = true;
                         break;
                     }
@@ -939,8 +943,8 @@ function initMap() {
             }
 
             if (!success) {
-                label.style.opacity = '0';
-                label.style.visibility = 'hidden';
+                label.style.setProperty('opacity', '0', 'important');
+                label.style.setProperty('visibility', 'hidden', 'important');
             }
         });
     }
@@ -1938,8 +1942,9 @@ function addExternalLayer(name, geojson) {
             return L.marker(latlng, { icon: icon });
         },
         onEachFeature: (feature, layer) => {
-            if (feature.properties && feature.properties.name) {
-                layer.bindTooltip(feature.properties.name, {
+            const featureName = getFeatureName(feature.properties);
+            if (featureName) {
+                layer.bindTooltip(String(featureName), {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
