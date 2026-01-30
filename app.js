@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v360';
+const CACHE_NAME = 'jeocompass-v361';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -744,7 +744,7 @@ if (document.getElementById('btn-modal-save')) {
 
         saveRecords();
         renderRecords();
-        updateMapMarkers();
+        updateMapMarkers(true);
         recordModal.classList.remove('active');
         editingRecordId = null;
 
@@ -956,7 +956,7 @@ function initMap() {
 
     // Zoom listener for scale-based visibility
     map.on('zoomend', () => {
-        updateMapMarkers();
+        updateMapMarkers(false);
     });
 
     // --- Tracking System (v355 - Single Button) ---
@@ -1212,7 +1212,7 @@ function initMap() {
     });
 
 
-    updateMapMarkers();
+    updateMapMarkers(true);
     loadExternalLayers();
 }
 
@@ -1406,7 +1406,7 @@ function formatArea(area) {
     return (area / 1000000).toFixed(2) + " km2";
 }
 
-function updateMapMarkers() {
+function updateMapMarkers(shouldFitBounds = false) {
     if (!map || !markerGroup) return;
     markerGroup.clearLayers();
 
@@ -1554,7 +1554,7 @@ function updateMapMarkers() {
         }
     });
 
-    if (dataToRender.length > 0 && selectedIds.length > 0) {
+    if (shouldFitBounds && dataToRender.length > 0 && selectedIds.length > 0) {
         const group = new L.featureGroup(markerGroup.getLayers());
         map.fitBounds(group.getBounds().pad(0.2));
     }
@@ -1565,7 +1565,7 @@ if (btnToggleRecords) {
     btnToggleRecords.addEventListener('click', () => {
         showRecordsOnMap = !showRecordsOnMap;
         btnToggleRecords.classList.toggle('active', showRecordsOnMap);
-        updateMapMarkers();
+        updateMapMarkers(showRecordsOnMap);
     });
 }
 
@@ -1635,7 +1635,7 @@ if (selectAllCheckbox) {
             cb.checked = checked;
             cb.closest('tr').classList.toggle('selected', checked);
         });
-        updateMapMarkers();
+        updateMapMarkers(true);
         updateShareButtonState();
     });
 }
@@ -1643,7 +1643,7 @@ if (selectAllCheckbox) {
 document.getElementById('records-body').addEventListener('change', (e) => {
     if (e.target.classList.contains('record-select')) {
         e.target.closest('tr').classList.toggle('selected', e.target.checked);
-        updateMapMarkers();
+        updateMapMarkers(true);
         updateShareButtonState();
     }
 });
@@ -2709,7 +2709,7 @@ if (document.getElementById('restore-file-input')) {
 
                     // Refresh UI
                     renderRecords();
-                    updateMapMarkers();
+                    updateMapMarkers(true);
                     alert("✅ Veritabanı başarıyla geri yüklendi!");
                     optionsModal.classList.remove('active');
                 }
@@ -2901,7 +2901,7 @@ if (btnDeleteSelected) {
             records = records.filter(r => !selectedIds.includes(r.id));
             saveRecords();
             renderRecords();
-            updateMapMarkers();
+            updateMapMarkers(false);
             if (selectAllCheckbox) selectAllCheckbox.checked = false;
             optionsModal.classList.remove('active');
         }
@@ -2914,7 +2914,7 @@ window.deleteRecordFromMap = function (id) {
         records = records.filter(r => r.id !== id);
         saveRecords();
         renderRecords();
-        updateMapMarkers();
+        updateMapMarkers(false);
         if (selectAllCheckbox) selectAllCheckbox.checked = false;
     }
 };
@@ -3042,7 +3042,7 @@ if (document.getElementById('restore-file-input')) {
 
                     // Refresh UI
                     renderRecords();
-                    updateMapMarkers();
+                    updateMapMarkers(true);
 
                     alert(`✅ İŞLEM TAMAMLANDI\n\n📥 Eklene​​n Yeni Kayıt: ${addedCount}\n⏭️ Atlanan (Mevcut): ${skippedCount}\n\nToplam Kayıt: ${records.length}`);
                     optionsModal.classList.remove('active');
