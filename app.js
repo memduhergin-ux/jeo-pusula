@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v364';
+const CACHE_NAME = 'jeocompass-v366';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1016,10 +1016,18 @@ function initMap() {
 
     function saveTrackToDatabase(name, path) {
         if (path.length < 2) return;
+
+        // FIFO: Keep only the latest 10 tracks
+        if (jeoTracks.length >= 10) {
+            const removedTrack = jeoTracks.shift(); // Remove oldest
+            // If the removed track was visible on map, it will be removed on next updateMapMarkers
+            console.log(`Removed oldest track: ${removedTrack.name}`);
+        }
+
         const id = Date.now();
         const newTrack = {
             id: id,
-            name: name || `İzlek ${jeoTracks.length + 1}`,
+            name: name || `Auto Track ${new Date().toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
             path: path,
             color: '#ff5722',
             visible: true,
@@ -1029,7 +1037,7 @@ function initMap() {
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
         renderTracks();
         updateMapMarkers(false);
-        showToast("İzlek başarıyla kaydedildi.");
+        showToast("Track saved automatically.");
     }
 
     if (btnTrackToggle) {
@@ -1039,7 +1047,7 @@ function initMap() {
                 if (confirm("Do you want to start track recording?")) {
                     isTracking = true;
                     updateTrackingButton();
-                    showToast("İz kaydı başladı.");
+                    showToast("Track recording started.");
                 }
             } else {
                 // STOP Request
@@ -1049,14 +1057,10 @@ function initMap() {
                     updateTrackingButton();
 
                     if (trackPath.length > 1) {
-                        const trackName = prompt("İzlek Adı:", `İzlek ${jeoTracks.length + 1}`);
-                        if (trackName !== null) {
-                            saveTrackToDatabase(trackName, [...trackPath]);
-                        }
-
-                        if (confirm("Haritadaki canlı iz temizlensin mi?")) {
-                            clearTrack();
-                        }
+                        // AUTO SAVE
+                        saveTrackToDatabase(null, [...trackPath]);
+                        // AUTO CLEAR
+                        clearTrack();
                     } else {
                         showToast("Kayıt çok kısa, kaydedilmedi.");
                         clearTrack();
@@ -1941,9 +1945,9 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindTooltip(feature.properties.name, {
                     permanent: true,
-                    direction: 'center', // Changed from top for better stability
+                    direction: 'top', // Reverted to top for stability
                     className: 'kml-label',
-                    offset: [0, 0], // Anchor at center
+                    offset: [0, -5], // Slight offset above the point
                     sticky: true
                 });
             }
