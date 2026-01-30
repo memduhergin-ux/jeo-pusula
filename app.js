@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v374';
+const CACHE_NAME = 'jeocompass-v375';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -195,6 +195,13 @@ function getFeatureName(properties) {
     const keys = ['name', 'Name', 'NAME', 'label', 'Label', 'LABEL', 'id', 'ID'];
     for (const key of keys) {
         if (properties[key]) return properties[key];
+    }
+    // Deep fallback: first non-empty string or number property
+    for (const key in properties) {
+        const val = properties[key];
+        if ((typeof val === 'string' && val.trim().length > 0) || typeof val === 'number') {
+            return val;
+        }
     }
     return null;
 }
@@ -882,10 +889,10 @@ function initMap() {
         const boxes = [];
 
         labels.forEach(label => {
-            // Force visibility using setProperty with !important for v372
-            label.style.setProperty('opacity', '1', 'important');
-            label.style.setProperty('visibility', 'visible', 'important');
-            label.style.setProperty('display', 'block', 'important');
+            // Reset visibility at the start of check
+            label.style.opacity = '1';
+            label.style.visibility = 'visible';
+            label.style.display = 'block';
             label.style.transform = 'translate(0, 0)';
 
             const rect = label.getBoundingClientRect();
@@ -933,8 +940,8 @@ function initMap() {
             }
 
             if (!success) {
-                label.style.setProperty('opacity', '0', 'important');
-                label.style.setProperty('visibility', 'hidden', 'important');
+                label.style.opacity = '0';
+                label.style.visibility = 'hidden';
             }
         });
     }
