@@ -467,7 +467,7 @@ body {
 
 /* Sadece Dip deÄŸerine derece sembolÃ¼ */
 #val-dip::after {
-    content: 'Â°';
+    content: '\00b0';
     position: absolute;
     top: 2px;
     right: -8px;
@@ -1615,6 +1615,7 @@ textarea.form-input {
     animation: spin 1s linear infinite;
     display: inline-block;
 }
+
 /* Tracks Management & Tabs */
 .records-tabs {
     display: flex;
@@ -1658,7 +1659,7 @@ textarea.form-input {
     border-radius: 50%;
     display: inline-block;
     vertical-align: middle;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
 }
 

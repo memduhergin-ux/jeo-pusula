@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v375';
+const CACHE_NAME = 'jeocompass-v377';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -185,9 +185,24 @@ proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_
 
 // Strike Logic
 function formatStrike(heading) {
-    let s = Math.round(heading);
-    if (s === 360) s = 0;
-    return s.toString().padStart(3, '0');
+    let relNorth = -heading;
+    while (relNorth <= -180) relNorth += 360;
+    while (relNorth > 180) relNorth -= 360;
+
+    let relSouth = (180 - heading);
+    while (relSouth <= -180) relSouth += 360;
+    while (relSouth > 180) relSouth -= 360;
+
+    let targetRelAngle;
+    if (Math.abs(relNorth) <= Math.abs(relSouth)) {
+        targetRelAngle = relNorth;
+    } else {
+        targetRelAngle = relSouth;
+    }
+
+    let angle = Math.abs(targetRelAngle);
+    let direction = (targetRelAngle < 0) ? "E" : "W";
+    return `N${Math.round(angle)}${direction}`;
 }
 
 function getFeatureName(properties) {
