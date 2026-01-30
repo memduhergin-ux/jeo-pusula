@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v361';
+const CACHE_NAME = 'jeocompass-v364';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -160,6 +160,8 @@ let isTracking = false;
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
+let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
+let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
 
 // Measurement State
@@ -820,33 +822,34 @@ function initMap() {
     const initialLon = currentCoords.lon || 32.8597;
 
     map = L.map('map-container', {
-        maxZoom: 23 // Allow zooming way in (digital zoom)
+        maxZoom: 25, // Increased from 23 to 25
+        minZoom: 1   // Ensure full zoom out flexibility
     }).setView([initialLat, initialLon], currentCoords.lat ? 17 : 15);
 
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 23,
-        maxNativeZoom: 19, // Tiles stop at 19, stretch after that
+        maxZoom: 25,
+        maxNativeZoom: 19,
         attribution: '© OpenStreetMap'
     });
 
     const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-        maxZoom: 23,
-        maxNativeZoom: 20, // Google typically goes to 20-21
+        maxZoom: 25,
+        maxNativeZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         attribution: '© Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-        maxZoom: 23,
-        maxNativeZoom: 20, // Stretch satellite tiles beyond 20
+        maxZoom: 25,
+        maxNativeZoom: 21, // Higher native zoom for satellite if available
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         attribution: '© Google'
     });
 
 
     const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        maxZoom: 23,
-        maxNativeZoom: 16, // Tiles exist up to 17, but 16 is safer for all regions
+        maxZoom: 25,
+        maxNativeZoom: 17,
         attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
     });
 
@@ -888,30 +891,37 @@ function initMap() {
             // Reset position/visibility
             label.style.opacity = '1';
             label.style.visibility = 'visible';
-            label.style.marginTop = '0px';
-            label.style.marginLeft = '0px';
+            label.style.transform = 'translate(0, 0)'; // Reset transform
+
+            const rect = label.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            // Scenario displacement strategy: Try 8 directions
+            const displacement = 15; // Base distance in pixels
+            const diag = displacement * 0.707;
 
             const scenarios = [
-                { mt: 0, ml: 0 },       // Top (Default)
-                { mt: 15, ml: 40 },     // Right
-                { mt: 35, ml: 0 },      // Bottom
-                { mt: 15, ml: -40 }     // Left
+                { tx: 0, ty: -displacement },   // Top
+                { tx: diag, ty: -diag },          // Top-Right
+                { tx: displacement, ty: 0 },      // Right
+                { tx: diag, ty: diag },           // Bottom-Right
+                { tx: 0, ty: displacement },      // Bottom
+                { tx: -diag, ty: diag },          // Bottom-Left
+                { tx: -displacement, ty: 0 },     // Left
+                { tx: -diag, ty: -diag }          // Top-Left
             ];
 
             let success = false;
 
             for (const s of scenarios) {
-                label.style.marginTop = s.mt + 'px';
-                label.style.marginLeft = s.ml + 'px';
+                label.style.transform = `translate(${s.tx}px, ${s.ty}px)`;
 
-                const rect = label.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) continue;
-
+                const currentRect = label.getBoundingClientRect();
                 let currentBox = {
-                    top: rect.top - 1,
-                    left: rect.left - 1,
-                    bottom: rect.bottom + 1,
-                    right: rect.right + 1
+                    top: currentRect.top - 2,
+                    left: currentRect.left - 2,
+                    bottom: currentRect.bottom + 2,
+                    right: currentRect.right + 2
                 };
 
                 let overlap = false;
@@ -1002,35 +1012,54 @@ function initMap() {
         localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
     }
 
-    // Single Toggle Button Logic
     const btnTrackToggle = document.getElementById('btn-track-toggle');
+
+    function saveTrackToDatabase(name, path) {
+        if (path.length < 2) return;
+        const id = Date.now();
+        const newTrack = {
+            id: id,
+            name: name || `İzlek ${jeoTracks.length + 1}`,
+            path: path,
+            color: '#ff5722',
+            visible: true,
+            time: new Date().toLocaleString('tr-TR')
+        };
+        jeoTracks.push(newTrack);
+        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        renderTracks();
+        updateMapMarkers(false);
+        showToast("İzlek başarıyla kaydedildi.");
+    }
+
     if (btnTrackToggle) {
         btnTrackToggle.addEventListener('click', () => {
             if (!isTracking) {
                 // START
-                isTracking = true;
-                updateTrackingButton();
-                showToast("İz kaydı başladı.");
+                if (confirm("Do you want to start track recording?")) {
+                    isTracking = true;
+                    updateTrackingButton();
+                    showToast("İz kaydı başladı.");
+                }
             } else {
                 // STOP Request
-                // Ask to save
-                if (confirm("Kayıt durdurulsun mu? \n(Tamam: Kaydet ve Bitir / İptal: Devam Et)")) {
+                // Ask to stop
+                if (confirm("Kayıt durdurulsun mu?")) {
                     isTracking = false;
                     updateTrackingButton();
 
-                    // Now ask to export
-                    if (confirm("İz dosyası (KML) olarak kaydedilsin mi?")) {
-                        exportKML();
+                    if (trackPath.length > 1) {
+                        const trackName = prompt("İzlek Adı:", `İzlek ${jeoTracks.length + 1}`);
+                        if (trackName !== null) {
+                            saveTrackToDatabase(trackName, [...trackPath]);
+                        }
 
-                        // Clear map after save?
-                        if (confirm("Haritadaki iz temizlensin mi?")) {
+                        if (confirm("Haritadaki canlı iz temizlensin mi?")) {
                             clearTrack();
                         }
                     } else {
-                        // User didn't save. Ask to clear?
-                        if (confirm("İz silinsin mi? (Geri alınamaz)")) {
-                            clearTrack();
-                        }
+                        showToast("Kayıt çok kısa, kaydedilmedi.");
+                        clearTrack();
                     }
                 }
             }
@@ -1410,6 +1439,23 @@ function updateMapMarkers(shouldFitBounds = false) {
     if (!map || !markerGroup) return;
     markerGroup.clearLayers();
 
+    // Clear and Redraw saved tracks
+    Object.values(trackLayers).forEach(layer => map.removeLayer(layer));
+    trackLayers = {};
+
+    jeoTracks.forEach(t => {
+        if (t.visible && t.path && t.path.length > 1) {
+            const poly = L.polyline(t.path, {
+                color: t.color || '#ff5722',
+                weight: 4,
+                opacity: 0.8
+            }).addTo(map);
+
+            poly.bindPopup(`<b>${t.name}</b><br>${t.time}<br>${formatScaleDist(calculateTrackLength(t.path))}`);
+            trackLayers[t.id] = poly;
+        }
+    });
+
     if (!showRecordsOnMap) return;
 
     // Remove fixed zoom limit, we will use dynamic scaling instead
@@ -1556,9 +1602,133 @@ function updateMapMarkers(shouldFitBounds = false) {
 
     if (shouldFitBounds && dataToRender.length > 0 && selectedIds.length > 0) {
         const group = new L.featureGroup(markerGroup.getLayers());
+        // Add visible tracks to bounds calculation if requested? 
+        // For now just keep it to points as before unless requested otherwise
         map.fitBounds(group.getBounds().pad(0.2));
     }
 }
+
+function calculateTrackLength(path) {
+    let len = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+        const p1 = L.latLng(path[i][0], path[i][1]);
+        const p2 = L.latLng(path[i + 1][0], path[i + 1][1]);
+        len += p1.distanceTo(p2);
+    }
+    return len;
+}
+
+function renderTracks() {
+    const tableBody = document.getElementById('tracks-body');
+    if (!tableBody) return;
+
+    if (jeoTracks.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5">Henüz kayıtlı izlek yok</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = jeoTracks.map(t => `
+        <tr data-id="${t.id}">
+            <td onclick="focusTrack(${t.id})">${t.name}</td>
+            <td><input type="color" value="${t.color || '#ff5722'}" onchange="updateTrackColor(${t.id}, this.value)" class="track-color-dot"></td>
+            <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
+            <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
+            <td>
+                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="KML İndir">💾</button>
+                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Sil">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+window.updateTrackColor = function (id, color) {
+    const track = jeoTracks.find(t => t.id === id);
+    if (track) {
+        track.color = color;
+        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        updateMapMarkers(false);
+    }
+};
+
+window.toggleTrackVisibility = function (id) {
+    const track = jeoTracks.find(t => t.id === id);
+    if (track) {
+        track.visible = !track.visible;
+        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        updateMapMarkers(false);
+    }
+};
+
+window.deleteTrack = function (id) {
+    if (confirm("İzlek silinsin mi?")) {
+        jeoTracks = jeoTracks.filter(t => t.id !== id);
+        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        renderTracks();
+        updateMapMarkers(false);
+    }
+};
+
+window.focusTrack = function (id) {
+    const track = jeoTracks.find(t => t.id === id);
+    if (track && track.path && track.path.length > 0) {
+        const poly = trackLayers[id];
+        if (poly) {
+            map.fitBounds(poly.getBounds());
+            document.querySelector('[data-target="view-map"]').click(); // Switch to Map
+        }
+    }
+};
+
+window.exportSingleTrackKML = function (id) {
+    const t = jeoTracks.find(track => track.id === id);
+    if (!t) return;
+
+    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${t.name}</name>
+    <Style id="track-style">
+      <LineStyle>
+        <color>ff${t.color.substring(5, 7)}${t.color.substring(3, 5)}${t.color.substring(1, 3)}</color>
+        <width>4</width>
+      </LineStyle>
+    </Style>
+    <Placemark>
+      <name>${t.name}</name>
+      <styleUrl>#track-style</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>
+`;
+    t.path.forEach(pt => {
+        kml += `${pt[1]},${pt[0]},0 `;
+    });
+
+    kml += `
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>`;
+
+    downloadFile(kml, `${t.name.replace(/\s+/g, '_')}.kml`, 'application/vnd.google-earth.kml+xml');
+};
+
+// Tab Switching
+document.getElementById('tab-points').addEventListener('click', () => {
+    document.getElementById('tab-points').classList.add('active');
+    document.getElementById('tab-tracks').classList.remove('active');
+    document.getElementById('container-points').style.display = 'block';
+    document.getElementById('container-tracks').style.display = 'none';
+});
+
+document.getElementById('tab-tracks').addEventListener('click', () => {
+    document.getElementById('tab-tracks').classList.add('active');
+    document.getElementById('tab-points').classList.remove('active');
+    document.getElementById('container-tracks').style.display = 'block';
+    document.getElementById('container-points').style.display = 'none';
+    renderTracks();
+});
 
 if (btnToggleRecords) {
     btnToggleRecords.classList.toggle('active', showRecordsOnMap);
@@ -1771,9 +1941,9 @@ function addExternalLayer(name, geojson) {
             if (feature.properties && feature.properties.name) {
                 layer.bindTooltip(feature.properties.name, {
                     permanent: true,
-                    direction: 'top',
+                    direction: 'center', // Changed from top for better stability
                     className: 'kml-label',
-                    offset: [0, 8], // Fine-tuned offset to look natural (close but not on top)
+                    offset: [0, 0], // Anchor at center
                     sticky: true
                 });
             }
