@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v372';
+const CACHE_NAME = 'jeocompass-v373';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -185,24 +185,16 @@ proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_
 
 // Strike Logic
 function formatStrike(heading) {
-    let relNorth = -heading;
-    while (relNorth <= -180) relNorth += 360;
-    while (relNorth > 180) relNorth -= 360;
-
-    let relSouth = (180 - heading);
-    while (relSouth <= -180) relSouth += 360;
-    while (relSouth > 180) relSouth -= 360;
-
-    let targetRelAngle;
-    if (Math.abs(relNorth) <= Math.abs(relSouth)) {
-        targetRelAngle = relNorth;
-    } else {
-        targetRelAngle = relSouth;
-    }
-
-    let angle = Math.abs(targetRelAngle);
-    let direction = (targetRelAngle < 0) ? "E" : "W";
     return `N${Math.round(angle)}${direction}`;
+}
+
+function getFeatureName(properties) {
+    if (!properties) return null;
+    const keys = ['name', 'Name', 'NAME', 'label', 'Label', 'LABEL', 'id', 'ID'];
+    for (const key of keys) {
+        if (properties[key]) return properties[key];
+    }
+    return null;
 }
 
 // Barometer
@@ -232,14 +224,14 @@ function updateDisplay() {
     }
 
     if (!lockStrike && valStrike) {
-        valStrike.textContent = formatStrike(displayedHeading);
+        valStrike.textContent = formatStrike(displayedHeading) + "°";
     }
 
     let dip = Math.abs(currentTilt.beta); // currentTilt.beta is now stabilized in handleOrientation
     if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
-        valDip.textContent = Math.round(dip);
+        valDip.textContent = Math.round(dip) + "°";
     }
 
     if (levelBubble) {
@@ -879,16 +871,6 @@ function initMap() {
         activeMapLayer = e.name; // Update global tracker
         localStorage.setItem('jeoMapLayer', e.name);
     });
-
-    // Feature property search helper
-    function getFeatureName(properties) {
-        if (!properties) return null;
-        const keys = ['name', 'Name', 'NAME', 'label', 'Label', 'LABEL', 'id', 'ID'];
-        for (const key of keys) {
-            if (properties[key]) return properties[key];
-        }
-        return null;
-    }
 
     // Label Collision Prevention & Auto Alignment
     function preventTooltipOverlap() {
@@ -2039,14 +2021,9 @@ function addExternalLayer(name, geojson) {
     externalLayers.push(layerObj);
 
     // Zoom to layer
-    try {
-        map.fitBounds(layer.getBounds());
-    } catch (e) {
-        // Empty layer
-    }
-
     saveExternalLayers();
     renderLayerList();
+    setTimeout(preventTooltipOverlap, 500);
 }
 
 function renderLayerList() {
