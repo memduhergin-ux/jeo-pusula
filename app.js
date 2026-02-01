@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v381';
+const CACHE_NAME = 'jeocompass-v382';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -916,7 +916,8 @@ function initMap() {
 
             if (markers.length === 0) return;
 
-            const gridSize = 25; // Pixel grid size for thinning
+            // Increased grid size for better performance and thinning (v382)
+            const gridSize = 40;
             const occupiedCells = new Set();
             const mapBounds = map.getBounds();
 
@@ -1969,12 +1970,13 @@ function addExternalLayer(name, geojson) {
         },
         onEachFeature: (feature, layer) => {
             const featureName = getFeatureName(feature.properties);
-            if (featureName) {
+            // v382: Only show labels for Points to prevent clutter on lines/polygons
+            if (featureName && feature.geometry.type === 'Point') {
                 layer.bindTooltip(String(featureName), {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, -5],
+                    offset: [0, -2], // v382: Minimized distance to marker
                     sticky: false // Changed to false for better stability
                 });
 
