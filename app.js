@@ -510,7 +510,7 @@ function updateSensorUI() {
         statusEl.style.color = "#ff9800";
         if (calibrationWarning) calibrationWarning.style.display = 'block';
     } else {
-        statusEl.textContent = "BEKLENÄ°YOR: LÃ¼tfen Butona BasÄ±n";
+        statusEl.textContent = "WAITING: Please Click Start Button";
         statusEl.style.color = "#f44336";
     }
 }
@@ -585,14 +585,14 @@ if (permissionBtn) {
     });
 }
 
-// Otomatik BaÅŸlatma Denemesi (Android iÃ§in)
+// Auto Start Attempt
 function autoInitSensors() {
     const isIOS = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
 
     if (isIOS) {
         if (permissionBtn) {
             permissionBtn.style.display = 'block';
-            permissionBtn.textContent = 'PusulayÄ± BaÅŸlat (TÄ±klayÄ±n)';
+            permissionBtn.textContent = 'Start Compass (Click Here)';
         }
     } else {
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
@@ -658,7 +658,7 @@ if ('geolocation' in navigator) {
             console.error("WatchPosition error:", e);
         }
     }, (err) => {
-        console.error("Konum hatasÄ±:", err);
+        console.error("Location error:", err);
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
 }
 
@@ -744,7 +744,7 @@ if (document.getElementById('btn-modal-save')) {
                 strike: strikeLine,
                 dip: dip,
                 note: note,
-                time: new Date().toLocaleString('tr-TR'), // Added Time
+                time: new Date().toLocaleString('en-GB'), // Added Time (Eng format)
                 geom: pendingGeometry, // Saved shape
                 geomType: pendingGeometryType
             };
@@ -817,7 +817,7 @@ function renderRecords(filter = '') {
             <td>${r.dip}</td>
             <td style="font-size:0.75rem; color:#aaa;">${r.time || ''}</td>
             <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
-            <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">âœï¸</button></td>
+            <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">📝</button></td>
         </tr>
     `).join('');
 
@@ -845,28 +845,28 @@ function initMap() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: 'Â© OpenStreetMap'
+        attribution: '© OpenStreetMap'
     });
 
     const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: 'Â© Google'
+        attribution: '© Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 21, // Higher native zoom for satellite if available
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: 'Â© Google'
+        attribution: '© Google'
     });
 
 
     const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: Â© OpenStreetMap contributors, SRTM | Map style: Â© OpenTopoMap (CC-BY-SA)'
+        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
     });
 
     const baseMaps = {
@@ -1121,8 +1121,8 @@ function initMap() {
 
         const id = Date.now();
         const now = new Date();
-        const dateStr = now.toLocaleDateString('tr-TR'); // DD.MM.YYYY
-        const timeStr = now.toLocaleTimeString('tr-TR'); // HH:MM:SS
+        const dateStr = now.toLocaleDateString('en-GB'); // DD.MM.YYYY
+        const timeStr = now.toLocaleTimeString('en-GB'); // HH:MM:SS
         const defaultName = `${dateStr} ${timeStr}`;
 
         const newTrack = {
@@ -1146,6 +1146,14 @@ function initMap() {
                 // START
                 if (confirm("Do you want to start track recording?")) {
                     isTracking = true;
+                    // Reset trackPath if we want a CLEAN start every time, 
+                    // or keep it if we want to CONTINUE. 
+                    // User said "auto-save doesn't work", maybe they want clean tracks.
+                    trackPath = [];
+                    if (trackPolyline) {
+                        map.removeLayer(trackPolyline);
+                        trackPolyline = null;
+                    }
                     updateTrackingButton();
                     showToast("Track recording started.");
                 }
@@ -1227,7 +1235,7 @@ function initMap() {
         }
         trackPath = [];
         localStorage.removeItem('jeoTrackPath');
-        showToast("Ä°z temizlendi.");
+        showToast("Track cleared.");
     }
 
     /* REMOVED LOCK SYSTEM (v355) */
@@ -1251,7 +1259,7 @@ function initMap() {
             // Show Loading Popup
             const loadingPopup = L.popup()
                 .setLatLng(e.latlng)
-                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Veriler Ã§ekiliyor...</div>')
+                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Fetching data...</div>')
                 .openOn(map);
 
             // Convert to UTM for fallback/display
@@ -1276,11 +1284,11 @@ function initMap() {
                 const geometry = parcelResult ? parcelResult.geometry : null;
 
                 if (!parcel) {
-                    showToast("Parsel bulunamadÄ±.");
+                    showToast("Parcel not found.");
                 }
 
                 if (parcel && parcelId !== lastSelectedParcel) {
-                    showToast("Parsel sÄ±nÄ±rlarÄ± yÃ¼klendi.");
+                    showToast("Parcel boundaries loaded.");
                     // Stage 1: Show Boundaries
                     highlightLayer.clearLayers();
                     lastSelectedParcel = parcelId;
@@ -1303,28 +1311,28 @@ function initMap() {
                 }
 
                 let content = `<div class="map-popup-container" style="min-width: 180px;">`;
-                content += `<div style="font-weight:bold; color:#ff0000; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">ğŸ  Parsel Bilgileri</div>`;
+                content += `<div style="font-weight:bold; color:#ff0000; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏡 Parcel Information</div>`;
 
                 if (parcel) {
                     const parcelStr = JSON.stringify(parcel).replace(/"/g, '&quot;');
                     content += `
                         <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:4px;">
-                            <tr><td style="color:#aaa; padding:2px 0;">Ä°l/Ä°lÃ§e:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Mahalle:</td><td style="text-align:right;">${parcel.MAHALLE_AD || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Ada/Parsel:</td><td style="text-align:right; font-weight:bold; color:#fff;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Nitelik:</td><td style="text-align:right;">${parcel.OZN_NITELIK || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Mevkii:</td><td style="text-align:right;">${parcel.MEVKII || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Province/District:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Neighborhood:</td><td style="text-align:right;">${parcel.MAHALLE_AD || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Island/Parcel:</td><td style="text-align:right; font-weight:bold; color:#fff;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Quality:</td><td style="text-align:right;">${parcel.OZN_NITELIK || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Location:</td><td style="text-align:right;">${parcel.MEVKII || '-'}</td></tr>
                         </table>
                         <div style="font-size:0.75rem; color:#666; margin:8px 0; border-top:1px solid #333; padding-top:4px;">
                             UTM: ${utmY}, ${utmX} (Z: ${zVal}m)
                         </div>
                         <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">ğŸ’¾ Kaydet</button>
-                            <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
+                            <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">💾 Save</button>
+                            <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Close</button>
                         </div>
                     `;
                 } else {
-                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadÄ±.</div>`;
+                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parcel not found.</div>`;
                     content += `
                         <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
                             <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
@@ -1332,14 +1340,14 @@ function initMap() {
                             <tr><td style="color:#aaa; padding:2px 0;">Z:</td><td style="text-align:right;">${zVal} m</td></tr>
                         </table>
                         <div style="margin-top:10px;">
-                            <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
+                            <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Close</button>
                         </div>
                     `;
                 }
                 content += `</div>`;
                 loadingPopup.setContent(content);
             }).catch(err => {
-                loadingPopup.setContent("Sorgulama hatasÄ±.");
+                loadingPopup.setContent("Query error.");
             });
         }
     });
@@ -1371,7 +1379,7 @@ function initMapControls() {
                     <span id="scale-unit" class="scale-unit"></span>
                 </div>
                 <div class="utm-control-container">
-                    <div id="map-utm-coords" class="map-utm-coords-new">Konum bekleniyor...</div>
+                    <div id="map-utm-coords" class="map-utm-coords-new">Location pending...</div>
                 </div>
             `;
             return wrapper;
@@ -1461,7 +1469,7 @@ function updateScaleValues() {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
-                const modeLabel = isAddingPoint ? "ğŸ¯" : "ğŸ“";
+                const modeLabel = isAddingPoint ? "📍" : "🎯";
                 // Simplified display to prevent overflow and ensure icon is visible
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
@@ -1470,7 +1478,7 @@ function updateScaleValues() {
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
-                utmEl.textContent = "UTM HatasÄ±";
+                utmEl.textContent = "UTM Error";
             }
         } else {
             utmEl.textContent = "Waiting for location...";
@@ -1583,22 +1591,22 @@ function updateMapMarkers(shouldFitBounds = false) {
 
             // 1. Draw Geometry (if exists)
             if (r.geom && r.geom.length > 0) {
-                const latlngs = r.geom.map(p => L.latLng(p[0], p[1]));
+                const latlngs = r.geom.map(p => [p[0], p[1]]);
                 let totalLen = 0;
                 for (let i = 0; i < latlngs.length - 1; i++) {
-                    totalLen += latlngs[i].distanceTo(latlngs[i + 1]);
+                    totalLen += L.latLng(latlngs[i]).distanceTo(L.latLng(latlngs[i + 1]));
                 }
 
                 let shape;
                 if (r.geomType === 'polygon') {
-                    totalLen += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+                    totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
                     shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 });
 
                     // Labelling Polygon Edges
                     for (let i = 0; i < latlngs.length; i++) {
                         const nextIndex = (i + 1) % latlngs.length;
-                        const p1 = latlngs[i];
-                        const p2 = latlngs[nextIndex];
+                        const p1 = L.latLng(latlngs[i]);
+                        const p2 = L.latLng(latlngs[nextIndex]);
                         const dist = p1.distanceTo(p2);
                         const mid = getSegmentMidpoint(p1, p2);
                         const angle = getSegmentAngle(p1, p2);
@@ -1621,8 +1629,8 @@ function updateMapMarkers(shouldFitBounds = false) {
                     // DRAW SEGMENT LABELS FOR POLYLINE
                     if (r.geomType === 'polyline') {
                         for (let i = 0; i < latlngs.length - 1; i++) {
-                            const p1 = latlngs[i];
-                            const p2 = latlngs[i + 1];
+                            const p1 = L.latLng(latlngs[i]);
+                            const p2 = L.latLng(latlngs[i + 1]);
                             const dist = map.distance(p1, p2);
                             const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
 
@@ -1652,9 +1660,9 @@ function updateMapMarkers(shouldFitBounds = false) {
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                         <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'No note'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
-                            ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
+                            ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">ğŸ—‘ï¸ Delete</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                     </div>
                 `;
 
@@ -1686,7 +1694,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div style="margin-bottom: 5px;"><b>Strike / Dip:</b> ${r.strike} / ${r.dip}</div>
                     <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'No note'}"</div>
-                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">ğŸ—‘ï¸ Delete</button>
+                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                 </div>
             `);
 
@@ -1740,7 +1748,7 @@ function renderTracks() {
             <td>
                 <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">💾</button>
                 <button onclick="exportSingleTrackCSV(${t.id})" class="track-action-btn" title="Download CSV (ED50)">📊</button>
-                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">ğŸ—‘ï¸</button>
+                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">🗑️</button>
             </td>
         </tr>
     `).join('');
@@ -1765,7 +1773,7 @@ window.toggleTrackVisibility = function (id) {
 };
 
 window.deleteTrack = function (id) {
-    if (confirm("Ä°zlek silinsin mi?")) {
+    if (confirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
         renderTracks();
@@ -2032,11 +2040,11 @@ if (fileImportInput) {
                 saveExternalLayers(); // Persist
                 layersModal.classList.remove('active');
             } else {
-                alert("GeÃ§erli bir KML bulunamadÄ±.");
+                alert("No valid KML found.");
             }
         } catch (err) {
             console.error(err);
-            alert("Dosya okunamadÄ±: " + err.message);
+            alert("File could not be read: " + err.message);
         }
         fileImportInput.value = ''; // Reset
     });
@@ -2151,9 +2159,6 @@ function addExternalLayer(name, geojson) {
                     // We need to trigger the same logic as map click.
                     // Since the map click handler is anonymous, let's extract it or copy the logic.
                     // Copying logic for stability (or we could fire a map click event?)
-                    // e.target.closePopup();
-
-                    // Trigger map click logic manually or refactor.
                     // Simpler: Fire a synthetic click on the map?
                     // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
                     // Let's just run the logic directly or fire map click.
@@ -2218,7 +2223,7 @@ function renderLayerList() {
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
-                    ${l.visible ? 'ğŸ‘ï¸' : 'ğŸ•¶ï¸'}
+                    ${l.visible ? '👁️' : '👁️‍🗨️'}
                 </button>
                 <div style="display:flex; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
@@ -2226,7 +2231,7 @@ function renderLayerList() {
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
                 </div>
-                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">ğŸ—‘ï¸</button>
+                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
         `;
         layersList.appendChild(item);
@@ -2417,7 +2422,7 @@ function loadExternalLayers() {
         });
         renderLayerList();
     } catch (e) {
-        console.error("KML yÃ¼kleme hatasÄ±:", e);
+        console.error("KML loading error:", e);
     }
 }
 
@@ -2471,7 +2476,7 @@ if (btnConfirmPoint) {
         const center = map.getCenter();
         const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
         const bestAlt = onlineCenterAlt !== null ? onlineCenterAlt : (onlineMyAlt !== null ? onlineMyAlt : gpsAlt);
-        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seÃ§ildi (Merkez)", bestAlt);
+        openRecordModalWithCoords(center.lat, center.lng, "Selected from Map", bestAlt);
 
         // Reset Mode
         isAddingPoint = false;
@@ -2486,9 +2491,9 @@ if (btnAddGps) {
         if (currentCoords.lat !== 0) {
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
             const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Konumu", bestAlt);
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Position", bestAlt);
         } else {
-            alert("Konum verisi bekleniyor...");
+            alert("Waiting for location data...");
         }
     });
 }
@@ -2572,6 +2577,16 @@ function updateMeasureModeUI() {
     }
 }
 
+function updateMeasureButtons() {
+    if (measurePoints.length > 0) {
+        btnMeasureUndo.style.display = 'inline-block';
+        btnMeasureSave.style.display = 'inline-block';
+    } else {
+        btnMeasureUndo.style.display = 'none';
+        btnMeasureSave.style.display = 'none';
+    }
+}
+
 // New Buttons
 const btnMeasureUndo = document.getElementById('btn-measure-undo');
 const btnMeasureSave = document.getElementById('btn-measure-save');
@@ -2607,16 +2622,6 @@ function clearMeasurement() {
 
     measureText.textContent = "0 m";
     updateMeasureButtons();
-}
-
-function updateMeasureButtons() {
-    if (measurePoints.length > 0) {
-        btnMeasureUndo.style.display = 'inline-block';
-        btnMeasureSave.style.display = 'inline-block';
-    } else {
-        btnMeasureUndo.style.display = 'none';
-        btnMeasureSave.style.display = 'none';
-    }
 }
 
 function undoMeasurement() {
@@ -2729,13 +2734,13 @@ function redrawMeasurement() {
         if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
 
         let popupText = `<div class="map-popup-container">`;
-        popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Ã‡okgen Ã–lÃ§Ã¼mÃ¼' : 'Mesafe Ã–lÃ§Ã¼mÃ¼'}</div>`;
+        popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Polygon Measurement' : 'Distance Measurement'}</div>`;
         popupText += `<hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
-        popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Ã‡evre:</b> ${formatScaleDist(totalLen)}</div>`;
+        popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Perimeter/Length:</b> ${formatScaleDist(totalLen)}</div>`;
         if (isPolygon) {
-            popupText += `<div style="font-size:0.9rem; color:#2196f3;"><b>Alan:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
+            popupText += `<div style="font-size:0.9rem; color:#2196f3;"><b>Area:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
         }
-        popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Kaydetmek iÃ§in alt paneli kullanÄ±n)</div>`;
+        popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Use bottom panel to save)</div>`;
         popupText += `</div>`;
 
         const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
@@ -2762,7 +2767,7 @@ function calculateAndDisplayMeasurement() {
     if (measurePoints.length > 2) {
         let area = calculateAreaHelper(measurePoints);
         let areaText = formatArea(area);
-        measureText.innerHTML += `<br><span style="font-size:0.8em; color:#ddd">${isPolygon ? 'Alan' : 'Hayali Alan'}: ${areaText}</span>`;
+        measureText.innerHTML += `<br><span style="font-size:0.8em; color:#ddd">${isPolygon ? 'Area' : 'Imaginary Area'}: ${areaText}</span>`;
     }
 }
 
@@ -2810,7 +2815,7 @@ function updateMeasurement(latlng) {
         // Depends on zoom, but 30m is usually good for outdoors.
         // For polygon mode, we want it to be snappy.
         if (dist < 30) {
-            if (confirm("Ã‡okgen kapatÄ±lsÄ±n mÄ±? (Alan hesaplanacak)")) {
+            if (confirm("Close polygon? (Area will be calculated)")) {
                 // Close the polygon
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
@@ -2821,7 +2826,7 @@ function updateMeasurement(latlng) {
     }
 
     if (isPolygon) {
-        alert("Alan zaten kapalÄ±. DeÄŸiÅŸtirmek iÃ§in 'Geri Al' kullanÄ±n.");
+        alert("Area already closed. Use 'Undo' to modify.");
         return;
     }
 
@@ -2935,7 +2940,7 @@ function exportData(type, scope = 'selected') {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>JeoCompass ${scope === 'all' ? 'TÃ¼m KayÄ±tlar' : 'SeÃ§ilenler'}</name>`;
+    <name>JeoCompass ${scope === 'all' ? 'All Records' : 'Selected'}</name>`;
         dataToExport.forEach(r => {
             kml += `
     <Placemark>
@@ -3010,83 +3015,22 @@ if (document.getElementById('btn-backup-json')) {
                 const writable = await handle.createWritable();
                 await writable.write(jsonStr);
                 await writable.close();
-                showToast("Yedekleme baÅŸarÄ±lÄ± (Dosyaya Kaydedildi)");
+                showToast("Backup successful (Saved to file)");
             } else {
                 // Fallback
                 downloadFile(jsonStr, fileName, 'application/json');
-                showToast("Yedekleme baÅŸarÄ±lÄ± (Ä°ndirilenler KlasÃ¶rÃ¼ne)");
+                showToast("Backup successful (Downloads folder)");
             }
         } catch (err) {
             console.error("Backup failed", err);
             if (err.name !== 'AbortError') {
-                alert("Yedekleme hatasÄ±: " + err.message);
+                alert("Backup error: " + err.message);
             }
         }
     });
 }
 
-if (document.getElementById('btn-restore-json')) {
-    document.getElementById('btn-restore-json').addEventListener('click', () => {
-        document.getElementById('restore-file-input').click();
-    });
-}
-
-if (document.getElementById('restore-file-input')) {
-    document.getElementById('restore-file-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
-
-                const recordCount = data.records ? data.records.length : (Array.isArray(data) ? data.length : 0);
-
-                if (confirm(`âš ï¸ DÄ°KKAT!\n\nBu iÅŸlem mevcut TÃœM kayÄ±tlarÄ±nÄ±zÄ± silecektir.\nDosyadan ${recordCount} adet kayÄ±t geri yÃ¼klenecek.\n\nOnaylÄ±yor musunuz?`)) {
-
-                    // Restore Records
-                    if (data.records) {
-                        records = data.records;
-                    } else if (Array.isArray(data)) {
-                        records = data; // Legacy array support
-                    }
-
-                    // Restore ID Counter
-                    if (data.nextId) {
-                        nextId = data.nextId;
-                    } else {
-                        const maxId = records.reduce((max, r) => Math.max(max, parseInt(r.id)), 0);
-                        nextId = maxId + 1;
-                    }
-
-                    // Restore Declination
-                    if (data.declination !== undefined) {
-                        manualDeclination = data.declination;
-                        localStorage.setItem('jeoDeclination', manualDeclination);
-                        if (document.getElementById('declination-input')) {
-                            document.getElementById('declination-input').value = manualDeclination;
-                        }
-                    }
-
-                    // Save Everything
-                    saveRecords();
-                    localStorage.setItem('jeoNextId', nextId);
-
-                    // Refresh UI
-                    renderRecords();
-                    updateMapMarkers(true);
-                    alert("âœ… VeritabanÄ± baÅŸarÄ±yla geri yÃ¼klendi!");
-                    optionsModal.classList.remove('active');
-                }
-            } catch (err) {
-                alert("âŒ Hata: GeÃ§ersiz veya bozuk dosya!\n" + err);
-            }
-            e.target.value = '';
-        };
-        reader.readAsText(file);
-    });
-}
+// Restore logic moved to Smart Merge section at the bottom.
 
 // Share Modal Control
 if (btnShare) {
@@ -3176,7 +3120,7 @@ async function socialShare() {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>JeoCompass SeÃ§ilenler</name>`;
+    <name>JeoCompass Selected</name>`;
         dataToShare.forEach(r => {
             kml += `
     <Placemark>
@@ -3196,7 +3140,7 @@ async function socialShare() {
     }
 
     // Prepare text summary
-    let textSummary = `JeoCompass KayÄ±tlarÄ± (${dataToShare.length} adet):\n\n`;
+    let textSummary = `JeoCompass Records (${dataToShare.length} pts):\n\n`;
     dataToShare.forEach(r => {
         textSummary += `${r.label || r.id} | ${r.strike}/${r.dip} | Y:${r.y} X:${r.x} | ${r.note || ''}\n`;
     });
@@ -3204,7 +3148,7 @@ async function socialShare() {
     if (navigator.share) {
         try {
             const shareData = {
-                title: 'JeoCompass KayÄ±tlarÄ±',
+                title: 'JeoCompass Records',
                 text: textSummary
             };
 
@@ -3417,9 +3361,10 @@ if (document.getElementById('restore-file-input')) {
                             if (newL) {
                                 newL.visible = incL.visible;
                                 newL.filled = incL.filled;
-                                newL.pointsVisible = incL.pointsVisible;
-                                newL.areasVisible = incL.areasVisible;
-                                newL.labelsVisible = incL.labelsVisible;
+                                newL.pointsVisible = incL.pointsVisible !== undefined ? incL.pointsVisible : true;
+                                newL.areasVisible = incL.areasVisible !== undefined ? incL.areasVisible : true;
+                                newL.labelsVisible = incL.labelsVisible !== undefined ? incL.labelsVisible : true;
+                                if (!newL.visible) map.removeLayer(newL.layer);
                             }
                             layerAdded++;
                         }

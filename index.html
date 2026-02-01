@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=390">
+    <link rel="stylesheet" href="style.css?v=391">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -24,7 +24,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v390</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v391</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -99,17 +99,17 @@
         <div class="panel">
             <div class="toggle-container">
                 <button id="btn-wgs" class="toggle-btn" title="WGS84 (Lat/Lon)">WGS</button>
-                <button id="btn-utm" class="toggle-btn active" title="UTM ED50 (Sağa/Yukarı)">UTM</button>
+                <button id="btn-utm" class="toggle-btn active" title="UTM ED50 (East/North)">UTM</button>
             </div>
 
             <!-- Coordinates Display -->
             <div class="coords-container" id="coord-content">
-                <div class="data-label">Konum bekleniyor...</div>
+                <div class="data-label">Waiting for location...</div>
             </div>
         </div>
 
         <!-- Permission Button -->
-        <button id="permission-btn" class="permission-btn">Pusula İzni Ver</button>
+        <button id="permission-btn" class="permission-btn">Enable Compass</button>
     </div>
 
     <!-- View 2: Map (Map) -->
@@ -147,7 +147,7 @@
 
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
             <div class="map-fab-container">
-                <button id="btn-track-toggle" class="map-fab" title="İz Kaydı Başlat/Durdur">
+                <button id="btn-track-toggle" class="map-fab" title="Start/Stop Track Recording">
                     <span class="fab-icon">👣</span>
                 </button>
                 <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
@@ -261,35 +261,35 @@
     <div id="calibration-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Pusula Cal</h2>
+                <h2>Compass Cal</h2>
             </div>
             <div class="modal-body" style="color:#ccc; line-height:1.5;">
                 <div style="text-align: center; margin-bottom: 20px;">
                     <div class="figure-8" style="margin: 0 auto 10px auto;"></div>
-                    <p>Sensörleri kalibre etmek için telefonu havada <strong>8 çizecek şekilde</strong> döndürün.</p>
+                    <p>Rotate the phone in the air in a <strong>figure-8 motion</strong> to calibrate sensors.</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensör
-                        Durumu:</label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
+                        Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        Taranıyor...</p>
+                        Scanning...</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Manyetik Sapma
-                        (Deklinasyon):</label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Magnetic
+                        Declination:</label>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="number" id="declination-input" value="0" step="0.1"
                             style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
-                        <span>Derece</span>
+                        <span>Degrees</span>
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">Gerçek Kuzey ile aradaki farkı buradan
-                        manuel olarak düzeltebilirsiniz.</p>
+                        You can manually correct the difference from True North here.</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn btn-confirm" id="btn-calibration-close">Tamam</button>
+                <button class="modal-btn btn-confirm" id="btn-calibration-close">OK</button>
             </div>
         </div>
     </div>
@@ -366,7 +366,7 @@
                     </button>
                     <button class="save-btn ready" id="btn-restore-json"
                         style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
-                        📂 Geri Yükle (Restore)
+                        📂 Restore
                     </button>
                     <input type="file" id="restore-file-input" accept=".json" style="display: none;">
                 </div>
@@ -437,13 +437,15 @@
                 <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Layers will be injected here -->
                     <div style="color: #666; font-style: italic; text-align: center; padding: 20px;">
-                        Harici katman bulunamadı.
+                        No external layers found.
                     </div>
                 </div>
             </div>
             <div class="modal-footer" style="justify-content: space-between;">
                 <button class="modal-btn btn-cancel" id="btn-layers-close">Close</button>
-                <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Dosya Yükle (+)</button>
+                <button class="modal-btn btn-confirm" id="id-btn-import-layer-trigger"
+                    style="display:none;">HIDDEN</button>
+                <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Load File (+)</button>
             </div>
         </div>
     </div>
@@ -461,9 +463,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=390"></script>
+    <script src="app.js?v=391"></script>
     <script>
-        const JEO_VERSION = '390';
+        const JEO_VERSION = '391';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
