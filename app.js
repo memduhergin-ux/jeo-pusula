@@ -24,6 +24,97 @@ if (document.readyState === 'loading') {
     initApp();
 }
 
+/** Heatmap Logic (v401) **/
+function updateHeatmap() {
+    if (!map || !isHeatmapActive) return;
+
+    let points = [];
+    let activeGradient = { 0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red' };
+
+    if (heatmapFilter === 'ALL') {
+        points = records
+            .filter(r => r.lat && r.lon)
+            .map(r => [r.lat, r.lon, 1]);
+    } else {
+        const symbol = heatmapFilter.toUpperCase();
+        points = records
+            .filter(r => r.lat && r.lon && (r.label || '').toUpperCase().includes(symbol))
+            .map(r => [r.lat, r.lon, 1]);
+
+        // Professional Monochromatic Gradient (v403)
+        const baseColor = ELEMENT_COLORS[symbol] || '#f44336';
+        // Create shades: 0.1 (faint) -> 0.4 (base) -> 1.0 (bright/dark)
+        activeGradient = {
+            0.1: baseColor + '22', // Very transparent
+            0.4: baseColor + '66', // Mid
+            0.7: baseColor + 'AA', // Solid
+            1.0: baseColor          // Pure
+        };
+    }
+
+    if (heatmapLayer) {
+        map.removeLayer(heatmapLayer);
+    }
+
+    if (points.length === 0) return;
+
+    // Convert meters to pixels based on current zoom
+    const metersPerPixel = 40075016.686 * Math.abs(Math.cos(map.getCenter().lat * Math.PI / 180)) / Math.pow(2, map.getZoom() + 8);
+    const radiusPixels = heatmapRadius / metersPerPixel;
+
+    // Professional Gaussian-style Tuning (v403)
+    // Blur around 0.6-0.8 of radius for smooth Gaussian feel
+    const blurPixels = radiusPixels * 0.7;
+
+    heatmapLayer = L.heatLayer(points, {
+        radius: Math.max(15, radiusPixels),
+        blur: Math.max(10, blurPixels),
+        maxZoom: 17,
+        gradient: activeGradient
+    }).addTo(map);
+}
+
+function updateHeatmapFilterOptions() {
+    const select = document.getElementById('heatmap-element-filter');
+    if (!select) return;
+
+    const currentVal = select.value;
+    // Find all unique elements present in records
+    const foundElements = new Set();
+    records.forEach(r => {
+        const label = (r.label || '').toUpperCase();
+        for (const el in ELEMENT_COLORS) {
+            if (label.includes(el)) foundElements.add(el);
+        }
+    });
+
+    let html = '<option value="ALL">All Points (General)</option>';
+    Array.from(foundElements).sort().forEach(el => {
+        html += `<option value="${el}">${el} Highlights</option>`;
+    });
+
+    select.innerHTML = html;
+    select.value = currentVal;
+    if (select.value === "") select.value = "ALL";
+}
+
+function toggleHeatmap() {
+    isHeatmapActive = !isHeatmapActive;
+    const btn = document.getElementById('btn-heatmap-toggle');
+    const panel = document.getElementById('heatmap-radius-panel');
+
+    if (btn) btn.classList.toggle('active', isHeatmapActive);
+    if (panel) panel.style.display = isHeatmapActive ? 'block' : 'none';
+
+    if (isHeatmapActive) {
+        updateHeatmapFilterOptions();
+        updateHeatmap();
+    } else if (heatmapLayer) {
+        map.removeLayer(heatmapLayer);
+        heatmapLayer = null;
+    }
+}
+
 // Wake Lock Logic
 let wakeLock = null;
 async function requestWakeLock() {
@@ -160,6 +251,13 @@ let isTracking = true; // Garmin-style: Auto-track on start (v399)
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
+
+// Heatmap State (v401)
+let heatmapLayer = null;
+let isHeatmapActive = false;
+let heatmapRadius = 50; // default meters
+let heatmapFilter = 'ALL'; // v403
+
 // Smoothing state (v400)
 let smoothedPos = { lat: 0, lon: 0 };
 const SMOOTH_ALPHA = 0.3;
@@ -182,6 +280,19 @@ let isAddingPoint = false;
 // KML/KMZ Layers State
 let externalLayers = []; // { id, name, layer, filled: true, visible: true, pointsVisible: true, areasVisible: true }
 let layerIdCounter = 1;
+
+// Element Coloring (v401)
+const ELEMENT_COLORS = {
+    'MN': '#9c27b0', // Purple
+    'CR': '#4caf50', // Green
+    'CU': '#ff9800', // Orange
+    'NI': '#2196f3', // Blue
+    'FE': '#795548', // Brown/Red
+    'AU': '#ffc107', // Gold
+    'AG': '#9e9e9e', // Gray
+    'ZN': '#03a9f4', // Light Blue
+    'PB': '#607d8b'  // Dark Gray
+};
 
 // Setup Proj4 Definitions
 proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_defs");
@@ -675,7 +786,7 @@ if ('geolocation' in navigator) {
             // --- DRIFT FILTER (v400) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc <= 20) { // Balanced Precision (v400)
+                if (acc <= 25) { // Relaxed Precision (v401)
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
@@ -683,6 +794,13 @@ if ('geolocation' in navigator) {
                     if (dist >= 2) { // 2m movement threshold
                         updateTrack(currentCoords.lat, currentCoords.lon);
                     }
+                }
+
+                if (isHeatmapActive) updateHeatmap();
+            } else {
+                // Tracking active but signal too weak (v401)
+                if (isTracking && p.coords.accuracy > 25) {
+                    showToast(`Low GPS accuracy: ${Math.round(p.coords.accuracy)}m (Limit: 25m)`, 2000);
                 }
             }
         } catch (e) {
@@ -1728,11 +1846,22 @@ function updateMapMarkers(shouldFitBounds = false) {
 
             // 2. Draw Marker (Only for Point Records)
             const strikeAngle = parseFloat(r.strike) || 0;
+
+            // Element Detection (v401)
+            let pinColor = '#f44336'; // Default Red
+            const labelStr = labelText.toString().toUpperCase();
+            for (const [el, color] of Object.entries(ELEMENT_COLORS)) {
+                if (labelStr.includes(el)) {
+                    pinColor = color;
+                    break;
+                }
+            }
+
             const markerIcon = L.divIcon({
                 className: 'geology-marker-pin',
                 html: `
                     <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px; display: flex; align-items: center; justify-content: center; position: relative;">
-                        <div class="red-dot-symbol" style="width:${12 * scaleFactor}px; height:${12 * scaleFactor}px; background-color: #f44336; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+                        <div class="red-dot-symbol" style="width:${12 * scaleFactor}px; height:${12 * scaleFactor}px; background-color: ${pinColor}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
                         <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${4 * scaleFactor}px; right:-${6 * scaleFactor}px;">${labelText}</div>
                     </div>
                 `,
@@ -1771,6 +1900,8 @@ function updateMapMarkers(shouldFitBounds = false) {
         // For now just keep it to points as before unless requested otherwise
         map.fitBounds(group.getBounds().pad(0.2));
     }
+
+    if (isHeatmapActive) updateHeatmap();
 }
 
 function calculateTrackLength(path) {
@@ -2100,6 +2231,29 @@ if (fileImportInput) {
             alert("File could not be read: " + err.message);
         }
         fileImportInput.value = ''; // Reset
+    });
+}
+
+// Heatmap UI Listeners (v401)
+const btnHeatmap = document.getElementById('btn-heatmap-toggle');
+if (btnHeatmap) {
+    btnHeatmap.addEventListener('click', toggleHeatmap);
+}
+
+document.querySelectorAll('.radius-opt').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        heatmapRadius = parseInt(e.target.dataset.radius);
+        document.querySelectorAll('.radius-opt').forEach(ob => ob.classList.remove('active'));
+        e.target.classList.add('active');
+        if (isHeatmapActive) updateHeatmap();
+    });
+});
+
+const elFilter = document.getElementById('heatmap-element-filter');
+if (elFilter) {
+    elFilter.addEventListener('change', (e) => {
+        heatmapFilter = e.target.value;
+        if (isHeatmapActive) updateHeatmap();
     });
 }
 

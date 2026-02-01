@@ -1672,3 +1672,39 @@ textarea.form-input {
 .track-action-btn.delete:hover {
     color: #f44336;
 }
+
+/* Heatmap UI (v401) */
+#heatmap-radius-panel {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 160px !important;
+}
+
+.radius-opt {
+    background: #333;
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.radius-opt:hover {
+    background: #444;
+    color: #fff;
+}
+
+.radius-opt.active {
+    background: #2196f3;
+    color: white;
+    border-color: #2196f3;
+    font-weight: bold;
+}
+
+#btn-heatmap-toggle.active {
+    background: #ff9800 !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+}

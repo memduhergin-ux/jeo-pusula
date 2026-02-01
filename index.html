@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 </head>
 
 <body>
@@ -24,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v400</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v403</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -178,6 +179,9 @@
                 <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
                     <span class="fab-icon">📍</span>
                 </button>
+                <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
+                    <span class="fab-icon">🔥</span>
+                </button>
                 <button id="btn-follow-me" class="map-fab" title="Follow Me">
                     <div class="crosshair-wrapper">
                         <div class="crosshair-circle"></div>
@@ -187,6 +191,30 @@
                 </button>
             </div>
             <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
+
+            <!-- Heatmap Radius Control (v401) -->
+            <div id="heatmap-radius-panel"
+                style="display: none; position: absolute; bottom: 80px; right: 10px; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; border: 1px solid #444; z-index: 2000; color: white; width: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <div
+                    style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
+                    Heatmap Radius</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+                    <button class="radius-opt active" data-radius="50">50m</button>
+                    <button class="radius-opt" data-radius="100">100m</button>
+                    <button class="radius-opt" data-radius="200">200m</button>
+                    <button class="radius-opt" data-radius="300">300m</button>
+                    <button class="radius-opt" data-radius="400">400m</button>
+                    <button class="radius-opt" data-radius="500">500m</button>
+                </div>
+
+                <div
+                    style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold; border-top: 1px solid #444; padding-top: 8px;">
+                    Filter by Element</div>
+                <select id="heatmap-element-filter"
+                    style="width: 100%; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 5px; font-size: 0.8rem; outline: none;">
+                    <option value="ALL">All Points</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -463,9 +491,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=400"></script>
+    <script src="app.js?v=403"></script>
     <script>
-        const JEO_VERSION = '400';
+        const JEO_VERSION = '403';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js

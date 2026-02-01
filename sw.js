@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeocompass-v400';
+const CACHE_NAME = 'jeocompass-v403';
 const ASSETS = [
     './',
     'index.html',
@@ -6,7 +6,8 @@ const ASSETS = [
     'app.js',
     'manifest.json',
     'icon-192.png',
-    'icon-512.png'
+    'icon-512.png',
+    'https://unpkg.com/leaflet.heat/dist/leaflet-heat.js'
 ];
 
 self.addEventListener('install', (event) => {
