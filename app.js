@@ -654,15 +654,15 @@ if ('geolocation' in navigator) {
             processHeadingAndDip();
             updateDisplay();
 
-            // --- DRIFT FILTER (v393) ---
+            // --- DRIFT FILTER (v394) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc < 30) { // Accept only reasonable accuracy
+                if (acc < 40) { // Slightly relaxed accuracy for better responsiveness
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
 
-                    if (dist > 3) { // Only add if moved more than 3 meters
+                    if (dist >= 2) { // Increased sensitivity: 2 meters
                         updateTrack(currentCoords.lat, currentCoords.lon);
                     }
                 }
@@ -1160,13 +1160,9 @@ function initMap() {
             if (!isTracking) {
                 // START
                 isTracking = true;
-                // Add current point as start if available
+                // Immediate initialization
                 if (currentCoords.lat !== 0) {
-                    trackPath.push([currentCoords.lat, currentCoords.lon]);
-                }
-                if (trackPolyline) {
-                    liveLayer.removeLayer(trackPolyline);
-                    trackPolyline = null;
+                    updateTrack(currentCoords.lat, currentCoords.lon);
                 }
                 updateTrackingButton();
                 showToast("Track recording started.");
@@ -1175,15 +1171,10 @@ function initMap() {
                 isTracking = false;
                 updateTrackingButton();
 
-                if (trackPath.length > 5) { // Minimum 5 points for a "good" track
-                    // AUTO SAVE
+                if (trackPath.length > 1) {
                     saveTrackToDatabase(null, [...trackPath]);
-                    showToast("Track saved successfully.");
-                } else if (trackPath.length > 1) {
-                    saveTrackToDatabase(null, [...trackPath]);
-                    showToast("Track saved.");
                 } else {
-                    showToast("Recording is too short.");
+                    showToast("No movement recorded.");
                 }
                 clearTrack(true); // Silent clear
             }
