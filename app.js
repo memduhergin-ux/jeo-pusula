@@ -1,4 +1,4 @@
-// App Initialization & Splash Screen
+﻿// App Initialization & Splash Screen
 function initApp() {
     // 1. Remove Splash Screen
     setTimeout(() => {
@@ -123,12 +123,12 @@ function generateTicks() {
 generateTicks();
 
 // State
-let currentMode = 'utm'; // Ekranda varsayılan görünüm UTM ED50 6 Derece
+let currentMode = 'utm'; // Ekranda varsayÄ±lan gÃ¶rÃ¼nÃ¼m UTM ED50 6 Derece
 let currentCoords = { lat: 0, lon: 0, alt: 0, baroAlt: null, acc: 0 };
 let targetHeading = 0;
 let displayedHeading = 0;
 let firstReading = true;
-const SMOOTHING_FACTOR = 0.025; // 1.5 saniye oturma süresi (Profesyonel Standart)
+const SMOOTHING_FACTOR = 0.025; // 1.5 saniye oturma sÃ¼resi (Profesyonel Standart)
 let currentTilt = { beta: 0, gamma: 0 };
 let lockStrike = false;
 let lockDip = false;
@@ -139,7 +139,7 @@ let map, markerGroup, liveMarker;
 let sensorSource = null; // 'ios', 'absolute', 'relative'
 let followMe = false;
 let editingRecordId = null;
-let isRecordsLocked = true; // Kayıtlar varsayılan olarak kilitli başlar
+let isRecordsLocked = true; // KayÄ±tlar varsayÄ±lan olarak kilitli baÅŸlar
 
 // Shape Persistence
 let pendingGeometry = null;
@@ -162,7 +162,7 @@ let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
-const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
+const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
 
 // Measurement State
 let isMeasuring = false;
@@ -303,11 +303,11 @@ function renderCoordinates() {
         coordContent.innerHTML = `
             <div class="coord-row">
                 <span class="data-label">Enlem</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}Â°</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Boylam</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}Â°</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Z (Uydu)</span>
@@ -348,7 +348,7 @@ function renderCoordinates() {
                 </div>
             `;
         } catch (e) {
-            coordContent.innerHTML = '<div class="data-label">UTM Hatası</div>';
+            coordContent.innerHTML = '<div class="data-label">UTM HatasÄ±</div>';
         }
     }
 }
@@ -375,13 +375,13 @@ function handleOrientation(event) {
     }
 
     if (rawHeading !== null) {
-        // --- SENSÖR KİLİTLEME MANTIĞI ---
-        // Daha kaliteli bir kaynak (ios veya absolute) zaten kilitlenmişse, 
-        // daha düşük kaliteli (relative) gelen veriyi yok sayarız.
+        // --- SENSÃ–R KÄ°LÄ°TLEME MANTIÄI ---
+        // Daha kaliteli bir kaynak (ios veya absolute) zaten kilitlenmiÅŸse, 
+        // daha dÃ¼ÅŸÃ¼k kaliteli (relative) gelen veriyi yok sayarÄ±z.
         if (sensorSource === 'ios' && currentEventSource !== 'ios') return;
         if (sensorSource === 'absolute' && currentEventSource === 'relative') return;
 
-        // Kaynağı güncelle
+        // KaynaÄŸÄ± gÃ¼ncelle
         if (currentEventSource !== sensorSource) {
             sensorSource = currentEventSource;
             updateSensorUI();
@@ -403,14 +403,14 @@ function handleOrientation(event) {
         // currentTilt.beta = event.beta || 0; // REMOVED: Managed below
         currentTilt.gamma = event.gamma || 0;
 
-        // --- STABILIZASYON MANTIĞI ---
+        // --- STABILIZASYON MANTIÄI ---
 
-        // 1. Median Filter (Gürültü Temizleme)
+        // 1. Median Filter (GÃ¼rÃ¼ltÃ¼ Temizleme)
         // Heading Buffer
         headingBuffer.push(rawHeading);
         if (headingBuffer.length > BUFFER_SIZE) headingBuffer.shift();
 
-        // Beta Buffer (Dip için)
+        // Beta Buffer (Dip iÃ§in)
         let rawBeta = event.beta || 0;
         betaBuffer.push(rawBeta);
         if (betaBuffer.length > BUFFER_SIZE) betaBuffer.shift();
@@ -426,25 +426,25 @@ function handleOrientation(event) {
         // Update Global Beta State with Stabilized Value
         currentTilt.beta = medianBeta;
 
-        // 0-360 geçişinde (kuzeyde) medyan filtresi sapıtabilir, bunu düzelt:
-        // Eğer değerler arasında çok fark varsa (örn. 359 ve 1), medyanı iptal et ham veriyi kullan
+        // 0-360 geÃ§iÅŸinde (kuzeyde) medyan filtresi sapÄ±tabilir, bunu dÃ¼zelt:
+        // EÄŸer deÄŸerler arasÄ±nda Ã§ok fark varsa (Ã¶rn. 359 ve 1), medyanÄ± iptal et ham veriyi kullan
         if (sorted[sorted.length - 1] - sorted[0] > 180) {
             medianHeading = rawHeading;
         }
 
         // 2. Stationary Lock (Sabitlik Kilidi)
         if (isStationary) {
-            // Cihaz "sabit" modundaysa, pusulayı çok yavaş hareket ettir (Low Pass Filter)
-            // Sadece gerçekten büyük bir değişim varsa tepki ver
+            // Cihaz "sabit" modundaysa, pusulayÄ± Ã§ok yavaÅŸ hareket ettir (Low Pass Filter)
+            // Sadece gerÃ§ekten bÃ¼yÃ¼k bir deÄŸiÅŸim varsa tepki ver
             let diff = medianHeading - targetHeading;
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
 
             if (Math.abs(diff) > 2.0) {
-                // Büyük hareket (kullanıcı döndü), kilidi hemen aç
+                // BÃ¼yÃ¼k hareket (kullanÄ±cÄ± dÃ¶ndÃ¼), kilidi hemen aÃ§
                 targetHeading = medianHeading;
             } else {
-                // Küçük hareket (titreme), çok agresif yumuşat
+                // KÃ¼Ã§Ã¼k hareket (titreme), Ã§ok agresif yumuÅŸat
                 targetHeading += diff * 0.05;
             }
         } else {
@@ -463,11 +463,11 @@ function handleOrientation(event) {
     }
 }
 
-// Motion Listener (Jiroskop ile Sabitlik Algılama)
+// Motion Listener (Jiroskop ile Sabitlik AlgÄ±lama)
 function handleMotion(event) {
     if (!event.rotationRate) return;
 
-    // Toplam dönme hareketi büyüklüğü
+    // Toplam dÃ¶nme hareketi bÃ¼yÃ¼klÃ¼ÄŸÃ¼
     const alpha = event.rotationRate.alpha || 0;
     const beta = event.rotationRate.beta || 0;
     const gamma = event.rotationRate.gamma || 0;
@@ -476,7 +476,7 @@ function handleMotion(event) {
     lastRotations.push(magnitude);
     if (lastRotations.length > STATIONARY_FRAMES) lastRotations.shift();
 
-    // Son N karedeki ortalama hareket eşiğin altındaysa "SABİT" kabul et
+    // Son N karedeki ortalama hareket eÅŸiÄŸin altÄ±ndaysa "SABÄ°T" kabul et
     const avgMotion = lastRotations.reduce((a, b) => a + b, 0) / lastRotations.length;
 
     if (avgMotion < STATIONARY_THRESHOLD) {
@@ -501,16 +501,16 @@ function updateSensorUI() {
     if (!statusEl) return;
 
     if (sensorSource === 'ios' || sensorSource === 'absolute') {
-        statusEl.textContent = "BAĞLI: Hassas (Manyetik Kuzey)";
+        statusEl.textContent = "BAÄLI: Hassas (Manyetik Kuzey)";
         statusEl.style.color = "#4caf50";
         if (permissionBtn) permissionBtn.style.display = 'none';
         if (calibrationWarning) calibrationWarning.style.display = 'none';
     } else if (sensorSource === 'relative') {
-        statusEl.textContent = "BAĞLI: Tahmini (Kalibrasyon Gerekli)";
+        statusEl.textContent = "BAÄLI: Tahmini (Kalibrasyon Gerekli)";
         statusEl.style.color = "#ff9800";
         if (calibrationWarning) calibrationWarning.style.display = 'block';
     } else {
-        statusEl.textContent = "BEKLENİYOR: Lütfen Butona Basın";
+        statusEl.textContent = "BEKLENÄ°YOR: LÃ¼tfen Butona BasÄ±n";
         statusEl.style.color = "#f44336";
     }
 }
@@ -585,14 +585,14 @@ if (permissionBtn) {
     });
 }
 
-// Otomatik Başlatma Denemesi (Android için)
+// Otomatik BaÅŸlatma Denemesi (Android iÃ§in)
 function autoInitSensors() {
     const isIOS = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
 
     if (isIOS) {
         if (permissionBtn) {
             permissionBtn.style.display = 'block';
-            permissionBtn.textContent = 'Pusulayı Başlat (Tıklayın)';
+            permissionBtn.textContent = 'PusulayÄ± BaÅŸlat (TÄ±klayÄ±n)';
         }
     } else {
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
@@ -603,7 +603,7 @@ function autoInitSensors() {
             if (sensorSource === null) {
                 if (permissionBtn) {
                     permissionBtn.style.display = 'block';
-                    permissionBtn.textContent = 'Pusulayı Başlat (Tıklayın)';
+                    permissionBtn.textContent = 'PusulayÄ± BaÅŸlat (TÄ±klayÄ±n)';
                 }
             }
         }, 3000);
@@ -658,7 +658,7 @@ if ('geolocation' in navigator) {
             console.error("WatchPosition error:", e);
         }
     }, (err) => {
-        console.error("Konum hatası:", err);
+        console.error("Konum hatasÄ±:", err);
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
 }
 
@@ -686,7 +686,7 @@ if (btnSave) btnSave.addEventListener('click', () => {
     document.getElementById('rec-note').value = '';
 
     if (currentCoords.lat) {
-        // Kayıtlar her zaman UTM ED50 formatında saklanır
+        // KayÄ±tlar her zaman UTM ED50 formatÄ±nda saklanÄ±r
         const zone = Math.floor((currentCoords.lon + 180) / 6) + 1;
         const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
         try {
@@ -817,7 +817,7 @@ function renderRecords(filter = '') {
             <td>${r.dip}</td>
             <td style="font-size:0.75rem; color:#aaa;">${r.time || ''}</td>
             <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
-            <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">✏️</button></td>
+            <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">âœï¸</button></td>
         </tr>
     `).join('');
 
@@ -845,28 +845,28 @@ function initMap() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '© OpenStreetMap'
+        attribution: 'Â© OpenStreetMap'
     });
 
     const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
+        attribution: 'Â© Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 21, // Higher native zoom for satellite if available
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
+        attribution: 'Â© Google'
     });
 
 
     const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        attribution: 'Map data: Â© OpenStreetMap contributors, SRTM | Map style: Â© OpenTopoMap (CC-BY-SA)'
     });
 
     const baseMaps = {
@@ -898,17 +898,18 @@ function initMap() {
 
     // Optimized Label Collision Prevention (v381 - Point Thinning)
     let optimizeTimeout = null;
+    // Smart Label Placement (v383 - 8-Way Collision Avoidance)
+    let optimizeTimeout = null;
     function optimizeMapPoints() {
         if (optimizeTimeout) clearTimeout(optimizeTimeout);
 
         optimizeTimeout = setTimeout(() => {
-            const markers = []; // Collect all KML markers
-
-            // Iterate over external layers to find markers
+            // 1. Get all visible KML markers and their tooltips
+            const markers = []; 
             externalLayers.forEach(l => {
                 if (!l.visible || !l.pointsVisible) return;
                 l.layer.eachLayer(layer => {
-                    if (layer instanceof L.Marker && layer.getElement() && layer.getElement().querySelector('.kml-custom-icon')) {
+                    if (layer instanceof L.Marker && layer.getElement() && layer.getElement().querySelector(".kml-custom-icon")) {
                         markers.push(layer);
                     }
                 });
@@ -916,65 +917,120 @@ function initMap() {
 
             if (markers.length === 0) return;
 
-            // Increased grid size for better performance and thinning (v382)
-            const gridSize = 40;
-            const occupiedCells = new Set();
             const mapBounds = map.getBounds();
+            const occupiedRects = []; // Store {top, left, right, bottom} of occupied areas
+            const labelsToPlace = []; // Collect valid labels to process
 
+            // 2. Pre-process markers: Ensure they are visible and visible on map
             markers.forEach(marker => {
-                const latLng = marker.getLatLng();
+                const el = marker.getElement();
+                if (!el) return;
 
-                // 1. Off-screen check
+                // Always show marker (User Rule: Never hide markers)
+                el.style.display = "block";
+                el.style.opacity = "1";
+
+                const latLng = marker.getLatLng();
                 if (!mapBounds.contains(latLng)) {
-                    // Hide DOM element entirely for performance
-                    if (marker.getElement()) marker.getElement().style.display = 'none';
-                    // Also hide tooltip if attached
-                    if (marker.getTooltip() && marker.getTooltip().getElement()) {
-                        marker.getTooltip().getElement().style.display = 'none';
+                    // Off-screen optimization
+                    if (marker.getTooltip()) {
+                        marker.closeTooltip();
                     }
                     return;
                 }
 
-                // 2. Grid Thinning
-                const pos = map.latLngToContainerPoint(latLng);
-                const gridX = Math.floor(pos.x / gridSize);
-                const gridY = Math.floor(pos.y / gridSize);
-                const key = `${gridX},${gridY}`;
-
-                const el = marker.getElement();
-                const tooltipStub = marker.getTooltip();
-
-                if (occupiedCells.has(key)) {
-                    // Cell taken -> HIDE this marker
-                    if (el) {
-                        el.style.display = 'none'; // Completely remove from flow
+                // If on screen, ensure tooltip is open/created
+                if (marker.getTooltip()) {
+                    if (!map.hasLayer(marker.getTooltip())) {
+                        marker.openTooltip();
                     }
-                    if (tooltipStub) {
-                        marker.closeTooltip(); // Close to ensure it's gone
-                    }
-                } else {
-                    // Cell free -> SHOW this marker
-                    occupiedCells.add(key);
-                    if (el) {
-                        el.style.display = 'block';
-                        el.style.opacity = '1';
-                    }
+                    const tooltip = marker.getTooltip();
+                    const tooltipEl = tooltip.getElement();
+                    // Add marker rect to occupied list
+                    const markerRect = el.getBoundingClientRect();
+                    occupiedRects.push({
+                        left: markerRect.left,
+                        top: markerRect.top,
+                        right: markerRect.right,
+                        bottom: markerRect.bottom
+                    });
 
-                    // Force Label Visibility
-                    if (tooltipStub) {
-                        // Ensure it's open
-                        if (!map.hasLayer(tooltipStub)) {
-                            marker.openTooltip();
-                        }
-                        const toolEl = tooltipStub.getElement();
-                        if (toolEl) {
-                            toolEl.style.display = 'block';
-                            toolEl.style.opacity = '1';
-                            toolEl.style.visibility = 'visible';
-                        }
+                    if (tooltipEl) {
+                        labelsToPlace.push({ marker, tooltip, tooltipEl, markerRect });
                     }
                 }
             });
+
+            // 3. Smart Placement Algorithm
+            // Try 8 positions: Top(N), NE, E, SE, S, SW, W, NW
+            const dist = 12; 
+            const positions = [
+                { x: 0, y: -dist }, // N
+                { x: dist, y: -dist }, // NE
+                { x: dist, y: 0 }, // E
+                { x: dist, y: dist }, // SE
+                { x: 0, y: dist }, // S
+                { x: -dist, y: dist }, // SW
+                { x: -dist, y: 0 }, // W
+                { x: -dist, y: -dist } // NW
+            ];
+
+            labelsToPlace.forEach(item => {
+                const { tooltipEl, markerRect } = item;
+                
+                tooltipEl.style.transform = "none"; 
+                tooltipEl.style.display = "block"; 
+                
+                const width = tooltipEl.offsetWidth;
+                const height = tooltipEl.offsetHeight;
+                const markerCenter = {
+                    x: markerRect.left + markerRect.width / 2,
+                    y: markerRect.top + markerRect.height / 2
+                };
+
+                let bestPos = null;
+
+                for (let i = 0; i < positions.length; i++) {
+                    const offset = positions[i];
+                    
+                    const targetX = markerCenter.x + offset.x; 
+                    const targetY = markerCenter.y + offset.y;
+
+                    const candidateRect = {
+                        left: targetX - width / 2,
+                        right: targetX + width / 2,
+                        top: targetY - height / 2,
+                        bottom: targetY + height / 2
+                    };
+
+                    let collision = false;
+                    for (const obst of occupiedRects) {
+                         if (!(candidateRect.right < obst.left || 
+                               candidateRect.left > obst.right || 
+                               candidateRect.bottom < obst.top || 
+                               candidateRect.top > obst.bottom)) {
+                            collision = true;
+                            break;
+                        }
+                    }
+
+                    if (!collision) {
+                        bestPos = { x: offset.x, y: offset.y, rect: candidateRect };
+                        break; 
+                    }
+                }
+
+                if (bestPos) {
+                    tooltipEl.style.opacity = "1";
+                    tooltipEl.style.visibility = "visible";
+                    tooltipEl.style.transform = `translate3d(${bestPos.x}px, ${bestPos.y}px, 0)`;
+                    occupiedRects.push(bestPos.rect);
+                } else {
+                    tooltipEl.style.opacity = "0";
+                    tooltipEl.style.visibility = "hidden";
+                }
+            });
+
         }, 50);
     }
 
@@ -1003,10 +1059,10 @@ function initMap() {
         if (!btn) return;
 
         if (isTracking) {
-            btn.innerHTML = '<span class="fab-icon" style="color:#ff5252;">⏹</span>'; // Stop Icon
+            btn.innerHTML = '<span class="fab-icon" style="color:#ff5252;">â¹</span>'; // Stop Icon
             btn.classList.add('recording');
         } else {
-            btn.innerHTML = '<span class="fab-icon">👣</span>'; // Footprint Icon
+            btn.innerHTML = '<span class="fab-icon">ğŸ‘£</span>'; // Footprint Icon
             btn.classList.remove('recording');
         }
     }
@@ -1154,7 +1210,7 @@ function initMap() {
         }
         trackPath = [];
         localStorage.removeItem('jeoTrackPath');
-        showToast("İz temizlendi.");
+        showToast("Ä°z temizlendi.");
     }
 
     /* REMOVED LOCK SYSTEM (v355) */
@@ -1178,7 +1234,7 @@ function initMap() {
             // Show Loading Popup
             const loadingPopup = L.popup()
                 .setLatLng(e.latlng)
-                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Veriler çekiliyor...</div>')
+                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Veriler Ã§ekiliyor...</div>')
                 .openOn(map);
 
             // Convert to UTM for fallback/display
@@ -1203,11 +1259,11 @@ function initMap() {
                 const geometry = parcelResult ? parcelResult.geometry : null;
 
                 if (!parcel) {
-                    showToast("Parsel bulunamadı.");
+                    showToast("Parsel bulunamadÄ±.");
                 }
 
                 if (parcel && parcelId !== lastSelectedParcel) {
-                    showToast("Parsel sınırları yüklendi.");
+                    showToast("Parsel sÄ±nÄ±rlarÄ± yÃ¼klendi.");
                     // Stage 1: Show Boundaries
                     highlightLayer.clearLayers();
                     lastSelectedParcel = parcelId;
@@ -1230,13 +1286,13 @@ function initMap() {
                 }
 
                 let content = `<div class="map-popup-container" style="min-width: 180px;">`;
-                content += `<div style="font-weight:bold; color:#ff0000; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏠 Parsel Bilgileri</div>`;
+                content += `<div style="font-weight:bold; color:#ff0000; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">ğŸ  Parsel Bilgileri</div>`;
 
                 if (parcel) {
                     const parcelStr = JSON.stringify(parcel).replace(/"/g, '&quot;');
                     content += `
                         <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:4px;">
-                            <tr><td style="color:#aaa; padding:2px 0;">İl/İlçe:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
+                            <tr><td style="color:#aaa; padding:2px 0;">Ä°l/Ä°lÃ§e:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">Mahalle:</td><td style="text-align:right;">${parcel.MAHALLE_AD || '-'}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">Ada/Parsel:</td><td style="text-align:right; font-weight:bold; color:#fff;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
                             <tr><td style="color:#aaa; padding:2px 0;">Nitelik:</td><td style="text-align:right;">${parcel.OZN_NITELIK || '-'}</td></tr>
@@ -1246,12 +1302,12 @@ function initMap() {
                             UTM: ${utmY}, ${utmX} (Z: ${zVal}m)
                         </div>
                         <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">💾 Kaydet</button>
+                            <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">ğŸ’¾ Kaydet</button>
                             <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Kapat</button>
                         </div>
                     `;
                 } else {
-                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadı.</div>`;
+                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parsel bulunamadÄ±.</div>`;
                     content += `
                         <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
                             <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
@@ -1266,7 +1322,7 @@ function initMap() {
                 content += `</div>`;
                 loadingPopup.setContent(content);
             }).catch(err => {
-                loadingPopup.setContent("Sorgulama hatası.");
+                loadingPopup.setContent("Sorgulama hatasÄ±.");
             });
         }
     });
@@ -1388,7 +1444,7 @@ function updateScaleValues() {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
-                const modeLabel = isAddingPoint ? "🎯" : "📍";
+                const modeLabel = isAddingPoint ? "ğŸ¯" : "ğŸ“";
                 // Simplified display to prevent overflow and ensure icon is visible
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
@@ -1397,7 +1453,7 @@ function updateScaleValues() {
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
-                utmEl.textContent = "UTM Hatası";
+                utmEl.textContent = "UTM HatasÄ±";
             }
         } else {
             utmEl.textContent = "Waiting for location...";
@@ -1581,7 +1637,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
                             ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">ğŸ—‘ï¸ Delete</button>
                     </div>
                 `;
 
@@ -1613,7 +1669,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div style="margin-bottom: 5px;"><b>Strike / Dip:</b> ${r.strike} / ${r.dip}</div>
                     <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'No note'}"</div>
-                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
+                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">ğŸ—‘ï¸ Delete</button>
                 </div>
             `);
 
@@ -1665,8 +1721,8 @@ function renderTracks() {
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
             <td>
-                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">💾</button>
-                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">🗑️</button>
+                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">ğŸ’¾</button>
+                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">ğŸ—‘ï¸</button>
             </td>
         </tr>
     `).join('');
@@ -1691,7 +1747,7 @@ window.toggleTrackVisibility = function (id) {
 };
 
 window.deleteTrack = function (id) {
-    if (confirm("İzlek silinsin mi?")) {
+    if (confirm("Ä°zlek silinsin mi?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
         renderTracks();
@@ -1929,11 +1985,11 @@ if (fileImportInput) {
                 saveExternalLayers(); // Persist
                 layersModal.classList.remove('active');
             } else {
-                alert("Geçerli bir KML bulunamadı.");
+                alert("GeÃ§erli bir KML bulunamadÄ±.");
             }
         } catch (err) {
             console.error(err);
-            alert("Dosya okunamadı: " + err.message);
+            alert("Dosya okunamadÄ±: " + err.message);
         }
         fileImportInput.value = ''; // Reset
     });
@@ -1976,7 +2032,7 @@ function addExternalLayer(name, geojson) {
                     permanent: true,
                     direction: 'top',
                     className: 'kml-label',
-                    offset: [0, -2], // v382: Minimized distance to marker
+                    offset: [0, 0], // v383: Start at center, Smart Label will move it
                     sticky: false // Changed to false for better stability
                 });
 
@@ -2115,7 +2171,7 @@ function renderLayerList() {
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
-                    ${l.visible ? '👁️' : '🕶️'}
+                    ${l.visible ? 'ğŸ‘ï¸' : 'ğŸ•¶ï¸'}
                 </button>
                 <div style="display:flex; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
@@ -2123,7 +2179,7 @@ function renderLayerList() {
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
                 </div>
-                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
+                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">ğŸ—‘ï¸</button>
             </div>
         `;
         layersList.appendChild(item);
@@ -2314,7 +2370,7 @@ function loadExternalLayers() {
         });
         renderLayerList();
     } catch (e) {
-        console.error("KML yükleme hatası:", e);
+        console.error("KML yÃ¼kleme hatasÄ±:", e);
     }
 }
 
@@ -2368,7 +2424,7 @@ if (btnConfirmPoint) {
         const center = map.getCenter();
         const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
         const bestAlt = onlineCenterAlt !== null ? onlineCenterAlt : (onlineMyAlt !== null ? onlineMyAlt : gpsAlt);
-        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seçildi (Merkez)", bestAlt);
+        openRecordModalWithCoords(center.lat, center.lng, "Haritadan seÃ§ildi (Merkez)", bestAlt);
 
         // Reset Mode
         isAddingPoint = false;
@@ -2626,13 +2682,13 @@ function redrawMeasurement() {
         if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
 
         let popupText = `<div class="map-popup-container">`;
-        popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Çokgen Ölçümü' : 'Mesafe Ölçümü'}</div>`;
+        popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Ã‡okgen Ã–lÃ§Ã¼mÃ¼' : 'Mesafe Ã–lÃ§Ã¼mÃ¼'}</div>`;
         popupText += `<hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
-        popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Çevre:</b> ${formatScaleDist(totalLen)}</div>`;
+        popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Ã‡evre:</b> ${formatScaleDist(totalLen)}</div>`;
         if (isPolygon) {
             popupText += `<div style="font-size:0.9rem; color:#2196f3;"><b>Alan:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
         }
-        popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Kaydetmek için alt paneli kullanın)</div>`;
+        popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Kaydetmek iÃ§in alt paneli kullanÄ±n)</div>`;
         popupText += `</div>`;
 
         const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
@@ -2707,7 +2763,7 @@ function updateMeasurement(latlng) {
         // Depends on zoom, but 30m is usually good for outdoors.
         // For polygon mode, we want it to be snappy.
         if (dist < 30) {
-            if (confirm("Çokgen kapatılsın mı? (Alan hesaplanacak)")) {
+            if (confirm("Ã‡okgen kapatÄ±lsÄ±n mÄ±? (Alan hesaplanacak)")) {
                 // Close the polygon
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
@@ -2718,7 +2774,7 @@ function updateMeasurement(latlng) {
     }
 
     if (isPolygon) {
-        alert("Alan zaten kapalı. Değiştirmek için 'Geri Al' kullanın.");
+        alert("Alan zaten kapalÄ±. DeÄŸiÅŸtirmek iÃ§in 'Geri Al' kullanÄ±n.");
         return;
     }
 
@@ -2832,7 +2888,7 @@ function exportData(type, scope = 'selected') {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>JeoCompass ${scope === 'all' ? 'Tüm Kayıtlar' : 'Seçilenler'}</name>`;
+    <name>JeoCompass ${scope === 'all' ? 'TÃ¼m KayÄ±tlar' : 'SeÃ§ilenler'}</name>`;
         dataToExport.forEach(r => {
             kml += `
     <Placemark>
@@ -2889,7 +2945,7 @@ if (document.getElementById('restore-file-input')) {
 
                 const recordCount = data.records ? data.records.length : (Array.isArray(data) ? data.length : 0);
 
-                if (confirm(`⚠️ DİKKAT!\n\nBu işlem mevcut TÜM kayıtlarınızı silecektir.\nDosyadan ${recordCount} adet kayıt geri yüklenecek.\n\nOnaylıyor musunuz?`)) {
+                if (confirm(`âš ï¸ DÄ°KKAT!\n\nBu iÅŸlem mevcut TÃœM kayÄ±tlarÄ±nÄ±zÄ± silecektir.\nDosyadan ${recordCount} adet kayÄ±t geri yÃ¼klenecek.\n\nOnaylÄ±yor musunuz?`)) {
 
                     // Restore Records
                     if (data.records) {
@@ -2922,11 +2978,11 @@ if (document.getElementById('restore-file-input')) {
                     // Refresh UI
                     renderRecords();
                     updateMapMarkers(true);
-                    alert("✅ Veritabanı başarıyla geri yüklendi!");
+                    alert("âœ… VeritabanÄ± baÅŸarÄ±yla geri yÃ¼klendi!");
                     optionsModal.classList.remove('active');
                 }
             } catch (err) {
-                alert("❌ Hata: Geçersiz veya bozuk dosya!\n" + err);
+                alert("âŒ Hata: GeÃ§ersiz veya bozuk dosya!\n" + err);
             }
             e.target.value = '';
         };
@@ -3022,7 +3078,7 @@ async function socialShare() {
         let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>JeoCompass Seçilenler</name>`;
+    <name>JeoCompass SeÃ§ilenler</name>`;
         dataToShare.forEach(r => {
             kml += `
     <Placemark>
@@ -3042,7 +3098,7 @@ async function socialShare() {
     }
 
     // Prepare text summary
-    let textSummary = `JeoCompass Kayıtları (${dataToShare.length} adet):\n\n`;
+    let textSummary = `JeoCompass KayÄ±tlarÄ± (${dataToShare.length} adet):\n\n`;
     dataToShare.forEach(r => {
         textSummary += `${r.label || r.id} | ${r.strike}/${r.dip} | Y:${r.y} X:${r.x} | ${r.note || ''}\n`;
     });
@@ -3050,7 +3106,7 @@ async function socialShare() {
     if (navigator.share) {
         try {
             const shareData = {
-                title: 'JeoCompass Kayıtları',
+                title: 'JeoCompass KayÄ±tlarÄ±',
                 text: textSummary
             };
 
@@ -3143,11 +3199,11 @@ function downloadFile(content, filename, type) {
 function updateLockUI() {
     if (!btnToggleLock) return;
     if (isRecordsLocked) {
-        btnToggleLock.innerHTML = '🔒';
+        btnToggleLock.innerHTML = 'ğŸ”’';
         btnToggleLock.classList.remove('unlocked');
         btnToggleLock.title = 'Unlock';
     } else {
-        btnToggleLock.innerHTML = '🔓';
+        btnToggleLock.innerHTML = 'ğŸ”“';
         btnToggleLock.classList.add('unlocked');
         btnToggleLock.title = 'Lock';
     }
@@ -3205,11 +3261,11 @@ if (document.getElementById('restore-file-input')) {
                 const incomingRecords = data.records || (Array.isArray(data) ? data : []);
 
                 if (incomingRecords.length === 0) {
-                    alert("❌ Dosyada kayıt bulunamadı.");
+                    alert("âŒ Dosyada kayÄ±t bulunamadÄ±.");
                     return;
                 }
 
-                if (confirm(`🔄 BİRLEŞTİRME MODU\n\nDosyada ${incomingRecords.length} kayıt bulundu.\n\nMevcut veriler KORUNACAK.\nSadece telefonunuzda olmayan YENİ kayıtlar eklenecek.\n\nDevam edilsin mi?`)) {
+                if (confirm(`ğŸ”„ BÄ°RLEÅTÄ°RME MODU\n\nDosyada ${incomingRecords.length} kayÄ±t bulundu.\n\nMevcut veriler KORUNACAK.\nSadece telefonunuzda olmayan YENÄ° kayÄ±tlar eklenecek.\n\nDevam edilsin mi?`)) {
 
                     let addedCount = 0;
                     let skippedCount = 0;
@@ -3256,11 +3312,11 @@ if (document.getElementById('restore-file-input')) {
                     renderRecords();
                     updateMapMarkers(true);
 
-                    alert(`✅ İŞLEM TAMAMLANDI\n\n📥 Eklene​​n Yeni Kayıt: ${addedCount}\n⏭️ Atlanan (Mevcut): ${skippedCount}\n\nToplam Kayıt: ${records.length}`);
+                    alert(`âœ… Ä°ÅLEM TAMAMLANDI\n\nğŸ“¥ Ekleneâ€‹â€‹n Yeni KayÄ±t: ${addedCount}\nâ­ï¸ Atlanan (Mevcut): ${skippedCount}\n\nToplam KayÄ±t: ${records.length}`);
                     optionsModal.classList.remove('active');
                 }
             } catch (err) {
-                alert("❌ Hata: Dosya okunamadı!\n" + err);
+                alert("âŒ Hata: Dosya okunamadÄ±!\n" + err);
             }
             e.target.value = '';
         };
