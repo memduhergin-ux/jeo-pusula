@@ -1082,13 +1082,13 @@ function initMap() {
     // Initialize Polyline
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
-        trackPolyline = L.polyline(trackPath, { color: '#ff5722', weight: 4, dashArray: '10, 10' }).addTo(map);
-        // If data exists but tracking is off, we are in "Paused/Finished" state but we don't have a UI for it.
-        // Let's assume on reload if we have data we show it, but don't resume unless saved state says so.
-        // For simplicity, just show it. Button implies "Start New" or if we want to continue?
-        // Let's assume button click starts NEW or CONTINUES? 
-        // User workflow: Start -> Stop -> Save.
-    }
+        trackPolyline = L.polyline(trackPath, { color: '#2196f3', weight: 5, dashArray: '10, 10' }).addTo(liveLayer);
+    }    // If data exists but tracking is off, we are in "Paused/Finished" state but we don't have a UI for it.
+    // Let's assume on reload if we have data we show it, but don't resume unless saved state says so.
+    // For simplicity, just show it. Button implies "Start New" or if we want to continue?
+    // Let's assume button click starts NEW or CONTINUES? 
+    // User workflow: Start -> Stop -> Save.
+
 
     function updateTrack(lat, lon) {
         if (!isTracking) return;
@@ -1098,7 +1098,7 @@ function initMap() {
 
         // Update Polyline
         if (!trackPolyline) {
-            trackPolyline = L.polyline(trackPath, { color: '#ff5722', weight: 4, dashArray: '10, 10' }).addTo(map);
+            trackPolyline = L.polyline(trackPath, { color: '#2196f3', weight: 5, dashArray: '10, 10' }).addTo(liveLayer);
         } else {
             trackPolyline.setLatLngs(trackPath);
         }
@@ -1129,8 +1129,8 @@ function initMap() {
             id: id,
             name: name || defaultName,
             path: path,
-            color: '#ff5722',
-            visible: false,
+            color: '#2196f3',
+            visible: true,
             time: defaultName
         };
         jeoTracks.push(newTrack);
@@ -1144,36 +1144,29 @@ function initMap() {
         btnTrackToggle.addEventListener('click', () => {
             if (!isTracking) {
                 // START
-                if (confirm("Do you want to start track recording?")) {
-                    isTracking = true;
-                    // Reset trackPath if we want a CLEAN start every time, 
-                    // or keep it if we want to CONTINUE. 
-                    // User said "auto-save doesn't work", maybe they want clean tracks.
-                    trackPath = [];
-                    if (trackPolyline) {
-                        map.removeLayer(trackPolyline);
-                        trackPolyline = null;
-                    }
-                    updateTrackingButton();
-                    showToast("Track recording started.");
+                isTracking = true;
+                // Add current point as start if available
+                if (currentCoords.lat !== 0) {
+                    trackPath.push([currentCoords.lat, currentCoords.lon]);
                 }
+                if (trackPolyline) {
+                    liveLayer.removeLayer(trackPolyline);
+                    trackPolyline = null;
+                }
+                updateTrackingButton();
+                showToast("Track recording started.");
             } else {
-                // STOP Request
-                // Ask to stop
-                if (confirm("Do you want to stop recording? (It will be saved automatically)")) {
-                    isTracking = false;
-                    updateTrackingButton();
+                // STOP - Automatic save
+                isTracking = false;
+                updateTrackingButton();
 
-                    if (trackPath.length > 1) {
-                        // AUTO SAVE
-                        saveTrackToDatabase(null, [...trackPath]);
-                        // AUTO CLEAR
-                        clearTrack();
-                    } else {
-                        showToast("Recording is too short, not saved.");
-                        clearTrack();
-                    }
+                if (trackPath.length > 1) {
+                    // AUTO SAVE
+                    saveTrackToDatabase(null, [...trackPath]);
+                } else {
+                    showToast("Recording is too short.");
                 }
+                clearTrack();
             }
         });
     }
