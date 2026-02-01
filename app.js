@@ -977,11 +977,21 @@ function initMap() {
             labelsToPlace.forEach(item => {
                 const { tooltipEl, markerRect } = item;
 
-                tooltipEl.style.transform = "none";
-                tooltipEl.style.display = "block";
+                // RESET positioning styles to get true anchor (Leaflet controls transform)
+                tooltipEl.style.marginLeft = '0px';
+                tooltipEl.style.marginTop = '0px';
+                tooltipEl.style.transform = ''; // Ensure we don't block Leaflet's updates, though usually it manages this inline
 
+                // Force layout update to get accurate dimensions after reset
                 const width = tooltipEl.offsetWidth;
                 const height = tooltipEl.offsetHeight;
+
+                // Leaflet places the tooltip anchor at the marker's location.
+                // We need to calculate collision based on where it WOULD be.
+                // However, without modifying transform, the tooltip stays at the anchor.
+                // We use margins to visualy shift it from that anchor point.
+
+                // Current absolute screen position of the marker center
                 const markerCenter = {
                     x: markerRect.left + markerRect.width / 2,
                     y: markerRect.top + markerRect.height / 2
@@ -992,6 +1002,7 @@ function initMap() {
                 for (let i = 0; i < positions.length; i++) {
                     const offset = positions[i];
 
+                    // Candidate center position
                     const targetX = markerCenter.x + offset.x;
                     const targetY = markerCenter.y + offset.y;
 
@@ -1022,7 +1033,9 @@ function initMap() {
                 if (bestPos) {
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
-                    tooltipEl.style.transform = `translate3d(${bestPos.x}px, ${bestPos.y}px, 0)`;
+                    // Apply offset via margins (Shift from anchor)
+                    tooltipEl.style.marginLeft = `${bestPos.x}px`;
+                    tooltipEl.style.marginTop = `${bestPos.y}px`;
                     occupiedRects.push(bestPos.rect);
                 } else {
                     tooltipEl.style.opacity = "0";
