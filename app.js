@@ -1071,10 +1071,10 @@ function initMap() {
         if (!btn) return;
 
         if (isTracking) {
-            btn.innerHTML = '<span class="fab-icon" style="color:#ff5252;">â¹</span>'; // Stop Icon
+            btn.innerHTML = '<span class="fab-icon" style="color:#ff5252;">⏹️</span>'; // Stop Icon
             btn.classList.add('recording');
         } else {
-            btn.innerHTML = '<span class="fab-icon">ğŸ‘£</span>'; // Footprint Icon
+            btn.innerHTML = '<span class="fab-icon">👣</span>'; // Footprint Icon
             btn.classList.remove('recording');
         }
     }
@@ -1120,13 +1120,18 @@ function initMap() {
         }
 
         const id = Date.now();
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('tr-TR'); // DD.MM.YYYY
+        const timeStr = now.toLocaleTimeString('tr-TR'); // HH:MM:SS
+        const defaultName = `${dateStr} ${timeStr}`;
+
         const newTrack = {
             id: id,
-            name: name || `Auto Track ${new Date().toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+            name: name || defaultName,
             path: path,
             color: '#ff5722',
-            visible: true,
-            time: new Date().toLocaleString('tr-TR')
+            visible: false,
+            time: defaultName
         };
         jeoTracks.push(newTrack);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
@@ -1147,7 +1152,7 @@ function initMap() {
             } else {
                 // STOP Request
                 // Ask to stop
-                if (confirm("Do you want to stop recording?")) {
+                if (confirm("Do you want to stop recording? (It will be saved automatically)")) {
                     isTracking = false;
                     updateTrackingButton();
 
@@ -1733,7 +1738,8 @@ function renderTracks() {
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
             <td>
-                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">ğŸ’¾</button>
+                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">💾</button>
+                <button onclick="exportSingleTrackCSV(${t.id})" class="track-action-btn" title="Download CSV (ED50)">📊</button>
                 <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">ğŸ—‘ï¸</button>
             </td>
         </tr>
@@ -1811,6 +1817,35 @@ window.exportSingleTrackKML = function (id) {
 </kml>`;
 
     downloadFile(kml, `${t.name.replace(/\s+/g, '_')}.kml`, 'application/vnd.google-earth.kml+xml');
+};
+
+window.exportSingleTrackCSV = function (id) {
+    const t = jeoTracks.find(track => track.id === id);
+    if (!t) return;
+
+    let csv = "Y (Easting),X (Northing),Zone,Latitude,Longitude\n";
+
+    t.path.forEach(pt => {
+        const lat = pt[0];
+        const lon = pt[1];
+
+        try {
+            // ED50 6-Degree Conversion
+            const zone = Math.floor((lon + 180) / 6) + 1;
+            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+            const utm = proj4('WGS84', utmZoneDef, [lon, lat]);
+
+            const easting = Math.round(utm[0]);
+            const northing = Math.round(utm[1]);
+
+            csv += `${easting},${northing},${zone},${lat.toFixed(7)},${lon.toFixed(7)}\n`;
+        } catch (e) {
+            console.error("Export Projection Error", e);
+            csv += `ERR,ERR,ERR,${lat},${lon}\n`;
+        }
+    });
+
+    downloadFile(csv, `${t.name.replace(/\s+/g, '_')}.csv`, 'text/csv;charset=utf-8;');
 };
 
 // Tab Switching
@@ -2934,8 +2969,59 @@ function downloadFile(content, fileName, mimeType) {
 // BACKUP & RESTORE EVENTS
 // -----------------------------------------------------------------
 if (document.getElementById('btn-backup-json')) {
-    document.getElementById('btn-backup-json').addEventListener('click', () => {
-        exportData('json', 'all');
+    document.getElementById('btn-backup-json').addEventListener('click', async () => {
+        // FULL BACKUP
+        const backupData = {
+            version: JEO_VERSION,
+            timestamp: new Date().toISOString(),
+            records: records, // Points
+            tracks: jeoTracks, // Tracks
+            settings: {
+                declination: manualDeclination,
+                mapLayer: activeMapLayer,
+                nextId: nextId,
+                // Add other settings if needed
+            },
+            externalLayers: externalLayers.map(l => ({
+                name: l.name,
+                geojson: l.geojson,
+                visible: l.visible,
+                filled: l.filled,
+                pointsVisible: l.pointsVisible,
+                areasVisible: l.areasVisible,
+                labelsVisible: l.labelsVisible
+            }))
+        };
+
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const dateStr = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
+        const fileName = `JeoCompass_Yedek_${dateStr}.json`;
+
+        try {
+            // Modern File System Access API (Save As)
+            if ('showSaveFilePicker' in window) {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'JSON Backup File',
+                        accept: { 'application/json': ['.json'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(jsonStr);
+                await writable.close();
+                showToast("Yedekleme baÅŸarÄ±lÄ± (Dosyaya Kaydedildi)");
+            } else {
+                // Fallback
+                downloadFile(jsonStr, fileName, 'application/json');
+                showToast("Yedekleme baÅŸarÄ±lÄ± (Ä°ndirilenler KlasÃ¶rÃ¼ne)");
+            }
+        } catch (err) {
+            console.error("Backup failed", err);
+            if (err.name !== 'AbortError') {
+                alert("Yedekleme hatasÄ±: " + err.message);
+            }
+        }
     });
 }
 
@@ -3211,11 +3297,11 @@ function downloadFile(content, filename, type) {
 function updateLockUI() {
     if (!btnToggleLock) return;
     if (isRecordsLocked) {
-        btnToggleLock.innerHTML = 'ğŸ”’';
+        btnToggleLock.innerHTML = '🔒';
         btnToggleLock.classList.remove('unlocked');
         btnToggleLock.title = 'Unlock';
     } else {
-        btnToggleLock.innerHTML = 'ğŸ”“';
+        btnToggleLock.innerHTML = '🔓';
         btnToggleLock.classList.add('unlocked');
         btnToggleLock.title = 'Lock';
     }
@@ -3249,11 +3335,7 @@ setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setIn
 // -----------------------------------------------------------------
 // BACKUP & RESTORE EVENTS (Smart Merge)
 // -----------------------------------------------------------------
-if (document.getElementById('btn-backup-json')) {
-    document.getElementById('btn-backup-json').addEventListener('click', () => {
-        exportData('json', 'all');
-    });
-}
+
 
 if (document.getElementById('btn-restore-json')) {
     document.getElementById('btn-restore-json').addEventListener('click', () => {
@@ -3270,65 +3352,109 @@ if (document.getElementById('restore-file-input')) {
         reader.onload = (event) => {
             try {
                 const data = JSON.parse(event.target.result);
-                const incomingRecords = data.records || (Array.isArray(data) ? data : []);
 
-                if (incomingRecords.length === 0) {
-                    alert("âŒ Dosyada kayÄ±t bulunamadÄ±.");
+                // Identify incoming data type
+                const incomingRecords = data.records || (Array.isArray(data) ? data : []);
+                const incomingTracks = data.tracks || [];
+                const incomingLayers = data.externalLayers || [];
+
+                if (incomingRecords.length === 0 && incomingTracks.length === 0 && incomingLayers.length === 0) {
+                    alert("No valid records or tracks found in file.");
                     return;
                 }
 
-                if (confirm(`ğŸ”„ BÄ°RLEÅTÄ°RME MODU\n\nDosyada ${incomingRecords.length} kayÄ±t bulundu.\n\nMevcut veriler KORUNACAK.\nSadece telefonunuzda olmayan YENÄ° kayÄ±tlar eklenecek.\n\nDevam edilsin mi?`)) {
+                const msg = `SMART RESTORE MODE\n\n` +
+                    `File contains:\n` +
+                    `- ${incomingRecords.length} Points\n` +
+                    `- ${incomingTracks.length} Tracks\n` +
+                    `- ${incomingLayers.length} Layers\n\n` +
+                    `Current data will be KEPT. Only NEW unique data will be added.\n` +
+                    `Do you want to proceed?`;
 
-                    let addedCount = 0;
-                    let skippedCount = 0;
+                if (confirm(msg)) {
+                    let recAdded = 0, recSkipped = 0;
+                    let trackAdded = 0, trackSkipped = 0;
+                    let layerAdded = 0, layerSkipped = 0;
 
+                    // 1. SMART MERGE RECORDS
                     incomingRecords.forEach(inc => {
-                        // DUPLICATE CHECK
-                        // 1. Check by Time (Best identifier)
-                        const existsByTime = inc.time && records.some(r => r.time === inc.time);
-
-                        // 2. Check by Content (Fallback)
-                        const existsByContent = records.some(r =>
+                        const exists = inc.time && records.some(r => r.time === inc.time);
+                        const existsContent = records.some(r =>
                             r.label === inc.label &&
                             Math.abs(r.lat - inc.lat) < 0.000001 &&
-                            Math.abs(r.lon - inc.lon) < 0.000001 &&
-                            r.strike === inc.strike &&
-                            r.dip === inc.dip
+                            Math.abs(r.lon - inc.lon) < 0.000001
                         );
 
-                        if (existsByTime || existsByContent) {
-                            skippedCount++;
+                        if (exists || existsContent) {
+                            recSkipped++;
                         } else {
-                            // NEW RECORD -> ADD
                             const newRec = { ...inc };
                             newRec.id = nextId++;
                             records.push(newRec);
-                            addedCount++;
+                            recAdded++;
                         }
                     });
 
-                    // Update Declination ONLY if not set locally but present in backup
-                    if (manualDeclination === 0 && data.declination !== undefined && data.declination !== 0) {
-                        manualDeclination = data.declination;
-                        localStorage.setItem('jeoDeclination', manualDeclination);
-                        if (document.getElementById('declination-input')) {
-                            document.getElementById('declination-input').value = manualDeclination;
+                    // 2. SMART MERGE TRACKS
+                    incomingTracks.forEach(incT => {
+                        const exists = jeoTracks.some(t => t.id === incT.id || t.time === incT.time);
+                        if (exists) {
+                            trackSkipped++;
+                        } else {
+                            jeoTracks.push(incT);
+                            trackAdded++;
+                        }
+                    });
+
+                    // 3. SMART MERGE LAYERS
+                    incomingLayers.forEach(incL => {
+                        const exists = externalLayers.some(l => l.name === incL.name);
+                        if (exists) {
+                            layerSkipped++;
+                        } else {
+                            addExternalLayer(incL.name, incL.geojson);
+                            const newL = externalLayers[externalLayers.length - 1];
+                            if (newL) {
+                                newL.visible = incL.visible;
+                                newL.filled = incL.filled;
+                                newL.pointsVisible = incL.pointsVisible;
+                                newL.areasVisible = incL.areasVisible;
+                                newL.labelsVisible = incL.labelsVisible;
+                            }
+                            layerAdded++;
+                        }
+                    });
+
+                    // 4. RESTORE SETTINGS (Optional)
+                    if (data.settings) {
+                        if (manualDeclination === 0 && data.settings.declination) {
+                            manualDeclination = data.settings.declination;
+                            localStorage.setItem('jeoDeclination', manualDeclination);
                         }
                     }
 
-                    // Save Result
+                    // Save all
                     saveRecords();
+                    localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
                     localStorage.setItem('jeoNextId', nextId);
+                    saveExternalLayers();
 
                     // Refresh UI
                     renderRecords();
+                    renderTracks();
+                    renderLayerList();
                     updateMapMarkers(true);
 
-                    alert(`âœ… Ä°ÅLEM TAMAMLANDI\n\nğŸ“¥ Ekleneâ€‹â€‹n Yeni KayÄ±t: ${addedCount}\nâ­ï¸ Atlanan (Mevcut): ${skippedCount}\n\nToplam KayÄ±t: ${records.length}`);
-                    optionsModal.classList.remove('active');
+                    alert(`RESTORE COMPLETE\n\n` +
+                        `Points: +${recAdded} (Skipped: ${recSkipped})\n` +
+                        `Tracks: +${trackAdded} (Skipped: ${trackSkipped})\n` +
+                        `Layers: +${layerAdded} (Skipped: ${layerSkipped})\n\n` +
+                        `Total Points: ${records.length}`);
+
+                    if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
                 }
             } catch (err) {
-                alert("âŒ Hata: Dosya okunamadÄ±!\n" + err);
+                alert("Error: Failed to read file!\n" + err.message);
             }
             e.target.value = '';
         };

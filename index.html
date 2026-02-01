@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=385">
+    <link rel="stylesheet" href="style.css?v=390">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -24,7 +24,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v385</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v390</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -362,7 +362,7 @@
                 <div style="border-top: 1px solid #444; padding-top: 15px;">
                     <button class="save-btn ready" id="btn-backup-json"
                         style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
-                        💾 Yedekle (Backup JSON)
+                        📦 Hepsini Yedekle (Full Backup)
                     </button>
                     <button class="save-btn ready" id="btn-restore-json"
                         style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
@@ -461,9 +461,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=385"></script>
+    <script src="app.js?v=390"></script>
     <script>
-        const JEO_VERSION = '385';
+        const JEO_VERSION = '390';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
