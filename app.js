@@ -86,15 +86,17 @@ function updateHeatmap() {
     const metersPerPixel = (40075016.686 * Math.abs(Math.cos(lat * Math.PI / 180))) / Math.pow(2, zoom + 8);
 
     // Scientific Radius: Actual ground distance / meters per pixel
-    const radiusPixels = Math.max(8, heatmapRadius / metersPerPixel);
-    const blurPixels = radiusPixels * 0.8; // Slightly more blur for smoother interpolation
+    // v415: Removed min 8px cap to ensure ground distance is perfectly preserved at all zoom levels
+    const radiusPixels = heatmapRadius / metersPerPixel;
+    const blurPixels = radiusPixels * 0.8;
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
         blur: blurPixels,
-        maxOpacity: 0.9, // v414: Increased for punchier visuals
-        minOpacity: 0.3, // v414: Increased to make faint points visible
-        gradient: activeGradient
+        maxOpacity: 0.9,
+        minOpacity: 0.3,
+        gradient: activeGradient,
+        max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
     }).addTo(map);
 }
 
