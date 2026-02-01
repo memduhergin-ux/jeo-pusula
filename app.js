@@ -83,61 +83,43 @@ function updateHeatmap() {
 }
 
 function updateHeatmapFilterOptions() {
-    const list = document.getElementById('heatmap-element-list');
-    if (!list) return;
+    const select = document.getElementById('heatmap-element-filter');
+    if (!select) return;
 
     // Find all unique elements present in records AND KML layers (v404)
     const foundElements = new Set();
 
     records.forEach(r => {
-        const label = (r.label || '').toUpperCase();
+        const labelText = (r.label || '').toUpperCase();
         for (const el in ELEMENT_COLORS) {
-            if (label.includes(el)) foundElements.add(el);
+            if (labelText.includes(el.toUpperCase())) foundElements.add(el);
         }
     });
 
     externalLayers.forEach(l => {
         if (l.geojson && l.geojson.features) {
             l.geojson.features.forEach(f => {
-                const label = (getFeatureName(f.properties) || '').toUpperCase();
+                const labelText = (getFeatureName(f.properties) || '').toUpperCase();
                 for (const el in ELEMENT_COLORS) {
-                    if (label.includes(el)) foundElements.add(el);
+                    if (labelText.includes(el.toUpperCase())) foundElements.add(el);
                 }
             });
         }
     });
 
-    const sortedElements = Array.from(foundElements).sort();
+    const emojiMap = {
+        'MN': '🟣', 'CR': '🟢', 'CU': '🟠', 'NI': '🔵',
+        'FE': '🟤', 'AU': '🟡', 'AG': '⚪', 'ZN': '💎', 'PB': '⚫'
+    };
 
-    let html = `
-        <button class="element-opt ${heatmapFilter === 'ALL' ? 'active' : ''}" data-val="ALL">
-            <div class="color-dot-mini" style="background: linear-gradient(45deg, cyan, lime, yellow, red);"></div>
-            <span>All Points (General)</span>
-        </button>
-    `;
-
-    sortedElements.forEach(el => {
-        const color = ELEMENT_COLORS[el] || '#f44336';
-        html += `
-            <button class="element-opt ${heatmapFilter === el ? 'active' : ''}" data-val="${el}">
-                <div class="color-dot-mini" style="background: ${color};"></div>
-                <span>${el} Highlights</span>
-            </button>
-        `;
+    let html = '<option value="ALL">🌈 All Points (General)</option>';
+    Array.from(foundElements).sort().forEach(el => {
+        const emoji = emojiMap[el] || '📍';
+        html += `<option value="${el}">${emoji} ${el} Highlights</option>`;
     });
 
-    list.innerHTML = html;
-
-    // Attach listeners
-    list.querySelectorAll('.element-opt').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const val = e.currentTarget.dataset.val;
-            heatmapFilter = val;
-            list.querySelectorAll('.element-opt').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            if (isHeatmapActive) updateHeatmap();
-        });
-    });
+    select.innerHTML = html;
+    select.value = foundElements.has(currentVal) ? currentVal : "ALL";
 }
 
 function toggleHeatmap() {
