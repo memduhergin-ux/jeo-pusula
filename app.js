@@ -156,7 +156,7 @@ let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
-let isTracking = false;
+let isTracking = true; // Garmin-style: Auto-track on start (v399)
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
@@ -654,10 +654,10 @@ if ('geolocation' in navigator) {
             processHeadingAndDip();
             updateDisplay();
 
-            // --- DRIFT FILTER (v398) ---
+            // --- DRIFT FILTER (v399) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc <= 5) { // Ultra-High Precision (v398)
+                if (acc <= 25) { // Garmin-style Sensitivity (v399)
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
@@ -1097,7 +1097,7 @@ function initMap() {
         }
     }
 
-    // Initialize Polyline (v398 High Vis)
+    // Initialize Polyline (v399 Garmin Style)
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
         if (trackPolyline) {
@@ -1105,13 +1105,14 @@ function initMap() {
         }
         trackPolyline = L.polyline(trackPath, {
             color: '#2196f3',
-            weight: 8,
+            weight: 10,
             dashArray: '10, 10',
             pane: 'tracking-pane'
         }).addTo(map);
     }
 
     // User workflow: Start -> Stop -> Save.
+    updateTrackingButton(); // Ensure UI reflects auto-start (v399)
 
 
     function updateTrack(lat, lon) {
@@ -1120,11 +1121,11 @@ function initMap() {
         // Add point
         trackPath.push([lat, lon]);
 
-        // Update Polyline (v398: Weight 8)
+        // Update Polyline (v399: Weight 10)
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#2196f3',
-                weight: 8,
+                weight: 10,
                 dashArray: '10, 10',
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -1592,8 +1593,9 @@ function updateMapMarkers(shouldFitBounds = false) {
         if (t.visible && t.path && t.path.length > 1) {
             const poly = L.polyline(t.path, {
                 color: t.color || '#ff5722',
-                weight: 4,
-                opacity: 0.8
+                weight: 6,
+                opacity: 0.8,
+                pane: 'tracking-pane'
             }).addTo(map);
 
             poly.bindPopup(`<b>${t.name}</b><br>${t.time}<br>${formatScaleDist(calculateTrackLength(t.path))}`);
