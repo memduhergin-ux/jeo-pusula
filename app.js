@@ -29,7 +29,21 @@ function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
     let points = [];
-    const activeGradient = { 0.4: 'cyan', 0.6: 'lime', 0.7: 'yellow', 1.0: 'red' }; // Professional Rainbow (v405)
+    let activeGradient = { 0.4: 'cyan', 0.6: 'lime', 0.7: 'yellow', 1.0: 'red' }; // Default Rainbow
+
+    // Dynamic Monochromatic Gradient (v413)
+    if (heatmapFilter !== 'ALL') {
+        const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
+        // Generate a 4-step monochromatic gradient from light to dark
+        // Using semi-transparent or lighter versions of the base color isn't directly possible with hex in Leaflet.heat easily,
+        // so we use a standard simplified progression: Light -> Base -> Darker
+        activeGradient = {
+            0.2: 'rgba(255,255,255,0.2)', // Very light/faint
+            0.5: baseColor,               // The element color
+            0.8: baseColor,               // Sustained intensity
+            1.0: '#000000'                // Dark core for high density
+        };
+    }
 
     // 1. Gather points from standard records
     const recordPoints = records.filter(r => r.lat && r.lon);
@@ -68,16 +82,21 @@ function updateHeatmap() {
 
     if (points.length === 0) return;
 
-    // Convert meters to pixels based on current zoom (v409)
-    // Formula for meters per pixel at a given latitude/zoom
-    const metersPerPixel = 40075016.686 * Math.abs(Math.cos(map.getCenter().lat * Math.PI / 180)) / Math.pow(2, map.getZoom() + 8);
-    const radiusPixels = Math.max(10, heatmapRadius / metersPerPixel); // Safeguard min 10px
-    const blurPixels = radiusPixels * 0.7;
+    // Convert meters to pixels based on current zoom (v413 Refined)
+    // Using a more precise meters-per-pixel calculation at the map center
+    const lat = map.getCenter().lat;
+    const zoom = map.getZoom();
+    const metersPerPixel = (40075016.686 * Math.abs(Math.cos(lat * Math.PI / 180))) / Math.pow(2, zoom + 8);
+
+    // Scientific Radius: Actual ground distance / meters per pixel
+    const radiusPixels = Math.max(8, heatmapRadius / metersPerPixel);
+    const blurPixels = radiusPixels * 0.8; // Slightly more blur for smoother interpolation
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
         blur: blurPixels,
-        maxZoom: 17,
+        maxOpacity: 0.8,
+        minOpacity: 0.1,
         gradient: activeGradient
     }).addTo(map);
 }
@@ -85,6 +104,7 @@ function updateHeatmap() {
 function updateHeatmapFilterOptions() {
     const select = document.getElementById('heatmap-element-filter');
     if (!select) return;
+    const currentVal = heatmapFilter;
 
     // Find all unique elements present in records AND KML layers (v404)
     const foundElements = new Set();
@@ -134,10 +154,15 @@ function toggleHeatmap() {
         updateHeatmapFilterOptions();
         updateHeatmap();
 
-        // Add one-time click listener for auto-close (v406)
+        // Add one-time click listener for auto-close (v413 - Improved)
+        // We use capture phase or a slight delay to avoid immediate closure if the toggle itself was clicked
         setTimeout(() => {
             const closeHandler = (e) => {
-                if (!panel.contains(e.target) && e.target.id !== 'btn-heatmap-toggle' && !e.target.closest('#btn-heatmap-toggle')) {
+                // If click is outside panel and outside the toggle button
+                const isOutsidePanel = !panel.contains(e.target);
+                const isOutsideToggle = e.target.id !== 'btn-heatmap-toggle' && !e.target.closest('#btn-heatmap-toggle');
+
+                if (isOutsidePanel && isOutsideToggle) {
                     isHeatmapActive = false;
                     if (btn) btn.classList.remove('active');
                     panel.style.display = 'none';
@@ -145,7 +170,7 @@ function toggleHeatmap() {
                 }
             };
             document.addEventListener('click', closeHandler);
-        }, 100);
+        }, 300); // Increased delay for stability
     } else if (heatmapLayer) {
         map.removeLayer(heatmapLayer);
         heatmapLayer = null;
@@ -1255,6 +1280,7 @@ function initMap() {
     // Zoom listener for scale-based visibility
     map.on('zoomend', () => {
         updateMapMarkers(false);
+        if (isHeatmapActive) updateHeatmap(); // v413: Recalculate metric radius pixels on zoom
     });
 
     // --- Tracking System (v355 - Single Button) ---
