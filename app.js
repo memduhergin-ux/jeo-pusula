@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v380';
+const CACHE_NAME = 'jeocompass-v381';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -896,100 +896,93 @@ function initMap() {
         localStorage.setItem('jeoMapLayer', e.name);
     });
 
-    // Optimized Label Collision Prevention (v379 - Fixed v380)
-    let overlapTimeout = null;
-    function preventTooltipOverlap() {
-        if (overlapTimeout) clearTimeout(overlapTimeout);
+    // Optimized Label Collision Prevention (v381 - Point Thinning)
+    let optimizeTimeout = null;
+    function optimizeMapPoints() {
+        if (optimizeTimeout) clearTimeout(optimizeTimeout);
 
-        overlapTimeout = setTimeout(() => {
-            const labels = Array.from(document.querySelectorAll('.kml-label'));
-            if (labels.length === 0) return;
+        optimizeTimeout = setTimeout(() => {
+            const markers = []; // Collect all KML markers
 
-            const mapBounds = map.getBounds();
-            const boxes = [];
-
-            // Optimization parameters
-            const displacement = 10;
-            const scenarios = [
-                { tx: 0, ty: 0 },
-                { tx: 0, ty: -10 },
-                { tx: 0, ty: 10 },
-                { tx: 10, ty: 0 },
-                { tx: -10, ty: 0 },
-                { tx: 10, ty: -10 },
-                { tx: -10, ty: -10 }
-            ];
-
-            labels.forEach(label => {
-                // Critical Performance Fix: Skip off-screen labels
-                // We rely on _sourceLayer being attached during tooltipopen
-                if (label._sourceLayer && label._sourceLayer.getLatLng) {
-                    if (!mapBounds.contains(label._sourceLayer.getLatLng())) {
-                        label.style.display = 'none';
-                        return;
+            // Iterate over external layers to find markers
+            externalLayers.forEach(l => {
+                if (!l.visible || !l.pointsVisible) return;
+                l.layer.eachLayer(layer => {
+                    if (layer instanceof L.Marker && layer.getElement() && layer.getElement().querySelector('.kml-custom-icon')) {
+                        markers.push(layer);
                     }
+                });
+            });
+
+            if (markers.length === 0) return;
+
+            const gridSize = 25; // Pixel grid size for thinning
+            const occupiedCells = new Set();
+            const mapBounds = map.getBounds();
+
+            markers.forEach(marker => {
+                const latLng = marker.getLatLng();
+
+                // 1. Off-screen check
+                if (!mapBounds.contains(latLng)) {
+                    // Hide DOM element entirely for performance
+                    if (marker.getElement()) marker.getElement().style.display = 'none';
+                    // Also hide tooltip if attached
+                    if (marker.getTooltip() && marker.getTooltip().getElement()) {
+                        marker.getTooltip().getElement().style.display = 'none';
+                    }
+                    return;
                 }
 
-                // Reset visibility for on-screen labels
-                label.style.display = 'block';
-                label.style.opacity = '1';
-                label.style.visibility = 'visible';
-                label.style.transform = 'translate(0, 0)';
+                // 2. Grid Thinning
+                const pos = map.latLngToContainerPoint(latLng);
+                const gridX = Math.floor(pos.x / gridSize);
+                const gridY = Math.floor(pos.y / gridSize);
+                const key = `${gridX},${gridY}`;
 
-                const rect = label.getBoundingClientRect();
-                // Skip if not rendered yet
-                if (rect.width === 0 || rect.height === 0) return;
+                const el = marker.getElement();
+                const tooltipStub = marker.getTooltip();
 
-                let bestScenario = null;
+                if (occupiedCells.has(key)) {
+                    // Cell taken -> HIDE this marker
+                    if (el) {
+                        el.style.display = 'none'; // Completely remove from flow
+                    }
+                    if (tooltipStub) {
+                        marker.closeTooltip(); // Close to ensure it's gone
+                    }
+                } else {
+                    // Cell free -> SHOW this marker
+                    occupiedCells.add(key);
+                    if (el) {
+                        el.style.display = 'block';
+                        el.style.opacity = '1';
+                    }
 
-                // Try scenarios
-                for (const s of scenarios) {
-                    const tx = s.tx;
-                    const ty = s.ty;
-
-                    const currentBox = {
-                        top: rect.top + ty,
-                        left: rect.left + tx,
-                        bottom: rect.bottom + ty,
-                        right: rect.right + tx
-                    };
-
-                    let overlap = false;
-                    for (const box of boxes) {
-                        if (!(currentBox.right < box.left || currentBox.left > box.right || currentBox.bottom < box.top || currentBox.top > box.bottom)) {
-                            overlap = true;
-                            break;
+                    // Force Label Visibility
+                    if (tooltipStub) {
+                        // Ensure it's open
+                        if (!map.hasLayer(tooltipStub)) {
+                            marker.openTooltip();
+                        }
+                        const toolEl = tooltipStub.getElement();
+                        if (toolEl) {
+                            toolEl.style.display = 'block';
+                            toolEl.style.opacity = '1';
+                            toolEl.style.visibility = 'visible';
                         }
                     }
-
-                    if (!overlap) {
-                        bestScenario = s;
-                        boxes.push(currentBox);
-                        break;
-                    }
-                }
-
-                if (bestScenario) {
-                    label.style.transform = `translate(${bestScenario.tx}px, ${bestScenario.ty}px)`;
-                } else {
-                    // Collision inevitable - hide or just dim? 
-                    // Showing overlapping labels is better than showing nothing usually, 
-                    // but for strict clarity we hide.
-                    // Let's try to just let it be (tx=0) but maybe lower z-index?
-                    // For now, adhere to "clean map" rule:
-                    label.style.opacity = '0';
-                    label.style.visibility = 'hidden';
                 }
             });
         }, 50);
     }
 
     map.on('zoomend moveend', () => {
-        preventTooltipOverlap();
+        optimizeMapPoints();
     });
 
     map.on('overlayadd baselayerchange', () => {
-        preventTooltipOverlap();
+        optimizeMapPoints();
     });
 
     // Combined Scale and UTM Control (Bottom Left)
@@ -2088,7 +2081,7 @@ function addExternalLayer(name, geojson) {
     saveExternalLayers();
     renderLayerList();
     // Optimized trigger
-    preventTooltipOverlap();
+    optimizeMapPoints();
 }
 
 function renderLayerList() {
