@@ -31,17 +31,14 @@ function updateHeatmap() {
     let points = [];
     let activeGradient = { 0.4: 'cyan', 0.6: 'lime', 0.7: 'yellow', 1.0: 'red' }; // Default Rainbow
 
-    // Dynamic Monochromatic Gradient (v413)
+    // Dynamic Monochromatic Gradient (v414 - More Vibrant)
     if (heatmapFilter !== 'ALL') {
         const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
-        // Generate a 4-step monochromatic gradient from light to dark
-        // Using semi-transparent or lighter versions of the base color isn't directly possible with hex in Leaflet.heat easily,
-        // so we use a standard simplified progression: Light -> Base -> Darker
         activeGradient = {
-            0.2: 'rgba(255,255,255,0.2)', // Very light/faint
-            0.5: baseColor,               // The element color
-            0.8: baseColor,               // Sustained intensity
-            1.0: '#000000'                // Dark core for high density
+            0.1: 'rgba(255,255,255,0)', // Fade out edge
+            0.2: baseColor,             // Start with solid color
+            0.7: baseColor,             // Fill body
+            1.0: '#000000'              // High intensity core
         };
     }
 
@@ -95,8 +92,8 @@ function updateHeatmap() {
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
         blur: blurPixels,
-        maxOpacity: 0.8,
-        minOpacity: 0.1,
+        maxOpacity: 0.9, // v414: Increased for punchier visuals
+        minOpacity: 0.3, // v414: Increased to make faint points visible
         gradient: activeGradient
     }).addTo(map);
 }
@@ -974,6 +971,7 @@ if (document.getElementById('btn-modal-save')) {
         saveRecords();
         renderRecords();
         updateMapMarkers(true);
+        if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
         recordModal.classList.remove('active');
         editingRecordId = null;
 
@@ -3503,6 +3501,7 @@ if (btnDeleteSelected) {
             saveRecords();
             renderRecords();
             updateMapMarkers(false);
+            if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
             if (selectAllCheckbox) selectAllCheckbox.checked = false;
             optionsModal.classList.remove('active');
         }
@@ -3516,6 +3515,7 @@ window.deleteRecordFromMap = function (id) {
         saveRecords();
         renderRecords();
         updateMapMarkers(false);
+        if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
         if (selectAllCheckbox) selectAllCheckbox.checked = false;
     }
 };
