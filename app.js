@@ -160,6 +160,9 @@ let isTracking = true; // Garmin-style: Auto-track on start (v399)
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
+// Smoothing state (v400)
+let smoothedPos = { lat: 0, lon: 0 };
+const SMOOTH_ALPHA = 0.3;
 let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
@@ -620,19 +623,34 @@ if ('geolocation' in navigator) {
             currentCoords.acc = p.coords.accuracy;
             currentCoords.alt = p.coords.altitude;
 
-            // Update Live Marker (Heartbeat Triangle)
+            // Update Live Marker (Heartbeat Triangle - v400 Smoothed)
             if (map && currentCoords.lat) {
-                const livePos = [currentCoords.lat, currentCoords.lon];
-                if (!liveMarker) {
-                    const liveIcon = L.divIcon({
-                        className: 'heartbeat-container',
-                        html: '<div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16]
-                    });
-                    liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
+                // Exponential Smoothing (EMA)
+                if (smoothedPos.lat === 0) {
+                    smoothedPos.lat = currentCoords.lat;
+                    smoothedPos.lon = currentCoords.lon;
                 } else {
-                    liveMarker.setLatLng(livePos);
+                    smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
+                    smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
+                }
+
+                const livePos = [smoothedPos.lat, smoothedPos.lon];
+                const lastPos = liveMarker ? liveMarker.getLatLng() : null;
+                const distChange = lastPos ? map.distance(lastPos, livePos) : 999;
+
+                // Threshold to prevent micro-jitters
+                if (!liveMarker || distChange > 0.8) {
+                    if (!liveMarker) {
+                        const liveIcon = L.divIcon({
+                            className: 'heartbeat-container',
+                            html: '<div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                        });
+                        liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
+                    } else {
+                        liveMarker.setLatLng(livePos);
+                    }
                 }
 
                 if (followMe) {
@@ -654,10 +672,10 @@ if ('geolocation' in navigator) {
             processHeadingAndDip();
             updateDisplay();
 
-            // --- DRIFT FILTER (v399) ---
+            // --- DRIFT FILTER (v400) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc <= 25) { // Garmin-style Sensitivity (v399)
+                if (acc <= 20) { // Balanced Precision (v400)
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
