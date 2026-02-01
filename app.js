@@ -898,11 +898,11 @@ function initMap() {
 
 
     // Smart Label Placement (v383 - 8-Way Collision Avoidance)
-    let optimizeTimeout = null;
+    let labelOptimizeTimer = null;
     function optimizeMapPoints() {
-        if (optimizeTimeout) clearTimeout(optimizeTimeout);
+        if (labelOptimizeTimer) clearTimeout(labelOptimizeTimer);
 
-        optimizeTimeout = setTimeout(() => {
+        labelOptimizeTimer = setTimeout(() => {
             // 1. Get all visible KML markers and their tooltips
             const markers = [];
             externalLayers.forEach(l => {
