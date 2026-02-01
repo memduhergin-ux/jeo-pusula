@@ -653,7 +653,20 @@ if ('geolocation' in navigator) {
 
             processHeadingAndDip();
             updateDisplay();
-            updateTrack(currentCoords.lat, currentCoords.lon); // LIVE TRACKING DRAW
+
+            // --- DRIFT FILTER (v393) ---
+            if (isTracking) {
+                const acc = p.coords.accuracy;
+                if (acc < 30) { // Accept only reasonable accuracy
+                    const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
+                    const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
+                    const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
+
+                    if (dist > 3) { // Only add if moved more than 3 meters
+                        updateTrack(currentCoords.lat, currentCoords.lon);
+                    }
+                }
+            }
         } catch (e) {
             console.error("WatchPosition error:", e);
         }
@@ -1082,8 +1095,10 @@ function initMap() {
     // Initialize Polyline
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
+        if (trackPolyline) liveLayer.removeLayer(trackPolyline); // Cleanup
         trackPolyline = L.polyline(trackPath, { color: '#2196f3', weight: 5, dashArray: '10, 10' }).addTo(liveLayer);
-    }    // If data exists but tracking is off, we are in "Paused/Finished" state but we don't have a UI for it.
+    }
+    // If data exists ...
     // Let's assume on reload if we have data we show it, but don't resume unless saved state says so.
     // For simplicity, just show it. Button implies "Start New" or if we want to continue?
     // Let's assume button click starts NEW or CONTINUES? 
@@ -1160,13 +1175,17 @@ function initMap() {
                 isTracking = false;
                 updateTrackingButton();
 
-                if (trackPath.length > 1) {
+                if (trackPath.length > 5) { // Minimum 5 points for a "good" track
                     // AUTO SAVE
                     saveTrackToDatabase(null, [...trackPath]);
+                    showToast("Track saved successfully.");
+                } else if (trackPath.length > 1) {
+                    saveTrackToDatabase(null, [...trackPath]);
+                    showToast("Track saved.");
                 } else {
                     showToast("Recording is too short.");
                 }
-                clearTrack();
+                clearTrack(true); // Silent clear
             }
         });
     }
@@ -1221,14 +1240,14 @@ function initMap() {
         URL.revokeObjectURL(url);
     }
 
-    function clearTrack() {
+    function clearTrack(silent = false) {
         if (trackPolyline) {
-            map.removeLayer(trackPolyline);
+            liveLayer.removeLayer(trackPolyline);
             trackPolyline = null;
         }
         trackPath = [];
         localStorage.removeItem('jeoTrackPath');
-        showToast("Track cleared.");
+        if (!silent) showToast("Track cleared.");
     }
 
     /* REMOVED LOCK SYSTEM (v355) */
