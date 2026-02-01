@@ -1092,13 +1092,18 @@ function initMap() {
         }
     }
 
-    // Initialize Polyline (v395 Fix)
+    // Initialize Polyline (v396 Direct Rendering)
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
         if (trackPolyline) {
-            liveLayer.removeLayer(trackPolyline);
+            map.removeLayer(trackPolyline);
         }
-        trackPolyline = L.polyline(trackPath, { color: '#2196f3', weight: 5, dashArray: '10, 10' }).addTo(liveLayer);
+        trackPolyline = L.polyline(trackPath, {
+            color: '#2196f3',
+            weight: 5,
+            dashArray: '10, 10',
+            zIndexOffset: 2000
+        }).addTo(map);
     }
 
     // User workflow: Start -> Stop -> Save.
@@ -1110,12 +1115,19 @@ function initMap() {
         // Add point
         trackPath.push([lat, lon]);
 
-        // Update Polyline
+        // Update Polyline (Directly to Map for Z-Index Control)
         if (!trackPolyline) {
-            trackPolyline = L.polyline(trackPath, { color: '#2196f3', weight: 5, dashArray: '10, 10' }).addTo(liveLayer);
+            trackPolyline = L.polyline(trackPath, {
+                color: '#2196f3',
+                weight: 5,
+                dashArray: '10, 10',
+                zIndexOffset: 2000
+            }).addTo(map);
         } else {
             trackPolyline.setLatLngs(trackPath);
         }
+
+        if (trackPolyline.bringToFront) trackPolyline.bringToFront();
 
         // Persist
         localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
@@ -1124,34 +1136,41 @@ function initMap() {
     const btnTrackToggle = document.getElementById('btn-track-toggle');
 
     function saveTrackToDatabase(name, path) {
-        if (path.length < 2) return;
+        if (!path || path.length < 2) {
+            console.warn("Save failed: Path is empty or too short.");
+            return;
+        }
+
+        // Initialize jeoTracks if somehow undefined
+        if (!Array.isArray(jeoTracks)) jeoTracks = [];
 
         // FIFO: Keep only the latest 10 tracks
         if (jeoTracks.length >= 10) {
-            const removedTrack = jeoTracks.shift(); // Remove oldest
-            // If the removed track was visible on map, it will be removed on next updateMapMarkers
-            console.log(`Removed oldest track: ${removedTrack.name}`);
+            jeoTracks.shift(); // Remove oldest
         }
 
         const id = Date.now();
         const now = new Date();
-        const dateStr = now.toLocaleDateString('en-GB'); // DD.MM.YYYY
-        const timeStr = now.toLocaleTimeString('en-GB'); // HH:MM:SS
-        const defaultName = `${dateStr} ${timeStr}`;
+        const dateStr = now.toLocaleDateString('en-GB');
+        const timeStr = now.toLocaleTimeString('en-GB');
+        const defaultName = `Track ${dateStr} ${timeStr}`;
 
         const newTrack = {
             id: id,
             name: name || defaultName,
-            path: path,
+            path: [...path], // Deep copy
             color: '#2196f3',
             visible: true,
             time: defaultName
         };
+
         jeoTracks.push(newTrack);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+
+        // Immediate UI Sync
         renderTracks();
         updateMapMarkers(false);
-        showToast("Track saved automatically.");
+        showToast(`Saved: ${newTrack.name}`);
     }
 
     if (btnTrackToggle) {
@@ -1240,12 +1259,12 @@ function initMap() {
 
     function clearTrack(silent = false) {
         if (trackPolyline) {
-            liveLayer.removeLayer(trackPolyline);
+            map.removeLayer(trackPolyline);
             trackPolyline = null;
         }
         trackPath = [];
         localStorage.removeItem('jeoTrackPath');
-        if (!silent) showToast("Track cleared.");
+        if (!silent) showToast("Track data reset.");
     }
 
     /* REMOVED LOCK SYSTEM (v355) */
