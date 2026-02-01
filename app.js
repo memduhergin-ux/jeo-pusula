@@ -1092,16 +1092,15 @@ function initMap() {
         }
     }
 
-    // Initialize Polyline
+    // Initialize Polyline (v395 Fix)
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
-        if (trackPolyline) liveLayer.removeLayer(trackPolyline); // Cleanup
+        if (trackPolyline) {
+            liveLayer.removeLayer(trackPolyline);
+        }
         trackPolyline = L.polyline(trackPath, { color: '#2196f3', weight: 5, dashArray: '10, 10' }).addTo(liveLayer);
     }
-    // If data exists ...
-    // Let's assume on reload if we have data we show it, but don't resume unless saved state says so.
-    // For simplicity, just show it. Button implies "Start New" or if we want to continue?
-    // Let's assume button click starts NEW or CONTINUES? 
+
     // User workflow: Start -> Stop -> Save.
 
 
@@ -1158,25 +1157,33 @@ function initMap() {
     if (btnTrackToggle) {
         btnTrackToggle.addEventListener('click', () => {
             if (!isTracking) {
-                // START
-                isTracking = true;
-                // Immediate initialization
-                if (currentCoords.lat !== 0) {
-                    updateTrack(currentCoords.lat, currentCoords.lon);
+                // START Request (Restore Alerts v395)
+                if (currentCoords.lat === 0) {
+                    showToast("Waiting for GPS position...");
+                    return;
                 }
-                updateTrackingButton();
-                showToast("Track recording started.");
-            } else {
-                // STOP - Automatic save
-                isTracking = false;
-                updateTrackingButton();
 
-                if (trackPath.length > 1) {
-                    saveTrackToDatabase(null, [...trackPath]);
-                } else {
-                    showToast("No movement recorded.");
+                if (confirm("Do you want to start track recording?")) {
+                    isTracking = true;
+                    // Initial point for immediate feedback
+                    updateTrack(currentCoords.lat, currentCoords.lon);
+                    updateTrackingButton();
+                    showToast("Track recording started.");
                 }
-                clearTrack(true); // Silent clear
+            } else {
+                // STOP Request (Restore Alerts v395)
+                if (confirm("Do you want to stop recording and save?")) {
+                    isTracking = false;
+                    updateTrackingButton();
+
+                    if (trackPath.length > 1) {
+                        saveTrackToDatabase(null, [...trackPath]);
+                        showToast("Track saved successfully.");
+                    } else {
+                        showToast("No movement recorded.");
+                    }
+                    clearTrack(true); // Silent clear
+                }
             }
         });
     }
@@ -3409,3 +3416,4 @@ if (document.getElementById('restore-file-input')) {
         reader.readAsText(file);
     });
 }
+renderTracks();
