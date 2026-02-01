@@ -151,7 +151,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v377';
+const CACHE_NAME = 'jeocompass-v380';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -255,7 +255,7 @@ function updateDisplay() {
     if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
-        valDip.textContent = Math.round(dip);
+        valDip.textContent = Math.round(dip) + "\u00B0";
     }
 
     if (levelBubble) {
@@ -896,79 +896,100 @@ function initMap() {
         localStorage.setItem('jeoMapLayer', e.name);
     });
 
-    // Label Collision Prevention & Auto Alignment
+    // Optimized Label Collision Prevention (v379 - Fixed v380)
+    let overlapTimeout = null;
     function preventTooltipOverlap() {
-        const labels = Array.from(document.querySelectorAll('.kml-label'));
-        if (labels.length === 0) return;
+        if (overlapTimeout) clearTimeout(overlapTimeout);
 
-        const boxes = [];
+        overlapTimeout = setTimeout(() => {
+            const labels = Array.from(document.querySelectorAll('.kml-label'));
+            if (labels.length === 0) return;
 
-        labels.forEach(label => {
-            // Reset visibility at the start of check
-            label.style.opacity = '1';
-            label.style.visibility = 'visible';
-            label.style.display = 'block';
-            label.style.transform = 'translate(0, 0)';
+            const mapBounds = map.getBounds();
+            const boxes = [];
 
-            const rect = label.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
-
-            const displacement = 8;
-            const diag = displacement * 0.707;
-
+            // Optimization parameters
+            const displacement = 10;
             const scenarios = [
-                { tx: 0, ty: 0 },               // Default TOP position (Highest Priority)
-                { tx: diag, ty: -diag },          // Top-Right
-                { tx: -diag, ty: -diag },         // Top-Left
-                { tx: displacement, ty: 0 },      // Right
-                { tx: -displacement, ty: 0 },     // Left
-                { tx: 0, ty: -displacement },     // Even higher Top
-                { tx: diag, ty: diag },           // Bottom-Right
-                { tx: -diag, ty: diag },          // Bottom-Left
-                { tx: 0, ty: displacement + 2 }   // Bottom (Below icon)
+                { tx: 0, ty: 0 },
+                { tx: 0, ty: -10 },
+                { tx: 0, ty: 10 },
+                { tx: 10, ty: 0 },
+                { tx: -10, ty: 0 },
+                { tx: 10, ty: -10 },
+                { tx: -10, ty: -10 }
             ];
 
-            let success = false;
-            for (const s of scenarios) {
-                label.style.transform = `translate(${s.tx}px, ${s.ty}px)`;
-                const currentRect = label.getBoundingClientRect();
-                let currentBox = {
-                    top: currentRect.top,
-                    left: currentRect.left,
-                    bottom: currentRect.bottom,
-                    right: currentRect.right
-                };
+            labels.forEach(label => {
+                // Critical Performance Fix: Skip off-screen labels
+                // We rely on _sourceLayer being attached during tooltipopen
+                if (label._sourceLayer && label._sourceLayer.getLatLng) {
+                    if (!mapBounds.contains(label._sourceLayer.getLatLng())) {
+                        label.style.display = 'none';
+                        return;
+                    }
+                }
 
-                let overlap = false;
-                for (const box of boxes) {
-                    if (!(currentBox.right < box.left || currentBox.left > box.right || currentBox.bottom < box.top || currentBox.top > box.bottom)) {
-                        overlap = true;
+                // Reset visibility for on-screen labels
+                label.style.display = 'block';
+                label.style.opacity = '1';
+                label.style.visibility = 'visible';
+                label.style.transform = 'translate(0, 0)';
+
+                const rect = label.getBoundingClientRect();
+                // Skip if not rendered yet
+                if (rect.width === 0 || rect.height === 0) return;
+
+                let bestScenario = null;
+
+                // Try scenarios
+                for (const s of scenarios) {
+                    const tx = s.tx;
+                    const ty = s.ty;
+
+                    const currentBox = {
+                        top: rect.top + ty,
+                        left: rect.left + tx,
+                        bottom: rect.bottom + ty,
+                        right: rect.right + tx
+                    };
+
+                    let overlap = false;
+                    for (const box of boxes) {
+                        if (!(currentBox.right < box.left || currentBox.left > box.right || currentBox.bottom < box.top || currentBox.top > box.bottom)) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+
+                    if (!overlap) {
+                        bestScenario = s;
+                        boxes.push(currentBox);
                         break;
                     }
                 }
 
-                if (!overlap) {
-                    boxes.push(currentBox);
-                    success = true;
-                    break;
+                if (bestScenario) {
+                    label.style.transform = `translate(${bestScenario.tx}px, ${bestScenario.ty}px)`;
+                } else {
+                    // Collision inevitable - hide or just dim? 
+                    // Showing overlapping labels is better than showing nothing usually, 
+                    // but for strict clarity we hide.
+                    // Let's try to just let it be (tx=0) but maybe lower z-index?
+                    // For now, adhere to "clean map" rule:
+                    label.style.opacity = '0';
+                    label.style.visibility = 'hidden';
                 }
-            }
-
-            if (!success) {
-                label.style.opacity = '0';
-                label.style.visibility = 'hidden';
-            }
-        });
+            });
+        }, 50);
     }
 
     map.on('zoomend moveend', () => {
-        // Small delay to allow Leaflet to position tooltips
-        setTimeout(preventTooltipOverlap, 100);
+        preventTooltipOverlap();
     });
 
-    // Also run when layer sets are likely to have changed
     map.on('overlayadd baselayerchange', () => {
-        setTimeout(preventTooltipOverlap, 500);
+        preventTooltipOverlap();
     });
 
     // Combined Scale and UTM Control (Bottom Left)
@@ -1963,6 +1984,13 @@ function addExternalLayer(name, geojson) {
                     offset: [0, -5],
                     sticky: false // Changed to false for better stability
                 });
+
+                // Performance Fix: Attach source layer to tooltip container for collision detection
+                layer.on('tooltipopen', (e) => {
+                    if (e.tooltip && e.tooltip._container) {
+                        e.tooltip._container._sourceLayer = layer;
+                    }
+                });
             }
             let popupContent = `<div class="map-popup-container">`;
             if (feature.properties) {
@@ -2059,7 +2087,8 @@ function addExternalLayer(name, geojson) {
 
     saveExternalLayers();
     renderLayerList();
-    setTimeout(preventTooltipOverlap, 500);
+    // Optimized trigger
+    preventTooltipOverlap();
 }
 
 function renderLayerList() {
