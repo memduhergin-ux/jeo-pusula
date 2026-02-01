@@ -68,30 +68,27 @@ function updateHeatmap() {
 
     if (points.length === 0) return;
 
-    // Convert meters to pixels based on current zoom
+    // Convert meters to pixels based on current zoom (v409)
+    // Formula for meters per pixel at a given latitude/zoom
     const metersPerPixel = 40075016.686 * Math.abs(Math.cos(map.getCenter().lat * Math.PI / 180)) / Math.pow(2, map.getZoom() + 8);
-    const radiusPixels = heatmapRadius / metersPerPixel;
-
-    // Professional Gaussian-style Tuning (v403)
-    // Blur around 0.6-0.8 of radius for smooth Gaussian feel
+    const radiusPixels = Math.max(10, heatmapRadius / metersPerPixel); // Safeguard min 10px
     const blurPixels = radiusPixels * 0.7;
 
     heatmapLayer = L.heatLayer(points, {
-        radius: Math.max(15, radiusPixels),
-        blur: Math.max(10, blurPixels),
+        radius: radiusPixels,
+        blur: blurPixels,
         maxZoom: 17,
         gradient: activeGradient
     }).addTo(map);
 }
 
 function updateHeatmapFilterOptions() {
-    const select = document.getElementById('heatmap-element-filter');
-    if (!select) return;
+    const list = document.getElementById('heatmap-element-list');
+    if (!list) return;
 
-    const currentVal = select.value;
+    // Find all unique elements present in records AND KML layers (v404)
     const foundElements = new Set();
 
-    // Scan standard records
     records.forEach(r => {
         const label = (r.label || '').toUpperCase();
         for (const el in ELEMENT_COLORS) {
@@ -99,7 +96,6 @@ function updateHeatmapFilterOptions() {
         }
     });
 
-    // Scan KML layers (v404)
     externalLayers.forEach(l => {
         if (l.geojson && l.geojson.features) {
             l.geojson.features.forEach(f => {
@@ -111,13 +107,37 @@ function updateHeatmapFilterOptions() {
         }
     });
 
-    let html = '<option value="ALL">All Points (General)</option>';
-    Array.from(foundElements).sort().forEach(el => {
-        html += `<option value="${el}">${el} Highlights</option>`;
+    const sortedElements = Array.from(foundElements).sort();
+
+    let html = `
+        <button class="element-opt ${heatmapFilter === 'ALL' ? 'active' : ''}" data-val="ALL">
+            <div class="color-dot-mini" style="background: linear-gradient(45deg, cyan, lime, yellow, red);"></div>
+            <span>All Points (General)</span>
+        </button>
+    `;
+
+    sortedElements.forEach(el => {
+        const color = ELEMENT_COLORS[el] || '#f44336';
+        html += `
+            <button class="element-opt ${heatmapFilter === el ? 'active' : ''}" data-val="${el}">
+                <div class="color-dot-mini" style="background: ${color};"></div>
+                <span>${el} Highlights</span>
+            </button>
+        `;
     });
 
-    select.innerHTML = html;
-    select.value = foundElements.has(currentVal) ? currentVal : "ALL";
+    list.innerHTML = html;
+
+    // Attach listeners
+    list.querySelectorAll('.element-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const val = e.currentTarget.dataset.val;
+            heatmapFilter = val;
+            list.querySelectorAll('.element-opt').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            if (isHeatmapActive) updateHeatmap();
+        });
+    });
 }
 
 function toggleHeatmap() {
@@ -131,6 +151,19 @@ function toggleHeatmap() {
     if (isHeatmapActive) {
         updateHeatmapFilterOptions();
         updateHeatmap();
+
+        // Add one-time click listener for auto-close (v406)
+        setTimeout(() => {
+            const closeHandler = (e) => {
+                if (!panel.contains(e.target) && e.target.id !== 'btn-heatmap-toggle' && !e.target.closest('#btn-heatmap-toggle')) {
+                    isHeatmapActive = false;
+                    if (btn) btn.classList.remove('active');
+                    panel.style.display = 'none';
+                    document.removeEventListener('click', closeHandler);
+                }
+            };
+            document.addEventListener('click', closeHandler);
+        }, 100);
     } else if (heatmapLayer) {
         map.removeLayer(heatmapLayer);
         heatmapLayer = null;
@@ -277,7 +310,7 @@ let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 // Heatmap State (v401)
 let heatmapLayer = null;
 let isHeatmapActive = false;
-let heatmapRadius = 50; // default meters
+let heatmapRadius = 50; // default meters (v409)
 let heatmapFilter = 'ALL'; // v403
 
 // Smoothing state (v400)
@@ -1582,6 +1615,9 @@ function initMapControls() {
 
     new MapControls().addTo(map);
     map.on('zoomend moveend move', updateScaleValues);
+    map.on('zoomend', () => {
+        if (isHeatmapActive) updateHeatmap();
+    });
     map.on('moveend', () => {
         if (isAddingPoint) {
             fetchElevation(map.getCenter().lat, map.getCenter().lng, (alt) => {
@@ -2278,6 +2314,22 @@ if (elFilter) {
     elFilter.addEventListener('change', (e) => {
         heatmapFilter = e.target.value;
         if (isHeatmapActive) updateHeatmap();
+    });
+}
+// Note: Element selection is now handled via delegated buttons in updateHeatmapFilterOptions (v407)
+
+const btnHeatmapOff = document.getElementById('btn-heatmap-off');
+if (btnHeatmapOff) {
+    btnHeatmapOff.addEventListener('click', () => {
+        isHeatmapActive = false;
+        const btn = document.getElementById('btn-heatmap-toggle');
+        const panel = document.getElementById('heatmap-radius-panel');
+        if (btn) btn.classList.remove('active');
+        if (panel) panel.style.display = 'none';
+        if (heatmapLayer) {
+            map.removeLayer(heatmapLayer);
+            heatmapLayer = null;
+        }
     });
 }
 

@@ -1708,3 +1708,39 @@ textarea.form-input {
     color: white !important;
     box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
 }
+
+/* Visual Element Selector (v407) */
+.element-opt {
+    background: #222;
+    color: #eee;
+    border: 1px solid #444;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+}
+
+.element-opt:hover {
+    background: #333;
+}
+
+.element-opt.active {
+    background: #2196f3;
+    border-color: #2196f3;
+    color: white;
+}
+
+.color-dot-mini {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid white;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
