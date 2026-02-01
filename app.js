@@ -654,10 +654,10 @@ if ('geolocation' in navigator) {
             processHeadingAndDip();
             updateDisplay();
 
-            // --- DRIFT FILTER (v397) ---
+            // --- DRIFT FILTER (v398) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc < 150) { // Relaxed accuracy for field use (v397)
+                if (acc <= 5) { // Ultra-High Precision (v398)
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
@@ -1097,7 +1097,7 @@ function initMap() {
         }
     }
 
-    // Initialize Polyline (v396 Direct Rendering)
+    // Initialize Polyline (v398 High Vis)
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
         if (trackPolyline) {
@@ -1105,9 +1105,9 @@ function initMap() {
         }
         trackPolyline = L.polyline(trackPath, {
             color: '#2196f3',
-            weight: 5,
+            weight: 8,
             dashArray: '10, 10',
-            zIndexOffset: 2000
+            pane: 'tracking-pane'
         }).addTo(map);
     }
 
@@ -1120,11 +1120,11 @@ function initMap() {
         // Add point
         trackPath.push([lat, lon]);
 
-        // Update Polyline (v397: High-Priority Pane)
+        // Update Polyline (v398: Weight 8)
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#2196f3',
-                weight: 5,
+                weight: 8,
                 dashArray: '10, 10',
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -1195,16 +1195,18 @@ function initMap() {
                     showToast("Track recording started.");
                 }
             } else {
-                // STOP Request (v397: Silent Auto-save)
-                isTracking = false;
-                updateTrackingButton();
+                // STOP Request (Restore Safety Alert v398)
+                if (confirm("Do you want to stop recording and save?")) {
+                    isTracking = false;
+                    updateTrackingButton();
 
-                if (trackPath.length > 1) {
-                    saveTrackToDatabase(null, [...trackPath]);
-                } else {
-                    showToast("No movement recorded.");
+                    if (trackPath.length > 1) {
+                        saveTrackToDatabase(null, [...trackPath]);
+                    } else {
+                        showToast("No movement recorded.");
+                    }
+                    clearTrack(true); // Silent clear
                 }
-                clearTrack(true); // Silent clear
             }
         });
     }
