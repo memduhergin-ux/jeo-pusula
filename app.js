@@ -896,8 +896,7 @@ function initMap() {
         localStorage.setItem('jeoMapLayer', e.name);
     });
 
-    // Optimized Label Collision Prevention (v381 - Point Thinning)
-    let optimizeTimeout = null;
+
     // Smart Label Placement (v383 - 8-Way Collision Avoidance)
     let optimizeTimeout = null;
     function optimizeMapPoints() {
@@ -905,7 +904,7 @@ function initMap() {
 
         optimizeTimeout = setTimeout(() => {
             // 1. Get all visible KML markers and their tooltips
-            const markers = []; 
+            const markers = [];
             externalLayers.forEach(l => {
                 if (!l.visible || !l.pointsVisible) return;
                 l.layer.eachLayer(layer => {
@@ -963,7 +962,7 @@ function initMap() {
 
             // 3. Smart Placement Algorithm
             // Try 8 positions: Top(N), NE, E, SE, S, SW, W, NW
-            const dist = 12; 
+            const dist = 12;
             const positions = [
                 { x: 0, y: -dist }, // N
                 { x: dist, y: -dist }, // NE
@@ -977,10 +976,10 @@ function initMap() {
 
             labelsToPlace.forEach(item => {
                 const { tooltipEl, markerRect } = item;
-                
-                tooltipEl.style.transform = "none"; 
-                tooltipEl.style.display = "block"; 
-                
+
+                tooltipEl.style.transform = "none";
+                tooltipEl.style.display = "block";
+
                 const width = tooltipEl.offsetWidth;
                 const height = tooltipEl.offsetHeight;
                 const markerCenter = {
@@ -992,8 +991,8 @@ function initMap() {
 
                 for (let i = 0; i < positions.length; i++) {
                     const offset = positions[i];
-                    
-                    const targetX = markerCenter.x + offset.x; 
+
+                    const targetX = markerCenter.x + offset.x;
                     const targetY = markerCenter.y + offset.y;
 
                     const candidateRect = {
@@ -1005,10 +1004,10 @@ function initMap() {
 
                     let collision = false;
                     for (const obst of occupiedRects) {
-                         if (!(candidateRect.right < obst.left || 
-                               candidateRect.left > obst.right || 
-                               candidateRect.bottom < obst.top || 
-                               candidateRect.top > obst.bottom)) {
+                        if (!(candidateRect.right < obst.left ||
+                            candidateRect.left > obst.right ||
+                            candidateRect.bottom < obst.top ||
+                            candidateRect.top > obst.bottom)) {
                             collision = true;
                             break;
                         }
@@ -1016,7 +1015,7 @@ function initMap() {
 
                     if (!collision) {
                         bestPos = { x: offset.x, y: offset.y, rect: candidateRect };
-                        break; 
+                        break;
                     }
                 }
 
