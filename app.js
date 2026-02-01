@@ -2316,7 +2316,6 @@ if (elFilter) {
         if (isHeatmapActive) updateHeatmap();
     });
 }
-// Note: Element selection is now handled via delegated buttons in updateHeatmapFilterOptions (v407)
 
 const btnHeatmapOff = document.getElementById('btn-heatmap-off');
 if (btnHeatmapOff) {
