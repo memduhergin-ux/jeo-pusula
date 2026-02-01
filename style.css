@@ -462,18 +462,10 @@ body {
     font-weight: bold;
     text-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
     position: relative;
-    padding-right: 10px;
+    padding-right: 2px;
 }
 
-/* Sadece Dip deÄŸerine derece sembolÃ¼ */
-#val-dip::after {
-    content: '\00b0';
-    position: absolute;
-    top: 2px;
-    right: -8px;
-    font-size: 1rem;
-    color: #4caf50;
-}
+/* Degree symbol is now added via JavaScript */
 
 .hold-btn {
     width: 45px;

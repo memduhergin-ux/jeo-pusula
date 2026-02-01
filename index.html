@@ -24,7 +24,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v377</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v379</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -88,7 +88,7 @@
                 <div class="instrument-cluster cluster-dip">
                     <div class="display-box">
                         <span class="data-label">Dip</span>
-                        <span class="data-value" id="val-dip">0</span>
+                        <span class="data-value" id="val-dip">0&deg;</span>
                     </div>
                     <button id="btn-hold-dip" class="hold-btn">H</button>
                 </div>
@@ -461,9 +461,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=377"></script>
+    <script src="app.js?v=379"></script>
     <script>
-        const JEO_VERSION = '377';
+        const JEO_VERSION = '379';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
