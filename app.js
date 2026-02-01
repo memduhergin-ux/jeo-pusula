@@ -29,27 +29,37 @@ function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
     let points = [];
-    let activeGradient = { 0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red' };
+    const activeGradient = { 0.4: 'cyan', 0.6: 'lime', 0.7: 'yellow', 1.0: 'red' }; // Professional Rainbow (v405)
+
+    // 1. Gather points from standard records
+    const recordPoints = records.filter(r => r.lat && r.lon);
+
+    // 2. Gather points from KML layers
+    const kmlPoints = [];
+    externalLayers.forEach(l => {
+        if (l.visible && l.geojson && l.geojson.features) {
+            l.geojson.features.forEach(f => {
+                if (f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates) {
+                    const label = getFeatureName(f.properties) || '';
+                    kmlPoints.push({
+                        lat: f.geometry.coordinates[1],
+                        lon: f.geometry.coordinates[0],
+                        label: label
+                    });
+                }
+            });
+        }
+    });
+
+    const allSourcePoints = [...recordPoints, ...kmlPoints];
 
     if (heatmapFilter === 'ALL') {
-        points = records
-            .filter(r => r.lat && r.lon)
-            .map(r => [r.lat, r.lon, 1]);
+        points = allSourcePoints.map(p => [p.lat, p.lon, 1]);
     } else {
         const symbol = heatmapFilter.toUpperCase();
-        points = records
-            .filter(r => r.lat && r.lon && (r.label || '').toUpperCase().includes(symbol))
-            .map(r => [r.lat, r.lon, 1]);
-
-        // Professional Monochromatic Gradient (v403)
-        const baseColor = ELEMENT_COLORS[symbol] || '#f44336';
-        // Create shades: 0.1 (faint) -> 0.4 (base) -> 1.0 (bright/dark)
-        activeGradient = {
-            0.1: baseColor + '22', // Very transparent
-            0.4: baseColor + '66', // Mid
-            0.7: baseColor + 'AA', // Solid
-            1.0: baseColor          // Pure
-        };
+        points = allSourcePoints
+            .filter(p => (p.label || '').toUpperCase().includes(symbol))
+            .map(p => [p.lat, p.lon, 1]);
     }
 
     if (heatmapLayer) {
@@ -79,12 +89,25 @@ function updateHeatmapFilterOptions() {
     if (!select) return;
 
     const currentVal = select.value;
-    // Find all unique elements present in records
     const foundElements = new Set();
+
+    // Scan standard records
     records.forEach(r => {
         const label = (r.label || '').toUpperCase();
         for (const el in ELEMENT_COLORS) {
             if (label.includes(el)) foundElements.add(el);
+        }
+    });
+
+    // Scan KML layers (v404)
+    externalLayers.forEach(l => {
+        if (l.geojson && l.geojson.features) {
+            l.geojson.features.forEach(f => {
+                const label = (getFeatureName(f.properties) || '').toUpperCase();
+                for (const el in ELEMENT_COLORS) {
+                    if (label.includes(el)) foundElements.add(el);
+                }
+            });
         }
     });
 
@@ -94,8 +117,7 @@ function updateHeatmapFilterOptions() {
     });
 
     select.innerHTML = html;
-    select.value = currentVal;
-    if (select.value === "") select.value = "ALL";
+    select.value = foundElements.has(currentVal) ? currentVal : "ALL";
 }
 
 function toggleHeatmap() {
@@ -926,6 +948,8 @@ if (document.getElementById('btn-modal-save')) {
 
 function saveRecords() {
     localStorage.setItem('jeoRecords', JSON.stringify(records));
+    localStorage.setItem('jeoNextId', nextId);
+    if (isHeatmapActive) updateHeatmapFilterOptions();
 }
 
 function renderRecords(filter = '') {
@@ -2604,6 +2628,7 @@ function saveExternalLayers() {
         labelsVisible: l.labelsVisible
     }));
     localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
+    if (isHeatmapActive) updateHeatmapFilterOptions();
 }
 
 function loadExternalLayers() {
