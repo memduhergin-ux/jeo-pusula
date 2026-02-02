@@ -114,15 +114,14 @@ function updateHeatmap() {
     const latlng2 = map.containerPointToLatLng(point2);
     const mpp = map.distance(center, latlng2) / 100; // Actual Meters Per Pixel
 
-    // v422 Adaptive Styling: Sharp for small distances, soft for large.
-    let ratio = 0.85; // Default for 100-300m
-    if (heatmapRadius <= 50) ratio = 0.92; // Extreme sharp for 25/50m
-    else if (heatmapRadius >= 500) ratio = 0.65; // Soft cloud for 500m
+    // v426 Topo-Style Ratios: More blur (30%) for smoother topographic contour flow.
+    const blurRatio = 0.30;
+    const radiusRatio = 0.70;
 
     // Total spread (r+b) always equals Ground Radius.
     const totalPixels = heatmapRadius / mpp;
-    const radiusPixels = totalPixels * ratio;
-    const blurPixels = totalPixels * (1 - ratio);
+    const radiusPixels = totalPixels * radiusRatio;
+    const blurPixels = totalPixels * blurRatio;
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
