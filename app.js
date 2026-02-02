@@ -28,18 +28,17 @@ if (document.readyState === 'loading') {
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
-    let points = [];
-    let activeGradient = { 0.4: 'cyan', 0.6: 'lime', 0.7: 'yellow', 1.0: 'red' }; // Default Rainbow
-
-    // Dynamic Monochromatic Gradient (v414 - More Vibrant)
+    // Dynamic Monochromatic Gradient (v418 - Smooth Scaling)
     if (heatmapFilter !== 'ALL') {
         const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
         activeGradient = {
-            0.1: 'rgba(255,255,255,0)', // Fade out edge
-            0.2: baseColor,             // Start with solid color
-            0.7: baseColor,             // Fill body
-            1.0: '#000000'              // High intensity core
+            0.0: 'rgba(255,255,255,0)',  // Start transparent
+            0.05: baseColor,             // Visible at edge
+            1.0: '#000000'               // High intensity core
         };
+    } else {
+        // Updated Rainbow for v418 (Smooth edge)
+        activeGradient = { 0.0: 'rgba(0,255,255,0)', 0.1: 'cyan', 0.4: 'lime', 0.6: 'yellow', 1.0: 'red' };
     }
 
     // 1. Gather points from standard records
@@ -79,23 +78,24 @@ function updateHeatmap() {
 
     if (points.length === 0) return;
 
-    // Convert meters to pixels based on current zoom (v413 Refined)
-    // Using a more precise meters-per-pixel calculation at the map center
-    const lat = map.getCenter().lat;
-    const zoom = map.getZoom();
-    const metersPerPixel = (40075016.686 * Math.abs(Math.cos(lat * Math.PI / 180))) / Math.pow(2, zoom + 8);
+    // Convert meters to pixels (v417: Dynamic Calculation for 1:1 parity with measuring tool)
+    const center = map.getCenter();
+    const point1 = map.latLngToContainerPoint(center);
+    const point2 = L.point(point1.x + 100, point1.y); // Use 100px sample for precision
+    const latlng2 = map.containerPointToLatLng(point2);
+    const mpp = map.distance(center, latlng2) / 100; // Actual Meters Per Pixel
 
-    // Scientific Radius: Total spread (radius + blur) must equal ground distance
-    // v416: Precision ground coverage. radius = R/2, blur = R/2 -> total = R meters from center
-    const totalPixels = heatmapRadius / metersPerPixel;
-    const radiusPixels = totalPixels * 0.5;
-    const blurPixels = radiusPixels;
+    // v417: radius = 70%, blur = 30%. Total spread (r+b) = Ground Radius.
+    // This ratio provides a better visual fade that is easily measurable.
+    const totalPixels = heatmapRadius / mpp;
+    const radiusPixels = totalPixels * 0.7;
+    const blurPixels = totalPixels * 0.3;
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
         blur: blurPixels,
         maxOpacity: 0.9,
-        minOpacity: 0.3,
+        minOpacity: 0,   // v418: 0% min opacity for true physical fade-out
         gradient: activeGradient,
         max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
     }).addTo(map);
