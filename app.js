@@ -51,11 +51,12 @@ function updateHeatmap() {
         const d2 = shadeColor(baseColor, -0.4); // Tier 3
         const d3 = shadeColor(baseColor, -0.6); // Tier 4
         const dCore = shadeColor(baseColor, -0.8); // Tier 5 (Core)
-        const line = shadeColor(baseColor, -0.98); // Ultra High Contrast Line (Near Black but colored)
+        const line = '#000000'; // v433: Pure Black for absolute zero-bleed
 
         activeGradient = {
-            0.0: 'rgba(0,0,0,0)',   // v431: Enforce transparency at outer edge to kill green leak
-            0.15: baseColor,
+            0.0: 'rgba(0,0,0,0)',
+            0.10: 'rgba(0,0,0,0)',  // v433: Softened transition floor (10-15%)
+            0.15: baseColor,        // to prevent geometric clipping
             0.18: baseColor, 0.20: line, 0.22: d1,   // Line at 20%
             0.38: d1, 0.40: line, 0.42: d2,         // Line at 40%
             0.58: d2, 0.60: line, 0.62: d3,         // Line at 60%
@@ -63,11 +64,13 @@ function updateHeatmap() {
             0.95: dCore, 1.0: '#000000'             // Dark Core Center
         };
     } else {
-        // v431 Explicit Rainbow Contours (with zero-leak fix)
+        // v433 Explicit Rainbow Contours (Softened Floor)
         const line = '#000000';
         activeGradient = {
-            0.0: 'rgba(0,0,0,0)',   // v431: Zero-leak fix
-            0.15: 'cyan', 0.18: 'cyan', 0.20: line, 0.22: 'lime',
+            0.0: 'rgba(0,0,0,0)',
+            0.10: 'rgba(0,0,0,0)',
+            0.15: 'cyan',
+            0.18: 'cyan', 0.20: line, 0.22: 'lime',
             0.38: 'lime', 0.40: line, 0.42: 'yellow',
             0.58: 'yellow', 0.60: line, 0.61: 'red',
             0.78: 'red', 0.80: line, 0.82: '#440000',
