@@ -672,33 +672,17 @@ function handleOrientation(event) {
             medianHeading = rawHeading;
         }
 
-        // 2. Stationary Lock (Sabitlik Kilidi)
-        if (isStationary) {
-            // Cihaz "sabit" modundaysa, pusulayÄ± Ã§ok yavaÅŸ hareket ettir (Low Pass Filter)
-            // Sadece gerÃ§ekten bÃ¼yÃ¼k bir deÄŸiÅŸim varsa tepki ver
+        // 2. Stationary Lock (Stationary Lock REMOVED for smoothness v441)
+        // Always apply smooth update
+        if (firstReading) {
+            targetHeading = medianHeading;
+            displayedHeading = medianHeading;
+            firstReading = false;
+        } else {
             let diff = medianHeading - targetHeading;
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
-
-            if (Math.abs(diff) > 2.0) {
-                // BÃ¼yÃ¼k hareket (kullanÄ±cÄ± dÃ¶ndÃ¼), kilidi hemen aÃ§
-                targetHeading = medianHeading;
-            } else {
-                // KÃ¼Ã§Ã¼k hareket (titreme), Ã§ok agresif yumuÅŸat
-                targetHeading += diff * 0.05;
-            }
-        } else {
-            // Cihaz hareketli, normal tepki ver
-            if (firstReading) {
-                targetHeading = medianHeading;
-                displayedHeading = medianHeading;
-                firstReading = false;
-            } else {
-                let diff = medianHeading - targetHeading;
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
-                targetHeading += diff * 0.15;
-            }
+            targetHeading += diff * 0.15; // Smooth factor
         }
     }
 }
@@ -914,6 +898,10 @@ if ('geolocation' in navigator) {
             // --- DRIFT FILTER (v400) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
+                // v441: Capture Movement Data
+                currentSpeed = p.coords.speed || 0;
+                currentCourse = p.coords.heading || null;
+
                 // v440: Garmin Mode - Relaxed to 100m to capture indoor/forest tracks
                 if (acc <= 100) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
@@ -1376,7 +1364,7 @@ function initMap() {
         trackPolyline = L.polyline(trackPath, {
             color: '#2196f3',
             weight: 6, // v437: Adjusted for better visibility
-            dashArray: '10, 10',
+            // dashArray: '10, 10', // REMOVED v441
             pane: 'tracking-pane'
         }).addTo(map);
     }
@@ -1396,7 +1384,7 @@ function initMap() {
             trackPolyline = L.polyline(trackPath, {
                 color: '#2196f3',
                 weight: 6, // v437
-                dashArray: '10, 10',
+                // dashArray: '10, 10', // REMOVED v441 for solid line
                 pane: 'tracking-pane'
             }).addTo(map);
         } else {
@@ -3673,3 +3661,29 @@ if (document.getElementById('restore-file-input')) {
     });
 }
 renderTracks();
+
+
+// v441: Hybrid Headlight Logic
+let currentSpeed = 0;
+let currentCourse = null;
+
+// v441: Headlight Rotation Update
+function updateHeadlight(heading) {
+    if (typeof liveMarker !== 'undefined' && liveMarker) {
+        const el = liveMarker.getElement();
+        if (el) {
+            const cone = el.querySelector('.heading-cone');
+            if (cone) {
+                // Hybrid Logic: Use GPS Course if moving fast enough (>1 m/s ~ 3.6 km/h)
+                // Otherwise fallback to Compass Heading
+                let rotation = heading;
+                if (currentSpeed > 1 && currentCourse !== null) {
+                    rotation = currentCourse;
+                }
+
+                // Rotate cone (0 = North/Up)
+                cone.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
+            }
+        }
+    }
+}
