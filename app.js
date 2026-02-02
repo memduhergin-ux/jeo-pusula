@@ -147,6 +147,20 @@ function updateHeatmap() {
     }).addTo(map);
 }
 
+// v437: Update Headlight Rotation based on Compass
+function updateHeadlight(heading) {
+    if (!liveMarker) return;
+    const el = liveMarker.getElement();
+    if (el) {
+        const cone = el.querySelector('.heading-cone');
+        if (cone) {
+            // Map rotates differently? No, map is usually North up unless rotated.
+            // If map is North up, we just rotate the cone by the heading.
+            cone.style.transform = `translate(-50%, 0) rotate(${heading}deg)`;
+        }
+    }
+}
+
 function updateHeatmapFilterOptions() {
     const select = document.getElementById('heatmap-element-filter');
     if (!select) return;
@@ -350,12 +364,13 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v382';
+const CACHE_NAME = 'jeocompass-v437';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
-let isTracking = true; // Garmin-style: Auto-track on start (v399)
+// Tracking State (v354)
+let isTracking = true; // Garmin-style: Auto-track on start (v437: Confirmed)
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
@@ -748,6 +763,8 @@ function animateCompass() {
     if (displayedHeading >= 360) displayedHeading -= 360;
 
     updateDisplay();
+    // v437: Sync Headlight with Compass
+    updateHeadlight(displayedHeading);
     requestAnimationFrame(animateCompass);
 }
 requestAnimationFrame(animateCompass);
@@ -862,7 +879,7 @@ if ('geolocation' in navigator) {
                     if (!liveMarker) {
                         const liveIcon = L.divIcon({
                             className: 'heartbeat-container',
-                            html: '<div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                            html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
                             iconSize: [32, 32],
                             iconAnchor: [16, 16]
                         });
@@ -1353,7 +1370,7 @@ function initMap() {
         }
         trackPolyline = L.polyline(trackPath, {
             color: '#2196f3',
-            weight: 10,
+            weight: 6, // v437: Adjusted for better visibility
             dashArray: '10, 10',
             pane: 'tracking-pane'
         }).addTo(map);
@@ -1373,7 +1390,7 @@ function initMap() {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#2196f3',
-                weight: 10,
+                weight: 6, // v437
                 dashArray: '10, 10',
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -1529,110 +1546,12 @@ function initMap() {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {
             // Handled by Crosshair
-        } else {
-            const clickedLat = e.latlng.lat;
-            const clickedLon = e.latlng.lng;
-
-            const isTkgmSelected = activeMapLayer && activeMapLayer.includes("TKGM");
-
-            // If not TKGM, do nothing on map click (as requested in v323)
-            if (!isTkgmSelected) return;
-
-            // Show Loading Popup
-            const loadingPopup = L.popup()
-                .setLatLng(e.latlng)
-                .setContent('<div style="padding:10px; text-align:center;"><div class="spinner-small" style="display:inline-block; width:15px; height:15px; border:2px solid #2196f3; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div> Fetching data...</div>')
-                .openOn(map);
-
-            // Convert to UTM for fallback/display
-            let utmY, utmX, zone;
-            try {
-                zone = Math.floor((clickedLon + 180) / 6) + 1;
-                const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-                const utm = proj4('WGS84', utmZoneDef, [clickedLon, clickedLat]);
-                utmY = Math.round(utm[0]);
-                utmX = Math.round(utm[1]);
-            } catch (err) { }
-
-            // Fetch Elevation and Parcel Data
-            const tasks = [
-                new Promise(resolve => fetchElevation(clickedLat, clickedLon, resolve)),
-                fetchParcelData(clickedLat, clickedLon)
-            ];
-
-            Promise.all(tasks).then(([alt, parcelResult]) => {
-                const zVal = alt !== null ? alt : "-";
-                const parcel = parcelResult ? parcelResult.attributes : null;
-                const geometry = parcelResult ? parcelResult.geometry : null;
-
-                if (!parcel) {
-                    showToast("Parcel not found.");
-                }
-
-                if (parcel && parcelId !== lastSelectedParcel) {
-                    showToast("Parcel boundaries loaded.");
-                    // Stage 1: Show Boundaries
-                    highlightLayer.clearLayers();
-                    lastSelectedParcel = parcelId;
-
-                    if (geometry && geometry.rings) {
-                        const latlngs = geometry.rings[0].map(pt => [pt[1], pt[0]]);
-                        L.polygon(latlngs, {
-                            color: '#ff0000', // Red border
-                            weight: 3,
-                            fillColor: '#ff0000', // Red fill
-                            fillOpacity: 0.2
-                        }).addTo(highlightLayer);
-
-                        // Silent marking: Just close the loading popup
-                        map.closePopup();
-                    } else {
-                        map.closePopup();
-                    }
-                    return;
-                }
-
-                let content = `<div class="map-popup-container" style="min-width: 180px;">`;
-                content += `<div style="font-weight:bold; color:#ff0000; font-size:1rem; margin-bottom:8px; border-bottom:1px solid #444; padding-bottom:4px;">🏡 Parcel Information</div>`;
-
-                if (parcel) {
-                    const parcelStr = JSON.stringify(parcel).replace(/"/g, '&quot;');
-                    content += `
-                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse; margin-bottom:4px;">
-                            <tr><td style="color:#aaa; padding:2px 0;">Province/District:</td><td style="text-align:right;">${parcel.IL_AD || '-'} / ${parcel.ILCE_AD || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Neighborhood:</td><td style="text-align:right;">${parcel.MAHALLE_AD || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Island/Parcel:</td><td style="text-align:right; font-weight:bold; color:#fff;">${parcel.ADA_NO || '-'}/${parcel.PARSEL_NO || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Quality:</td><td style="text-align:right;">${parcel.OZN_NITELIK || '-'}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Location:</td><td style="text-align:right;">${parcel.MEVKII || '-'}</td></tr>
-                        </table>
-                        <div style="font-size:0.75rem; color:#666; margin:8px 0; border-top:1px solid #333; padding-top:4px;">
-                            UTM: ${utmY}, ${utmX} (Z: ${zVal}m)
-                        </div>
-                        <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick='saveParcelRecord(${clickedLat}, ${clickedLon}, ${zVal === "-" ? 0 : zVal}, ${parcelStr})' style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer; font-weight:bold;">💾 Save</button>
-                            <button onclick="map.closePopup()" style="flex:1; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Close</button>
-                        </div>
-                    `;
-                } else {
-                    content += `<div style="color:#f44336; font-size:0.85rem; margin-bottom:8px; text-align:center;">Parcel not found.</div>`;
-                    content += `
-                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
-                            <tr><td style="color:#aaa; padding:2px 0;">Y:</td><td style="text-align:right;">${utmY}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">X:</td><td style="text-align:right;">${utmX}</td></tr>
-                            <tr><td style="color:#aaa; padding:2px 0;">Z:</td><td style="text-align:right;">${zVal} m</td></tr>
-                        </table>
-                        <div style="margin-top:10px;">
-                            <button onclick="map.closePopup()" style="width:100%; background:#444; color:white; border:none; padding:8px; border-radius:4px; font-size:0.85rem; cursor:pointer;">Close</button>
-                        </div>
-                    `;
-                }
-                content += `</div>`;
-                loadingPopup.setContent(content);
-            }).catch(err => {
-                loadingPopup.setContent("Query error.");
-            });
         }
+        // v437: TKGM Logic Removed completely as requested. 
+        // No default click action on map for now.
     });
+
+
 
 
     updateMapMarkers(true);

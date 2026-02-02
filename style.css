@@ -1133,6 +1133,30 @@ textarea.form-input {
     position: relative;
     width: 32px;
     height: 32px;
+    /* Ensure rotation center is correct */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Headlight / Directional Beam */
+.heading-cone {
+    position: absolute;
+    bottom: 50%;
+    /* Start from center */
+    left: 50%;
+    width: 60px;
+    /* Beam length */
+    height: 60px;
+    background: radial-gradient(circle at 50% 100%, rgba(33, 150, 243, 0.4), transparent 70%);
+    transform-origin: bottom center;
+    transform: translate(-50%, 0) rotate(0deg);
+    /* Will be updated by JS */
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    pointer-events: none;
+    z-index: 0;
+    /* Behind the triangle */
+    transition: transform 0.1s linear;
 }
 
 .heartbeat-triangle {
