@@ -85,10 +85,11 @@ function updateHeatmap() {
     const zoom = map.getZoom();
     const metersPerPixel = (40075016.686 * Math.abs(Math.cos(lat * Math.PI / 180))) / Math.pow(2, zoom + 8);
 
-    // Scientific Radius: Actual ground distance / meters per pixel
-    // v415: Removed min 8px cap to ensure ground distance is perfectly preserved at all zoom levels
-    const radiusPixels = heatmapRadius / metersPerPixel;
-    const blurPixels = radiusPixels * 0.8;
+    // Scientific Radius: Total spread (radius + blur) must equal ground distance
+    // v416: Precision ground coverage. radius = R/2, blur = R/2 -> total = R meters from center
+    const totalPixels = heatmapRadius / metersPerPixel;
+    const radiusPixels = totalPixels * 0.5;
+    const blurPixels = radiusPixels;
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,

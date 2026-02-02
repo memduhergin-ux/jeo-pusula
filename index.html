@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v415</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v416</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -199,11 +199,11 @@
                     style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
                     Heatmap Radius (Meters)</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+                    <button class="radius-opt" data-radius="25">25m</button>
                     <button class="radius-opt active" data-radius="50">50m</button>
                     <button class="radius-opt" data-radius="100">100m</button>
                     <button class="radius-opt" data-radius="200">200m</button>
                     <button class="radius-opt" data-radius="300">300m</button>
-                    <button class="radius-opt" data-radius="400">400m</button>
                     <button class="radius-opt" data-radius="500">500m</button>
                 </div>
 
@@ -496,9 +496,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=415"></script>
+    <script src="app.js?v=416"></script>
     <script>
-        const JEO_VERSION = '415';
+        const JEO_VERSION = '416';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
