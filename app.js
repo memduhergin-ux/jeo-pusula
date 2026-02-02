@@ -147,16 +147,18 @@ function updateHeatmap() {
     }).addTo(map);
 }
 
-// v437: Update Headlight Rotation based on Compass
+// v439: Robust Headlight Rotation
 function updateHeadlight(heading) {
     if (!liveMarker) return;
     const el = liveMarker.getElement();
     if (el) {
         const cone = el.querySelector('.heading-cone');
         if (cone) {
-            // Map rotates differently? No, map is usually North up unless rotated.
-            // If map is North up, we just rotate the cone by the heading.
+            // Rotate the cone using CSS transform
+            // We must keep the translate(-50%, 0) to keep it centered horizontally relative to the marker
             cone.style.transform = `translate(-50%, 0) rotate(${heading}deg)`;
+            // Ensure it's visible
+            cone.style.opacity = '1';
         }
     }
 }
@@ -364,13 +366,14 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v438';
+const CACHE_NAME = 'jeocompass-v439';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
-let isTracking = true; // Garmin-style: Auto-track on start (v437: Confirmed)
+// Tracking State (v354)
+let isTracking = true; // Garmin-style: ALWAYS Auto-track on start (v439)
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
@@ -911,26 +914,24 @@ if ('geolocation' in navigator) {
             // --- DRIFT FILTER (v400) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                // v438: Relaxed to 60m for indoor testing/better capture
+                // v439: Garmin Mode - Relaxed to 60m to capture indoor/forest tracks
                 if (acc <= 60) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
 
-                    // v438: Reduced distance threshold to 1m to capture finer movement
+                    // v439: High Sensitivity - 1 meter threshold
                     if (dist >= 1) {
                         updateTrack(currentCoords.lat, currentCoords.lon);
                     }
                 } else {
-                    // Visualize weak signal if needed, or just silent skip
+                    // Signal too weak (>60m)
+                    if (acc > 60) {
+                        // showToast(`Low GPS: ${Math.round(acc)}m`, 1000);
+                    }
                 }
 
                 if (isHeatmapActive) updateHeatmap();
-            } else {
-                // Tracking active but signal too weak (v401)
-                if (isTracking && p.coords.accuracy > 25) {
-                    showToast(`Low GPS accuracy: ${Math.round(p.coords.accuracy)}m (Limit: 25m)`, 2000);
-                }
             }
         } catch (e) {
             console.error("WatchPosition error:", e);

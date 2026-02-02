@@ -1145,10 +1145,10 @@ textarea.form-input {
     bottom: 50%;
     /* Start from center */
     left: 50%;
-    width: 60px;
-    /* Beam length */
-    height: 60px;
-    background: radial-gradient(circle at 50% 100%, rgba(33, 150, 243, 0.4), transparent 70%);
+    width: 120px;
+    /* v439: Larger, Garmin-style beam */
+    height: 120px;
+    background: radial-gradient(circle at 50% 100%, rgba(33, 150, 243, 0.6), transparent 70%);
     transform-origin: bottom center;
     transform: translate(-50%, 0) rotate(0deg);
     /* Will be updated by JS */
@@ -1157,6 +1157,7 @@ textarea.form-input {
     z-index: 0;
     /* Behind the triangle */
     transition: transform 0.1s linear;
+    filter: drop-shadow(0 0 8px rgba(33, 150, 243, 0.4));
 }
 
 .heartbeat-triangle {
