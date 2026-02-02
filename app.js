@@ -364,7 +364,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v437';
+const CACHE_NAME = 'jeocompass-v438';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -911,14 +911,18 @@ if ('geolocation' in navigator) {
             // --- DRIFT FILTER (v400) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc <= 25) { // Relaxed Precision (v401)
+                // v438: Relaxed to 60m for indoor testing/better capture
+                if (acc <= 60) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
 
-                    if (dist >= 2) { // 2m movement threshold
+                    // v438: Reduced distance threshold to 1m to capture finer movement
+                    if (dist >= 1) {
                         updateTrack(currentCoords.lat, currentCoords.lon);
                     }
+                } else {
+                    // Visualize weak signal if needed, or just silent skip
                 }
 
                 if (isHeatmapActive) updateHeatmap();
@@ -1461,15 +1465,17 @@ function initMap() {
                     showToast("Track recording started.");
                 }
             } else {
-                // STOP Request (Restore Safety Alert v398)
-                if (confirm("Do you want to stop recording and save?")) {
+                // STOP Request
+                // v438: Improved Feedback
+                const pointCount = trackPath.length;
+                if (confirm(`Kaydı durdurup kaydetmek istiyor musunuz? (${pointCount} nokta)`)) {
                     isTracking = false;
                     updateTrackingButton();
 
-                    if (trackPath.length > 1) {
+                    if (pointCount > 1) {
                         saveTrackToDatabase(null, [...trackPath]);
                     } else {
-                        showToast("No movement recorded.");
+                        showToast("Yetersiz hareket (En az 2 nokta gerekli). Kayıt iptal edildi."); // "Insufficient movement"
                     }
                     clearTrack(true); // Silent clear
                 }
