@@ -25,20 +25,32 @@ if (document.readyState === 'loading') {
 }
 
 /** Heatmap Logic (v401) **/
+// Helper to darken colors for heatmap core (v423)
+function shadeColor(color, percent) {
+    let f = parseInt(color.slice(1), 16),
+        t = percent < 0 ? 0 : 255,
+        p = percent < 0 ? percent * -1 : percent,
+        R = f >> 16,
+        G = f >> 8 & 0x00FF,
+        B = f & 0x0000FF;
+    return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 + (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
+}
+
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
-    // Dynamic Monochromatic Gradient (v420 - Peak Visibility)
+    // Dynamic Monochromatic Gradient (v423 - Color-Matched Core)
     if (heatmapFilter !== 'ALL') {
         const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
+        const darkCore = shadeColor(baseColor, -0.6); // 60% darker
         activeGradient = {
-            0.0: baseColor,              // Instant solid color at edge
-            0.5: baseColor,              // Maintain saturation
-            1.0: '#000000'               // High intensity core
+            0.0: baseColor,              // Solid color at edge
+            0.8: baseColor,              // Maintain saturation
+            0.95: darkCore               // Color-matched needle point core
         };
     } else {
-        // v420 Peak Rainbow
-        activeGradient = { 0.0: 'cyan', 0.2: 'lime', 0.5: 'yellow', 1.0: 'red' };
+        // v423 High-Contrast Adaptive Rainbow
+        activeGradient = { 0.0: 'cyan', 0.2: 'lime', 0.5: 'yellow', 0.8: 'red', 0.95: '#440000' };
     }
 
     // 1. Gather points from standard records
@@ -85,11 +97,15 @@ function updateHeatmap() {
     const latlng2 = map.containerPointToLatLng(point2);
     const mpp = map.distance(center, latlng2) / 100; // Actual Meters Per Pixel
 
-    // v420: radius = 85%, blur = 15%. 
-    // Maximize "disk" appearance for peak prominence on all map backgrounds.
+    // v422 Adaptive Styling: Sharp for small distances, soft for large.
+    let ratio = 0.85; // Default for 100-300m
+    if (heatmapRadius <= 50) ratio = 0.92; // Extreme sharp for 25/50m
+    else if (heatmapRadius >= 500) ratio = 0.65; // Soft cloud for 500m
+
+    // Total spread (r+b) always equals Ground Radius.
     const totalPixels = heatmapRadius / mpp;
-    const radiusPixels = totalPixels * 0.85;
-    const blurPixels = totalPixels * 0.15;
+    const radiusPixels = totalPixels * ratio;
+    const blurPixels = totalPixels * (1 - ratio);
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
