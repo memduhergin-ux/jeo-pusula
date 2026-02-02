@@ -39,31 +39,36 @@ function shadeColor(color, percent) {
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
-    // Dynamic Monochromatic Gradient (v427 - Explicit Topo Lines)
-    if (heatmapFilter !== 'ALL') {
-        const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
+    let points = [];
+    let activeGradient = {};
+
+    // Dynamic Monochromatic Gradient (v428 - High Contrast Topo Lines)
+    const filterKey = (heatmapFilter || 'ALL').toUpperCase();
+
+    if (filterKey !== 'ALL') {
+        const baseColor = ELEMENT_COLORS[filterKey] || '#f44336';
         const d1 = shadeColor(baseColor, -0.2); // Tier 2
         const d2 = shadeColor(baseColor, -0.4); // Tier 3
         const d3 = shadeColor(baseColor, -0.6); // Tier 4
         const dCore = shadeColor(baseColor, -0.8); // Tier 5 (Core)
-        const line = shadeColor(baseColor, -0.95); // High Contrast Contour Line
+        const line = shadeColor(baseColor, -0.98); // Ultra High Contrast Line (Near Black but colored)
 
         activeGradient = {
-            0.0: baseColor,
-            0.19: baseColor, 0.20: line, 0.21: d1,   // Explicit Line at 20%
-            0.39: d1, 0.40: line, 0.41: d2,         // Explicit Line at 40%
-            0.59: d2, 0.60: line, 0.61: d3,         // Explicit Line at 60%
-            0.79: d3, 0.80: line, 0.81: dCore,      // Explicit Line at 80%
+            0.15: baseColor,
+            0.18: baseColor, 0.20: line, 0.22: d1,   // Line at 20%
+            0.38: d1, 0.40: line, 0.42: d2,         // Line at 40%
+            0.58: d2, 0.60: line, 0.62: d3,         // Line at 60%
+            0.78: d3, 0.80: line, 0.82: dCore,      // Line at 80%
             0.95: dCore, 1.0: '#000000'             // Dark Core Center
         };
     } else {
-        // v427 Explicit Rainbow Contours
-        const line = '#220000';
+        // v428 Explicit Rainbow Contours (High Contrast)
+        const line = '#000000';
         activeGradient = {
-            0.0: 'cyan', 0.19: 'cyan', 0.20: line, 0.21: 'lime',
-            0.39: 'lime', 0.40: line, 0.41: 'yellow',
-            0.59: 'yellow', 0.60: line, 0.61: 'red',
-            0.79: 'red', 0.80: line, 0.81: '#440000',
+            0.15: 'cyan', 0.18: 'cyan', 0.20: line, 0.22: 'lime',
+            0.38: 'lime', 0.40: line, 0.42: 'yellow',
+            0.58: 'yellow', 0.60: line, 0.62: 'red',
+            0.78: 'red', 0.80: line, 0.82: '#440000',
             0.95: '#220000', 1.0: '#000000'
         };
     }
