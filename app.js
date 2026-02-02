@@ -39,18 +39,32 @@ function shadeColor(color, percent) {
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
-    // Dynamic Monochromatic Gradient (v423 - Color-Matched Core)
+    // Dynamic Monochromatic Gradient (v424 - Contour Style)
     if (heatmapFilter !== 'ALL') {
         const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
-        const darkCore = shadeColor(baseColor, -0.6); // 60% darker
+        const dark1 = shadeColor(baseColor, -0.2); // 20% darker
+        const dark2 = shadeColor(baseColor, -0.4); // 40% darker
+        const darkCore = shadeColor(baseColor, -0.7); // 70% darker
+
         activeGradient = {
-            0.0: baseColor,              // Solid color at edge
-            0.8: baseColor,              // Maintain saturation
-            0.95: darkCore               // Color-matched needle point core
+            0.0: baseColor,      // Level 1
+            0.25: baseColor,
+            0.26: dark1,         // Contour Line 1 -> Level 2
+            0.50: dark1,
+            0.51: dark2,         // Contour Line 2 -> Level 3
+            0.75: dark2,
+            0.76: darkCore,      // Contour Line 3 -> Sharp Core
+            1.0: darkCore
         };
     } else {
-        // v423 High-Contrast Adaptive Rainbow
-        activeGradient = { 0.0: 'cyan', 0.2: 'lime', 0.5: 'yellow', 0.8: 'red', 0.95: '#440000' };
+        // v424 Contour Rainbow (Multi-Step)
+        activeGradient = {
+            0.0: 'cyan', 0.15: 'cyan',
+            0.16: 'lime', 0.40: 'lime',
+            0.41: 'yellow', 0.65: 'yellow',
+            0.66: 'red', 0.90: 'red',
+            0.91: '#440000', 1.0: '#440000'
+        };
     }
 
     // 1. Gather points from standard records
