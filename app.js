@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v439';
+const CACHE_NAME = 'jeocompass-v442';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -390,6 +390,11 @@ const SMOOTH_ALPHA = 0.3;
 let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
+
+// Track Auto-Recording State (v442)
+let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
+const MAX_TRACKS = 20; // Maksimum izlek sayısı
+let showLiveTrack = true; // Canlı izleği haritada göster/gizle
 
 // Measurement State
 let isMeasuring = false;
@@ -1340,197 +1345,21 @@ function initMap() {
         if (isHeatmapActive) updateHeatmap(); // v413: Recalculate metric radius pixels on zoom
     });
 
-    // --- Tracking System (v355 - Single Button) ---
-    // Function to check if tracking is active (for map feedback)
-    function updateTrackingButton() {
-        const btn = document.getElementById('btn-track-toggle');
-        if (!btn) return;
+    // --- Tracking System MOVED TO GLOBAL SCOPE (v441) ---
+    // See bottom of file
 
-        if (isTracking) {
-            btn.innerHTML = '<span class="fab-icon" style="color:#ff5252;">⏹️</span>'; // Stop Icon
-            btn.classList.add('recording');
-        } else {
-            btn.innerHTML = '<span class="fab-icon">👣</span>'; // Footprint Icon
-            btn.classList.remove('recording');
-        }
-    }
-
-    // Initialize Polyline (v399 Garmin Style)
+    // Initialize Saved Track (One-time map setup)
     if (savedTrackPath.length > 0) {
         trackPath = savedTrackPath;
-        if (trackPolyline) {
-            map.removeLayer(trackPolyline);
-        }
-        trackPolyline = L.polyline(trackPath, {
-            color: '#2196f3',
-            weight: 6, // v437: Adjusted for better visibility
-            // dashArray: '10, 10', // REMOVED v441
-            pane: 'tracking-pane'
-        }).addTo(map);
-    }
-
-    // User workflow: Start -> Stop -> Save.
-    updateTrackingButton(); // Ensure UI reflects auto-start (v399)
-
-
-    function updateTrack(lat, lon) {
-        if (!isTracking) return;
-
-        // Add point
-        trackPath.push([lat, lon]);
-
-        // Update Polyline (v399: Weight 10)
-        if (!trackPolyline) {
+        if (map) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#2196f3',
-                weight: 6, // v437
-                // dashArray: '10, 10', // REMOVED v441 for solid line
+                weight: 6,
                 pane: 'tracking-pane'
             }).addTo(map);
-        } else {
-            trackPolyline.setLatLngs(trackPath);
         }
-
-        if (trackPolyline.bringToFront) trackPolyline.bringToFront();
-
-        // Persist
-        localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
     }
-
-    const btnTrackToggle = document.getElementById('btn-track-toggle');
-
-    function saveTrackToDatabase(name, path) {
-        if (!path || path.length < 2) {
-            console.warn("Save failed: Path is empty or too short.");
-            return;
-        }
-
-        // Initialize jeoTracks if somehow undefined
-        if (!Array.isArray(jeoTracks)) jeoTracks = [];
-
-        // FIFO: Keep only the latest 10 tracks
-        if (jeoTracks.length >= 10) {
-            jeoTracks.shift(); // Remove oldest
-        }
-
-        const id = Date.now();
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('en-GB');
-        const timeStr = now.toLocaleTimeString('en-GB');
-        const defaultName = `Track ${dateStr} ${timeStr}`;
-
-        const newTrack = {
-            id: id,
-            name: name || defaultName,
-            path: [...path], // Deep copy
-            color: '#2196f3',
-            visible: true,
-            time: defaultName
-        };
-
-        jeoTracks.push(newTrack);
-        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
-
-        // Immediate UI Sync
-        renderTracks();
-        updateMapMarkers(false);
-        showToast(`Saved: ${newTrack.name}`);
-    }
-
-    if (btnTrackToggle) {
-        btnTrackToggle.addEventListener('click', () => {
-            if (!isTracking) {
-                // START Request (Restore Alerts v395)
-                if (currentCoords.lat === 0) {
-                    showToast("Waiting for GPS position...");
-                    return;
-                }
-
-                if (confirm("Do you want to start track recording?")) {
-                    isTracking = true;
-                    // Initial point for immediate feedback
-                    updateTrack(currentCoords.lat, currentCoords.lon);
-                    updateTrackingButton();
-                    showToast("Track recording started.");
-                }
-            } else {
-                // STOP Request
-                // v438: Improved Feedback
-                const pointCount = trackPath.length;
-                if (confirm(`Kaydı durdurup kaydetmek istiyor musunuz? (${pointCount} nokta)`)) {
-                    isTracking = false;
-                    updateTrackingButton();
-
-                    if (pointCount > 1) {
-                        saveTrackToDatabase(null, [...trackPath]);
-                    } else {
-                        showToast("Yetersiz hareket (En az 2 nokta gerekli). Kayıt iptal edildi."); // "Insufficient movement"
-                    }
-                    clearTrack(true); // Silent clear
-                }
-            }
-        });
-    }
-
-    function exportKML() {
-        if (trackPath.length === 0) {
-            showToast("No data to save.");
-            return;
-        }
-
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10);
-        const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
-        const filename = `track_${dateStr}_${timeStr}.kml`;
-
-        let kml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Track ${dateStr} ${timeStr}</name>
-    <Style id="dashed">
-      <LineStyle>
-        <color>ff0000ff</color>
-        <width>4</width>
-      </LineStyle>
-    </Style>
-    <Placemark>
-      <name>Path</name>
-      <styleUrl>#dashed</styleUrl>
-      <LineString>
-        <tessellate>1</tessellate>
-        <coordinates>
-`;
-        trackPath.forEach(pt => {
-            kml += `${pt[1]},${pt[0]},0 `;
-        });
-
-        kml += `
-        </coordinates>
-      </LineString>
-    </Placemark>
-  </Document>
-</kml>`;
-
-        const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    function clearTrack(silent = false) {
-        if (trackPolyline) {
-            map.removeLayer(trackPolyline);
-            trackPolyline = null;
-        }
-        trackPath = [];
-        localStorage.removeItem('jeoTrackPath');
-        if (!silent) showToast("Track data reset.");
-    }
+    updateTrackingButton();
 
     /* REMOVED LOCK SYSTEM (v355) */
 
@@ -1947,6 +1776,8 @@ function renderTracks() {
     const tableBody = document.getElementById('tracks-body');
     if (!tableBody) return;
 
+    updateTrackCountBadge(); // v442: Update count badge
+
     if (jeoTracks.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="5">No tracks saved yet</td></tr>';
         return;
@@ -2068,6 +1899,111 @@ window.exportSingleTrackCSV = function (id) {
 
     downloadFile(csv, `${t.name.replace(/\s+/g, '_')}.csv`, 'text/csv;charset=utf-8;');
 };
+
+// Track Auto-Recording Functions (v442)
+function updateTrack(lat, lon) {
+    if (!isTracking) return;
+
+    trackPath.push([lat, lon]);
+
+    // Canlı izleği haritada güncelle
+    if (showLiveTrack && map) {
+        if (trackPolyline) {
+            map.removeLayer(trackPolyline);
+        }
+        trackPolyline = L.polyline(trackPath, {
+            color: '#ff5722',
+            weight: 6,
+            opacity: 0.8,
+            pane: 'tracking-pane'
+        }).addTo(map);
+    }
+}
+
+function saveCurrentTrack() {
+    if (trackPath.length === 0) {
+        showToast('İzlek kaydı boş!', 2000);
+        return;
+    }
+
+    const now = new Date();
+    const trackName = `İzlek ${now.toLocaleDateString('tr-TR')} ${now.toLocaleTimeString('tr-TR')}`;
+
+    const newTrack = {
+        id: trackIdCounter++,
+        name: trackName,
+        path: [...trackPath],
+        color: '#ff5722',
+        visible: true,
+        time: now.toLocaleString('en-GB')
+    };
+
+    // FIFO: Eğer 20 kayıt varsa, en eskiyi sil
+    if (jeoTracks.length >= MAX_TRACKS) {
+        const oldestTrack = jeoTracks.shift(); // İlk elemanı çıkar
+        showToast(`En eski izlek silindi: ${oldestTrack.name}`, 3000);
+    }
+
+    jeoTracks.push(newTrack);
+    localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+    localStorage.setItem('trackIdCounter', trackIdCounter);
+
+    // Canlı izleği temizle ve yeni kayda başla
+    trackPath = [];
+    if (trackPolyline && map) {
+        map.removeLayer(trackPolyline);
+        trackPolyline = null;
+    }
+
+    renderTracks();
+    updateMapMarkers(false);
+    showToast(`Kaydedildi: ${newTrack.name} (${jeoTracks.length}/${MAX_TRACKS})`, 3000);
+}
+
+function toggleTracking() {
+    isTracking = !isTracking;
+    const btn = document.getElementById('btn-track-toggle');
+    if (btn) btn.classList.toggle('active', isTracking);
+
+    if (isTracking) {
+        showToast('İzlek kaydı başlatıldı', 2000);
+    } else {
+        // Kayıt durduruldu - mevcut izleği kaydet
+        if (trackPath.length > 0) {
+            if (confirm('Mevcut izleği kaydetmek istiyor musunuz?')) {
+                saveCurrentTrack();
+            } else {
+                // İzleği at
+                trackPath = [];
+                if (trackPolyline && map) {
+                    map.removeLayer(trackPolyline);
+                    trackPolyline = null;
+                }
+            }
+        }
+        showToast('İzlek kaydı durduruldu', 2000);
+    }
+}
+
+function toggleLiveTrackVisibility() {
+    showLiveTrack = !showLiveTrack;
+
+    if (trackPolyline && map) {
+        if (showLiveTrack) {
+            trackPolyline.addTo(map);
+        } else {
+            map.removeLayer(trackPolyline);
+        }
+    }
+
+    const icon = showLiveTrack ? '👁️' : '🚫';
+    showToast(`Canlı izlek: ${icon}`, 1500);
+}
+
+function updateTrackCountBadge() {
+    const badge = document.getElementById('track-count');
+    if (badge) badge.textContent = `(${jeoTracks.length}/${MAX_TRACKS})`;
+}
 
 // Tab Switching
 document.getElementById('tab-points').addEventListener('click', () => {
@@ -2267,6 +2203,23 @@ if (fileImportInput) {
 const btnHeatmap = document.getElementById('btn-heatmap-toggle');
 if (btnHeatmap) {
     btnHeatmap.addEventListener('click', toggleHeatmap);
+}
+
+// Track Auto-Recording UI Listeners (v442)
+const btnTrackToggle = document.getElementById('btn-track-toggle');
+if (btnTrackToggle) {
+    btnTrackToggle.classList.toggle('active', isTracking); // Initial state
+    btnTrackToggle.addEventListener('click', toggleTracking);
+}
+
+const btnLiveTrackVis = document.getElementById('btn-live-track-visibility');
+if (btnLiveTrackVis) {
+    btnLiveTrackVis.addEventListener('click', toggleLiveTrackVisibility);
+}
+
+const btnSaveTrack = document.getElementById('btn-save-track');
+if (btnSaveTrack) {
+    btnSaveTrack.addEventListener('click', saveCurrentTrack);
 }
 
 document.querySelectorAll('.radius-opt').forEach(btn => {
