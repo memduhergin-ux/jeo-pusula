@@ -25,6 +25,7 @@ if (document.readyState === 'loading') {
 }
 
 /** Heatmap Logic (v401) **/
+let heatmapPeakMarkers = []; // v429: Store peak density indicators
 // Helper to darken colors for heatmap core (v423)
 function shadeColor(color, percent) {
     let f = parseInt(color.slice(1), 16),
@@ -42,7 +43,12 @@ function updateHeatmap() {
     let points = [];
     let activeGradient = {};
 
-    // Dynamic Monochromatic Gradient (v428 - High Contrast Topo Lines)
+    // v429: Clear old peak markers
+    heatmapPeakMarkers.forEach(m => map.removeLayer(m));
+    heatmapPeakMarkers = [];
+
+    // Dynamic Monochromatic Gradient (v429 - Scientific Izohips)
+    // Thresholds: 0-20 (Noise), 20-40 (L1), 40-60 (L2), 60-80 (L3), 80-100 (L4/Core)
     const filterKey = (heatmapFilter || 'ALL').toUpperCase();
 
     if (filterKey !== 'ALL') {
@@ -51,25 +57,34 @@ function updateHeatmap() {
         const d2 = shadeColor(baseColor, -0.4); // Tier 3
         const d3 = shadeColor(baseColor, -0.6); // Tier 4
         const dCore = shadeColor(baseColor, -0.8); // Tier 5 (Core)
-        const line = shadeColor(baseColor, -0.98); // Ultra High Contrast Line (Near Black but colored)
+        const line = shadeColor(baseColor, -0.98); // High Contrast Line
 
         activeGradient = {
-            0.15: baseColor,
-            0.18: baseColor, 0.20: line, 0.22: d1,   // Line at 20%
-            0.38: d1, 0.40: line, 0.42: d2,         // Line at 40%
-            0.58: d2, 0.60: line, 0.62: d3,         // Line at 60%
-            0.78: d3, 0.80: line, 0.82: dCore,      // Line at 80%
-            0.95: dCore, 1.0: '#000000'             // Dark Core Center
+            0.00: 'rgba(0,0,0,0)',   // v429: 0-20% Noise Threshold (Hidden)
+            0.19: 'rgba(0,0,0,0)',
+            0.20: line,              // Line 1 (20%): Sub-thin (0.5%)
+            0.205: baseColor,
+            0.39: baseColor,
+            0.40: line,              // Line 2 (40%): Standard (1.0%)
+            0.41: d1,
+            0.585: d1,
+            0.60: line,              // Line 3 (60%): Thick (1.5%)
+            0.615: d2,
+            0.78: d2,
+            0.80: line,              // Line 4 (80%): Ultra-Thick (2.0%)
+            0.82: d3,
+            0.95: dCore, 1.0: '#000000' // Center Core
         };
     } else {
-        // v428 Explicit Rainbow Contours (High Contrast)
+        // v429 Scientific Rainbow (Noise filter + High Contrast Lines)
         const line = '#000000';
         activeGradient = {
-            0.15: 'cyan', 0.18: 'cyan', 0.20: line, 0.22: 'lime',
-            0.38: 'lime', 0.40: line, 0.42: 'yellow',
-            0.58: 'yellow', 0.60: line, 0.62: 'red',
-            0.78: 'red', 0.80: line, 0.82: '#440000',
-            0.95: '#220000', 1.0: '#000000'
+            0.00: 'rgba(0,0,0,0)', 0.19: 'rgba(0,0,0,0)',
+            0.20: line, 0.205: 'cyan',
+            0.39: 'cyan', 0.40: line, 0.41: 'lime',
+            0.585: 'lime', 0.60: line, 0.615: 'yellow',
+            0.78: 'yellow', 0.80: line, 0.82: 'red',
+            0.95: '#440000', 1.0: '#000000'
         };
     }
 
@@ -129,11 +144,43 @@ function updateHeatmap() {
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
         blur: blurPixels,
-        maxOpacity: 0.9,
-        minOpacity: 0.2, // v420: Maximum prominence for 25m - 100m zones
+        maxOpacity: 0.7, // v429: Reduced for terrain visibility
+        minOpacity: 0.1, // v429: Lowered to respect noise threshold
         gradient: activeGradient,
-        max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
+        max: 1.0
     }).addTo(map);
+
+    // v429: Find Peak Density Point (Simplified)
+    if (points.length > 0) {
+        // We find the geometric center or the point with the most neighbors
+        // For efficiency, we'll pick the point that has the smallest average distance to others
+        let peakPoint = points[0];
+        if (points.length > 1) {
+            let maxNeighbors = -1;
+            points.forEach(p1 => {
+                let neighbors = 0;
+                points.forEach(p2 => {
+                    const d = Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));
+                    if (d < (heatmapRadius / 111320)) neighbors++; // Rough degree to meter
+                });
+                if (neighbors > maxNeighbors) {
+                    maxNeighbors = neighbors;
+                    peakPoint = p1;
+                }
+            });
+        }
+
+        // Add Peak Marker (v429)
+        const marker = L.circleMarker([peakPoint[0], peakPoint[1]], {
+            radius: 3,
+            color: '#fff',
+            weight: 1,
+            fillColor: '#000',
+            fillOpacity: 1,
+            interactive: false
+        }).addTo(map);
+        heatmapPeakMarkers.push(marker);
+    }
 }
 
 function updateHeatmapFilterOptions() {
