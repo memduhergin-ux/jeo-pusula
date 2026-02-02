@@ -28,17 +28,18 @@ if (document.readyState === 'loading') {
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
-    // Dynamic Monochromatic Gradient (v418 - Smooth Scaling)
+    // Dynamic Monochromatic Gradient (v419 - High Visibility)
     if (heatmapFilter !== 'ALL') {
         const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
         activeGradient = {
             0.0: 'rgba(255,255,255,0)',  // Start transparent
-            0.05: baseColor,             // Visible at edge
+            0.1: baseColor,              // Hit solid color early
+            0.5: baseColor,              // Maintain vibrancy
             1.0: '#000000'               // High intensity core
         };
     } else {
-        // Updated Rainbow for v418 (Smooth edge)
-        activeGradient = { 0.0: 'rgba(0,255,255,0)', 0.1: 'cyan', 0.4: 'lime', 0.6: 'yellow', 1.0: 'red' };
+        // v419 Vibrant Rainbow
+        activeGradient = { 0.0: 'rgba(0,255,255,0)', 0.1: 'cyan', 0.3: 'lime', 0.6: 'yellow', 1.0: 'red' };
     }
 
     // 1. Gather points from standard records
@@ -85,17 +86,17 @@ function updateHeatmap() {
     const latlng2 = map.containerPointToLatLng(point2);
     const mpp = map.distance(center, latlng2) / 100; // Actual Meters Per Pixel
 
-    // v417: radius = 70%, blur = 30%. Total spread (r+b) = Ground Radius.
-    // This ratio provides a better visual fade that is easily measurable.
+    // v419: radius = 80%, blur = 20%. 
+    // This ratio makes the circle look more "solid" and less "foggy" for better visibility.
     const totalPixels = heatmapRadius / mpp;
-    const radiusPixels = totalPixels * 0.7;
-    const blurPixels = totalPixels * 0.3;
+    const radiusPixels = totalPixels * 0.8;
+    const blurPixels = totalPixels * 0.2;
 
     heatmapLayer = L.heatLayer(points, {
         radius: radiusPixels,
         blur: blurPixels,
         maxOpacity: 0.9,
-        minOpacity: 0,   // v418: 0% min opacity for true physical fade-out
+        minOpacity: 0.1, // v419: Increased from 0 to 0.1 for better "floor" visibility
         gradient: activeGradient,
         max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
     }).addTo(map);
