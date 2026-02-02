@@ -1145,9 +1145,9 @@ textarea.form-input {
     bottom: 50%;
     /* Start from center */
     left: 50%;
-    width: 120px;
-    /* v439: Larger, Garmin-style beam */
-    height: 120px;
+    width: 60px;
+    /* Resized to match circle */
+    height: 60px;
     background: radial-gradient(circle at 50% 100%, rgba(33, 150, 243, 0.6), transparent 70%);
     transform-origin: bottom center;
     transform: translate(-50%, 0) rotate(0deg);
@@ -1161,12 +1161,13 @@ textarea.form-input {
 }
 
 .heartbeat-triangle {
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 20px solid #2196f3;
-    /* Blue triangle */
+    width: 16px;
+    height: 16px;
+    background-color: #2196f3;
+    border-radius: 50%;
+    /* Circle */
+    border: 2px solid white;
+    /* Optional: White border for visibility */
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1188,20 +1189,20 @@ textarea.form-input {
 
 @keyframes pulse-animation {
     0% {
-        width: 10px;
-        height: 10px;
+        width: 16px;
+        height: 16px;
         opacity: 0.8;
     }
 
     70% {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         opacity: 0;
     }
 
     100% {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         opacity: 0;
     }
 }

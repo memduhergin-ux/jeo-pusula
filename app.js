@@ -914,8 +914,8 @@ if ('geolocation' in navigator) {
             // --- DRIFT FILTER (v400) ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                // v439: Garmin Mode - Relaxed to 60m to capture indoor/forest tracks
-                if (acc <= 60) {
+                // v440: Garmin Mode - Relaxed to 100m to capture indoor/forest tracks
+                if (acc <= 100) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
@@ -925,8 +925,8 @@ if ('geolocation' in navigator) {
                         updateTrack(currentCoords.lat, currentCoords.lon);
                     }
                 } else {
-                    // Signal too weak (>60m)
-                    if (acc > 60) {
+                    // Signal too weak (>100m)
+                    if (acc > 100) {
                         // showToast(`Low GPS: ${Math.round(acc)}m`, 1000);
                     }
                 }
