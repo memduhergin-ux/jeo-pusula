@@ -39,31 +39,34 @@ function shadeColor(color, percent) {
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
-    // Dynamic Monochromatic Gradient (v424 - Contour Style)
+    // Dynamic Monochromatic Gradient (v425 - Semi-Soft Izohips)
     if (heatmapFilter !== 'ALL') {
         const baseColor = ELEMENT_COLORS[heatmapFilter] || '#f44336';
-        const dark1 = shadeColor(baseColor, -0.2); // 20% darker
-        const dark2 = shadeColor(baseColor, -0.4); // 40% darker
-        const darkCore = shadeColor(baseColor, -0.7); // 70% darker
+        const d1 = shadeColor(baseColor, -0.2); // Level 2
+        const d2 = shadeColor(baseColor, -0.4); // Level 3
+        const d3 = shadeColor(baseColor, -0.6); // Level 4
+        const dCore = shadeColor(baseColor, -0.8); // Level 5 (Core)
 
         activeGradient = {
-            0.0: baseColor,      // Level 1
-            0.25: baseColor,
-            0.26: dark1,         // Contour Line 1 -> Level 2
-            0.50: dark1,
-            0.51: dark2,         // Contour Line 2 -> Level 3
-            0.75: dark2,
-            0.76: darkCore,      // Contour Line 3 -> Sharp Core
-            1.0: darkCore
+            0.0: baseColor,      // Level 1 Base
+            0.15: baseColor,
+            0.25: d1,            // Level 2
+            0.40: d1,
+            0.50: d2,            // Level 3
+            0.65: d2,
+            0.75: d3,            // Level 4
+            0.85: d3,
+            0.95: dCore,         // Level 5 (Center Core)
+            1.0: dCore
         };
     } else {
-        // v424 Contour Rainbow (Multi-Step)
+        // v425 Semi-Soft Contour Rainbow
         activeGradient = {
             0.0: 'cyan', 0.15: 'cyan',
-            0.16: 'lime', 0.40: 'lime',
-            0.41: 'yellow', 0.65: 'yellow',
-            0.66: 'red', 0.90: 'red',
-            0.91: '#440000', 1.0: '#440000'
+            0.25: 'lime', 0.40: 'lime',
+            0.50: 'yellow', 0.65: 'yellow',
+            0.75: 'red', 0.85: 'red',
+            0.95: '#440000', 1.0: '#440000'
         };
     }
 
