@@ -51,29 +51,29 @@ function updateHeatmap() {
         const d2 = shadeColor(baseColor, -0.4); // Tier 3
         const d3 = shadeColor(baseColor, -0.6); // Tier 4
         const dCore = shadeColor(baseColor, -0.8); // Tier 5 (Core)
-        const line = '#000000'; // v433: Pure Black for absolute zero-bleed
+        const line = shadeColor(baseColor, -0.95); // v435: Color-matched dark line
 
         activeGradient = {
             0.0: 'rgba(0,0,0,0)',
-            0.10: 'rgba(0,0,0,0)',  // v433: Softened transition floor (10-15%)
-            0.15: baseColor,        // to prevent geometric clipping
-            0.18: baseColor, 0.20: line, 0.22: d1,   // Line at 20%
-            0.38: d1, 0.40: line, 0.42: d2,         // Line at 40%
-            0.58: d2, 0.60: line, 0.62: d3,         // Line at 60%
-            0.78: d3, 0.80: line, 0.82: dCore,      // Line at 80%
-            0.95: dCore, 1.0: '#000000'             // Dark Core Center
+            0.12: 'rgba(0,0,0,0)',  // v434: Safe transition zone
+            0.15: baseColor,
+            0.20: line, 0.21: d1,   // Simplified: 2 stops per edge to prevent wedges
+            0.40: line, 0.41: d2,
+            0.60: line, 0.61: d3,
+            0.80: line, 0.81: dCore,
+            0.95: dCore, 1.0: '#000000'
         };
     } else {
-        // v433 Explicit Rainbow Contours (Softened Floor)
+        // v434 Geological Rainbow (Harmonized, less green)
         const line = '#000000';
         activeGradient = {
             0.0: 'rgba(0,0,0,0)',
-            0.10: 'rgba(0,0,0,0)',
-            0.15: 'cyan',
-            0.18: 'cyan', 0.20: line, 0.22: 'lime',
-            0.38: 'lime', 0.40: line, 0.42: 'yellow',
-            0.58: 'yellow', 0.60: line, 0.61: 'red',
-            0.78: 'red', 0.80: line, 0.82: '#440000',
+            0.12: 'rgba(0,0,0,0)',
+            0.15: '#3f51b5',        // Deep Blue (Indigo)
+            0.20: line, 0.21: '#ffc107', // Gold/Amber (replaces Lime)
+            0.40: line, 0.41: '#ff9800', // Orange
+            0.60: line, 0.61: '#f44336', // Red
+            0.80: line, 0.81: '#440000', // Deep Dark Red
             0.95: '#220000', 1.0: '#000000'
         };
     }
