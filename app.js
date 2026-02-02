@@ -52,29 +52,35 @@ function updateHeatmap() {
         const d3 = shadeColor(baseColor, -0.6); // Tier 4
         const dCore = shadeColor(baseColor, -0.8); // Tier 5 (Core)
         const line = shadeColor(baseColor, -0.95); // v435: Color-matched dark line
+        const ultraDark = shadeColor(baseColor, -0.98); // v436: Pure monochromatic core
+
+        // v436: Themed Transparency (baseColor + 00 alpha) to prevent interpolation shifts
+        // This ensures the fade-out stays in the same hue and kills the "green leak"
+        const transparentBase = baseColor + '00';
 
         activeGradient = {
-            0.0: 'rgba(0,0,0,0)',
-            0.12: 'rgba(0,0,0,0)',  // v434: Safe transition zone
+            0.0: transparentBase,
+            0.12: transparentBase,
             0.15: baseColor,
-            0.20: line, 0.21: d1,   // Simplified: 2 stops per edge to prevent wedges
+            0.20: line, 0.21: d1,
             0.40: line, 0.41: d2,
             0.60: line, 0.61: d3,
             0.80: line, 0.81: dCore,
-            0.95: dCore, 1.0: '#000000'
+            0.95: dCore, 1.0: ultraDark
         };
     } else {
-        // v434 Geological Rainbow (Harmonized, less green)
+        // v436 Geological Rainbow (Harmonized Core)
         const line = '#000000';
+        const rainbowTransparent = '#3f51b500'; // Indigo-themed transparency
         activeGradient = {
-            0.0: 'rgba(0,0,0,0)',
-            0.12: 'rgba(0,0,0,0)',
-            0.15: '#3f51b5',        // Deep Blue (Indigo)
-            0.20: line, 0.21: '#ffc107', // Gold/Amber (replaces Lime)
+            0.0: rainbowTransparent,
+            0.12: rainbowTransparent,
+            0.15: '#3f51b5',        // Deep Indigo
+            0.20: line, 0.21: '#ffc107', // Gold
             0.40: line, 0.41: '#ff9800', // Orange
             0.60: line, 0.61: '#f44336', // Red
-            0.80: line, 0.81: '#440000', // Deep Dark Red
-            0.95: '#220000', 1.0: '#000000'
+            0.80: line, 0.81: '#440000', // Crimson
+            0.95: '#220000', 1.0: '#110011' // Deep Violet/Nadir Core
         };
     }
 
