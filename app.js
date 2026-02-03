@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v447';
+const CACHE_NAME = 'jeocompass-v449';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1315,7 +1315,7 @@ function initMap() {
             }).addTo(map);
         }
     }
-    updateTrackingButton();
+
 
     /* REMOVED LOCK SYSTEM (v355) */
 
