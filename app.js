@@ -270,7 +270,7 @@ const calibrationWarning = document.getElementById('calibration-warning');
 const ringTicks = document.querySelector('.ring-ticks');
 const btnHoldStrike = document.getElementById('btn-hold-strike');
 const btnHoldDip = document.getElementById('btn-hold-dip');
-const btnSave = document.getElementById('btn-save');
+const btnCleanLayers = document.getElementById('btn-clean-layers'); // Existing? checking..
 const btnFollowMe = document.getElementById('btn-follow-me');
 const btnMoreOptions = document.getElementById('btn-more-options');
 const btnShare = document.getElementById('btn-share');
@@ -366,14 +366,14 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v443';
+const CACHE_NAME = 'jeocompass-v445';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
 // Tracking State (v354)
-let isTracking = true; // Garmin-style: ALWAYS Auto-track on start (v439)
+let isTracking = JSON.parse(localStorage.getItem('jeoAutoTrackEnabled')) !== false; // Default true if not set
 let trackPath = [];
 let trackPolyline = null;
 let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
@@ -394,7 +394,7 @@ const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅ�
 // Track Auto-Recording State (v442)
 let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
 const MAX_TRACKS = 20; // Maksimum izlek sayısı
-let showLiveTrack = true; // Canlı izleği haritada göster/gizle
+let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // Canlı izleği haritada göster/gizle (Default True)
 
 // Measurement State
 let isMeasuring = false;
@@ -1985,9 +1985,7 @@ function toggleTracking() {
     }
 }
 
-function toggleLiveTrackVisibility() {
-    showLiveTrack = !showLiveTrack;
-
+function updateLiveTrackVisibility() {
     if (trackPolyline && map) {
         if (showLiveTrack) {
             trackPolyline.addTo(map);
@@ -1995,9 +1993,6 @@ function toggleLiveTrackVisibility() {
             map.removeLayer(trackPolyline);
         }
     }
-
-    const icon = showLiveTrack ? '👁️' : '🚫';
-    showToast(`Canlı izlek: ${icon}`, 1500);
 }
 
 function updateTrackCountBadge() {
@@ -2205,22 +2200,59 @@ if (btnHeatmap) {
     btnHeatmap.addEventListener('click', toggleHeatmap);
 }
 
-// Track Auto-Recording UI Listeners (v442)
-const btnTrackToggle = document.getElementById('btn-track-toggle');
-if (btnTrackToggle) {
-    btnTrackToggle.classList.toggle('active', isTracking); // Initial state
-    btnTrackToggle.addEventListener('click', toggleTracking);
+// Track Settings (v444)
+const btnTrackSettings = document.getElementById('btn-track-settings');
+const trackSettingsModal = document.getElementById('track-settings-modal');
+const btnTrackSettingsClose = document.getElementById('btn-track-settings-close');
+const chkAutoTrack = document.getElementById('chk-auto-track');
+const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+
+if (chkAutoTrack) {
+    chkAutoTrack.checked = isTracking;
+    chkAutoTrack.addEventListener('change', (e) => {
+        isTracking = e.target.checked;
+        localStorage.setItem('jeoAutoTrackEnabled', isTracking);
+
+        if (isTracking) {
+            showToast("Auto-Recording ON");
+            // If we have a current location, add it to start the track immediately
+            if (currentCoords.lat && currentCoords.lon) {
+                // Check if last point is far enough? No, handlePositionUpdate does that.
+                // Just let the next position update handle it.
+            }
+        } else {
+            showToast("Auto-Recording OFF");
+        }
+    });
 }
 
-const btnLiveTrackVis = document.getElementById('btn-live-track-visibility');
-if (btnLiveTrackVis) {
-    btnLiveTrackVis.addEventListener('click', toggleLiveTrackVisibility);
+if (chkShowLiveTrack) {
+    chkShowLiveTrack.checked = showLiveTrack;
+    chkShowLiveTrack.addEventListener('change', (e) => {
+        showLiveTrack = e.target.checked;
+        localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
+        updateLiveTrackVisibility();
+    });
 }
 
-const btnSaveTrack = document.getElementById('btn-save-track');
-if (btnSaveTrack) {
-    btnSaveTrack.addEventListener('click', saveCurrentTrack);
+if (btnTrackSettings) {
+    btnTrackSettings.addEventListener('click', () => {
+        if (trackSettingsModal) trackSettingsModal.className = 'modal-overlay active';
+    });
 }
+
+if (btnTrackSettingsClose) {
+    btnTrackSettingsClose.addEventListener('click', () => {
+        if (trackSettingsModal) trackSettingsModal.className = 'modal-overlay';
+    });
+}
+
+// REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
+// Auto-recording is now the only mode.
+// REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
+// Auto-recording is now the only mode.
+
+// REMOVED: btnLiveTrackVis listener (Moved to Settings Modal)
 
 document.querySelectorAll('.radius-opt').forEach(btn => {
     btn.addEventListener('click', (e) => {

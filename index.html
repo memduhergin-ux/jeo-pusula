@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=443">
+    <link rel="stylesheet" href="style.css?v=445">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v443</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v445</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -148,15 +148,7 @@
 
             <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
             <div class="map-fab-container">
-                <button id="btn-track-toggle" class="map-fab active" title="İzlek Kaydı (ON/OFF)">
-                    <span class="fab-icon">👣</span>
-                </button>
-                <button id="btn-live-track-visibility" class="map-fab" title="Canlı İzlek Göster/Gizle">
-                    <span class="fab-icon">👁️</span>
-                </button>
-                <button id="btn-save-track" class="map-fab" title="Mevcut İzleği Kaydet">
-                    <span class="fab-icon">💾</span>
-                </button>
+
                 <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
                     <span class="fab-icon">📍+</span>
                 </button>
@@ -232,10 +224,13 @@
     <!-- View 3: Records (Kayıtlar) -->
     <div id="view-records" class="view-section">
         <div class="panel wide-panel" style="margin-top: 10px;">
-            <div class="records-tabs">
-                <button id="tab-points" class="tab-btn active">📍 Points</button>
-                <button id="tab-tracks" class="tab-btn">👣 Tracks <span id="track-count"
+            <div class="records-tabs" style="display: flex; align-items: center; gap: 10px;">
+                <button id="tab-points" class="tab-btn active" style="flex: 1;">📍 Points</button>
+                <button id="tab-tracks" class="tab-btn" style="flex: 1;">👣 Tracks <span id="track-count"
                         style="font-size:0.7rem; color:#aaa;">(0/20)</span></button>
+                <button id="btn-track-settings" class="tab-btn"
+                    style="width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;"
+                    title="Track Options">⋮</button>
             </div>
 
             <div id="container-points" class="records-container active">
@@ -467,6 +462,37 @@
         </div>
     </div>
 
+    <!-- Track Settings Modal (v444) -->
+    <div id="track-settings-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 320px;">
+            <div class="modal-header">
+                <h2>Track Settings</h2>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <label
+                    style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+                    <span style="font-weight: bold; color: #fff;">Auto-Recording</span>
+                    <input type="checkbox" id="chk-auto-track"
+                        style="width: 25px; height: 25px; accent-color: #4caf50;">
+                </label>
+
+                <label
+                    style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <span style="font-weight: bold; color: #fff;">Show Live Track</span>
+                    <input type="checkbox" id="chk-show-live-track"
+                        style="width: 25px; height: 25px; accent-color: #2196f3;">
+                </label>
+
+                <div style="font-size: 0.8rem; color: #888; margin-top: 15px; text-align: center;">
+                    Automatically records your path when the app starts. Oldest tracks are deleted after 20 records.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-confirm" id="btn-track-settings-close" style="width: 100%;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Layers Modal -->
     <div id="layers-modal" class="modal-overlay">
         <div class="modal-content">
@@ -503,9 +529,9 @@
         </button>
     </div>
 
-    <script src="app.js?v=443"></script>
+    <script src="app.js?v=445"></script>
     <script>
-        const JEO_VERSION = '443';
+        const JEO_VERSION = '445';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
