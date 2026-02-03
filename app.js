@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v449';
+const CACHE_NAME = 'jeocompass-v450';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -2191,17 +2191,7 @@ if (chkShowLiveTrack) {
     });
 }
 
-if (btnTrackSettings) {
-    btnTrackSettings.addEventListener('click', () => {
-        if (trackSettingsModal) trackSettingsModal.className = 'modal-overlay active';
-    });
-}
-
-if (btnTrackSettingsClose) {
-    btnTrackSettingsClose.addEventListener('click', () => {
-        if (trackSettingsModal) trackSettingsModal.className = 'modal-overlay';
-    });
-}
+// Track Settings Modal Listeners REMOVED (Embedded now)
 
 // REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
 // Auto-recording is now the only mode.

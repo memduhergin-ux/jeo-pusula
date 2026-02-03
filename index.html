@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=449">
+    <link rel="stylesheet" href="style.css?v=450">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v449</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v450</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -228,9 +228,6 @@
                 <button id="tab-points" class="tab-btn active" style="flex: 1 1 0px;">📍 Points</button>
                 <button id="tab-tracks" class="tab-btn" style="flex: 1 1 0px;">👣 Tracks <span id="track-count"
                         style="font-size:0.7rem; color:#aaa;">(0/20)</span></button>
-                <button id="btn-track-settings" class="tab-btn"
-                    style="width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;"
-                    title="Track Options">⋮</button>
             </div>
 
             <div id="container-points" class="records-container active">
@@ -270,6 +267,26 @@
             </div>
 
             <div id="container-tracks" class="records-container" style="display: none;">
+                <!-- Track Settings Embedded -->
+                <div
+                    style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <label
+                        style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-weight: bold; color: #eee; font-size: 0.9rem;">Auto-Recording</span>
+                        <input type="checkbox" id="chk-auto-track"
+                            style="width: 20px; height: 20px; accent-color: #4caf50;">
+                    </label>
+                    <div style="font-size: 0.75rem; color: #888; margin: 2px 0 10px 0;">
+                        Auto-record path on startup. FIFO (Max 20).
+                    </div>
+
+                    <label
+                        style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 8px;">
+                        <span style="font-weight: bold; color: #eee; font-size: 0.9rem;">Show Live Track</span>
+                        <input type="checkbox" id="chk-show-live-track"
+                            style="width: 20px; height: 20px; accent-color: #2196f3;">
+                    </label>
+                </div>
                 <div style="overflow-x: auto;">
                     <table class="records-table">
                         <thead>
@@ -463,35 +480,7 @@
     </div>
 
     <!-- Track Settings Modal (v444) -->
-    <div id="track-settings-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 320px;">
-            <div class="modal-header">
-                <h2>Track Settings</h2>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <label
-                    style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                    <span style="font-weight: bold; color: #fff;">Auto-Recording</span>
-                    <input type="checkbox" id="chk-auto-track"
-                        style="width: 25px; height: 25px; accent-color: #4caf50;">
-                </label>
-
-                <label
-                    style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <span style="font-weight: bold; color: #fff;">Show Live Track</span>
-                    <input type="checkbox" id="chk-show-live-track"
-                        style="width: 25px; height: 25px; accent-color: #2196f3;">
-                </label>
-
-                <div style="font-size: 0.8rem; color: #888; margin-top: 15px; text-align: center;">
-                    Automatically records your path when the app starts. Oldest tracks are deleted after 20 records.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-confirm" id="btn-track-settings-close" style="width: 100%;">Close</button>
-            </div>
-        </div>
-    </div>
+    <!-- Track Settings Modal REMOVED (Embedded in Tab) -->
 
     <!-- Layers Modal -->
     <div id="layers-modal" class="modal-overlay">
@@ -536,9 +525,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=449"></script>
+    <script src="app.js?v=450"></script>
     <script>
-        const JEO_VERSION = '449';
+        const JEO_VERSION = '450';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
