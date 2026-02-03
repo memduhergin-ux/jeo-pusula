@@ -765,22 +765,41 @@ requestAnimationFrame(animateCompass);
 if (btnWgs) btnWgs.addEventListener('click', () => { currentMode = 'wgs'; btnWgs.classList.add('active'); btnUtm.classList.remove('active'); updateDisplay(); });
 if (btnUtm) btnUtm.addEventListener('click', () => { currentMode = 'utm'; btnUtm.classList.add('active'); btnWgs.classList.remove('active'); updateDisplay(); });
 
-// Update Save Button State
-// Save Button is removed (Auto-Save only)
+// Update Save Button State (REC button on Compass)
+function updateSaveButtonState() {
+    const btnSave = document.getElementById('btn-save');
+    if (btnSave) {
+        if (lockStrike && lockDip) {
+            btnSave.classList.add('ready');
+            btnSave.style.opacity = '1';
+            btnSave.style.pointerEvents = 'auto';
+            btnSave.style.background = '#f44336'; // Active Red
+            btnSave.style.color = '#fff';
+            btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
+        } else {
+            btnSave.classList.remove('ready');
+            btnSave.style.opacity = '0.5';
+            btnSave.style.pointerEvents = 'none';
+            btnSave.style.background = ''; // Default
+            btnSave.style.color = '';
+            btnSave.style.boxShadow = '';
+        }
+    }
+}
 
 // Hold Logic
 if (btnHoldStrike) {
     btnHoldStrike.addEventListener('click', () => {
         lockStrike = !lockStrike;
         btnHoldStrike.classList.toggle('locked', lockStrike);
-        // updateSaveButtonState();
+        updateSaveButtonState();
     });
 }
 if (btnHoldDip) {
     btnHoldDip.addEventListener('click', () => {
         lockDip = !lockDip;
         btnHoldDip.classList.toggle('locked', lockDip);
-        // updateSaveButtonState();
+        updateSaveButtonState();
     });
 }
 
@@ -792,16 +811,47 @@ function requestPermissions() {
                 window.addEventListener('deviceorientation', handleOrientation, true);
                 requestWakeLock();
                 if (permissionBtn) permissionBtn.style.display = 'none';
+
+                // v454: Ensure REC button is clickable after permissions
+                if (btnSave) {
+                    btnSave.classList.add('ready');
+                }
             }
         }).catch(err => {
             console.error(err);
         });
     } else {
-        // Android & Others
+        // Android & Others (Check if sensors active)
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
         window.addEventListener('deviceorientation', handleOrientation, true);
         if (permissionBtn) permissionBtn.style.display = 'none';
+
+        // v454: Ensure REC button is clickable
+        if (btnSave) {
+            btnSave.classList.add('ready');
+        }
     }
+}
+
+// v454: Connect REC button specifically for Measurement Save (Only if both Holds active)
+const btnSave = document.getElementById('btn-save');
+if (btnSave) {
+    // Initial state
+    updateSaveButtonState();
+
+    btnSave.addEventListener('click', () => {
+        if (lockStrike && lockDip) {
+            const strikeVal = formatStrike(displayedHeading);
+            let dipVal = Math.abs(currentTilt.beta);
+            if (dipVal > 90) dipVal = 180 - dipVal;
+            dipVal = Math.round(dipVal) + "\u00B0";
+
+            const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
+            const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
+
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "Compass Measurement", bestAlt, strikeVal, dipVal);
+        }
+    });
 }
 if (permissionBtn) {
     permissionBtn.addEventListener('click', () => {
@@ -1953,8 +2003,26 @@ function saveCurrentTrack() {
 
 function toggleTracking() {
     isTracking = !isTracking;
-    const btn = document.getElementById('btn-track-toggle');
-    if (btn) btn.classList.toggle('active', isTracking);
+    const btnTrackToggle = document.getElementById('btn-track-toggle'); // Settings tab btn
+    const btnSave = document.getElementById('btn-save'); // Compass view REC btn
+
+    if (btnTrackToggle) btnTrackToggle.classList.toggle('active', isTracking);
+
+    // v454: Update Compass View REC button UI
+    if (btnSave) {
+        if (isTracking) {
+            btnSave.classList.add('ready');
+            btnSave.style.background = '#f44336'; // Recording Red
+            btnSave.style.color = '#fff';
+            btnSave.innerHTML = '<span style="color:#fff; font-weight:bold;">REC●</span>';
+            btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
+        } else {
+            btnSave.style.background = ''; // Back to default
+            btnSave.style.color = '';
+            btnSave.innerHTML = 'REC';
+            btnSave.style.boxShadow = '';
+        }
+    }
 
     if (isTracking) {
         showToast('İzlek kaydı başlatıldı', 2000);
@@ -1974,6 +2042,11 @@ function toggleTracking() {
         }
         showToast('İzlek kaydı durduruldu', 2000);
     }
+
+    // Update settings checkbox if it exists
+    const chkAutoTrack = document.getElementById('chk-auto-track');
+    if (chkAutoTrack) chkAutoTrack.checked = isTracking;
+    localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
 }
 
 function updateLiveTrackVisibility() {
@@ -2714,7 +2787,7 @@ if (btnAddGps) {
     });
 }
 
-function openRecordModalWithCoords(lat, lon, note, alt = null) {
+function openRecordModalWithCoords(lat, lon, note, alt = null, strike = null, dip = null) {
     // Save pending coords for modal save
     pendingLat = lat;
     pendingLon = lon;
@@ -2738,8 +2811,8 @@ function openRecordModalWithCoords(lat, lon, note, alt = null) {
     document.getElementById('rec-x').value = utmX;
     // Use provided alt if available (GPS), otherwise fallback to cached (Map) or 0
     document.getElementById('rec-z').value = alt !== null ? Math.round(alt) : cachedElevation;
-    document.getElementById('rec-strike').value = 0;
-    document.getElementById('rec-dip').value = 0;
+    document.getElementById('rec-strike').value = strike !== null ? strike : 0;
+    document.getElementById('rec-dip').value = dip !== null ? dip : 0;
     document.getElementById('rec-note').value = note;
 
     recordModal.classList.add('active');
@@ -3631,22 +3704,24 @@ renderTracks();
 let currentSpeed = 0;
 let currentCourse = null;
 
-// v441: Headlight Rotation Update
+// v454: Headlight Rotation Update (Fixed Direction Priority)
 function updateHeadlight(heading) {
     if (typeof liveMarker !== 'undefined' && liveMarker) {
         const el = liveMarker.getElement();
         if (el) {
             const cone = el.querySelector('.heading-cone');
             if (cone) {
-                // Hybrid Logic: Use GPS Course if moving fast enough (>1 m/s ~ 3.6 km/h)
-                // Otherwise fallback to Compass Heading
+                // v454: Improved Hybrid Logic
+                // Use GPS Course if moving faster than 0.8 m/s (~2.9 km/h)
+                // This prevents North-East issue when traveling East
                 let rotation = heading;
-                if (currentSpeed > 1 && currentCourse !== null) {
+                if (currentSpeed > 0.8 && currentCourse !== null) {
                     rotation = currentCourse;
                 }
 
                 // Rotate cone (0 = North/Up)
                 cone.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
+                cone.style.opacity = '1';
             }
         }
     }
