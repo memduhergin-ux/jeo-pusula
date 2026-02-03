@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v450';
+const CACHE_NAME = 'jeocompass-v452';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1873,6 +1873,29 @@ function updateTrack(lat, lon) {
             opacity: 0.8,
             pane: 'tracking-pane'
         }).addTo(map);
+    }
+}
+
+function updateLiveTrackVisibility() {
+    if (showLiveTrack) {
+        if (trackPath.length > 0) {
+            if (trackPolyline) {
+                if (!map.hasLayer(trackPolyline)) {
+                    trackPolyline.addTo(map);
+                }
+            } else {
+                trackPolyline = L.polyline(trackPath, {
+                    color: '#ff5722',
+                    weight: 6,
+                    opacity: 0.8,
+                    pane: 'tracking-pane'
+                }).addTo(map);
+            }
+        }
+    } else {
+        if (trackPolyline && map.hasLayer(trackPolyline)) {
+            map.removeLayer(trackPolyline);
+        }
     }
 }
 

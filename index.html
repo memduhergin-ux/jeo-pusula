@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=450">
+    <link rel="stylesheet" href="style.css?v=452">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v450</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v452</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -268,23 +268,21 @@
 
             <div id="container-tracks" class="records-container" style="display: none;">
                 <!-- Track Settings Embedded -->
+                <!-- Track Settings Embedded -->
                 <div
-                    style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                     <label
-                        style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <span style="font-weight: bold; color: #eee; font-size: 0.9rem;">Auto-Recording</span>
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                        <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Auto-Rec</span>
                         <input type="checkbox" id="chk-auto-track"
-                            style="width: 20px; height: 20px; accent-color: #4caf50;">
+                            style="width: 18px; height: 18px; accent-color: #4caf50;">
                     </label>
-                    <div style="font-size: 0.75rem; color: #888; margin: 2px 0 10px 0;">
-                        Auto-record path on startup. FIFO (Max 20).
-                    </div>
 
                     <label
-                        style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 8px;">
-                        <span style="font-weight: bold; color: #eee; font-size: 0.9rem;">Show Live Track</span>
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                        <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Live Track</span>
                         <input type="checkbox" id="chk-show-live-track"
-                            style="width: 20px; height: 20px; accent-color: #2196f3;">
+                            style="width: 18px; height: 18px; accent-color: #2196f3;">
                     </label>
                 </div>
                 <div style="overflow-x: auto;">
@@ -525,9 +523,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=450"></script>
+    <script src="app.js?v=452"></script>
     <script>
-        const JEO_VERSION = '450';
+        const JEO_VERSION = '452';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
