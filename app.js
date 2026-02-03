@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v446';
+const CACHE_NAME = 'jeocompass-v447';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -766,28 +766,21 @@ if (btnWgs) btnWgs.addEventListener('click', () => { currentMode = 'wgs'; btnWgs
 if (btnUtm) btnUtm.addEventListener('click', () => { currentMode = 'utm'; btnUtm.classList.add('active'); btnWgs.classList.remove('active'); updateDisplay(); });
 
 // Update Save Button State
-function updateSaveButtonState() {
-    if (!btnSave) return;
-    if (lockStrike && lockDip) {
-        btnSave.classList.add('ready');
-    } else {
-        btnSave.classList.remove('ready');
-    }
-}
+// Save Button is removed (Auto-Save only)
 
 // Hold Logic
 if (btnHoldStrike) {
     btnHoldStrike.addEventListener('click', () => {
         lockStrike = !lockStrike;
         btnHoldStrike.classList.toggle('locked', lockStrike);
-        updateSaveButtonState();
+        // updateSaveButtonState();
     });
 }
 if (btnHoldDip) {
     btnHoldDip.addEventListener('click', () => {
         lockDip = !lockDip;
         btnHoldDip.classList.toggle('locked', lockDip);
-        updateSaveButtonState();
+        // updateSaveButtonState();
     });
 }
 
@@ -935,44 +928,7 @@ if ('geolocation' in navigator) {
 }
 
 // Save & Modal
-if (btnSave) btnSave.addEventListener('click', () => {
-    // Populate Modal Fields (Locked values if active)
-    editingRecordId = null; // Reset edit mode
-    const currentStrike = lockStrike ? valStrike.textContent : formatStrike(displayedHeading);
-
-    let calcDip = Math.abs(currentTilt.beta); // Uses stabilized beta
-    if (calcDip > 90) calcDip = 180 - calcDip;
-    const currentDip = lockDip ? parseInt(valDip.textContent) : Math.round(calcDip);
-
-    // Label Logic: Use existing nextId for new, or existing label for edit
-    if (editingRecordId === null) {
-        document.getElementById('rec-label').value = nextId;
-    } else {
-        // This part is handled in the edit click handler, but for safety in reset:
-        const currentRec = records.find(r => r.id === editingRecordId);
-        document.getElementById('rec-label').value = currentRec ? (currentRec.label || currentRec.id) : nextId;
-    }
-
-    document.getElementById('rec-strike').value = currentStrike;
-    document.getElementById('rec-dip').value = currentDip;
-    document.getElementById('rec-note').value = '';
-
-    if (currentCoords.lat) {
-        // KayÄ±tlar her zaman UTM ED50 formatÄ±nda saklanÄ±r
-        const zone = Math.floor((currentCoords.lon + 180) / 6) + 1;
-        const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-        try {
-            const [easting, northing] = proj4('WGS84', utmZoneDef, [currentCoords.lon, currentCoords.lat]);
-            document.getElementById('rec-y').value = Math.round(easting);
-            document.getElementById('rec-x').value = Math.round(northing);
-        } catch (e) {
-            document.getElementById('rec-y').value = currentCoords.lat.toFixed(6);
-            document.getElementById('rec-x').value = currentCoords.lon.toFixed(6);
-        }
-        document.getElementById('rec-z').value = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : Math.round(currentCoords.alt || 0);
-    }
-    recordModal.classList.add('active');
-});
+// Save Button Removed - Auto Save Logic Only
 
 if (document.getElementById('btn-modal-cancel')) {
     document.getElementById('btn-modal-cancel').addEventListener('click', () => recordModal.classList.remove('active'));
