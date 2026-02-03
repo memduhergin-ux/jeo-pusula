@@ -529,9 +529,16 @@
         </button>
     </div>
 
-    <script src="app.js?v=445"></script>
+    <!-- Error Handler for Debugging -->
     <script>
-        const JEO_VERSION = '445';
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert("Hata (Error): " + msg + "\nSatır (Line): " + lineNo);
+            return false;
+        };
+    </script>
+    <script src="app.js?v=446"></script>
+    <script>
+        const JEO_VERSION = '446';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js

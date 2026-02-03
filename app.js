@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v445';
+const CACHE_NAME = 'jeocompass-v446';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -2247,8 +2247,6 @@ if (btnTrackSettingsClose) {
     });
 }
 
-// REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
-// Auto-recording is now the only mode.
 // REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
 // Auto-recording is now the only mode.
 
