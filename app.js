@@ -366,7 +366,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v452';
+const CACHE_NAME = 'jeocompass-v453';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -900,6 +900,9 @@ if ('geolocation' in navigator) {
                 currentSpeed = p.coords.speed || 0;
                 currentCourse = p.coords.heading || null;
 
+                // DEBUG: Toast for tracking status
+                // showToast(`GPS Acc: ${Math.round(acc)}m`, 500);
+
                 // v440: Garmin Mode - Relaxed to 100m to capture indoor/forest tracks
                 if (acc <= 100) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
@@ -908,12 +911,16 @@ if ('geolocation' in navigator) {
 
                     // v439: High Sensitivity - 1 meter threshold
                     if (dist >= 1) {
+                        console.log("Tracking Update: Adding Point", dist);
                         updateTrack(currentCoords.lat, currentCoords.lon);
+                    } else {
+                        console.log("Tracking Update: Too close", dist);
                     }
                 } else {
                     // Signal too weak (>100m)
                     if (acc > 100) {
-                        // showToast(`Low GPS: ${Math.round(acc)}m`, 1000);
+                        showToast(`Low GPS: ${Math.round(acc)}m (Ignored)`, 1000);
+                        console.log("Tracking Update: Low Accuracy", acc);
                     }
                 }
 
@@ -1861,6 +1868,8 @@ function updateTrack(lat, lon) {
     if (!isTracking) return;
 
     trackPath.push([lat, lon]);
+    // DEBUG: Confirm point added
+    // showToast(`Track Point Added: ${trackPath.length}`, 500);
 
     // Canlı izleği haritada güncelle
     if (showLiveTrack && map) {
@@ -1873,6 +1882,9 @@ function updateTrack(lat, lon) {
             opacity: 0.8,
             pane: 'tracking-pane'
         }).addTo(map);
+        console.log("Track Rendered. Length:", trackPath.length);
+    } else {
+        console.warn("Track NOT Rendered. showLiveTrack:", showLiveTrack, "Map:", !!map);
     }
 }
 
