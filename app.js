@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v464';
+const CACHE_NAME = 'jeocompass-v465';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -956,6 +956,18 @@ function startGeolocationWatch() {
                     if (dist >= 1) {
                         updateTrack(smoothedPos.lat, smoothedPos.lon);
                     }
+
+                    // v465: Periodic "Real Z" fetching for current position (every 15-20 seconds)
+                    const now = Date.now();
+                    if (now - lastFetches.me > 15000) {
+                        lastFetches.me = now;
+                        fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
+                            if (alt !== null) {
+                                onlineMyAlt = alt;
+                                updateScaleValues(); // Update Map Z display
+                            }
+                        });
+                    }
                 } else {
                     if (acc > 100) {
                         console.log("GPS Accuracy Poor:", acc);
@@ -1436,6 +1448,12 @@ function initMapControls() {
     updateScaleValues();
 }
 
+// v465: Ensure fresh track per session on startup
+// If there is leftover track data (e.g. from a crash), save it first.
+if (typeof trackPath !== 'undefined' && trackPath.length > 0) {
+    saveCurrentTrack();
+}
+
 /** Hybrid Elevation Logic **/
 let onlineMyAlt = null;
 let onlineCenterAlt = null;
@@ -1488,9 +1506,8 @@ function updateScaleValues() {
     if (utmEl) {
         let displayLat = currentCoords.lat;
         let displayLon = currentCoords.lon;
-        // Logic: Online First, then Baro, then GPS
-        let myBestAlt = onlineMyAlt !== null ? onlineMyAlt : (currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0));
-        let displayAlt = myBestAlt;
+        // v465: Map View strictly uses Online (Real Z) if available, fallback to Baro/GPS only if necessary
+        let displayAlt = onlineMyAlt !== null ? onlineMyAlt : (currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0));
 
         if (isAddingPoint && map) {
             const center = map.getCenter();
