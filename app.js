@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v465';
+const CACHE_NAME = 'jeocompass-v466';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -392,6 +392,8 @@ let heatmapFilter = 'ALL'; // v403
 let smoothedPos = { lat: 0, lon: 0 };
 const SMOOTH_ALPHA = 0.3;
 let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
+// v466: Hide all saved tracks by default on startup
+jeoTracks.forEach(t => { t.visible = false; });
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
 
@@ -1809,9 +1811,13 @@ function renderTracks() {
         return;
     }
 
-    tableBody.innerHTML = jeoTracks.map(t => `
+    // v466: Sort by newest first (descending ID)
+    const sortedTracks = [...jeoTracks].sort((a, b) => b.id - a.id);
+
+    tableBody.innerHTML = sortedTracks.map(t => `
         <tr data-id="${t.id}">
             <td onclick="focusTrack(${t.id})">${t.name}</td>
+            <td style="font-family:monospace;">${Math.round(t.length || 0)}m</td>
             <td><input type="color" value="${t.color || '#ff5722'}" onchange="updateTrackColor(${t.id}, this.value)" class="track-color-dot"></td>
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
@@ -1984,8 +1990,9 @@ function saveCurrentTrack() {
         name: trackName,
         path: [...trackPath],
         color: '#ff5722',
-        visible: true,
-        time: now.toLocaleString('en-GB')
+        visible: false, // v466: Hide newly saved tracks from map by default
+        time: now.toLocaleString('en-GB'),
+        length: calculateTrackLength(trackPath) // v466: Save length in meters
     };
 
     // v456: FIFO: Eğer 20 kayıt varsa, en eskiyi sil (21. kayıt 1.yi siler)
@@ -2255,15 +2262,14 @@ const chkAutoTrack = document.getElementById('chk-auto-track');
 const chkShowLiveTrack = document.getElementById('chk-show-live-track');
 
 if (chkAutoTrack) {
-    chkAutoTrack.checked = isTracking;
+    chkAutoTrack.checked = isTracking; // Ensure persistence on load
     chkAutoTrack.addEventListener('change', () => {
-        // Toggle tracking state and trigger logic (Save/Start/UI Sync)
         toggleTracking();
     });
 }
 
 if (chkShowLiveTrack) {
-    chkShowLiveTrack.checked = showLiveTrack;
+    chkShowLiveTrack.checked = showLiveTrack; // Ensure persistence on load
     chkShowLiveTrack.addEventListener('change', (e) => {
         showLiveTrack = e.target.checked;
         localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
