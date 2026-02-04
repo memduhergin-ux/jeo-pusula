@@ -248,11 +248,16 @@ async function requestWakeLock() {
             // Re-acquire on visibility change
             document.addEventListener('visibilitychange', async () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') {
-                    wakeLock = await navigator.wakeLock.request('screen');
+                    try {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        console.log("Wake Lock re-acquired");
+                    } catch (err) {
+                        console.warn("Wake Lock re-acquisition failed", err);
+                    }
                 }
             });
         } catch (err) {
-            console.log(`${err.name}, ${err.message}`);
+            console.warn(`Wake Lock acquisition failed: ${err.name}, ${err.message}`);
         }
     }
 }
@@ -881,18 +886,33 @@ function autoInitSensors() {
 }
 autoInitSensors();
 
-// Geolocation
-if ('geolocation' in navigator) {
-    navigator.geolocation.watchPosition((p) => {
+// Robust Geolocation Watcher (v461)
+let watchId = null;
+function startGeolocationWatch() {
+    if (!('geolocation' in navigator)) return;
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+
+    watchId = navigator.geolocation.watchPosition((p) => {
         try {
             currentCoords.lat = p.coords.latitude;
             currentCoords.lon = p.coords.longitude;
             currentCoords.acc = p.coords.accuracy;
             currentCoords.alt = p.coords.altitude;
 
-            // Update Live Marker (Heartbeat Triangle - v400 Smoothed)
+            // Update GPS Dashboard (v461)
+            const gpsAccVal = document.getElementById('gps-acc-val');
+            const gpsStatusVal = document.getElementById('gps-status-val');
+            const trackPointsVal = document.getElementById('track-points-val');
+
+            if (gpsAccVal) gpsAccVal.textContent = `${Math.round(currentCoords.acc)}m`;
+            if (gpsStatusVal) {
+                gpsStatusVal.textContent = currentCoords.acc <= 100 ? "GOOD" : "POOR";
+                gpsStatusVal.style.color = currentCoords.acc <= 100 ? "#4caf50" : "#ff9800";
+            }
+            if (trackPointsVal) trackPointsVal.textContent = trackPath.length;
+
+            // Update Live Marker
             if (map && currentCoords.lat) {
-                // Exponential Smoothing (EMA)
                 if (smoothedPos.lat === 0) {
                     smoothedPos.lat = currentCoords.lat;
                     smoothedPos.lon = currentCoords.lon;
@@ -902,85 +922,57 @@ if ('geolocation' in navigator) {
                 }
 
                 const livePos = [smoothedPos.lat, smoothedPos.lon];
-                const lastPos = liveMarker ? liveMarker.getLatLng() : null;
-                const distChange = lastPos ? map.distance(lastPos, livePos) : 999;
-
-                // Threshold to prevent micro-jitters
-                if (!liveMarker || distChange > 0.8) {
-                    if (!liveMarker) {
-                        const liveIcon = L.divIcon({
-                            className: 'heartbeat-container',
-                            html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 16]
-                        });
-                        liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
-                    } else {
-                        liveMarker.setLatLng(livePos);
-                    }
+                if (!liveMarker) {
+                    const liveIcon = L.divIcon({
+                        className: 'heartbeat-container',
+                        html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+                    liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
+                } else {
+                    liveMarker.setLatLng(livePos);
                 }
 
-                if (followMe) {
-                    map.panTo(livePos);
-                }
+                if (followMe) map.panTo(livePos);
             }
 
-            // Background altitude fetch
-            const now = Date.now();
-            if (onlineMyAlt === null || (now - lastFetches.me > 60000)) {
-                fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
-                    if (alt !== null) {
-                        onlineMyAlt = alt;
-                        lastFetches.me = Date.now();
-                    }
-                });
-            }
-
-            processHeadingAndDip();
-            updateDisplay();
-
-            // --- DRIFT FILTER (v400) ---
+            // --- TRACKING LOGIC ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                // v441: Capture Movement Data
-                currentSpeed = p.coords.speed || 0;
-                currentCourse = p.coords.heading || null;
-
-                // DEBUG: Toast for tracking status
-                // showToast(`GPS Acc: ${Math.round(acc)}m`, 500);
-
-                // v440: Garmin Mode - Relaxed to 100m to capture indoor/forest tracks
                 if (acc <= 100) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
                     const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
 
-                    // v439: High Sensitivity - 1 meter threshold
                     if (dist >= 1) {
-                        console.log("Tracking Update: Adding Point", dist);
                         updateTrack(currentCoords.lat, currentCoords.lon);
-                        // DEBUG v460: Show point addition toast
                         showToast(`Point Added (${Math.round(dist)}m)`, 500);
-                    } else {
-                        console.log("Tracking Update: Too close", dist);
                     }
                 } else {
-                    // Signal too weak (>100m)
                     if (acc > 100) {
-                        showToast(`Low GPS: ${Math.round(acc)}m (Ignored)`, 1000);
-                        console.log("Tracking Update: Low Accuracy", acc);
+                        console.log("GPS Accuracy Poor:", acc);
                     }
                 }
-
-                if (isHeatmapActive) updateHeatmap();
             }
         } catch (e) {
-            console.error("WatchPosition error:", e);
+            console.error("WatchPosition internal error:", e);
         }
     }, (err) => {
-        console.error("Location error:", err);
-    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+        console.warn("Location error:", err);
+        const gpsStatusVal = document.getElementById('gps-status-val');
+        if (gpsStatusVal) {
+            gpsStatusVal.textContent = "ERROR: " + err.code;
+            gpsStatusVal.style.color = "#f44336";
+        }
+        // v461: Restart on timeout or lost signal
+        if (err.code === 3) { // TIMEOUT
+            console.log("Restarting Geolocation due to timeout...");
+            startGeolocationWatch();
+        }
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
 }
+startGeolocationWatch();
 
 // Save & Modal
 // Save Button Removed - Auto Save Logic Only

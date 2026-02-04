@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v460</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v461</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -264,307 +264,324 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <div id="container-tracks" class="records-container" style="display: none;">
-                <!-- Track Settings Embedded -->
-                <!-- Track Settings Embedded -->
-                <div
-                    style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                        <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Auto-Rec</span>
-                        <input type="checkbox" id="chk-auto-track"
-                            style="width: 18px; height: 18px; accent-color: #4caf50;">
-                    </label>
-
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                        <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Live Track</span>
-                        <input type="checkbox" id="chk-show-live-track"
-                            style="width: 18px; height: 18px; accent-color: #2196f3;">
-                    </label>
-                </div>
-                <div style="overflow-x: auto;">
-                    <table class="records-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Color</th>
-                                <th>Visible</th>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tracks-body">
-                            <tr>
-                                <td colspan="5">No tracks saved yet</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Calibration Modal -->
-    <div id="calibration-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Compass Cal</h2>
-            </div>
-            <div class="modal-body" style="color:#ccc; line-height:1.5;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <div class="figure-8" style="margin: 0 auto 10px auto;"></div>
-                    <p>Rotate the phone in the air in a <strong>figure-8 motion</strong> to calibrate sensors.</p>
-                </div>
-
-                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
-                        Status:</label>
-                    <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        Scanning...</p>
-                </div>
-
-                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Magnetic
-                        Declination:</label>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="number" id="declination-input" value="0" step="0.1"
-                            style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
-                        <span>Degrees</span>
-                    </div>
-                    <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
-                        You can manually correct the difference from True North here.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-confirm" id="btn-calibration-close">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Record Modal -->
-    <div class="modal-overlay" id="record-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Point Information</h2>
-            </div>
-            <div class="modal-body">
-                <!-- Record No -->
-                <div class="form-group">
-                    <label class="form-label">Label</label>
-                    <input type="text" id="rec-label" class="form-input" value="1">
-                </div>
-                <!-- Coordinates (UTM ED50) -->
-                <div class="form-group" style="padding: 10px 0;">
-                    <label class="form-label">Y</label>
-                    <input type="text" id="rec-y" class="form-input" readonly>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">X</label>
-                    <input type="text" id="rec-x" class="form-input" readonly>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Z</label>
-                    <input type="text" id="rec-z" class="form-input" readonly>
-                </div>
-                <!-- Structural Data -->
-                <div class="form-group">
-                    <label class="form-label">Strike</label>
-                    <input type="text" id="rec-strike" class="form-input" readonly>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Dip</label>
-                    <input type="text" id="rec-dip" class="form-input" readonly>
-                </div>
-                <!-- Note -->
-                <div class="form-group" style="align-items: flex-start;">
-                    <label class="form-label" style="margin-top: 5px;">Note</label>
-                    <textarea id="rec-note" class="form-input" placeholder="Formation etc..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-cancel" id="btn-modal-cancel">Cancel</button>
-                <button class="modal-btn btn-confirm" id="btn-modal-save">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Options Modal -->
-    <div id="options-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 320px;">
-            <div class="modal-header">
-                <h2>More Options</h2>
-            </div>
-            <div class="modal-body" style="padding: 20px 0;">
-                <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Please select an
-                    action.</div>
-                <button class="save-btn ready" id="btn-delete-selected"
-                    style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
-                    🗑️ Delete Selected Records
-                </button>
-                <button class="save-btn ready" onclick="forceAppUpdate()"
-                    style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold; margin-bottom: 20px;">
-                    🔄 Force Update
-                </button>
-
-                <div style="border-top: 1px solid #444; padding-top: 15px;">
-                    <button class="save-btn ready" id="btn-backup-json"
-                        style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
-                        📦 Full Backup (JSON)
-                    </button>
-                    <button class="save-btn ready" id="btn-restore-json"
-                        style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
-                        📂 Restore
-                    </button>
-                    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-cancel" id="btn-options-cancel">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Share Modal (Redesigned v136) -->
-    <div id="share-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 330px;">
-            <div class="modal-header">
-                <h2 id="share-modal-title">Export</h2>
-            </div>
-
-            <div class="modal-body" style="padding: 15px 0;">
-                <!-- Step 1: Format Selection -->
-                <div id="share-step-1">
+                <div id="container-tracks" class="records-container" style="display: none;">
+                    <!-- Track Settings Embedded -->
+                    <!-- Track Settings Embedded -->
                     <div
-                        style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
-                        <div style="font-weight: bold; color: #fff; margin-bottom: 15px; font-size: 0.9rem;">
-                            Select export format:
+                        style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <label
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                            <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Auto-Rec</span>
+                            <input type="checkbox" id="chk-auto-track"
+                                style="width: 18px; height: 18px; accent-color: #4caf50;">
+                        </label>
+
+                        <label
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                            <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Live Track</span>
+                            <input type="checkbox" id="chk-show-live-track"
+                                style="width: 18px; height: 18px; accent-color: #2196f3;">
+                        </label>
+                    </div>
+
+                    <!-- GPS Status Dashboard (v461) -->
+                    <div id="track-debug-dashboard"
+                        style="margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #444; font-family: monospace; font-size: 0.7rem; color: #4caf50;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span>GPS STATUS:</span>
+                            <span id="gps-status-val">WAITING</span>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="radio" name="share-format" id="chk-share-csv" checked
-                                    style="width: 22px; height: 22px; accent-color: #4caf50;">
-                                <span style="font-size: 1rem;">CSV (Data Table)</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="radio" name="share-format" id="chk-share-kml"
-                                    style="width: 22px; height: 22px; accent-color: #4caf50;">
-                                <span style="font-size: 1rem;">KML (Map File)</span>
-                            </label>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span>ACCURACY:</span>
+                            <span id="gps-acc-val">---</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>POINTS:</span>
+                            <span id="track-points-val">0</span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Step 2: Confirmation -->
-                <div id="share-step-2" style="display: none; text-align: center; padding: 10px 0;">
-                    <div style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; line-height: 1.4;">
-                        Share selected points?
+                    <div style="overflow-x: auto;">
+                        <table class="records-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Color</th>
+                                    <th>Visible</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tracks-body">
+                                <tr>
+                                    <td colspan="5">No tracks saved yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-
-            <div class="modal-footer" id="share-footer-1">
-                <button class="modal-btn btn-cancel" id="btn-share-cancel">Cancel</button>
-                <button class="modal-btn btn-confirm" id="btn-share-next">Next</button>
-            </div>
-
-            <div class="modal-footer" id="share-footer-2" style="display: none;">
-                <button class="modal-btn btn-cancel" id="btn-share-back">Cancel</button>
-                <button class="modal-btn btn-confirm" id="btn-share-accept">Accept</button>
             </div>
         </div>
-    </div>
 
-    <!-- Track Settings Modal (v444) -->
-    <!-- Track Settings Modal REMOVED (Embedded in Tab) -->
+        <!-- Calibration Modal -->
+        <div id="calibration-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Compass Cal</h2>
+                </div>
+                <div class="modal-body" style="color:#ccc; line-height:1.5;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div class="figure-8" style="margin: 0 auto 10px auto;"></div>
+                        <p>Rotate the phone in the air in a <strong>figure-8 motion</strong> to calibrate sensors.</p>
+                    </div>
 
-    <!-- Layers Modal -->
-    <div id="layers-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Map Layers</h2>
-            </div>
-            <div class="modal-body" style="min-height: 200px;">
-                <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- Layers will be injected here -->
-                    <div style="color: #666; font-style: italic; text-align: center; padding: 20px;">
-                        No external layers found.
+                    <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
+                            Status:</label>
+                        <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
+                            Scanning...</p>
+                    </div>
+
+                    <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Magnetic
+                            Declination:</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="number" id="declination-input" value="0" step="0.1"
+                                style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
+                            <span>Degrees</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
+                            You can manually correct the difference from True North here.</p>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer" style="justify-content: space-between;">
-                <button class="modal-btn btn-cancel" id="btn-layers-close">Close</button>
-                <button class="modal-btn btn-confirm" id="id-btn-import-layer-trigger"
-                    style="display:none;">HIDDEN</button>
-                <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Load File (+)</button>
+                <div class="modal-footer">
+                    <button class="modal-btn btn-confirm" id="btn-calibration-close">OK</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <button class="nav-item active" data-target="view-compass">
-            <span class="nav-icon">🧭</span>
-        </button>
-        <button class="nav-item" data-target="view-map">
-            <span class="nav-icon">🗺️</span>
-        </button>
-        <button class="nav-item" data-target="view-records">
-            <span class="nav-icon">📝</span>
-        </button>
-    </div>
+        <!-- Record Modal -->
+        <div class="modal-overlay" id="record-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Point Information</h2>
+                </div>
+                <div class="modal-body">
+                    <!-- Record No -->
+                    <div class="form-group">
+                        <label class="form-label">Label</label>
+                        <input type="text" id="rec-label" class="form-input" value="1">
+                    </div>
+                    <!-- Coordinates (UTM ED50) -->
+                    <div class="form-group" style="padding: 10px 0;">
+                        <label class="form-label">Y</label>
+                        <input type="text" id="rec-y" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">X</label>
+                        <input type="text" id="rec-x" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Z</label>
+                        <input type="text" id="rec-z" class="form-input" readonly>
+                    </div>
+                    <!-- Structural Data -->
+                    <div class="form-group">
+                        <label class="form-label">Strike</label>
+                        <input type="text" id="rec-strike" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dip</label>
+                        <input type="text" id="rec-dip" class="form-input" readonly>
+                    </div>
+                    <!-- Note -->
+                    <div class="form-group" style="align-items: flex-start;">
+                        <label class="form-label" style="margin-top: 5px;">Note</label>
+                        <textarea id="rec-note" class="form-input" placeholder="Formation etc..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn btn-cancel" id="btn-modal-cancel">Cancel</button>
+                    <button class="modal-btn btn-confirm" id="btn-modal-save">Save</button>
+                </div>
+            </div>
+        </div>
 
-    <!-- Error Handler for Debugging -->
-    <script>
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert("Hata (Error): " + msg + "\nSatır (Line): " + lineNo);
-            return false;
-        };
-    </script>
-    <script src="app.js?v=460"></script>
-    <script>
-        const JEO_VERSION = '460';
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=${JEO_VERSION}`)
-                    .then(reg => {
-                        console.log('Service Worker registered');
-                        reg.update();
-                        setInterval(() => { reg.update(); }, 1000 * 60);
-                    })
-                    .catch(err => console.log('Service Worker failed', err));
-            });
+        <!-- Options Modal -->
+        <div id="options-modal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 320px;">
+                <div class="modal-header">
+                    <h2>More Options</h2>
+                </div>
+                <div class="modal-body" style="padding: 20px 0;">
+                    <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Please select
+                        an
+                        action.</div>
+                    <button class="save-btn ready" id="btn-delete-selected"
+                        style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
+                        🗑️ Delete Selected Records
+                    </button>
+                    <button class="save-btn ready" onclick="forceAppUpdate()"
+                        style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold; margin-bottom: 20px;">
+                        🔄 Force Update
+                    </button>
 
-            navigator.serviceWorker.addEventListener('message', (event) => {
-                if (event.data === 'sw-updated') {
-                    console.log('New version detected. Reloading...');
-                    window.location.reload();
-                }
-            });
+                    <div style="border-top: 1px solid #444; padding-top: 15px;">
+                        <button class="save-btn ready" id="btn-backup-json"
+                            style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
+                            📦 Full Backup (JSON)
+                        </button>
+                        <button class="save-btn ready" id="btn-restore-json"
+                            style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
+                            📂 Restore
+                        </button>
+                        <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn btn-cancel" id="btn-options-cancel">Close</button>
+                </div>
+            </div>
+        </div>
 
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                refreshing = true;
-                window.location.reload();
-            });
-        }
+        <!-- Share Modal (Redesigned v136) -->
+        <div id="share-modal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 330px;">
+                <div class="modal-header">
+                    <h2 id="share-modal-title">Export</h2>
+                </div>
 
-        function forceAppUpdate() {
+                <div class="modal-body" style="padding: 15px 0;">
+                    <!-- Step 1: Format Selection -->
+                    <div id="share-step-1">
+                        <div
+                            style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+                            <div style="font-weight: bold; color: #fff; margin-bottom: 15px; font-size: 0.9rem;">
+                                Select export format:
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="radio" name="share-format" id="chk-share-csv" checked
+                                        style="width: 22px; height: 22px; accent-color: #4caf50;">
+                                    <span style="font-size: 1rem;">CSV (Data Table)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="radio" name="share-format" id="chk-share-kml"
+                                        style="width: 22px; height: 22px; accent-color: #4caf50;">
+                                    <span style="font-size: 1rem;">KML (Map File)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Confirmation -->
+                    <div id="share-step-2" style="display: none; text-align: center; padding: 10px 0;">
+                        <div style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; line-height: 1.4;">
+                            Share selected points?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer" id="share-footer-1">
+                    <button class="modal-btn btn-cancel" id="btn-share-cancel">Cancel</button>
+                    <button class="modal-btn btn-confirm" id="btn-share-next">Next</button>
+                </div>
+
+                <div class="modal-footer" id="share-footer-2" style="display: none;">
+                    <button class="modal-btn btn-cancel" id="btn-share-back">Cancel</button>
+                    <button class="modal-btn btn-confirm" id="btn-share-accept">Accept</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Track Settings Modal (v444) -->
+        <!-- Track Settings Modal REMOVED (Embedded in Tab) -->
+
+        <!-- Layers Modal -->
+        <div id="layers-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Map Layers</h2>
+                </div>
+                <div class="modal-body" style="min-height: 200px;">
+                    <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Layers will be injected here -->
+                        <div style="color: #666; font-style: italic; text-align: center; padding: 20px;">
+                            No external layers found.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content: space-between;">
+                    <button class="modal-btn btn-cancel" id="btn-layers-close">Close</button>
+                    <button class="modal-btn btn-confirm" id="id-btn-import-layer-trigger"
+                        style="display:none;">HIDDEN</button>
+                    <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Load File (+)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-item active" data-target="view-compass">
+                <span class="nav-icon">🧭</span>
+            </button>
+            <button class="nav-item" data-target="view-map">
+                <span class="nav-icon">🗺️</span>
+            </button>
+            <button class="nav-item" data-target="view-records">
+                <span class="nav-icon">📝</span>
+            </button>
+        </div>
+
+        <!-- Error Handler for Debugging -->
+        <script>
+            window.onerror = function (msg, url, lineNo, columnNo, error) {
+                alert("Hata (Error): " + msg + "\nSatır (Line): " + lineNo);
+                return false;
+            };
+        </script>
+        <script src="app.js?v=461"></script>
+        <script>
+            const JEO_VERSION = '461';
             if ('serviceWorker' in navigator) {
-                caches.keys().then(names => {
-                    for (let name of names) caches.delete(name);
-                }).then(() => {
-                    location.reload(true);
+                window.addEventListener('load', () => {
+                    // Register with version query to bypass browser cache of sw.js
+                    navigator.serviceWorker.register(`sw.js?v=${JEO_VERSION}`)
+                        .then(reg => {
+                            console.log('Service Worker registered');
+                            reg.update();
+                            setInterval(() => { reg.update(); }, 1000 * 60);
+                        })
+                        .catch(err => console.log('Service Worker failed', err));
                 });
-            } else {
-                location.reload(true);
+
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data === 'sw-updated') {
+                        console.log('New version detected. Reloading...');
+                        window.location.reload();
+                    }
+                });
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    refreshing = true;
+                    window.location.reload();
+                });
             }
-        }
-    </script>
+
+            function forceAppUpdate() {
+                if ('serviceWorker' in navigator) {
+                    caches.keys().then(names => {
+                        for (let name of names) caches.delete(name);
+                    }).then(() => {
+                        location.reload(true);
+                    });
+                } else {
+                    location.reload(true);
+                }
+            }
+        </script>
 </body>
 
 </html>
