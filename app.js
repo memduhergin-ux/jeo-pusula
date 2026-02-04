@@ -935,6 +935,11 @@ function startGeolocationWatch() {
                 }
 
                 if (followMe) map.panTo(livePos);
+
+                // v462: Ensure track line always connects to live marker center
+                if (showLiveTrack && trackPolyline && map.hasLayer(trackPolyline)) {
+                    trackPolyline.setLatLngs([...trackPath, livePos]);
+                }
             }
 
             // --- TRACKING LOGIC ---
@@ -947,7 +952,6 @@ function startGeolocationWatch() {
 
                     if (dist >= 1) {
                         updateTrack(currentCoords.lat, currentCoords.lon);
-                        showToast(`Point Added (${Math.round(dist)}m)`, 500);
                     }
                 } else {
                     if (acc > 100) {
@@ -3499,13 +3503,9 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Handle mobile backgrounding/app switching
+// Handle mobile backgrounding/app switching (v462: Removed auto-save to keep single continuous line)
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-        if (isTracking && trackPath.length > 0) {
-            saveCurrentTrack();
-        }
-    }
+    // Session is kept in localStorage trackPath, no need to save to list on every backgrounding
 });
 
 // Initial flow is handled by autoInitSensors() in the mid-section.
