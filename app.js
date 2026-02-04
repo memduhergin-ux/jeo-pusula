@@ -592,7 +592,7 @@ function renderCoordinates() {
                 </div>
             `;
         } catch (e) {
-            coordContent.innerHTML = '<div class="data-label">UTM HatasÄ±</div>';
+            coordContent.innerHTML = '<div class="data-label">UTM Error</div>';
         }
     }
 }
@@ -729,12 +729,12 @@ function updateSensorUI() {
     if (!statusEl) return;
 
     if (sensorSource === 'ios' || sensorSource === 'absolute') {
-        statusEl.textContent = "BAÄLI: Hassas (Manyetik Kuzey)";
+        statusEl.textContent = "CONNECTED: High Accuracy (True North)";
         statusEl.style.color = "#4caf50";
         if (permissionBtn) permissionBtn.style.display = 'none';
         if (calibrationWarning) calibrationWarning.style.display = 'none';
     } else if (sensorSource === 'relative') {
-        statusEl.textContent = "BAÄLI: Tahmini (Kalibrasyon Gerekli)";
+        statusEl.textContent = "CONNECTED: Estimated (Calibration Required)";
         statusEl.style.color = "#ff9800";
         if (calibrationWarning) calibrationWarning.style.display = 'block';
     } else {
@@ -845,7 +845,7 @@ if (btnSave) {
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
             const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
 
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "Pusula Ölçümü", bestAlt, strikeVal, dipVal);
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "Compass Measurement", bestAlt, strikeVal, dipVal);
         }
     });
 }
@@ -873,7 +873,7 @@ function autoInitSensors() {
             if (sensorSource === null) {
                 if (permissionBtn) {
                     permissionBtn.style.display = 'block';
-                    permissionBtn.textContent = 'PusulayÄ± BaÅŸlat (TÄ±klayÄ±n)';
+                    permissionBtn.textContent = 'Start Compass (Click Here)';
                 }
             }
         }, 3000);
@@ -953,12 +953,14 @@ if ('geolocation' in navigator) {
                 if (acc <= 100) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
-                    const dist = lastPoint ? map.distance(lastPoint, currentPoint) : 999;
+                    const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
 
                     // v439: High Sensitivity - 1 meter threshold
                     if (dist >= 1) {
                         console.log("Tracking Update: Adding Point", dist);
                         updateTrack(currentCoords.lat, currentCoords.lon);
+                        // DEBUG v460: Show point addition toast
+                        showToast(`Point Added (${Math.round(dist)}m)`, 500);
                     } else {
                         console.log("Tracking Update: Too close", dist);
                     }
@@ -1958,7 +1960,7 @@ function saveCurrentTrack() {
     if (trackPath.length === 0) return;
 
     const now = new Date();
-    const trackName = `İzlek ${now.toLocaleDateString('tr-TR')} ${now.toLocaleTimeString('tr-TR')}`;
+    const trackName = `Track ${now.toLocaleDateString('en-GB')} ${now.toLocaleTimeString('en-GB')}`;
 
     const newTrack = {
         id: trackIdCounter++,
@@ -2004,8 +2006,8 @@ function toggleTracking() {
     if (chkAutoTrack) chkAutoTrack.checked = isTracking;
     localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
 
-    if (isTracking) showToast('İzlek kaydı başlatıldı', 1000);
-    else showToast('İzlek Kaydedildi', 1000);
+    if (isTracking) showToast('Track recording started', 1000);
+    else showToast('Track Saved', 1000);
 }
 
 // Redundant function removed (Merged with robust version at 1935)

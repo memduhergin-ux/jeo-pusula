@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v458</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v460</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -334,7 +334,7 @@
                             style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
                         <span>Degrees</span>
                     </div>
-                    <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">Gerçek Kuzey ile aradaki farkı buradan
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
                 </div>
             </div>
@@ -412,7 +412,7 @@
                 <div style="border-top: 1px solid #444; padding-top: 15px;">
                     <button class="save-btn ready" id="btn-backup-json"
                         style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
-                        📦 Hepsini Yedekle (Full Backup)
+                        📦 Full Backup (JSON)
                     </button>
                     <button class="save-btn ready" id="btn-restore-json"
                         style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
@@ -523,9 +523,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=458"></script>
+    <script src="app.js?v=460"></script>
     <script>
-        const JEO_VERSION = '458';
+        const JEO_VERSION = '460';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
