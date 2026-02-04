@@ -374,9 +374,8 @@ const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
 let isTracking = JSON.parse(localStorage.getItem('jeoAutoTrackEnabled')) !== false; // Default true if not set
-let trackPath = [];
+let trackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 let trackPolyline = null;
-let savedTrackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 
 // Heatmap State (v401)
 let heatmapLayer = null;
@@ -768,22 +767,31 @@ if (btnUtm) btnUtm.addEventListener('click', () => { currentMode = 'utm'; btnUtm
 // Update Save Button State (REC button on Compass)
 function updateSaveButtonState() {
     const btnSave = document.getElementById('btn-save');
-    if (btnSave) {
-        if (lockStrike && lockDip) {
-            btnSave.classList.add('ready');
-            btnSave.style.opacity = '1';
-            btnSave.style.pointerEvents = 'auto';
-            btnSave.style.background = '#f44336'; // Active Red
-            btnSave.style.color = '#fff';
-            btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
-        } else {
-            btnSave.classList.remove('ready');
-            btnSave.style.opacity = '0.5';
-            btnSave.style.pointerEvents = 'none';
-            btnSave.style.background = ''; // Default
-            btnSave.style.color = '';
-            btnSave.style.boxShadow = '';
-        }
+    if (!btnSave) return;
+
+    if (isTracking) {
+        btnSave.classList.add('ready');
+        btnSave.style.background = '#f44336'; // Active Red
+        btnSave.style.color = '#fff';
+        btnSave.innerHTML = '<span style="color:#fff; font-weight:bold;">REC●</span>';
+        btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
+        btnSave.style.pointerEvents = 'auto';
+    } else if (lockStrike && lockDip) {
+        btnSave.classList.add('ready');
+        btnSave.style.opacity = '1';
+        btnSave.style.pointerEvents = 'auto';
+        btnSave.style.background = '#f44336'; // Active Red
+        btnSave.style.color = '#fff';
+        btnSave.innerHTML = 'REC';
+        btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
+    } else {
+        btnSave.classList.remove('ready');
+        btnSave.style.opacity = '0.5';
+        btnSave.style.pointerEvents = 'none';
+        btnSave.style.background = ''; // Default
+        btnSave.style.color = '';
+        btnSave.innerHTML = 'REC';
+        btnSave.style.boxShadow = '';
     }
 }
 
@@ -1358,12 +1366,11 @@ function initMap() {
     // --- Tracking System MOVED TO GLOBAL SCOPE (v441) ---
     // See bottom of file
 
-    // Initialize Saved Track (One-time map setup)
-    if (savedTrackPath.length > 0) {
-        trackPath = savedTrackPath;
-        if (map) {
+    // Initialize Live Track Polyline if points exist
+    if (trackPath.length > 0 && map && showLiveTrack) {
+        if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
-                color: '#2196f3',
+                color: '#ff5722',
                 weight: 6,
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -1915,20 +1922,21 @@ function updateTrack(lat, lon) {
     if (!isTracking) return;
 
     trackPath.push([lat, lon]);
-    // v456: Persist live track path immediately to prevent data loss
+    // v456: Persist live track path immediately
     localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
 
     // Canlı izleği haritada güncelle
     if (showLiveTrack && map) {
-        if (trackPolyline) {
-            map.removeLayer(trackPolyline);
+        if (!trackPolyline) {
+            trackPolyline = L.polyline(trackPath, {
+                color: '#ff5722',
+                weight: 6,
+                opacity: 0.8,
+                pane: 'tracking-pane'
+            }).addTo(map);
+        } else {
+            trackPolyline.addLatLng([lat, lon]);
         }
-        trackPolyline = L.polyline(trackPath, {
-            color: '#ff5722',
-            weight: 6,
-            opacity: 0.8,
-            pane: 'tracking-pane'
-        }).addTo(map);
     }
 }
 
@@ -2028,15 +2036,7 @@ function toggleTracking() {
     else showToast('Kayıt Kaydedildi', 1000);
 }
 
-function updateLiveTrackVisibility() {
-    if (trackPolyline && map) {
-        if (showLiveTrack) {
-            trackPolyline.addTo(map);
-        } else {
-            map.removeLayer(trackPolyline);
-        }
-    }
-}
+// Redundant function removed (Merged with robust version at 1935)
 
 function updateTrackCountBadge() {
     const badge = document.getElementById('track-count');
@@ -2252,20 +2252,9 @@ const chkShowLiveTrack = document.getElementById('chk-show-live-track');
 
 if (chkAutoTrack) {
     chkAutoTrack.checked = isTracking;
-    chkAutoTrack.addEventListener('change', (e) => {
-        isTracking = e.target.checked;
-        localStorage.setItem('jeoAutoTrackEnabled', isTracking);
-
-        if (isTracking) {
-            showToast("Auto-Recording ON");
-            // If we have a current location, add it to start the track immediately
-            if (currentCoords.lat && currentCoords.lon) {
-                // Check if last point is far enough? No, handlePositionUpdate does that.
-                // Just let the next position update handle it.
-            }
-        } else {
-            showToast("Auto-Recording OFF");
-        }
+    chkAutoTrack.addEventListener('change', () => {
+        // Toggle tracking state and trigger logic (Save/Start/UI Sync)
+        toggleTracking();
     });
 }
 
