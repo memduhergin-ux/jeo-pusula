@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v466';
+const CACHE_NAME = 'jeocompass-v467';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -380,6 +380,7 @@ const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 let isTracking = JSON.parse(localStorage.getItem('jeoAutoTrackEnabled')) !== false; // Default true if not set
 let trackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
+let trackStartTime = localStorage.getItem('jeoTrackStartTime') || null; // v467: track start time
 let trackPolyline = null;
 
 // Heatmap State (v401)
@@ -1814,7 +1815,24 @@ function renderTracks() {
     // v466: Sort by newest first (descending ID)
     const sortedTracks = [...jeoTracks].sort((a, b) => b.id - a.id);
 
-    tableBody.innerHTML = sortedTracks.map(t => `
+    let html = "";
+    // v467: Display Live Track row if exists
+    if (trackPath.length > 0) {
+        const liveStartTime = trackStartTime ? new Date(trackStartTime) : new Date();
+        const liveName = `Track ${liveStartTime.toLocaleDateString('en-GB')} ${liveStartTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+        html += `
+            <tr class="live-track-row" style="background: rgba(76, 175, 80, 0.1);">
+                <td style="color: #4caf50; font-weight: bold;">🔴 ${liveName}</td>
+                <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
+                <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
+                <td><input type="checkbox" checked disabled></td>
+                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kayıtta...</td>
+                <td><span style="font-size:0.8rem; color:#888;">Live</span></td>
+            </tr>
+        `;
+    }
+
+    html += sortedTracks.map(t => `
         <tr data-id="${t.id}">
             <td onclick="focusTrack(${t.id})">${t.name}</td>
             <td style="font-family:monospace;">${Math.round(t.length || 0)}m</td>
@@ -1828,6 +1846,8 @@ function renderTracks() {
             </td>
         </tr>
     `).join('');
+
+    tableBody.innerHTML = html;
 }
 
 window.updateTrackColor = function (id, color) {
@@ -1941,6 +1961,12 @@ function updateTrack(lat, lon) {
     // v456: Persist live track path immediately
     localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
 
+    // v467: Persist start time if this is the first point
+    if (!trackStartTime) {
+        trackStartTime = new Date().toISOString();
+        localStorage.setItem('jeoTrackStartTime', trackStartTime);
+    }
+
     // Canlı izleği haritada güncelle
     if (showLiveTrack && map) {
         if (!trackPolyline) {
@@ -1983,7 +2009,9 @@ function saveCurrentTrack() {
     if (trackPath.length === 0) return;
 
     const now = new Date();
-    const trackName = `Track ${now.toLocaleDateString('en-GB')} ${now.toLocaleTimeString('en-GB')}`;
+    // v467: Use saved start time for name
+    const st = trackStartTime ? new Date(trackStartTime) : now;
+    const trackName = `Track ${st.toLocaleDateString('en-GB')} ${st.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
 
     const newTrack = {
         id: trackIdCounter++,
@@ -1991,7 +2019,7 @@ function saveCurrentTrack() {
         path: [...trackPath],
         color: '#ff5722',
         visible: false, // v466: Hide newly saved tracks from map by default
-        time: now.toLocaleString('en-GB'),
+        time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), // v467: Only end time in date column
         length: calculateTrackLength(trackPath) // v466: Save length in meters
     };
 
@@ -2006,7 +2034,9 @@ function saveCurrentTrack() {
 
     // Canlı izleği temizle
     trackPath = [];
+    trackStartTime = null; // v467: Reset start time
     localStorage.removeItem('jeoTrackPath'); // Temizle
+    localStorage.removeItem('jeoTrackStartTime'); // Temizle
     if (trackPolyline && map) {
         map.removeLayer(trackPolyline);
         trackPolyline = null;
