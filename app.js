@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v467';
+const CACHE_NAME = 'jeocompass-v468';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -941,6 +941,24 @@ function startGeolocationWatch() {
                 }
 
                 if (followMe) map.panTo(livePos);
+
+                // v468: Rotate headlight (cone) based on GPS heading (course)
+                const heading = p.coords.heading;
+                const speed = p.coords.speed || 0;
+                let rotateDeg = 0; // Default North
+
+                // Only use GPS heading if speed is sufficient (> 0.5 m/s)
+                if (speed > 0.5 && heading !== null) {
+                    rotateDeg = heading;
+                }
+
+                const markerEl = liveMarker.getElement();
+                if (markerEl) {
+                    const cone = markerEl.querySelector('.heading-cone');
+                    if (cone) {
+                        cone.style.transform = `translate(-50%, 0) rotate(${rotateDeg}deg)`;
+                    }
+                }
 
                 // v462: Ensure track line always connects to live marker center
                 if (showLiveTrack && trackPolyline && map.hasLayer(trackPolyline)) {
