@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v453';
+const CACHE_NAME = 'jeocompass-v464';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -899,6 +899,17 @@ function startGeolocationWatch() {
             currentCoords.acc = p.coords.accuracy;
             currentCoords.alt = p.coords.altitude;
 
+            // v464: Prevent (0,0) jump from entering smoothedPos
+            if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
+                if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
+                    smoothedPos.lat = currentCoords.lat;
+                    smoothedPos.lon = currentCoords.lon;
+                } else {
+                    smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
+                    smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
+                }
+            }
+
             // Update GPS Dashboard (v461)
             const gpsAccVal = document.getElementById('gps-acc-val');
             const gpsStatusVal = document.getElementById('gps-status-val');
@@ -913,14 +924,6 @@ function startGeolocationWatch() {
 
             // Update Live Marker
             if (map && currentCoords.lat) {
-                if (smoothedPos.lat === 0) {
-                    smoothedPos.lat = currentCoords.lat;
-                    smoothedPos.lon = currentCoords.lon;
-                } else {
-                    smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
-                    smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
-                }
-
                 const livePos = [smoothedPos.lat, smoothedPos.lon];
                 if (!liveMarker) {
                     const liveIcon = L.divIcon({
@@ -945,7 +948,7 @@ function startGeolocationWatch() {
             // --- TRACKING LOGIC ---
             if (isTracking) {
                 const acc = p.coords.accuracy;
-                if (acc <= 100) {
+                if (acc <= 100 && (smoothedPos.lat !== 0 || smoothedPos.lon !== 0)) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
                     const currentPoint = L.latLng(smoothedPos.lat, smoothedPos.lon);
                     const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
@@ -1909,6 +1912,7 @@ window.exportSingleTrackCSV = function (id) {
 // Track Auto-Recording Functions (v442)
 function updateTrack(lat, lon) {
     if (!isTracking) return;
+    if (lat === 0 && lon === 0) return; // v464: Ignore (0,0)
 
     trackPath.push([lat, lon]);
     // v456: Persist live track path immediately
@@ -2005,6 +2009,19 @@ function toggleTracking() {
     if (isTracking) showToast('Track recording started', 1000);
     else showToast('Track Saved', 1000);
 }
+
+// v464: Robust Save on Exit/Close Logic
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && isTracking && trackPath.length > 0) {
+        saveCurrentTrack();
+    }
+});
+
+window.addEventListener('pagehide', () => {
+    if (isTracking && trackPath.length > 0) {
+        saveCurrentTrack();
+    }
+});
 
 // Redundant function removed (Merged with robust version at 1935)
 
