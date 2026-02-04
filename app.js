@@ -812,10 +812,8 @@ function requestPermissions() {
                 requestWakeLock();
                 if (permissionBtn) permissionBtn.style.display = 'none';
 
-                // v454: Ensure REC button is clickable after permissions
-                if (btnSave) {
-                    btnSave.classList.add('ready');
-                }
+                // v454: Update REC button state after permissions
+                updateSaveButtonState();
             }
         }).catch(err => {
             console.error(err);
@@ -841,15 +839,14 @@ if (btnSave) {
 
     btnSave.addEventListener('click', () => {
         if (lockStrike && lockDip) {
-            const strikeVal = formatStrike(displayedHeading);
-            let dipVal = Math.abs(currentTilt.beta);
-            if (dipVal > 90) dipVal = 180 - dipVal;
-            dipVal = Math.round(dipVal) + "\u00B0";
+            // v455: Capture exact text from displays ("ekranları kayıt edilir")
+            const strikeVal = valStrike ? valStrike.textContent : formatStrike(displayedHeading);
+            const dipVal = valDip ? valDip.textContent : "0°";
 
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
             const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
 
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "Compass Measurement", bestAlt, strikeVal, dipVal);
+            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "Pusula Ölçümü", bestAlt, strikeVal, dipVal);
         }
     });
 }
@@ -1918,8 +1915,8 @@ function updateTrack(lat, lon) {
     if (!isTracking) return;
 
     trackPath.push([lat, lon]);
-    // DEBUG: Confirm point added
-    // showToast(`Track Point Added: ${trackPath.length}`, 500);
+    // v456: Persist live track path immediately to prevent data loss
+    localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
 
     // Canlı izleği haritada güncelle
     if (showLiveTrack && map) {
@@ -1932,9 +1929,6 @@ function updateTrack(lat, lon) {
             opacity: 0.8,
             pane: 'tracking-pane'
         }).addTo(map);
-        console.log("Track Rendered. Length:", trackPath.length);
-    } else {
-        console.warn("Track NOT Rendered. showLiveTrack:", showLiveTrack, "Map:", !!map);
     }
 }
 
@@ -1962,10 +1956,7 @@ function updateLiveTrackVisibility() {
 }
 
 function saveCurrentTrack() {
-    if (trackPath.length === 0) {
-        showToast('İzlek kaydı boş!', 2000);
-        return;
-    }
+    if (trackPath.length === 0) return;
 
     const now = new Date();
     const trackName = `İzlek ${now.toLocaleDateString('tr-TR')} ${now.toLocaleTimeString('tr-TR')}`;
@@ -1979,18 +1970,18 @@ function saveCurrentTrack() {
         time: now.toLocaleString('en-GB')
     };
 
-    // FIFO: Eğer 20 kayıt varsa, en eskiyi sil
+    // v456: FIFO: Eğer 20 kayıt varsa, en eskiyi sil (21. kayıt 1.yi siler)
     if (jeoTracks.length >= MAX_TRACKS) {
-        const oldestTrack = jeoTracks.shift(); // İlk elemanı çıkar
-        showToast(`En eski izlek silindi: ${oldestTrack.name}`, 3000);
+        jeoTracks.shift(); // İlk elemanı (en eski) çıkar
     }
 
     jeoTracks.push(newTrack);
     localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
     localStorage.setItem('trackIdCounter', trackIdCounter);
 
-    // Canlı izleği temizle ve yeni kayda başla
+    // Canlı izleği temizle
     trackPath = [];
+    localStorage.removeItem('jeoTrackPath'); // Temizle
     if (trackPolyline && map) {
         map.removeLayer(trackPolyline);
         trackPolyline = null;
@@ -1998,55 +1989,43 @@ function saveCurrentTrack() {
 
     renderTracks();
     updateMapMarkers(false);
-    showToast(`Kaydedildi: ${newTrack.name} (${jeoTracks.length}/${MAX_TRACKS})`, 3000);
+    updateTrackCountBadge();
 }
 
 function toggleTracking() {
     isTracking = !isTracking;
-    const btnTrackToggle = document.getElementById('btn-track-toggle'); // Settings tab btn
-    const btnSave = document.getElementById('btn-save'); // Compass view REC btn
+    const btnSave = document.getElementById('btn-save');
 
-    if (btnTrackToggle) btnTrackToggle.classList.toggle('active', isTracking);
-
-    // v454: Update Compass View REC button UI
+    // v456: Sync visuals on Compass REC button
     if (btnSave) {
         if (isTracking) {
             btnSave.classList.add('ready');
-            btnSave.style.background = '#f44336'; // Recording Red
+            btnSave.style.background = '#f44336';
             btnSave.style.color = '#fff';
             btnSave.innerHTML = '<span style="color:#fff; font-weight:bold;">REC●</span>';
             btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
         } else {
-            btnSave.style.background = ''; // Back to default
+            // Kayıt durduruldu - mevcut izleği sessizce kaydet (User Request: Oto Kayıt)
+            saveCurrentTrack();
+
+            btnSave.style.background = '';
             btnSave.style.color = '';
             btnSave.innerHTML = 'REC';
             btnSave.style.boxShadow = '';
+            // v456: Ensure btnSave state is updated based on Hold status
+            updateSaveButtonState();
         }
-    }
-
-    if (isTracking) {
-        showToast('İzlek kaydı başlatıldı', 2000);
     } else {
-        // Kayıt durduruldu - mevcut izleği kaydet
-        if (trackPath.length > 0) {
-            if (confirm('Mevcut izleği kaydetmek istiyor musunuz?')) {
-                saveCurrentTrack();
-            } else {
-                // İzleği at
-                trackPath = [];
-                if (trackPolyline && map) {
-                    map.removeLayer(trackPolyline);
-                    trackPolyline = null;
-                }
-            }
-        }
-        showToast('İzlek kaydı durduruldu', 2000);
+        if (!isTracking) saveCurrentTrack();
     }
 
-    // Update settings checkbox if it exists
+    // Sync settings checkbox
     const chkAutoTrack = document.getElementById('chk-auto-track');
     if (chkAutoTrack) chkAutoTrack.checked = isTracking;
     localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
+
+    if (isTracking) showToast('Kayıt Başladı', 1000);
+    else showToast('Kayıt Kaydedildi', 1000);
 }
 
 function updateLiveTrackVisibility() {
@@ -3557,9 +3536,21 @@ if (btnToggleLock) {
     });
 }
 
-// Global auto-lock on exit
+// Global auto-lock and auto-save on exit (v456)
 window.addEventListener('beforeunload', () => {
     isRecordsLocked = true;
+    if (isTracking && trackPath.length > 0) {
+        saveCurrentTrack();
+    }
+});
+
+// Handle mobile backgrounding/app switching
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        if (isTracking && trackPath.length > 0) {
+            saveCurrentTrack();
+        }
+    }
 });
 
 // Initial flow is handled by autoInitSensors() in the mid-section.
