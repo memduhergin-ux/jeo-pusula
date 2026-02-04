@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v468';
+const CACHE_NAME = 'jeocompass-v469';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -947,8 +947,8 @@ function startGeolocationWatch() {
                 const speed = p.coords.speed || 0;
                 let rotateDeg = 0; // Default North
 
-                // Only use GPS heading if speed is sufficient (> 0.5 m/s)
-                if (speed > 0.5 && heading !== null) {
+                // v469: Improved - use heading if available and moving (lowered threshold to 0.3 m/s)
+                if (heading !== null && heading !== undefined && speed > 0.3) {
                     rotateDeg = heading;
                 }
 
@@ -2308,6 +2308,35 @@ const trackSettingsModal = document.getElementById('track-settings-modal');
 const btnTrackSettingsClose = document.getElementById('btn-track-settings-close');
 const chkAutoTrack = document.getElementById('chk-auto-track');
 const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+
+// v469: Explicit checkbox sync on DOM ready to ensure bulletproof persistence
+function initializeTrackSettings() {
+    const chkAuto = document.getElementById('chk-auto-track');
+    const chkLive = document.getElementById('chk-show-live-track');
+
+    if (chkAuto) {
+        chkAuto.checked = isTracking;
+        chkAuto.addEventListener('change', () => {
+            toggleTracking();
+        });
+    }
+
+    if (chkLive) {
+        chkLive.checked = showLiveTrack;
+        chkLive.addEventListener('change', (e) => {
+            showLiveTrack = e.target.checked;
+            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+            updateLiveTrackVisibility();
+        });
+    }
+}
+
+// v469: Call on DOM ready to ensure checkboxes exist before syncing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTrackSettings);
+} else {
+    initializeTrackSettings();
+}
 
 if (chkAutoTrack) {
     chkAutoTrack.checked = isTracking; // Ensure persistence on load
