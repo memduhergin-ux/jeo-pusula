@@ -947,11 +947,11 @@ function startGeolocationWatch() {
                 const acc = p.coords.accuracy;
                 if (acc <= 100) {
                     const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
-                    const currentPoint = L.latLng(currentCoords.lat, currentCoords.lon);
+                    const currentPoint = L.latLng(smoothedPos.lat, smoothedPos.lon);
                     const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
 
                     if (dist >= 1) {
-                        updateTrack(currentCoords.lat, currentCoords.lon);
+                        updateTrack(smoothedPos.lat, smoothedPos.lon);
                     }
                 } else {
                     if (acc > 100) {
@@ -3507,6 +3507,17 @@ window.addEventListener('beforeunload', () => {
 document.addEventListener('visibilitychange', () => {
     // Session is kept in localStorage trackPath, no need to save to list on every backgrounding
 });
+
+// v463: Robust auto-save on exit/tab close
+const handleTerminationSave = () => {
+    isRecordsLocked = true;
+    if (isTracking && trackPath.length > 1) {
+        saveCurrentTrack();
+    }
+};
+
+window.addEventListener('beforeunload', handleTerminationSave);
+window.addEventListener('pagehide', handleTerminationSave);
 
 // Initial flow is handled by autoInitSensors() in the mid-section.
 
