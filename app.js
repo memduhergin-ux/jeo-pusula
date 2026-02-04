@@ -767,31 +767,22 @@ if (btnUtm) btnUtm.addEventListener('click', () => { currentMode = 'utm'; btnUtm
 // Update Save Button State (REC button on Compass)
 function updateSaveButtonState() {
     const btnSave = document.getElementById('btn-save');
-    if (!btnSave) return;
-
-    if (isTracking) {
-        btnSave.classList.add('ready');
-        btnSave.style.background = '#f44336'; // Active Red
-        btnSave.style.color = '#fff';
-        btnSave.innerHTML = '<span style="color:#fff; font-weight:bold;">REC●</span>';
-        btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
-        btnSave.style.pointerEvents = 'auto';
-    } else if (lockStrike && lockDip) {
-        btnSave.classList.add('ready');
-        btnSave.style.opacity = '1';
-        btnSave.style.pointerEvents = 'auto';
-        btnSave.style.background = '#f44336'; // Active Red
-        btnSave.style.color = '#fff';
-        btnSave.innerHTML = 'REC';
-        btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
-    } else {
-        btnSave.classList.remove('ready');
-        btnSave.style.opacity = '0.5';
-        btnSave.style.pointerEvents = 'none';
-        btnSave.style.background = ''; // Default
-        btnSave.style.color = '';
-        btnSave.innerHTML = 'REC';
-        btnSave.style.boxShadow = '';
+    if (btnSave) {
+        if (lockStrike && lockDip) {
+            btnSave.classList.add('ready');
+            btnSave.style.opacity = '1';
+            btnSave.style.pointerEvents = 'auto';
+            btnSave.style.background = '#f44336'; // Active Red
+            btnSave.style.color = '#fff';
+            btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
+        } else {
+            btnSave.classList.remove('ready');
+            btnSave.style.opacity = '0.5';
+            btnSave.style.pointerEvents = 'none';
+            btnSave.style.background = ''; // Default
+            btnSave.style.color = '';
+            btnSave.style.boxShadow = '';
+        }
     }
 }
 
@@ -2002,29 +1993,10 @@ function saveCurrentTrack() {
 
 function toggleTracking() {
     isTracking = !isTracking;
-    const btnSave = document.getElementById('btn-save');
 
-    // v456: Sync visuals on Compass REC button
-    if (btnSave) {
-        if (isTracking) {
-            btnSave.classList.add('ready');
-            btnSave.style.background = '#f44336';
-            btnSave.style.color = '#fff';
-            btnSave.innerHTML = '<span style="color:#fff; font-weight:bold;">REC●</span>';
-            btnSave.style.boxShadow = '0 0 15px rgba(244, 67, 54, 0.6)';
-        } else {
-            // Kayıt durduruldu - mevcut izleği sessizce kaydet (User Request: Oto Kayıt)
-            saveCurrentTrack();
-
-            btnSave.style.background = '';
-            btnSave.style.color = '';
-            btnSave.innerHTML = 'REC';
-            btnSave.style.boxShadow = '';
-            // v456: Ensure btnSave state is updated based on Hold status
-            updateSaveButtonState();
-        }
-    } else {
-        if (!isTracking) saveCurrentTrack();
+    if (!isTracking) {
+        // Kayıt durduruldu - mevcut izleği sessizce kaydet
+        saveCurrentTrack();
     }
 
     // Sync settings checkbox
@@ -2032,8 +2004,8 @@ function toggleTracking() {
     if (chkAutoTrack) chkAutoTrack.checked = isTracking;
     localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
 
-    if (isTracking) showToast('Kayıt Başladı', 1000);
-    else showToast('Kayıt Kaydedildi', 1000);
+    if (isTracking) showToast('İzlek kaydı başlatıldı', 1000);
+    else showToast('İzlek Kaydedildi', 1000);
 }
 
 // Redundant function removed (Merged with robust version at 1935)
