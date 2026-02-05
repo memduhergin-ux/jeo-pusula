@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v524';
+const CACHE_NAME = 'jeocompass-v525';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -985,21 +985,30 @@ function startGeolocationWatch() {
 
                 if (followMe) map.panTo(livePos);
 
-                // v468: Rotate headlight (cone) based on GPS heading (course)
+                // v525: Stable hybrid rotation (GPS Course walking, Compass stationary)
                 const heading = p.coords.heading;
                 const speed = p.coords.speed || 0;
-                let rotateDeg = 0; // Default North
+                let targetRot = 0;
 
-                // v469: Improved - use heading if available and moving (lowered threshold to 0.3 m/s)
-                if (heading !== null && heading !== undefined && speed > 0.3) {
-                    rotateDeg = heading;
+                // Decision: Moving (> 0.8 m/s) -> Use GPS Course; Stationary -> Use Compass
+                if (heading !== null && heading !== undefined && speed > 0.8) {
+                    targetRot = heading;
+                } else {
+                    targetRot = displayedHeading; // Compass from sensors
                 }
+
+                // Simple smoothing (v525)
+                if (typeof lastMarkerRotation === 'undefined') window.lastMarkerRotation = targetRot;
+                let diff = targetRot - lastMarkerRotation;
+                while (diff < -180) diff += 360;
+                while (diff > 180) diff -= 360;
+                lastMarkerRotation += diff * 0.3; // 30% lerp factor
 
                 const markerEl = liveMarker.getElement();
                 if (markerEl) {
                     const cone = markerEl.querySelector('.heading-cone');
                     if (cone) {
-                        cone.style.transform = `translate(-50%, 0) rotate(${rotateDeg}deg)`;
+                        cone.style.transform = `translate(-50%, 0) rotate(${lastMarkerRotation}deg)`;
                     }
                 }
 
@@ -1602,6 +1611,8 @@ function updateScaleValues() {
 
     // Update UTM display (Current or Target?)
     if (utmEl) {
+        let displayLat = currentCoords.lat;
+        let displayLon = currentCoords.lon;
         let displayAlt = getBestAltitude();
 
         if (isAddingPoint && map) {
