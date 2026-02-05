@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v501';
+const CACHE_NAME = 'jeocompass-v502';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1870,9 +1870,14 @@ function renderTracks() {
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
             <td>
-                <button onclick="exportSingleTrackKML(${t.id})" class="track-action-btn" title="Download KML">💾</button>
-                <button onclick="exportSingleTrackCSV(${t.id})" class="track-action-btn" title="Download CSV (ED50)">📊</button>
-                <button onclick="deleteTrack(${t.id})" class="track-action-btn delete" title="Delete">🗑️</button>
+                <div class="action-menu">
+                    <button class="action-btn" onclick="toggleActionMenu('track-'+${t.id}, event)">⋮</button>
+                    <div id="dropdown-track-${t.id}" class="dropdown-content">
+                        <button onclick="exportSingleTrackKML(${t.id})">💾 Save KML</button>
+                        <button onclick="exportSingleTrackCSV(${t.id})">📊 Save CSV</button>
+                        <button class="delete-action" onclick="deleteTrack(${t.id})">🗑️ Delete</button>
+                    </div>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -3270,7 +3275,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '501',
+            version: '502',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3338,7 +3343,7 @@ if (document.getElementById('btn-backup-json')) {
     document.getElementById('btn-backup-json').addEventListener('click', async () => {
         // FULL BACKUP
         const backupData = {
-            version: '501',
+            version: '502',
             timestamp: new Date().toISOString(),
             records: records, // Points
             tracks: jeoTracks, // Tracks
