@@ -396,6 +396,7 @@ let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
 // v466: Hide all saved tracks by default on startup
 jeoTracks.forEach(t => { t.visible = false; });
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
+let activeTab = 'points'; // 'points' or 'tracks' (v503 Fix)
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
 
 // Track Auto-Recording State (v442)
@@ -2121,7 +2122,7 @@ function updateTrackCountBadge() {
     if (badge) badge.textContent = `(${jeoTracks.length}/${MAX_TRACKS})`;
 }
 
-let activeTab = 'points'; // 'points' or 'tracks'
+
 
 // Tab Switching
 document.getElementById('tab-points').addEventListener('click', () => {
