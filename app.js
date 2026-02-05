@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v504';
+const CACHE_NAME = 'jeocompass-v505';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -2020,28 +2020,7 @@ function updateTrack(lat, lon) {
     }
 }
 
-function updateLiveTrackVisibility() {
-    if (showLiveTrack) {
-        if (trackPath.length > 0) {
-            if (trackPolyline) {
-                if (!map.hasLayer(trackPolyline)) {
-                    trackPolyline.addTo(map);
-                }
-            } else {
-                trackPolyline = L.polyline(trackPath, {
-                    color: '#ff5722',
-                    weight: 6,
-                    opacity: 0.8,
-                    pane: 'tracking-pane'
-                }).addTo(map);
-            }
-        }
-    } else {
-        if (trackPolyline && map.hasLayer(trackPolyline)) {
-            map.removeLayer(trackPolyline);
-        }
-    }
-}
+// updateLiveTrackVisibility removed from here as it is defined globally above
 
 function saveCurrentTrack() {
     if (trackPath.length === 0) return;
@@ -2418,70 +2397,25 @@ const btnTrackSettingsClose = document.getElementById('btn-track-settings-close'
 const chkAutoTrack = document.getElementById('chk-auto-track');
 const chkShowLiveTrack = document.getElementById('chk-show-live-track');
 
-// v469: Explicit checkbox sync on DOM ready to ensure bulletproof persistence
-// v469: Explicit checkbox sync on DOM ready to ensure bulletproof persistence
-function initializeTrackSettings() {
-    const chkAuto = document.getElementById('chk-auto-track');
-    const chkLive = document.getElementById('chk-show-live-track');
-
-    if (chkAuto) {
-        chkAuto.checked = isTracking;
-        chkAuto.addEventListener('change', (e) => {
-            isTracking = e.target.checked;
-            localStorage.setItem('jeoAutoTrackEnabled', isTracking);
-            console.log('Auto-Track Changed to:', isTracking);
-        });
-    }
-
-    if (chkLive) {
-        chkLive.checked = showLiveTrack;
-        chkLive.addEventListener('change', (e) => {
-            showLiveTrack = e.target.checked;
-            localStorage.setItem('jeoShowLiveTrack', showLiveTrack); // Fixed: No JSON.stringify needed for boolean if reading indiscriminately, but better consistent. Assuming other read uses JSON.parse
-            // Note: Reading uses JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false
-
-            updateLiveTrackVisibility();
-        });
-    }
-
-
-
-}
-
-
-// v469: Call on DOM ready to ensure checkboxes exist before syncing
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTrackSettings);
-} else {
-    initializeTrackSettings();
-}
-
-if (chkAutoTrack) {
-    chkAutoTrack.checked = isTracking; // Ensure persistence on load
-    chkAutoTrack.addEventListener('change', () => {
-        toggleTracking();
-    });
-}
-
-if (chkShowLiveTrack) {
-    chkShowLiveTrack.checked = showLiveTrack; // Ensure persistence on load
-    chkShowLiveTrack.addEventListener('change', (e) => {
-        showLiveTrack = e.target.checked;
-        localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
-        updateLiveTrackVisibility();
-    });
-}
-
 // Helper to toggle live track visibility (Global Scope)
 function updateLiveTrackVisibility() {
-    if (!trackPolyline) return;
-
     if (showLiveTrack) {
-        if (!map.hasLayer(trackPolyline)) {
-            trackPolyline.addTo(map);
+        if (trackPath.length > 0) {
+            if (trackPolyline) {
+                if (!map.hasLayer(trackPolyline)) {
+                    trackPolyline.addTo(map);
+                }
+            } else {
+                trackPolyline = L.polyline(trackPath, {
+                    color: '#ff5722',
+                    weight: 6,
+                    opacity: 0.8,
+                    pane: 'tracking-pane'
+                }).addTo(map);
+            }
         }
     } else {
-        if (map.hasLayer(trackPolyline)) {
+        if (trackPolyline && map.hasLayer(trackPolyline)) {
             map.removeLayer(trackPolyline);
         }
     }
@@ -3386,7 +3320,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '503',
+            version: '505',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3987,55 +3921,27 @@ renderTracks();
 
 // v470: Initialize Auto-Rec and Live Track checkbox states from localStorage
 // Wrapped in DOMContentLoaded to ensure elements are available
+// v505: Consolidated Tracking Settings Initialization
 document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
-    const chkAutoTrack = document.getElementById('chk-auto-track');
-    const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+    const chkAuto = document.getElementById('chk-auto-track');
+    const chkLive = document.getElementById('chk-show-live-track');
 
-    console.log('Initializing tracking settings...', { chkAutoTrack, chkShowLiveTrack });
-
-    // Restore checkbox states from localStorage
-    if (chkAutoTrack) {
-        chkAutoTrack.checked = isTracking;
-        chkAutoTrack.addEventListener('change', (e) => {
-            isTracking = e.target.checked;
-            localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
-
-            // If tracking is disabled and there's an active track, save it
-            if (!isTracking && trackPath.length > 1) {
-                saveCurrentTrack();
-            }
-
+    if (chkAuto) {
+        chkAuto.checked = isTracking;
+        chkAuto.addEventListener('change', (e) => {
+            toggleTracking(); // Use central toggle logic
             console.log('Auto-Rec:', isTracking ? 'ENABLED' : 'DISABLED');
         });
-        console.log('Auto-Rec checkbox initialized, checked:', chkAutoTrack.checked);
-    } else {
-        console.warn('Auto-Rec checkbox not found in DOM');
     }
 
-    if (chkShowLiveTrack) {
-        chkShowLiveTrack.checked = showLiveTrack;
-        chkShowLiveTrack.addEventListener('change', (e) => {
+    if (chkLive) {
+        chkLive.checked = showLiveTrack;
+        chkLive.addEventListener('change', (e) => {
             showLiveTrack = e.target.checked;
             localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
-
-            // Update track polyline visibility immediately
-            if (trackPolyline) {
-                if (showLiveTrack && map) {
-                    if (!map.hasLayer(trackPolyline)) {
-                        trackPolyline.addTo(map);
-                    }
-                } else {
-                    if (map && map.hasLayer(trackPolyline)) {
-                        map.removeLayer(trackPolyline);
-                    }
-                }
-            }
-
+            updateLiveTrackVisibility();
             console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
         });
-        console.log('Live Track checkbox initialized, checked:', chkShowLiveTrack.checked);
-    } else {
-        console.warn('Live Track checkbox not found in DOM');
     }
 });
 
