@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v526';
+const CACHE_NAME = 'jeocompass-v527';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -512,9 +512,9 @@ function initBarometer() {
 }
 initBarometer();
 
-// Z-Priority Helper (v524)
+// Z-Priority Helper (v527: Absolute Online Priority)
 function getBestAltitude() {
-    // Priority: Online Elevation > Barometer > GPS
+    // Current Coords Alt Hierarchy: Online > Baro > GPS
     if (onlineMyAlt !== null) return onlineMyAlt;
     if (currentCoords.baroAlt !== null) return Math.round(currentCoords.baroAlt);
     if (currentCoords.alt !== null) return Math.round(currentCoords.alt);
@@ -1467,16 +1467,18 @@ function initMap() {
     /* REMOVED LOCK SYSTEM (v355) */
 
 
-    // Map Click Handler for Interactions (v519: Optimized for Grid Priority)
+    // Map Click Handler for Interactions (v527: Absolute Grid Dominance)
     map.on('click', (e) => {
-        // v526: Extra Robust Recursive Detection
+        // v527: If Grid Mode is active, SHUT DOWN all other interactions
         if (isGridMode && activeGridInterval) {
+            if (e.originalEvent) e.originalEvent.stopPropagation();
             map.closePopup();
-            let candidates = [];
 
+            let candidates = [];
             const findPolygonsRecursive = (target) => {
-                if (target instanceof L.Polygon) {
-                    // Stricter check: bounds + point-in-poly
+                if (!target) return;
+                // Check if it's a polygon or an area-like layer
+                if (target instanceof L.Polygon || (target.getPath && target.getLatLngs)) {
                     if (target.getBounds && target.getBounds().contains(e.latlng)) {
                         if (isPointInPolygon(e.latlng, target)) {
                             candidates.push(target);
@@ -1487,20 +1489,27 @@ function initMap() {
                 }
             };
 
-            // Search ALL layers: Map, Groups, KMLs
+            // Aggressive search starting from map and specific groups
             findPolygonsRecursive(map);
+            if (activeMeasurementsGroup) findPolygonsRecursive(activeMeasurementsGroup);
+            if (markerGroup) findPolygonsRecursive(markerGroup);
 
             if (candidates.length > 0) {
-                // Priority: Use the one with the smallest area (topmost/most specific)
+                // Priority: Smallest area (most specific)
                 const targetLayer = candidates.reduce((prev, curr) => {
-                    const prevArea = prev.getBounds ? (prev.getBounds().getNorthEast().lat - prev.getBounds().getSouthWest().lat) : 999;
-                    const currArea = curr.getBounds ? (curr.getBounds().getNorthEast().lat - curr.getBounds().getSouthWest().lat) : 999;
+                    const prevB = prev.getBounds ? prev.getBounds() : null;
+                    const currB = curr.getBounds ? curr.getBounds() : null;
+                    if (!prevB) return curr;
+                    if (!currB) return prev;
+                    const prevArea = (prevB.getNorth() - prevB.getSouth()) * (prevB.getEast() - prevB.getWest());
+                    const currArea = (currB.getNorth() - currB.getSouth()) * (currB.getEast() - currB.getWest());
                     return currArea < prevArea ? curr : prev;
                 }, candidates[0]);
 
                 createAreaGrid(targetLayer, activeGridInterval, activeGridColor);
-                return;
+                return; // INTERACTION STOPPED: No popups allowed in grid mode
             }
+            return; // Even if no polygon found, stop here if grid mode is on (prevents random popups)
         }
 
         if (isMeasuring) {
@@ -1628,8 +1637,7 @@ function updateScaleValues() {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            // v526: If adding point, strictly use online/local specific alt for center. 
-            // Do NOT fallback to user's altitude if they are different locations.
+            // v527: Absolute Priority for Online Elevation at center, otherwise "---"
             displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : "---";
         }
 
