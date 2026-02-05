@@ -795,6 +795,7 @@ function updateSaveButtonState() {
 }
 
 // Hold Logic
+// Hold Logic
 if (btnHoldStrike) {
     btnHoldStrike.addEventListener('click', () => {
         lockStrike = !lockStrike;
@@ -802,6 +803,8 @@ if (btnHoldStrike) {
         updateSaveButtonState();
     });
 }
+
+
 if (btnHoldDip) {
     btnHoldDip.addEventListener('click', () => {
         lockDip = !lockDip;
@@ -2310,14 +2313,17 @@ const chkAutoTrack = document.getElementById('chk-auto-track');
 const chkShowLiveTrack = document.getElementById('chk-show-live-track');
 
 // v469: Explicit checkbox sync on DOM ready to ensure bulletproof persistence
+// v469: Explicit checkbox sync on DOM ready to ensure bulletproof persistence
 function initializeTrackSettings() {
     const chkAuto = document.getElementById('chk-auto-track');
     const chkLive = document.getElementById('chk-show-live-track');
 
     if (chkAuto) {
         chkAuto.checked = isTracking;
-        chkAuto.addEventListener('change', () => {
-            toggleTracking();
+        chkAuto.addEventListener('change', (e) => {
+            isTracking = e.target.checked;
+            localStorage.setItem('jeoAutoTrackEnabled', isTracking);
+            console.log('Auto-Track Changed to:', isTracking);
         });
     }
 
@@ -2325,7 +2331,9 @@ function initializeTrackSettings() {
         chkLive.checked = showLiveTrack;
         chkLive.addEventListener('change', (e) => {
             showLiveTrack = e.target.checked;
-            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+            localStorage.setItem('jeoShowLiveTrack', showLiveTrack); // Fixed: No JSON.stringify needed for boolean if reading indiscriminately, but better consistent. Assuming other read uses JSON.parse
+            // Note: Reading uses JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false
+
             updateLiveTrackVisibility();
         });
     }
