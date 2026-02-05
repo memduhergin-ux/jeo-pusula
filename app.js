@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v530';
+const CACHE_NAME = 'jeocompass-v531';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -618,12 +618,8 @@ function renderCoordinates() {
                     <span class="data-value" style="font-size: 1rem;">${Math.round(northing)}</span>
                 </div>
                 <div class="coord-row">
-                    <span class="data-label">Z (Uydu)</span>
-                    <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
-                </div>
-                <div class="coord-row">
-                    <span class="data-label">Z (Baro)</span>
-                    <span class="data-value" style="font-size: 1rem;">${baroAlt} m</span>
+                    <span class="data-label">Z (Real)</span>
+                    <span class="data-value" style="font-size: 1rem; color: #ff9800; font-weight: bold;">${displayAlt} m</span>
                 </div>
             `;
         } catch (e) {
@@ -1495,8 +1491,10 @@ function initMap() {
             // Aggressive search starting from map and specific groups
             findPolygonsRecursive(map);
             if (typeof markerGroup !== 'undefined') findPolygonsRecursive(markerGroup);
-            // v529: Specifically check for active measurement line/polygon if it exists
-            if (typeof measureLine !== 'undefined' && measureLine) findPolygonsRecursive(measureLine);
+            // v531: Aggressive check for measurement tool's polygon/area
+            if (typeof measureLine !== 'undefined' && measureLine) {
+                findPolygonsRecursive(measureLine);
+            }
 
             if (candidates.length > 0) {
                 // Priority: Smallest area (most specific)
@@ -2583,7 +2581,7 @@ if (btnHeatmapOff) {
     });
 }
 
-/** Grid Feature Logic (v530: Robust Jordan Curve Algorithm) **/
+/** Grid Feature Logic (v531: Aggressive Jordan Curve Algorithm) **/
 function isPointInPolygon(latlng, polygon) {
     if (!polygon || !polygon.getLatLngs) return false;
     let polyPoints = polygon.getLatLngs();
@@ -2591,9 +2589,9 @@ function isPointInPolygon(latlng, polygon) {
     const flattenPoints = (arr) => {
         if (!Array.isArray(arr)) return [];
         if (arr.length === 0) return [];
-        // Leaflet Polygon: [ [L, L, L] ] or [ [L, L], [H, H] ]
+        // Leaflet Polygon default: [ [L, L, L] ]
         // Leaflet Polyline: [ L, L, L ]
-        if (arr[0] instanceof L.LatLng || (arr[0].lat !== undefined && arr[0].lng !== undefined)) return arr;
+        if (arr[0] instanceof L.LatLng || (typeof arr[0].lat === 'number' && typeof arr[0].lng === 'number')) return arr;
         if (Array.isArray(arr[0])) return flattenPoints(arr[0]);
         return arr;
     };
@@ -2605,8 +2603,11 @@ function isPointInPolygon(latlng, polygon) {
     let inside = false;
     for (let i = 0, j = flatPoints.length - 1; i < flatPoints.length; j = i++) {
         let pi = flatPoints[i], pj = flatPoints[j];
-        let xi = pi.lng || pi[1], yi = pi.lat || pi[0];
-        let xj = pj.lng || pj[1], yj = pj.lat || pj[0];
+        // v531: Force numeric extraction for all possible Leaflet/GeoJSON structures
+        let xi = (typeof pi.lng === 'number') ? pi.lng : (pi.lng ? pi.lng : pi[1]);
+        let yi = (typeof pi.lat === 'number') ? pi.lat : (pi.lat ? pi.lat : pi[0]);
+        let xj = (typeof pj.lng === 'number') ? pj.lng : (pj.lng ? pj.lng : pj[1]);
+        let yj = (typeof pj.lat === 'number') ? pj.lat : (pj.lat ? pj.lat : pj[0]);
 
         let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
         if (intersect) inside = !inside;
