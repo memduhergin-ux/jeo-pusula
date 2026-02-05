@@ -1138,7 +1138,16 @@ function renderRecords(filter = '') {
             <td>${r.dip}</td>
             <td style="font-size:0.75rem; color:#aaa;">${r.time || ''}</td>
             <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
-            <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><button class="btn-edit-row" data-id="${r.id}">📝</button></td>
+            <td class="${isRecordsLocked ? 'locked-hidden' : ''}">
+                <div class="action-menu">
+                    <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">⋮</button>
+                    <div id="dropdown-${r.id}" class="dropdown-content">
+                        <button class="btn-edit-row" data-id="${r.id}" onclick="toggleActionMenu(${r.id}, event)">✏️ Edit</button>
+                        <button onclick="exportSingleRecordKML(${r.id})">📤 Share KML</button>
+                        <button class="delete-action" onclick="deleteRecordFromMap(${r.id})">🗑️ Delete</button>
+                    </div>
+                </div>
+            </td>
         </tr>
     `).join('');
 
@@ -3439,6 +3448,63 @@ if (document.getElementById('btn-share-cancel')) {
 }
 
 // Updated socialShare handles formats based on radio buttons and triggers native share
+// Helper: Toggle Action Menu
+window.toggleActionMenu = function (id, event) {
+    if (event) event.stopPropagation();
+    // Close others
+    document.querySelectorAll('.dropdown-content').forEach(el => {
+        if (el.id !== `dropdown-${id}`) el.classList.remove('show');
+    });
+    const dropdown = document.getElementById(`dropdown-${id}`);
+    if (dropdown) dropdown.classList.toggle('show');
+};
+
+// Global click to close menus
+window.addEventListener('click', (e) => {
+    if (!e.target.closest('.action-menu')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+    }
+});
+
+// Helper: Generate KML String
+function generateKML(recordsToExport, docName = "JeoCompass Export") {
+    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${docName}</name>`;
+
+    recordsToExport.forEach(r => {
+        kml += `
+    <Placemark>
+      <name>${r.label || r.id}</name>
+      <description>Strike: ${formatStrike(r.strike)}\nDip: ${r.dip}\nTime: ${r.time || ''}\nNote: ${r.note || ''}</description>
+      <Point>
+        <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
+      </Point>
+    </Placemark>`;
+    });
+
+    kml += `
+  </Document>
+</kml>`;
+    return kml;
+}
+
+// Export Single Record KML
+window.exportSingleRecordKML = function (id) {
+    const r = records.find(rec => rec.id === id);
+    if (!r) return;
+
+    const kmlContent = generateKML([r], r.label || `Record ${r.id}`);
+    const fileName = `${r.label || r.id}_${new Date().getTime()}.kml`;
+    downloadFile(kmlContent, fileName, 'application/vnd.google-earth.kml+xml');
+
+    // Close menu
+    const dropdown = document.getElementById(`dropdown-${id}`);
+    if (dropdown) dropdown.classList.remove('show');
+};
+
+// Updated socialShare handles formats based on radio buttons and triggers native share
 async function socialShare() {
     const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
     const dataToShare = records.filter(r => selectedIds.includes(r.id));
@@ -3469,26 +3535,10 @@ async function socialShare() {
         fileType = 'text/csv';
         fileToShare = new File([csvContent], fileName, { type: fileType });
     } else if (isKml) {
-        let kml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>JeoCompass Selected</name>`;
-        dataToShare.forEach(r => {
-            kml += `
-    <Placemark>
-      <name>${r.label || r.id}</name>
-      <description>Strike: ${formatStrike(r.strike)}, Dip: ${r.dip}, Time: ${r.time || ''}, Note: ${r.note || ''}</description>
-      <Point>
-        <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
-      </Point>
-    </Placemark>`;
-        });
-        kml += `
-  </Document>
-</kml>`;
+        const kmlContent = generateKML(dataToShare, "JeoCompass Selected");
         fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.kml` : `Selected_${timestamp}.kml`;
         fileType = 'application/vnd.google-earth.kml+xml';
-        fileToShare = new File([kml], fileName, { type: fileType });
+        fileToShare = new File([kmlContent], fileName, { type: fileType });
     }
 
     // Prepare text summary
