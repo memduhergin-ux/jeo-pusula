@@ -2418,253 +2418,253 @@ function initializeTrackSettings() {
             updateLiveTrackVisibility();
         });
     }
-});
 
-// Helper to toggle live track visibility
-function updateLiveTrackVisibility() {
-    if (!currentLine) return;
 
-    if (showLiveTrack) {
-        if (!map.hasLayer(currentLine)) {
-            currentLine.addTo(map);
-        }
-    } else {
-        if (map.hasLayer(currentLine)) {
-            map.removeLayer(currentLine);
+    // Helper to toggle live track visibility
+    function updateLiveTrackVisibility() {
+        if (!currentLine) return;
+
+        if (showLiveTrack) {
+            if (!map.hasLayer(currentLine)) {
+                currentLine.addTo(map);
+            }
+        } else {
+            if (map.hasLayer(currentLine)) {
+                map.removeLayer(currentLine);
+            }
         }
     }
-}
-}
 
-// v469: Call on DOM ready to ensure checkboxes exist before syncing
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTrackSettings);
-} else {
-    initializeTrackSettings();
-}
 
-if (chkAutoTrack) {
-    chkAutoTrack.checked = isTracking; // Ensure persistence on load
-    chkAutoTrack.addEventListener('change', () => {
-        toggleTracking();
+    // v469: Call on DOM ready to ensure checkboxes exist before syncing
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeTrackSettings);
+    } else {
+        initializeTrackSettings();
+    }
+
+    if (chkAutoTrack) {
+        chkAutoTrack.checked = isTracking; // Ensure persistence on load
+        chkAutoTrack.addEventListener('change', () => {
+            toggleTracking();
+        });
+    }
+
+    if (chkShowLiveTrack) {
+        chkShowLiveTrack.checked = showLiveTrack; // Ensure persistence on load
+        chkShowLiveTrack.addEventListener('change', (e) => {
+            showLiveTrack = e.target.checked;
+            localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
+            updateLiveTrackVisibility();
+        });
+    }
+
+    // Track Settings Modal Listeners REMOVED (Embedded now)
+
+    // REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
+    // Auto-recording is now the only mode.
+
+    // REMOVED: btnLiveTrackVis listener (Moved to Settings Modal)
+
+    document.querySelectorAll('.radius-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            heatmapRadius = parseInt(e.target.dataset.radius);
+            document.querySelectorAll('.radius-opt').forEach(ob => ob.classList.remove('active'));
+            e.target.classList.add('active');
+            if (isHeatmapActive) updateHeatmap();
+        });
     });
-}
 
-if (chkShowLiveTrack) {
-    chkShowLiveTrack.checked = showLiveTrack; // Ensure persistence on load
-    chkShowLiveTrack.addEventListener('change', (e) => {
-        showLiveTrack = e.target.checked;
-        localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
-        updateLiveTrackVisibility();
-    });
-}
+    const elFilter = document.getElementById('heatmap-element-filter');
+    if (elFilter) {
+        elFilter.addEventListener('change', (e) => {
+            heatmapFilter = e.target.value;
+            if (isHeatmapActive) updateHeatmap();
+        });
+    }
 
-// Track Settings Modal Listeners REMOVED (Embedded now)
+    const btnHeatmapOff = document.getElementById('btn-heatmap-off');
+    if (btnHeatmapOff) {
+        btnHeatmapOff.addEventListener('click', () => {
+            isHeatmapActive = false;
+            const btn = document.getElementById('btn-heatmap-toggle');
+            const panel = document.getElementById('heatmap-radius-panel');
+            if (btn) btn.classList.remove('active');
+            if (panel) panel.style.display = 'none';
+            if (heatmapLayer) {
+                map.removeLayer(heatmapLayer);
+                heatmapLayer = null;
+            }
+        });
+    }
 
-// REMOVED (v444): btnTrackToggle & btnSaveTrack listeners were here.
-// Auto-recording is now the only mode.
+    function addExternalLayer(name, geojson) {
+        if (!map) return;
 
-// REMOVED: btnLiveTrackVis listener (Moved to Settings Modal)
+        // Default Style: Blue outline, semi-transparent blue fill
+        const style = {
+            color: '#2196f3',
+            weight: 2,
+            opacity: 1,
+            fillColor: '#2196f3',
+            fillOpacity: 0.4 // Default Filled
+        };
 
-document.querySelectorAll('.radius-opt').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        heatmapRadius = parseInt(e.target.dataset.radius);
-        document.querySelectorAll('.radius-opt').forEach(ob => ob.classList.remove('active'));
-        e.target.classList.add('active');
-        if (isHeatmapActive) updateHeatmap();
-    });
-});
-
-const elFilter = document.getElementById('heatmap-element-filter');
-if (elFilter) {
-    elFilter.addEventListener('change', (e) => {
-        heatmapFilter = e.target.value;
-        if (isHeatmapActive) updateHeatmap();
-    });
-}
-
-const btnHeatmapOff = document.getElementById('btn-heatmap-off');
-if (btnHeatmapOff) {
-    btnHeatmapOff.addEventListener('click', () => {
-        isHeatmapActive = false;
-        const btn = document.getElementById('btn-heatmap-toggle');
-        const panel = document.getElementById('heatmap-radius-panel');
-        if (btn) btn.classList.remove('active');
-        if (panel) panel.style.display = 'none';
-        if (heatmapLayer) {
-            map.removeLayer(heatmapLayer);
-            heatmapLayer = null;
-        }
-    });
-}
-
-function addExternalLayer(name, geojson) {
-    if (!map) return;
-
-    // Default Style: Blue outline, semi-transparent blue fill
-    const style = {
-        color: '#2196f3',
-        weight: 2,
-        opacity: 1,
-        fillColor: '#2196f3',
-        fillOpacity: 0.4 // Default Filled
-    };
-
-    const layer = L.geoJSON(geojson, {
-        style: style,
-        pointToLayer: (feature, latlng) => {
-            // Kibar Geological/Pin Icon
-            const iconHtml = `
+        const layer = L.geoJSON(geojson, {
+            style: style,
+            pointToLayer: (feature, latlng) => {
+                // Kibar Geological/Pin Icon
+                const iconHtml = `
                 <div class="kml-marker-pin">
                     <div class="kml-marker-dot"></div>
                 </div>
             `;
-            const icon = L.divIcon({
-                className: 'kml-custom-icon',
-                html: iconHtml,
-                iconSize: [8, 8], // Even smaller icon size
-                iconAnchor: [4, 4]
-            });
-            return L.marker(latlng, { icon: icon });
-        },
-        onEachFeature: (feature, layer) => {
-            const featureName = getFeatureName(feature.properties);
-            // v382: Only show labels for Points to prevent clutter on lines/polygons
-            if (featureName && feature.geometry.type === 'Point') {
-                layer.bindTooltip(String(featureName), {
-                    permanent: true,
-                    direction: 'top',
-                    className: 'kml-label',
-                    offset: [0, 0], // v383: Start at center, Smart Label will move it
-                    sticky: false // Changed to false for better stability
+                const icon = L.divIcon({
+                    className: 'kml-custom-icon',
+                    html: iconHtml,
+                    iconSize: [8, 8], // Even smaller icon size
+                    iconAnchor: [4, 4]
                 });
+                return L.marker(latlng, { icon: icon });
+            },
+            onEachFeature: (feature, layer) => {
+                const featureName = getFeatureName(feature.properties);
+                // v382: Only show labels for Points to prevent clutter on lines/polygons
+                if (featureName && feature.geometry.type === 'Point') {
+                    layer.bindTooltip(String(featureName), {
+                        permanent: true,
+                        direction: 'top',
+                        className: 'kml-label',
+                        offset: [0, 0], // v383: Start at center, Smart Label will move it
+                        sticky: false // Changed to false for better stability
+                    });
 
-                // Performance Fix: Attach source layer to tooltip container for collision detection
-                layer.on('tooltipopen', (e) => {
-                    if (e.tooltip && e.tooltip._container) {
-                        e.tooltip._container._sourceLayer = layer;
+                    // Performance Fix: Attach source layer to tooltip container for collision detection
+                    layer.on('tooltipopen', (e) => {
+                        if (e.tooltip && e.tooltip._container) {
+                            e.tooltip._container._sourceLayer = layer;
+                        }
+                    });
+                }
+                let popupContent = `<div class="map-popup-container">`;
+                if (feature.properties) {
+                    if (feature.properties.name) {
+                        popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
                     }
-                });
-            }
-            let popupContent = `<div class="map-popup-container">`;
-            if (feature.properties) {
-                if (feature.properties.name) {
-                    popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
-                }
-                popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
-                for (let key in feature.properties) {
-                    if (['name', 'styleUrl', 'styleHash', 'styleMapHash', 'description'].indexOf(key) === -1) {
-                        popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
-                    }
-                }
-
-                // Add area for polygons
-                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                    try {
-                        let latlngs = layer.getLatLngs();
-                        if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
-                        else latlngs = latlngs[0][0];
-                        const area = calculateAreaHelper(latlngs);
-                        popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
-                    } catch (e) {
-                        console.error("GIS Area calculation failed", e);
-                    }
-                }
-                popupContent += `</table>`;
-                if (feature.properties.description) {
-                    popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
-                }
-            }
-            popupContent += `</div>`;
-            layer.bindPopup(popupContent);
-
-            // Pass clicks to map handler if in special modes
-            layer.on('click', (e) => {
-                const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
-
-                // If polygon and not filled, ignore clicks inside
-                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                    const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
-                    if (layerObj && !layerObj.filled) {
-                        // Leaflet handles stroke-only clicks automatically if fill: false,
-                        // but since we might have generic handlers, we double check.
-                        if (e.originalEvent.target.classList.contains('leaflet-interactive') && !e.originalEvent.target.getAttribute('fill')) {
-                            // Border click? Continue.
-                        } else {
-                            // Interior click on a transparent polygon - pass to map
-                            L.DomEvent.stopPropagation(e);
-                            map.fire('click', e);
-                            return;
+                    popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
+                    for (let key in feature.properties) {
+                        if (['name', 'styleUrl', 'styleHash', 'styleMapHash', 'description'].indexOf(key) === -1) {
+                            popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
                         }
                     }
-                }
 
-                if (isMeasuring) {
-                    L.DomEvent.stopPropagation(e); // Stop popup
-                    updateMeasurement(e.latlng);
-                } else if (isAddingPoint) {
-                    L.DomEvent.stopPropagation(e); // Stop popup
-                    // We need to trigger the same logic as map click.
-                    // Since the map click handler is anonymous, let's extract it or copy the logic.
-                    // Copying logic for stability (or we could fire a map click event?)
-                    // Simpler: Fire a synthetic click on the map?
-                    // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
-                    // Let's just run the logic directly or fire map click.
-                    map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    // Add area for polygons
+                    if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                        try {
+                            let latlngs = layer.getLatLngs();
+                            if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
+                            else latlngs = latlngs[0][0];
+                            const area = calculateAreaHelper(latlngs);
+                            popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
+                        } catch (e) {
+                            console.error("GIS Area calculation failed", e);
+                        }
+                    }
+                    popupContent += `</table>`;
+                    if (feature.properties.description) {
+                        popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
+                    }
                 }
-            });
+                popupContent += `</div>`;
+                layer.bindPopup(popupContent);
+
+                // Pass clicks to map handler if in special modes
+                layer.on('click', (e) => {
+                    const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
+
+                    // If polygon and not filled, ignore clicks inside
+                    if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                        const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
+                        if (layerObj && !layerObj.filled) {
+                            // Leaflet handles stroke-only clicks automatically if fill: false,
+                            // but since we might have generic handlers, we double check.
+                            if (e.originalEvent.target.classList.contains('leaflet-interactive') && !e.originalEvent.target.getAttribute('fill')) {
+                                // Border click? Continue.
+                            } else {
+                                // Interior click on a transparent polygon - pass to map
+                                L.DomEvent.stopPropagation(e);
+                                map.fire('click', e);
+                                return;
+                            }
+                        }
+                    }
+
+                    if (isMeasuring) {
+                        L.DomEvent.stopPropagation(e); // Stop popup
+                        updateMeasurement(e.latlng);
+                    } else if (isAddingPoint) {
+                        L.DomEvent.stopPropagation(e); // Stop popup
+                        // We need to trigger the same logic as map click.
+                        // Since the map click handler is anonymous, let's extract it or copy the logic.
+                        // Copying logic for stability (or we could fire a map click event?)
+                        // Simpler: Fire a synthetic click on the map?
+                        // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
+                        // Let's just run the logic directly or fire map click.
+                        map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    }
+                });
+            }
+        }).addTo(map);
+
+        const layerObj = {
+            id: layerIdCounter++,
+            name: name,
+            layer: layer,
+            geojson: geojson, // Store for persistence
+            filled: true,
+            visible: true,
+            pointsVisible: true,
+            areasVisible: true,
+            labelsVisible: true
+        };
+        externalLayers.push(layerObj);
+
+        // Zoom to layer
+        try {
+            map.fitBounds(layer.getBounds());
+        } catch (e) {
+            // Empty layer
         }
-    }).addTo(map);
 
-    const layerObj = {
-        id: layerIdCounter++,
-        name: name,
-        layer: layer,
-        geojson: geojson, // Store for persistence
-        filled: true,
-        visible: true,
-        pointsVisible: true,
-        areasVisible: true,
-        labelsVisible: true
-    };
-    externalLayers.push(layerObj);
-
-    // Zoom to layer
-    try {
-        map.fitBounds(layer.getBounds());
-    } catch (e) {
-        // Empty layer
+        saveExternalLayers();
+        renderLayerList();
+        // Optimized trigger
+        optimizeMapPoints();
     }
 
-    saveExternalLayers();
-    renderLayerList();
-    // Optimized trigger
-    optimizeMapPoints();
-}
+    function renderLayerList() {
+        layersList.innerHTML = '';
 
-function renderLayerList() {
-    layersList.innerHTML = '';
+        if (externalLayers.length === 0) {
+            layersList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">No external layers yet.</div>';
+            return;
+        }
 
-    if (externalLayers.length === 0) {
-        layersList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center; padding: 20px;">No external layers yet.</div>';
-        return;
-    }
+        externalLayers.forEach(l => {
+            const item = document.createElement('div');
+            item.className = 'layer-item';
+            item.style.background = '#333';
+            item.style.padding = '10px';
+            item.style.borderRadius = '8px';
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+            item.style.gap = '10px';
+            item.style.border = '1px solid #444';
 
-    externalLayers.forEach(l => {
-        const item = document.createElement('div');
-        item.className = 'layer-item';
-        item.style.background = '#333';
-        item.style.padding = '10px';
-        item.style.borderRadius = '8px';
-        item.style.display = 'flex';
-        item.style.alignItems = 'center';
-        item.style.gap = '10px';
-        item.style.border = '1px solid #444';
+            item.style.borderLeft = '4px solid #2196f3'; // Folder-like accent
+            item.style.marginBottom = '8px';
 
-        item.style.borderLeft = '4px solid #2196f3'; // Folder-like accent
-        item.style.marginBottom = '8px';
-
-        item.innerHTML = `
+            item.innerHTML = `
             <div style="flex:1; overflow:hidden; display:flex; align-items:center; gap:8px;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="#2196f3"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
                 <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; font-size:0.9rem;">${l.name}</div>
@@ -2682,716 +2682,716 @@ function renderLayerList() {
                 <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
         `;
-        layersList.appendChild(item);
-    });
-
-    // Attach listeners
-    document.querySelectorAll('.layer-toggle-vis').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = parseInt(e.currentTarget.dataset.id);
-            const l = externalLayers.find(x => x.id === id);
-            if (l) {
-                toggleLayerVisibility(id, !l.visible);
-                renderLayerList(); // Redraw to update icon
-            }
+            layersList.appendChild(item);
         });
-    });
 
-    document.querySelectorAll('.layer-fill-toggle').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            toggleLayerFill(id, e.target.checked);
-        });
-    });
-
-    document.querySelectorAll('.layer-points-toggle').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            toggleLayerPoints(id, e.target.checked);
-        });
-    });
-
-    document.querySelectorAll('.layer-areas-toggle').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            toggleLayerAreas(id, e.target.checked);
-        });
-    });
-
-    document.querySelectorAll('.layer-labels-toggle').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            const id = parseInt(e.target.dataset.id);
-            toggleLayerLabels(id, e.target.checked);
-        });
-    });
-
-    document.querySelectorAll('.layer-delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = parseInt(e.currentTarget.dataset.id);
-            removeLayer(id);
-        });
-    });
-}
-
-function toggleLayerLabels(id, showLabels) {
-    const l = externalLayers.find(x => x.id === id);
-    if (!l) return;
-    l.labelsVisible = showLabels;
-
-    l.layer.eachLayer(layer => {
-        const tooltip = layer.getTooltip();
-        if (tooltip) {
-            if (showLabels) {
-                layer.openTooltip();
-                const container = tooltip._container;
-                if (container) {
-                    container.style.display = '';
-                    container.style.opacity = '1';
-                    container.style.visibility = 'visible';
+        // Attach listeners
+        document.querySelectorAll('.layer-toggle-vis').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.dataset.id);
+                const l = externalLayers.find(x => x.id === id);
+                if (l) {
+                    toggleLayerVisibility(id, !l.visible);
+                    renderLayerList(); // Redraw to update icon
                 }
-            } else {
-                layer.closeTooltip();
-                const container = tooltip._container;
-                if (container) {
-                    container.style.display = 'none';
-                    container.style.opacity = '0';
-                    container.style.visibility = 'hidden';
+            });
+        });
+
+        document.querySelectorAll('.layer-fill-toggle').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                toggleLayerFill(id, e.target.checked);
+            });
+        });
+
+        document.querySelectorAll('.layer-points-toggle').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                toggleLayerPoints(id, e.target.checked);
+            });
+        });
+
+        document.querySelectorAll('.layer-areas-toggle').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                toggleLayerAreas(id, e.target.checked);
+            });
+        });
+
+        document.querySelectorAll('.layer-labels-toggle').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                toggleLayerLabels(id, e.target.checked);
+            });
+        });
+
+        document.querySelectorAll('.layer-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.dataset.id);
+                removeLayer(id);
+            });
+        });
+    }
+
+    function toggleLayerLabels(id, showLabels) {
+        const l = externalLayers.find(x => x.id === id);
+        if (!l) return;
+        l.labelsVisible = showLabels;
+
+        l.layer.eachLayer(layer => {
+            const tooltip = layer.getTooltip();
+            if (tooltip) {
+                if (showLabels) {
+                    layer.openTooltip();
+                    const container = tooltip._container;
+                    if (container) {
+                        container.style.display = '';
+                        container.style.opacity = '1';
+                        container.style.visibility = 'visible';
+                    }
+                } else {
+                    layer.closeTooltip();
+                    const container = tooltip._container;
+                    if (container) {
+                        container.style.display = 'none';
+                        container.style.opacity = '0';
+                        container.style.visibility = 'hidden';
+                    }
                 }
             }
-        }
-    });
-    saveExternalLayers();
-}
-
-function toggleLayerVisibility(id, isVisible) {
-    const l = externalLayers.find(x => x.id === id);
-    if (!l) return;
-    l.visible = isVisible;
-    if (l.visible) {
-        l.layer.addTo(map);
-        // Reapply sub-layer visibility based on their individual toggles
-        toggleLayerPoints(id, l.pointsVisible);
-        toggleLayerAreas(id, l.areasVisible);
-    } else {
-        map.removeLayer(l.layer);
-    }
-    saveExternalLayers();
-    // No need to re-render list, just update the internal state
-}
-
-function toggleLayerFill(id, isFilled) {
-    const l = externalLayers.find(x => x.id === id);
-    if (!l) return;
-    l.filled = isFilled;
-    l.layer.setStyle({ fillOpacity: isFilled ? 0.4 : 0 });
-    saveExternalLayers();
-}
-
-function toggleLayerPoints(id, showPoints) {
-    const l = externalLayers.find(x => x.id === id);
-    if (!l) return;
-    l.pointsVisible = showPoints;
-
-    l.layer.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
-            if (showPoints) {
-                if (layer.getElement()) layer.getElement().style.display = '';
-                if (layer._shadow && layer._shadow.style) layer._shadow.style.display = '';
-                if (layer.setOpacity) layer.setOpacity(1);
-            } else {
-                if (layer.getElement()) layer.getElement().style.display = 'none';
-                if (layer._shadow && layer._shadow.style) layer._shadow.style.display = 'none';
-                if (layer.setOpacity) layer.setOpacity(0);
-            }
-        }
-    });
-    saveExternalLayers();
-}
-
-function toggleLayerAreas(id, showAreas) {
-    const l = externalLayers.find(x => x.id === id);
-    if (!l) return;
-    l.areasVisible = showAreas;
-
-    l.layer.eachLayer(layer => {
-        // Check if it's a path (polyline, polygon) and not a marker/circlemarker
-        if (layer instanceof L.Path && !(layer instanceof L.Marker || layer instanceof L.CircleMarker)) {
-            if (layer.getElement()) {
-                layer.getElement().style.display = showAreas ? '' : 'none';
-            }
-        }
-    });
-    saveExternalLayers();
-}
-
-function removeLayer(id) {
-    const index = externalLayers.findIndex(x => x.id === id);
-    if (index === -1) return;
-    const l = externalLayers[index];
-    if (map) map.removeLayer(l.layer);
-    externalLayers.splice(index, 1);
-    saveExternalLayers();
-    renderLayerList();
-}
-
-function saveExternalLayers() {
-    const dataToSave = externalLayers.map(l => ({
-        name: l.name,
-        geojson: l.geojson,
-        visible: l.visible,
-        filled: l.filled,
-        pointsVisible: l.pointsVisible,
-        areasVisible: l.areasVisible,
-        labelsVisible: l.labelsVisible
-    }));
-    localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
-    if (isHeatmapActive) updateHeatmapFilterOptions();
-}
-
-function loadExternalLayers() {
-    const saved = localStorage.getItem('jeoExternalLayers');
-    if (!saved) return;
-    try {
-        const data = JSON.parse(saved);
-        data.forEach(d => {
-            addExternalLayer(d.name, d.geojson);
-            const last = externalLayers[externalLayers.length - 1];
-            if (last) {
-                last.visible = d.visible;
-                last.filled = d.filled;
-                last.pointsVisible = d.pointsVisible !== undefined ? d.pointsVisible : true;
-                last.areasVisible = d.areasVisible !== undefined ? d.areasVisible : true;
-                last.labelsVisible = d.labelsVisible !== undefined ? d.labelsVisible : true;
-                if (!last.visible) map.removeLayer(last.layer);
-                last.layer.setStyle({ fillOpacity: last.filled ? 0.4 : 0 });
-                toggleLayerPoints(last.id, last.pointsVisible);
-                toggleLayerAreas(last.id, last.areasVisible);
-                toggleLayerLabels(last.id, last.labelsVisible);
-            }
         });
-        renderLayerList();
-    } catch (e) {
-        console.error("KML loading error:", e);
+        saveExternalLayers();
     }
-}
 
-// --------------------------------------------------------------------------
-// Measurement Tool Logic
-// --------------------------------------------------------------------------
-const btnMeasure = document.getElementById('btn-measure');
-const btnPolygon = document.getElementById('id-btn-polygon');
-const btnAddPoint = document.getElementById('btn-add-point');
-const measureInfo = document.getElementById('measure-info');
-const measureText = document.getElementById('measure-text');
-const btnMeasureClear = document.getElementById('btn-measure-clear');
-
-if (btnAddPoint) {
-    btnAddPoint.addEventListener('click', () => {
-        const btnConfirmPoint = document.getElementById('btn-confirm-point');
-        const crosshair = document.getElementById('map-center-crosshair');
-
-        isAddingPoint = !isAddingPoint;
-
-        if (isAddingPoint) {
-            // Disable measure mode if active
-            if (isMeasuring) {
-                isMeasuring = false;
-                if (btnMeasure) btnMeasure.style.background = '';
-                if (measureInfo) measureInfo.style.display = 'none';
-                if (map) map.getContainer().style.cursor = '';
-            }
-
-            btnAddPoint.classList.add('active-add-point');
-            // Show Crosshair and Confirm Button
-            if (crosshair) crosshair.style.display = 'block';
-            if (btnConfirmPoint) btnConfirmPoint.style.display = 'block';
-            updateScaleValues(); // Refresh UI labels
+    function toggleLayerVisibility(id, isVisible) {
+        const l = externalLayers.find(x => x.id === id);
+        if (!l) return;
+        l.visible = isVisible;
+        if (l.visible) {
+            l.layer.addTo(map);
+            // Reapply sub-layer visibility based on their individual toggles
+            toggleLayerPoints(id, l.pointsVisible);
+            toggleLayerAreas(id, l.areasVisible);
         } else {
+            map.removeLayer(l.layer);
+        }
+        saveExternalLayers();
+        // No need to re-render list, just update the internal state
+    }
+
+    function toggleLayerFill(id, isFilled) {
+        const l = externalLayers.find(x => x.id === id);
+        if (!l) return;
+        l.filled = isFilled;
+        l.layer.setStyle({ fillOpacity: isFilled ? 0.4 : 0 });
+        saveExternalLayers();
+    }
+
+    function toggleLayerPoints(id, showPoints) {
+        const l = externalLayers.find(x => x.id === id);
+        if (!l) return;
+        l.pointsVisible = showPoints;
+
+        l.layer.eachLayer(layer => {
+            if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+                if (showPoints) {
+                    if (layer.getElement()) layer.getElement().style.display = '';
+                    if (layer._shadow && layer._shadow.style) layer._shadow.style.display = '';
+                    if (layer.setOpacity) layer.setOpacity(1);
+                } else {
+                    if (layer.getElement()) layer.getElement().style.display = 'none';
+                    if (layer._shadow && layer._shadow.style) layer._shadow.style.display = 'none';
+                    if (layer.setOpacity) layer.setOpacity(0);
+                }
+            }
+        });
+        saveExternalLayers();
+    }
+
+    function toggleLayerAreas(id, showAreas) {
+        const l = externalLayers.find(x => x.id === id);
+        if (!l) return;
+        l.areasVisible = showAreas;
+
+        l.layer.eachLayer(layer => {
+            // Check if it's a path (polyline, polygon) and not a marker/circlemarker
+            if (layer instanceof L.Path && !(layer instanceof L.Marker || layer instanceof L.CircleMarker)) {
+                if (layer.getElement()) {
+                    layer.getElement().style.display = showAreas ? '' : 'none';
+                }
+            }
+        });
+        saveExternalLayers();
+    }
+
+    function removeLayer(id) {
+        const index = externalLayers.findIndex(x => x.id === id);
+        if (index === -1) return;
+        const l = externalLayers[index];
+        if (map) map.removeLayer(l.layer);
+        externalLayers.splice(index, 1);
+        saveExternalLayers();
+        renderLayerList();
+    }
+
+    function saveExternalLayers() {
+        const dataToSave = externalLayers.map(l => ({
+            name: l.name,
+            geojson: l.geojson,
+            visible: l.visible,
+            filled: l.filled,
+            pointsVisible: l.pointsVisible,
+            areasVisible: l.areasVisible,
+            labelsVisible: l.labelsVisible
+        }));
+        localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
+        if (isHeatmapActive) updateHeatmapFilterOptions();
+    }
+
+    function loadExternalLayers() {
+        const saved = localStorage.getItem('jeoExternalLayers');
+        if (!saved) return;
+        try {
+            const data = JSON.parse(saved);
+            data.forEach(d => {
+                addExternalLayer(d.name, d.geojson);
+                const last = externalLayers[externalLayers.length - 1];
+                if (last) {
+                    last.visible = d.visible;
+                    last.filled = d.filled;
+                    last.pointsVisible = d.pointsVisible !== undefined ? d.pointsVisible : true;
+                    last.areasVisible = d.areasVisible !== undefined ? d.areasVisible : true;
+                    last.labelsVisible = d.labelsVisible !== undefined ? d.labelsVisible : true;
+                    if (!last.visible) map.removeLayer(last.layer);
+                    last.layer.setStyle({ fillOpacity: last.filled ? 0.4 : 0 });
+                    toggleLayerPoints(last.id, last.pointsVisible);
+                    toggleLayerAreas(last.id, last.areasVisible);
+                    toggleLayerLabels(last.id, last.labelsVisible);
+                }
+            });
+            renderLayerList();
+        } catch (e) {
+            console.error("KML loading error:", e);
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // Measurement Tool Logic
+    // --------------------------------------------------------------------------
+    const btnMeasure = document.getElementById('btn-measure');
+    const btnPolygon = document.getElementById('id-btn-polygon');
+    const btnAddPoint = document.getElementById('btn-add-point');
+    const measureInfo = document.getElementById('measure-info');
+    const measureText = document.getElementById('measure-text');
+    const btnMeasureClear = document.getElementById('btn-measure-clear');
+
+    if (btnAddPoint) {
+        btnAddPoint.addEventListener('click', () => {
+            const btnConfirmPoint = document.getElementById('btn-confirm-point');
+            const crosshair = document.getElementById('map-center-crosshair');
+
+            isAddingPoint = !isAddingPoint;
+
+            if (isAddingPoint) {
+                // Disable measure mode if active
+                if (isMeasuring) {
+                    isMeasuring = false;
+                    if (btnMeasure) btnMeasure.style.background = '';
+                    if (measureInfo) measureInfo.style.display = 'none';
+                    if (map) map.getContainer().style.cursor = '';
+                }
+
+                btnAddPoint.classList.add('active-add-point');
+                // Show Crosshair and Confirm Button
+                if (crosshair) crosshair.style.display = 'block';
+                if (btnConfirmPoint) btnConfirmPoint.style.display = 'block';
+                updateScaleValues(); // Refresh UI labels
+            } else {
+                btnAddPoint.classList.remove('active-add-point');
+                if (crosshair) crosshair.style.display = 'none';
+                if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+                updateScaleValues(); // Refresh UI labels
+            }
+        });
+    }
+
+    const btnConfirmPoint = document.getElementById('btn-confirm-point');
+    const crosshair = document.getElementById('map-center-crosshair');
+    const btnAddGps = document.getElementById('btn-add-gps');
+
+    if (btnConfirmPoint) {
+        btnConfirmPoint.addEventListener('click', () => {
+            if (!map) return;
+            const center = map.getCenter();
+            const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
+            const bestAlt = onlineCenterAlt !== null ? onlineCenterAlt : (onlineMyAlt !== null ? onlineMyAlt : gpsAlt);
+            openRecordModalWithCoords(center.lat, center.lng, "Selected from Map", bestAlt);
+
+            // Reset Mode
+            isAddingPoint = false;
             btnAddPoint.classList.remove('active-add-point');
             if (crosshair) crosshair.style.display = 'none';
             if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
-            updateScaleValues(); // Refresh UI labels
-        }
-    });
-}
-
-const btnConfirmPoint = document.getElementById('btn-confirm-point');
-const crosshair = document.getElementById('map-center-crosshair');
-const btnAddGps = document.getElementById('btn-add-gps');
-
-if (btnConfirmPoint) {
-    btnConfirmPoint.addEventListener('click', () => {
-        if (!map) return;
-        const center = map.getCenter();
-        const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
-        const bestAlt = onlineCenterAlt !== null ? onlineCenterAlt : (onlineMyAlt !== null ? onlineMyAlt : gpsAlt);
-        openRecordModalWithCoords(center.lat, center.lng, "Selected from Map", bestAlt);
-
-        // Reset Mode
-        isAddingPoint = false;
-        btnAddPoint.classList.remove('active-add-point');
-        if (crosshair) crosshair.style.display = 'none';
-        if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
-    });
-}
-
-if (btnAddGps) {
-    btnAddGps.addEventListener('click', () => {
-        if (currentCoords.lat !== 0) {
-            const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
-            const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Position", bestAlt);
-        } else {
-            alert("Waiting for location data...");
-        }
-    });
-}
-
-function openRecordModalWithCoords(lat, lon, note, alt = null, strike = null, dip = null) {
-    // Save pending coords for modal save
-    pendingLat = lat;
-    pendingLon = lon;
-
-    // Convert to UTM
-    let utmY, utmX;
-    try {
-        const zone = Math.floor((lon + 180) / 6) + 1;
-        const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-        const utm = proj4('WGS84', utmZoneDef, [lon, lat]);
-        utmY = Math.round(utm[0]);
-        utmX = Math.round(utm[1]);
-    } catch (err) {
-        console.error("UTM conversion failed", err);
-        return;
+        });
     }
 
-    editingRecordId = null;
-    document.getElementById('rec-label').value = nextId;
-    document.getElementById('rec-y').value = utmY;
-    document.getElementById('rec-x').value = utmX;
-    // Use provided alt if available (GPS), otherwise fallback to cached (Map) or 0
-    document.getElementById('rec-z').value = alt !== null ? Math.round(alt) : cachedElevation;
-    document.getElementById('rec-strike').value = strike !== null ? strike : 0;
-    document.getElementById('rec-dip').value = dip !== null ? dip : 0;
-    document.getElementById('rec-note').value = note;
-
-    recordModal.classList.add('active');
-}
-
-if (btnMeasure) {
-    btnMeasure.addEventListener('click', () => {
-        if (isMeasuring && measureMode === 'line') {
-            isMeasuring = false;
-        } else {
-            isMeasuring = true;
-            measureMode = 'line';
-        }
-
-        updateMeasureModeUI();
-    });
-}
-
-if (btnPolygon) {
-    btnPolygon.addEventListener('click', () => {
-        if (isMeasuring && measureMode === 'polygon') {
-            isMeasuring = false;
-        } else {
-            isMeasuring = true;
-            measureMode = 'polygon';
-        }
-
-        updateMeasureModeUI();
-    });
-}
-
-function updateMeasureModeUI() {
-    // Reset buttons
-    if (btnMeasure) btnMeasure.style.background = '';
-    if (btnPolygon) btnPolygon.style.background = '';
-    if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
-    if (crosshair) crosshair.style.display = 'none';
-    if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
-    isAddingPoint = false;
-
-    if (isMeasuring) {
-        if (measureMode === 'line') {
-            btnMeasure.style.background = '#f44336'; // Active Red
-        } else {
-            btnPolygon.style.background = '#f44336'; // Active Red
-        }
-        measureInfo.style.display = 'flex';
-        map.dragging.enable();
-    } else {
-        measureInfo.style.display = 'none';
-    }
-}
-
-function updateMeasureButtons() {
-    if (measurePoints.length > 0) {
-        btnMeasureUndo.style.display = 'inline-block';
-        btnMeasureSave.style.display = 'inline-block';
-    } else {
-        btnMeasureUndo.style.display = 'none';
-        btnMeasureSave.style.display = 'none';
-    }
-}
-
-// New Buttons
-const btnMeasureUndo = document.getElementById('btn-measure-undo');
-const btnMeasureSave = document.getElementById('btn-measure-save');
-
-if (btnMeasureUndo) {
-    btnMeasureUndo.addEventListener('click', undoMeasurement);
-}
-
-if (btnMeasureSave) {
-    btnMeasureSave.addEventListener('click', saveMeasurement);
-}
-
-if (btnMeasureClear) {
-    btnMeasureClear.addEventListener('click', () => {
-        clearMeasurement();
-    });
-}
-
-function clearMeasurement() {
-    measurePoints = [];
-    if (measureLine) {
-        map.removeLayer(measureLine);
-        measureLine = null;
-    }
-    measureMarkers.forEach(m => map.removeLayer(m));
-    measureMarkers = [];
-    measurePoints = [];
-    isPolygon = false;
-
-    // Clear Labels
-    activeMeasureLabels.forEach(l => map.removeLayer(l));
-    activeMeasureLabels = [];
-
-    measureText.textContent = "0 m";
-    updateMeasureButtons();
-}
-
-function undoMeasurement() {
-    if (measurePoints.length === 0) return;
-
-    // Remove last point
-    measurePoints.pop();
-
-    // Remove last marker
-    const lastMarker = measureMarkers.pop();
-    if (lastMarker) map.removeLayer(lastMarker);
-
-    // If it was a polygon, it's now a line (or less)
-    if (isPolygon) {
-        isPolygon = false;
-        // The last point popped was the duplicate of the first.
-        // We need to re-render as polyline.
-        if (measureLine) map.removeLayer(measureLine);
-        measureLine = null; // Will be created in redraw
-    }
-
-    redrawMeasurement();
-}
-
-function redrawMeasurement() {
-    if (!map) return;
-
-    // Clear Line
-    if (measureLine) {
-        map.removeLayer(measureLine);
-        measureLine = null;
-    }
-
-    if (measurePoints.length === 0) {
-        measureText.textContent = "0 m";
-        updateMeasureButtons();
-        return;
-    }
-
-    // Re-draw Polyline or Polygon
-    if (isPolygon) {
-        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 };
-        measureLine = L.polygon(measurePoints, style).addTo(map);
-    } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
-    }
-
-    // DRAW SEGMENT LABELS (For both Line and Polygon)
-    // Clear old labels first
-    activeMeasureLabels.forEach(l => map.removeLayer(l));
-    activeMeasureLabels = [];
-
-    if (measurePoints.length > 1) {
-        for (let i = 0; i < measurePoints.length - 1; i++) {
-            const p1 = measurePoints[i];
-            const p2 = measurePoints[i + 1];
-            const dist = map.distance(p1, p2);
-            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
-
-            const point1 = map.latLngToContainerPoint(p1);
-            const point2 = map.latLngToContainerPoint(p2);
-            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
-            if (angle > 90 || angle < -90) angle += 180;
-
-            const lab = L.marker(mid, {
-                icon: L.divIcon({
-                    className: 'segment-label-container',
-                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                    iconSize: [1, 1],
-                    iconAnchor: [0, 0]
-                }),
-                interactive: false
-            }).addTo(map);
-            activeMeasureLabels.push(lab);
-        }
-
-        // If polygon and closed, add the closing segment label
-        if (isPolygon) {
-            const p1 = measurePoints[measurePoints.length - 1];
-            const p2 = measurePoints[0];
-            const dist = map.distance(p1, p2);
-            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
-
-            const point1 = map.latLngToContainerPoint(p1);
-            const point2 = map.latLngToContainerPoint(p2);
-            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
-            if (angle > 90 || angle < -90) angle += 180;
-
-            const lab = L.marker(mid, {
-                icon: L.divIcon({
-                    className: 'segment-label-container',
-                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                    iconSize: [1, 1],
-                    iconAnchor: [0, 0]
-                }),
-                interactive: false
-            }).addTo(map);
-            activeMeasureLabels.push(lab);
-        }
-    }
-
-    calculateAndDisplayMeasurement();
-
-    // Add Popup to active measure line for "sorgulama"
-    if (measureLine) {
-        let totalLen = 0;
-        for (let i = 0; i < measurePoints.length - 1; i++) {
-            totalLen += measurePoints[i].distanceTo(measurePoints[i + 1]);
-        }
-        if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
-
-        let popupText = `<div class="map-popup-container">`;
-        popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Polygon Measurement' : 'Distance Measurement'}</div>`;
-        popupText += `<hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
-        popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Perimeter/Length:</b> ${formatScaleDist(totalLen)}</div>`;
-        if (isPolygon) {
-            popupText += `<div style="font-size:0.9rem; color:#2196f3;"><b>Area:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
-        }
-        popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Use bottom panel to save)</div>`;
-        popupText += `</div>`;
-
-        const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
-        measureLine.bindPopup(popupText, { closeButton: true });
-    }
-
-    updateMeasureButtons();
-}
-
-function calculateAndDisplayMeasurement() {
-    // Total Distance (Perimeter)
-    let totalDistance = 0;
-    for (let i = 0; i < measurePoints.length - 1; i++) {
-        totalDistance += measurePoints[i].distanceTo(measurePoints[i + 1]);
-    }
-
-    let text = "";
-    if (totalDistance < 1000) text = Math.round(totalDistance) + " m";
-    else text = (totalDistance / 1000).toFixed(2) + " km";
-
-    measureText.innerHTML = text;
-
-    // Show area info also during line drawing if more than 2 points
-    if (measurePoints.length > 2) {
-        let area = calculateAreaHelper(measurePoints);
-        let areaText = formatArea(area);
-        measureText.innerHTML += `<br><span style="font-size:0.8em; color:#ddd">${isPolygon ? 'Area' : 'Imaginary Area'}: ${areaText}</span>`;
-    }
-}
-
-function saveMeasurement() {
-    if (measurePoints.length === 0) return;
-
-    // Save geometry for persistence
-    pendingGeometry = measurePoints.map(p => [p.lat, p.lng]);
-    pendingGeometryType = isPolygon ? 'polygon' : 'polyline';
-
-    // Open Modal
-    editingRecordId = null;
-    document.getElementById('rec-label').value = nextId;
-
-    // Coords: Use Last Point
-    const lastP = measurePoints[measurePoints.length - 1];
-
-    // UTM Conversion
-    const zone = Math.floor((lastP.lng + 180) / 6) + 1;
-    const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-    const utm = proj4('WGS84', utmZoneDef, [lastP.lng, lastP.lat]);
-
-    document.getElementById('rec-y').value = Math.round(utm[0]);
-    document.getElementById('rec-x').value = Math.round(utm[1]);
-    document.getElementById('rec-z').value = 0;
-    document.getElementById('rec-strike').value = 0;
-    document.getElementById('rec-dip').value = 0;
-
-    // Note
-    let note = measureText.innerText.replace(/\n/g, ", ");
-    document.getElementById('rec-note').value = note;
-
-    recordModal.classList.add('active');
-}
-
-function updateMeasurement(latlng) {
-    if (!map) return;
-
-    // Check Snapping (Close Polygon)
-    if (measurePoints.length > 2) {
-        const startPoint = measurePoints[0];
-        const dist = map.distance(latlng, startPoint);
-
-        // Snapping Tolerance: 30 meters or significant pixel distance
-        // Depends on zoom, but 30m is usually good for outdoors.
-        // For polygon mode, we want it to be snappy.
-        if (dist < 30) {
-            if (confirm("Close polygon? (Area will be calculated)")) {
-                // Close the polygon
-                measurePoints.push(measurePoints[0]);
-                isPolygon = true;
-                redrawMeasurement();
+    if (btnAddGps) {
+        btnAddGps.addEventListener('click', () => {
+            if (currentCoords.lat !== 0) {
+                const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
+                const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
+                openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Position", bestAlt);
+            } else {
+                alert("Waiting for location data...");
             }
+        });
+    }
+
+    function openRecordModalWithCoords(lat, lon, note, alt = null, strike = null, dip = null) {
+        // Save pending coords for modal save
+        pendingLat = lat;
+        pendingLon = lon;
+
+        // Convert to UTM
+        let utmY, utmX;
+        try {
+            const zone = Math.floor((lon + 180) / 6) + 1;
+            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+            const utm = proj4('WGS84', utmZoneDef, [lon, lat]);
+            utmY = Math.round(utm[0]);
+            utmX = Math.round(utm[1]);
+        } catch (err) {
+            console.error("UTM conversion failed", err);
             return;
         }
+
+        editingRecordId = null;
+        document.getElementById('rec-label').value = nextId;
+        document.getElementById('rec-y').value = utmY;
+        document.getElementById('rec-x').value = utmX;
+        // Use provided alt if available (GPS), otherwise fallback to cached (Map) or 0
+        document.getElementById('rec-z').value = alt !== null ? Math.round(alt) : cachedElevation;
+        document.getElementById('rec-strike').value = strike !== null ? strike : 0;
+        document.getElementById('rec-dip').value = dip !== null ? dip : 0;
+        document.getElementById('rec-note').value = note;
+
+        recordModal.classList.add('active');
     }
 
-    if (isPolygon) {
-        alert("Area already closed. Use 'Undo' to modify.");
-        return;
-    }
-
-    // Force polygon mode to close if second point matches start (not applicable)
-    // Add Point
-    measurePoints.push(latlng);
-
-    // If we are in line mode, we only allow 2 points? No, ruler can have multiple segments too.
-    // If user intended 'polygon', they should use polygon button.
-    if (measureMode === 'polygon' && measurePoints.length > 2) {
-        // Just keep adding, user will close it by clicking start.
-    }
-
-    // Add Marker
-    const marker = L.circleMarker(latlng, {
-        radius: 4,
-        color: '#ffeb3b',
-        fillColor: '#ffeb3b',
-        fillOpacity: 1,
-        interactive: false // Allow map clicks to pass through to the map for snapping
-    }).addTo(map);
-    measureMarkers.push(marker);
-
-    redrawMeasurement();
-}
-
-// View Control
-document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const target = btn.dataset.target; // Changed from 'view' to 'target' to match existing logic
-
-        // Auto-lock when leaving or entering views (security first)
-        isMeasuring = false;
-        updateMeasureModeUI();
-
-        if (!isRecordsLocked) {
-            isRecordsLocked = true;
-            try {
-                updateLockUI();
-                renderRecords();
-            } catch (e) { console.error("Lock error", e); }
-        }
-
-        // Update Nav UI
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        btn.classList.add('active');
-
-        // Update View Visibility
-        views.forEach(v => v.classList.remove('active'));
-        const targetView = document.getElementById(target);
-        if (targetView) targetView.classList.add('active');
-
-        // Special logic for map initialization
-        if (target === 'view-map') {
-            setTimeout(() => {
-                initMap();
-                if (map) map.invalidateSize();
-            }, 100);
-        }
-    });
-});
-
-// Export Logic Refactored (Scope: 'all' or 'selected')
-function exportData(type, scope = 'selected') {
-    let dataToExport = [];
-    if (scope === 'all') {
-        dataToExport = records;
-    } else {
-        const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
-        dataToExport = records.filter(r => selectedIds.includes(r.id));
-    }
-
-    if (dataToExport.length === 0) {
-        alert("No records found to export.");
-        return;
-    }
-
-    const timestamp = new Date().getTime();
-
-    // 1. JSON BACKUP (Full Database)
-    if (type === 'json') {
-        const backupData = {
-            version: '503',
-            timestamp: timestamp,
-            records: records,
-            nextId: nextId,
-            declination: manualDeclination,
-            tracking: {
-                path: trackPath,
-                saved: savedTrackPath
+    if (btnMeasure) {
+        btnMeasure.addEventListener('click', () => {
+            if (isMeasuring && measureMode === 'line') {
+                isMeasuring = false;
+            } else {
+                isMeasuring = true;
+                measureMode = 'line';
             }
-        };
-        const jsonStr = JSON.stringify(backupData, null, 2);
-        const fileName = `JeoComp_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-        downloadFile(jsonStr, fileName, 'application/json');
-        return;
+
+            updateMeasureModeUI();
+        });
     }
 
-    // 2. CSV / KML Export (Table Data)
-    const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.${type}` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.${type}`;
+    if (btnPolygon) {
+        btnPolygon.addEventListener('click', () => {
+            if (isMeasuring && measureMode === 'polygon') {
+                isMeasuring = false;
+            } else {
+                isMeasuring = true;
+                measureMode = 'polygon';
+            }
 
-    if (type === 'csv') {
-        const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
-        const csvRows = [header.join(',')];
-        dataToExport.forEach(r => {
-            const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
-            csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+            updateMeasureModeUI();
         });
-        downloadFile(csvRows.join('\n'), finalFileName, 'text/csv');
-    } else if (type === 'kml') {
-        let kml = `<?xml version="1.0" encoding="UTF-8"?>
+    }
+
+    function updateMeasureModeUI() {
+        // Reset buttons
+        if (btnMeasure) btnMeasure.style.background = '';
+        if (btnPolygon) btnPolygon.style.background = '';
+        if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
+        if (crosshair) crosshair.style.display = 'none';
+        if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+        isAddingPoint = false;
+
+        if (isMeasuring) {
+            if (measureMode === 'line') {
+                btnMeasure.style.background = '#f44336'; // Active Red
+            } else {
+                btnPolygon.style.background = '#f44336'; // Active Red
+            }
+            measureInfo.style.display = 'flex';
+            map.dragging.enable();
+        } else {
+            measureInfo.style.display = 'none';
+        }
+    }
+
+    function updateMeasureButtons() {
+        if (measurePoints.length > 0) {
+            btnMeasureUndo.style.display = 'inline-block';
+            btnMeasureSave.style.display = 'inline-block';
+        } else {
+            btnMeasureUndo.style.display = 'none';
+            btnMeasureSave.style.display = 'none';
+        }
+    }
+
+    // New Buttons
+    const btnMeasureUndo = document.getElementById('btn-measure-undo');
+    const btnMeasureSave = document.getElementById('btn-measure-save');
+
+    if (btnMeasureUndo) {
+        btnMeasureUndo.addEventListener('click', undoMeasurement);
+    }
+
+    if (btnMeasureSave) {
+        btnMeasureSave.addEventListener('click', saveMeasurement);
+    }
+
+    if (btnMeasureClear) {
+        btnMeasureClear.addEventListener('click', () => {
+            clearMeasurement();
+        });
+    }
+
+    function clearMeasurement() {
+        measurePoints = [];
+        if (measureLine) {
+            map.removeLayer(measureLine);
+            measureLine = null;
+        }
+        measureMarkers.forEach(m => map.removeLayer(m));
+        measureMarkers = [];
+        measurePoints = [];
+        isPolygon = false;
+
+        // Clear Labels
+        activeMeasureLabels.forEach(l => map.removeLayer(l));
+        activeMeasureLabels = [];
+
+        measureText.textContent = "0 m";
+        updateMeasureButtons();
+    }
+
+    function undoMeasurement() {
+        if (measurePoints.length === 0) return;
+
+        // Remove last point
+        measurePoints.pop();
+
+        // Remove last marker
+        const lastMarker = measureMarkers.pop();
+        if (lastMarker) map.removeLayer(lastMarker);
+
+        // If it was a polygon, it's now a line (or less)
+        if (isPolygon) {
+            isPolygon = false;
+            // The last point popped was the duplicate of the first.
+            // We need to re-render as polyline.
+            if (measureLine) map.removeLayer(measureLine);
+            measureLine = null; // Will be created in redraw
+        }
+
+        redrawMeasurement();
+    }
+
+    function redrawMeasurement() {
+        if (!map) return;
+
+        // Clear Line
+        if (measureLine) {
+            map.removeLayer(measureLine);
+            measureLine = null;
+        }
+
+        if (measurePoints.length === 0) {
+            measureText.textContent = "0 m";
+            updateMeasureButtons();
+            return;
+        }
+
+        // Re-draw Polyline or Polygon
+        if (isPolygon) {
+            const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 };
+            measureLine = L.polygon(measurePoints, style).addTo(map);
+        } else {
+            measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+        }
+
+        // DRAW SEGMENT LABELS (For both Line and Polygon)
+        // Clear old labels first
+        activeMeasureLabels.forEach(l => map.removeLayer(l));
+        activeMeasureLabels = [];
+
+        if (measurePoints.length > 1) {
+            for (let i = 0; i < measurePoints.length - 1; i++) {
+                const p1 = measurePoints[i];
+                const p2 = measurePoints[i + 1];
+                const dist = map.distance(p1, p2);
+                const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+
+                const point1 = map.latLngToContainerPoint(p1);
+                const point2 = map.latLngToContainerPoint(p2);
+                let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+                if (angle > 90 || angle < -90) angle += 180;
+
+                const lab = L.marker(mid, {
+                    icon: L.divIcon({
+                        className: 'segment-label-container',
+                        html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                        iconSize: [1, 1],
+                        iconAnchor: [0, 0]
+                    }),
+                    interactive: false
+                }).addTo(map);
+                activeMeasureLabels.push(lab);
+            }
+
+            // If polygon and closed, add the closing segment label
+            if (isPolygon) {
+                const p1 = measurePoints[measurePoints.length - 1];
+                const p2 = measurePoints[0];
+                const dist = map.distance(p1, p2);
+                const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+
+                const point1 = map.latLngToContainerPoint(p1);
+                const point2 = map.latLngToContainerPoint(p2);
+                let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+                if (angle > 90 || angle < -90) angle += 180;
+
+                const lab = L.marker(mid, {
+                    icon: L.divIcon({
+                        className: 'segment-label-container',
+                        html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                        iconSize: [1, 1],
+                        iconAnchor: [0, 0]
+                    }),
+                    interactive: false
+                }).addTo(map);
+                activeMeasureLabels.push(lab);
+            }
+        }
+
+        calculateAndDisplayMeasurement();
+
+        // Add Popup to active measure line for "sorgulama"
+        if (measureLine) {
+            let totalLen = 0;
+            for (let i = 0; i < measurePoints.length - 1; i++) {
+                totalLen += measurePoints[i].distanceTo(measurePoints[i + 1]);
+            }
+            if (isPolygon) totalLen += measurePoints[measurePoints.length - 1].distanceTo(measurePoints[0]);
+
+            let popupText = `<div class="map-popup-container">`;
+            popupText += `<div style="font-weight:bold; font-size:1rem; margin-bottom:5px;">${isPolygon ? 'Polygon Measurement' : 'Distance Measurement'}</div>`;
+            popupText += `<hr style="border:0; border-top:1px solid #eee; margin:8px 0;">`;
+            popupText += `<div style="font-size:0.9rem; margin-bottom:5px;"><b>Perimeter/Length:</b> ${formatScaleDist(totalLen)}</div>`;
+            if (isPolygon) {
+                popupText += `<div style="font-size:0.9rem; color:#2196f3;"><b>Area:</b> ${formatArea(calculateAreaHelper(measurePoints))}</div>`;
+            }
+            popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Use bottom panel to save)</div>`;
+            popupText += `</div>`;
+
+            const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
+            measureLine.bindPopup(popupText, { closeButton: true });
+        }
+
+        updateMeasureButtons();
+    }
+
+    function calculateAndDisplayMeasurement() {
+        // Total Distance (Perimeter)
+        let totalDistance = 0;
+        for (let i = 0; i < measurePoints.length - 1; i++) {
+            totalDistance += measurePoints[i].distanceTo(measurePoints[i + 1]);
+        }
+
+        let text = "";
+        if (totalDistance < 1000) text = Math.round(totalDistance) + " m";
+        else text = (totalDistance / 1000).toFixed(2) + " km";
+
+        measureText.innerHTML = text;
+
+        // Show area info also during line drawing if more than 2 points
+        if (measurePoints.length > 2) {
+            let area = calculateAreaHelper(measurePoints);
+            let areaText = formatArea(area);
+            measureText.innerHTML += `<br><span style="font-size:0.8em; color:#ddd">${isPolygon ? 'Area' : 'Imaginary Area'}: ${areaText}</span>`;
+        }
+    }
+
+    function saveMeasurement() {
+        if (measurePoints.length === 0) return;
+
+        // Save geometry for persistence
+        pendingGeometry = measurePoints.map(p => [p.lat, p.lng]);
+        pendingGeometryType = isPolygon ? 'polygon' : 'polyline';
+
+        // Open Modal
+        editingRecordId = null;
+        document.getElementById('rec-label').value = nextId;
+
+        // Coords: Use Last Point
+        const lastP = measurePoints[measurePoints.length - 1];
+
+        // UTM Conversion
+        const zone = Math.floor((lastP.lng + 180) / 6) + 1;
+        const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+        const utm = proj4('WGS84', utmZoneDef, [lastP.lng, lastP.lat]);
+
+        document.getElementById('rec-y').value = Math.round(utm[0]);
+        document.getElementById('rec-x').value = Math.round(utm[1]);
+        document.getElementById('rec-z').value = 0;
+        document.getElementById('rec-strike').value = 0;
+        document.getElementById('rec-dip').value = 0;
+
+        // Note
+        let note = measureText.innerText.replace(/\n/g, ", ");
+        document.getElementById('rec-note').value = note;
+
+        recordModal.classList.add('active');
+    }
+
+    function updateMeasurement(latlng) {
+        if (!map) return;
+
+        // Check Snapping (Close Polygon)
+        if (measurePoints.length > 2) {
+            const startPoint = measurePoints[0];
+            const dist = map.distance(latlng, startPoint);
+
+            // Snapping Tolerance: 30 meters or significant pixel distance
+            // Depends on zoom, but 30m is usually good for outdoors.
+            // For polygon mode, we want it to be snappy.
+            if (dist < 30) {
+                if (confirm("Close polygon? (Area will be calculated)")) {
+                    // Close the polygon
+                    measurePoints.push(measurePoints[0]);
+                    isPolygon = true;
+                    redrawMeasurement();
+                }
+                return;
+            }
+        }
+
+        if (isPolygon) {
+            alert("Area already closed. Use 'Undo' to modify.");
+            return;
+        }
+
+        // Force polygon mode to close if second point matches start (not applicable)
+        // Add Point
+        measurePoints.push(latlng);
+
+        // If we are in line mode, we only allow 2 points? No, ruler can have multiple segments too.
+        // If user intended 'polygon', they should use polygon button.
+        if (measureMode === 'polygon' && measurePoints.length > 2) {
+            // Just keep adding, user will close it by clicking start.
+        }
+
+        // Add Marker
+        const marker = L.circleMarker(latlng, {
+            radius: 4,
+            color: '#ffeb3b',
+            fillColor: '#ffeb3b',
+            fillOpacity: 1,
+            interactive: false // Allow map clicks to pass through to the map for snapping
+        }).addTo(map);
+        measureMarkers.push(marker);
+
+        redrawMeasurement();
+    }
+
+    // View Control
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.target; // Changed from 'view' to 'target' to match existing logic
+
+            // Auto-lock when leaving or entering views (security first)
+            isMeasuring = false;
+            updateMeasureModeUI();
+
+            if (!isRecordsLocked) {
+                isRecordsLocked = true;
+                try {
+                    updateLockUI();
+                    renderRecords();
+                } catch (e) { console.error("Lock error", e); }
+            }
+
+            // Update Nav UI
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update View Visibility
+            views.forEach(v => v.classList.remove('active'));
+            const targetView = document.getElementById(target);
+            if (targetView) targetView.classList.add('active');
+
+            // Special logic for map initialization
+            if (target === 'view-map') {
+                setTimeout(() => {
+                    initMap();
+                    if (map) map.invalidateSize();
+                }, 100);
+            }
+        });
+    });
+
+    // Export Logic Refactored (Scope: 'all' or 'selected')
+    function exportData(type, scope = 'selected') {
+        let dataToExport = [];
+        if (scope === 'all') {
+            dataToExport = records;
+        } else {
+            const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+            dataToExport = records.filter(r => selectedIds.includes(r.id));
+        }
+
+        if (dataToExport.length === 0) {
+            alert("No records found to export.");
+            return;
+        }
+
+        const timestamp = new Date().getTime();
+
+        // 1. JSON BACKUP (Full Database)
+        if (type === 'json') {
+            const backupData = {
+                version: '503',
+                timestamp: timestamp,
+                records: records,
+                nextId: nextId,
+                declination: manualDeclination,
+                tracking: {
+                    path: trackPath,
+                    saved: savedTrackPath
+                }
+            };
+            const jsonStr = JSON.stringify(backupData, null, 2);
+            const fileName = `JeoComp_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+            downloadFile(jsonStr, fileName, 'application/json');
+            return;
+        }
+
+        // 2. CSV / KML Export (Table Data)
+        const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.${type}` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.${type}`;
+
+        if (type === 'csv') {
+            const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
+            const csvRows = [header.join(',')];
+            dataToExport.forEach(r => {
+                const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
+                csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+            });
+            downloadFile(csvRows.join('\n'), finalFileName, 'text/csv');
+        } else if (type === 'kml') {
+            let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>JeoCompass ${scope === 'all' ? 'All Records' : 'Selected'}</name>`;
-        dataToExport.forEach(r => {
-            kml += `
+            dataToExport.forEach(r => {
+                kml += `
     <Placemark>
       <name>${r.label || r.id}</name>
       <description>Strike: ${r.strike}\nDip: ${r.dip}\nNote: ${r.note}</description>
@@ -3399,170 +3399,170 @@ function exportData(type, scope = 'selected') {
         <coordinates>${r.lon},${r.lat},${r.z}</coordinates>
       </Point>
     </Placemark>`;
-        });
-        kml += `
+            });
+            kml += `
   </Document>
 </kml>`;
-        downloadFile(kml, finalFileName, 'application/vnd.google-earth.kml+xml');
+            downloadFile(kml, finalFileName, 'application/vnd.google-earth.kml+xml');
+        }
     }
-}
 
-function downloadFile(content, fileName, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 100);
-}
+    function downloadFile(content, fileName, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
 
-// -----------------------------------------------------------------
-// BACKUP & RESTORE EVENTS
-// -----------------------------------------------------------------
-if (document.getElementById('btn-backup-json')) {
-    document.getElementById('btn-backup-json').addEventListener('click', async () => {
-        // FULL BACKUP
-        const backupData = {
-            version: '502',
-            timestamp: new Date().toISOString(),
-            records: records, // Points
-            tracks: jeoTracks, // Tracks
-            settings: {
-                declination: manualDeclination,
-                mapLayer: activeMapLayer,
-                nextId: nextId,
-                // Add other settings if needed
-            },
-            externalLayers: externalLayers.map(l => ({
-                name: l.name,
-                geojson: l.geojson,
-                visible: l.visible,
-                filled: l.filled,
-                pointsVisible: l.pointsVisible,
-                areasVisible: l.areasVisible,
-                labelsVisible: l.labelsVisible
-            }))
-        };
+    // -----------------------------------------------------------------
+    // BACKUP & RESTORE EVENTS
+    // -----------------------------------------------------------------
+    if (document.getElementById('btn-backup-json')) {
+        document.getElementById('btn-backup-json').addEventListener('click', async () => {
+            // FULL BACKUP
+            const backupData = {
+                version: '502',
+                timestamp: new Date().toISOString(),
+                records: records, // Points
+                tracks: jeoTracks, // Tracks
+                settings: {
+                    declination: manualDeclination,
+                    mapLayer: activeMapLayer,
+                    nextId: nextId,
+                    // Add other settings if needed
+                },
+                externalLayers: externalLayers.map(l => ({
+                    name: l.name,
+                    geojson: l.geojson,
+                    visible: l.visible,
+                    filled: l.filled,
+                    pointsVisible: l.pointsVisible,
+                    areasVisible: l.areasVisible,
+                    labelsVisible: l.labelsVisible
+                }))
+            };
 
-        const jsonStr = JSON.stringify(backupData, null, 2);
-        const dateStr = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
-        const fileName = `JeoCompass_Yedek_${dateStr}.json`;
+            const jsonStr = JSON.stringify(backupData, null, 2);
+            const dateStr = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
+            const fileName = `JeoCompass_Yedek_${dateStr}.json`;
 
-        try {
-            // Modern File System Access API (Save As)
-            if ('showSaveFilePicker' in window) {
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: fileName,
-                    types: [{
-                        description: 'JSON Backup File',
-                        accept: { 'application/json': ['.json'] },
-                    }],
-                });
-                const writable = await handle.createWritable();
-                await writable.write(jsonStr);
-                await writable.close();
-                showToast("Backup successful (Saved to file)");
-            } else {
-                // Fallback
-                downloadFile(jsonStr, fileName, 'application/json');
-                showToast("Backup successful (Downloads folder)");
+            try {
+                // Modern File System Access API (Save As)
+                if ('showSaveFilePicker' in window) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: fileName,
+                        types: [{
+                            description: 'JSON Backup File',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(jsonStr);
+                    await writable.close();
+                    showToast("Backup successful (Saved to file)");
+                } else {
+                    // Fallback
+                    downloadFile(jsonStr, fileName, 'application/json');
+                    showToast("Backup successful (Downloads folder)");
+                }
+            } catch (err) {
+                console.error("Backup failed", err);
+                if (err.name !== 'AbortError') {
+                    alert("Backup error: " + err.message);
+                }
             }
-        } catch (err) {
-            console.error("Backup failed", err);
-            if (err.name !== 'AbortError') {
-                alert("Backup error: " + err.message);
-            }
+        });
+    }
+
+    // Restore logic moved to Smart Merge section at the bottom.
+
+    // Share Modal Control
+    if (btnShare) {
+        btnShare.addEventListener('click', () => {
+            if (!btnShare.disabled) shareModal.classList.add('active');
+        });
+    }
+
+    if (document.getElementById('btn-share-cancel')) {
+        document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
+    }
+
+    // Update Share Actions (New Redesign v151)
+    const chkShareCsv = document.getElementById('chk-share-csv');
+    const chkShareKml = document.getElementById('chk-share-kml');
+    const btnShareNext = document.getElementById('btn-share-next');
+    const btnShareBack = document.getElementById('btn-share-back');
+    const btnShareAccept = document.getElementById('btn-share-accept');
+
+    const shareStep1 = document.getElementById('share-step-1');
+    const shareStep2 = document.getElementById('share-step-2');
+    const shareFooter1 = document.getElementById('share-footer-1');
+    const shareFooter2 = document.getElementById('share-footer-2');
+
+    function resetShareModal() {
+        if (shareStep1) shareStep1.style.display = 'block';
+        if (shareStep2) shareStep2.style.display = 'none';
+        if (shareFooter1) shareFooter1.style.display = 'flex';
+        if (shareFooter2) shareFooter2.style.display = 'none';
+    }
+
+    if (btnShareNext) {
+        btnShareNext.addEventListener('click', () => {
+            shareStep1.style.display = 'none';
+            shareStep2.style.display = 'block';
+            shareFooter1.style.display = 'none';
+            shareFooter2.style.display = 'flex';
+        });
+    }
+
+    if (btnShareBack) {
+        btnShareBack.addEventListener('click', resetShareModal);
+    }
+
+    if (btnShareAccept) {
+        btnShareAccept.addEventListener('click', () => socialShare());
+    }
+
+    if (document.getElementById('btn-share-cancel')) {
+        document.getElementById('btn-share-cancel').addEventListener('click', () => {
+            shareModal.classList.remove('active');
+            setTimeout(resetShareModal, 300);
+        });
+    }
+
+    // Updated socialShare handles formats based on radio buttons and triggers native share
+    // Helper: Toggle Action Menu
+    window.toggleActionMenu = function (id, event) {
+        if (event) event.stopPropagation();
+        // Close others
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            if (el.id !== `dropdown-${id}`) el.classList.remove('show');
+        });
+        const dropdown = document.getElementById(`dropdown-${id}`);
+        if (dropdown) dropdown.classList.toggle('show');
+    };
+
+    // Global click to close menus
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('.action-menu')) {
+            document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
         }
     });
-}
 
-// Restore logic moved to Smart Merge section at the bottom.
-
-// Share Modal Control
-if (btnShare) {
-    btnShare.addEventListener('click', () => {
-        if (!btnShare.disabled) shareModal.classList.add('active');
-    });
-}
-
-if (document.getElementById('btn-share-cancel')) {
-    document.getElementById('btn-share-cancel').addEventListener('click', () => shareModal.classList.remove('active'));
-}
-
-// Update Share Actions (New Redesign v151)
-const chkShareCsv = document.getElementById('chk-share-csv');
-const chkShareKml = document.getElementById('chk-share-kml');
-const btnShareNext = document.getElementById('btn-share-next');
-const btnShareBack = document.getElementById('btn-share-back');
-const btnShareAccept = document.getElementById('btn-share-accept');
-
-const shareStep1 = document.getElementById('share-step-1');
-const shareStep2 = document.getElementById('share-step-2');
-const shareFooter1 = document.getElementById('share-footer-1');
-const shareFooter2 = document.getElementById('share-footer-2');
-
-function resetShareModal() {
-    if (shareStep1) shareStep1.style.display = 'block';
-    if (shareStep2) shareStep2.style.display = 'none';
-    if (shareFooter1) shareFooter1.style.display = 'flex';
-    if (shareFooter2) shareFooter2.style.display = 'none';
-}
-
-if (btnShareNext) {
-    btnShareNext.addEventListener('click', () => {
-        shareStep1.style.display = 'none';
-        shareStep2.style.display = 'block';
-        shareFooter1.style.display = 'none';
-        shareFooter2.style.display = 'flex';
-    });
-}
-
-if (btnShareBack) {
-    btnShareBack.addEventListener('click', resetShareModal);
-}
-
-if (btnShareAccept) {
-    btnShareAccept.addEventListener('click', () => socialShare());
-}
-
-if (document.getElementById('btn-share-cancel')) {
-    document.getElementById('btn-share-cancel').addEventListener('click', () => {
-        shareModal.classList.remove('active');
-        setTimeout(resetShareModal, 300);
-    });
-}
-
-// Updated socialShare handles formats based on radio buttons and triggers native share
-// Helper: Toggle Action Menu
-window.toggleActionMenu = function (id, event) {
-    if (event) event.stopPropagation();
-    // Close others
-    document.querySelectorAll('.dropdown-content').forEach(el => {
-        if (el.id !== `dropdown-${id}`) el.classList.remove('show');
-    });
-    const dropdown = document.getElementById(`dropdown-${id}`);
-    if (dropdown) dropdown.classList.toggle('show');
-};
-
-// Global click to close menus
-window.addEventListener('click', (e) => {
-    if (!e.target.closest('.action-menu')) {
-        document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
-    }
-});
-
-// Helper: Generate KML String
-function generateKML(recordsToExport, docName = "JeoCompass Export") {
-    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+    // Helper: Generate KML String
+    function generateKML(recordsToExport, docName = "JeoCompass Export") {
+        let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>${docName}</name>`;
 
-    recordsToExport.forEach(r => {
-        kml += `
+        recordsToExport.forEach(r => {
+            kml += `
     <Placemark>
       <name>${r.label || r.id}</name>
       <description>Strike: ${formatStrike(r.strike)}\nDip: ${r.dip}\nTime: ${r.time || ''}\nNote: ${r.note || ''}</description>
@@ -3570,471 +3570,471 @@ function generateKML(recordsToExport, docName = "JeoCompass Export") {
         <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
       </Point>
     </Placemark>`;
-    });
+        });
 
-    kml += `
+        kml += `
   </Document>
 </kml>`;
-    return kml;
-}
-
-// Export Single Record KML
-window.exportSingleRecordKML = function (id) {
-    const r = records.find(rec => rec.id === id);
-    if (!r) return;
-
-    const kmlContent = generateKML([r], r.label || `Record ${r.id}`);
-    const fileName = `${r.label || r.id}_${new Date().getTime()}.kml`;
-    downloadFile(kmlContent, fileName, 'application/vnd.google-earth.kml+xml');
-
-    // Close menu
-    const dropdown = document.getElementById(`dropdown-${id}`);
-    if (dropdown) dropdown.classList.remove('show');
-};
-
-// Updated socialShare handles formats based on radio buttons and triggers native share
-async function socialShare(appTarget = null) {
-    let dataToShare = [];
-    let isTracks = (activeTab === 'tracks');
-    const timestamp = new Date().getTime();
-
-    if (isTracks) {
-        const selectedIds = Array.from(document.querySelectorAll('.track-select:checked')).map(cb => parseInt(cb.dataset.id));
-        dataToShare = jeoTracks.filter(t => selectedIds.includes(t.id));
-    } else {
-        const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
-        dataToShare = records.filter(r => selectedIds.includes(r.id));
+        return kml;
     }
 
-    if (dataToShare.length === 0) {
-        alert("No items selected for sharing. Please select items from the table.");
-        return;
-    }
+    // Export Single Record KML
+    window.exportSingleRecordKML = function (id) {
+        const r = records.find(rec => rec.id === id);
+        if (!r) return;
 
-    const isCsv = document.getElementById('chk-share-csv').checked;
-    const isKml = document.getElementById('chk-share-kml').checked;
+        const kmlContent = generateKML([r], r.label || `Record ${r.id}`);
+        const fileName = `${r.label || r.id}_${new Date().getTime()}.kml`;
+        downloadFile(kmlContent, fileName, 'application/vnd.google-earth.kml+xml');
 
-    let fileToShare = null;
-    let fileName = "";
-    let fileType = "";
+        // Close menu
+        const dropdown = document.getElementById(`dropdown-${id}`);
+        if (dropdown) dropdown.classList.remove('show');
+    };
 
-    // Prepare File based on selection
-    if (isCsv) {
+    // Updated socialShare handles formats based on radio buttons and triggers native share
+    async function socialShare(appTarget = null) {
+        let dataToShare = [];
+        let isTracks = (activeTab === 'tracks');
+        const timestamp = new Date().getTime();
+
         if (isTracks) {
-            // CSV Export for Tracks (Multi-track CSV is tricky, we can combine all points with Track ID)
-            const header = ["TrackID", "Name", "Lat", "Lon", "Date"];
-            const csvRows = [header.join(',')];
-            dataToShare.forEach(t => {
-                if (t.path) {
-                    t.path.forEach(pt => {
-                        // pt is [lat, lon]
-                        const row = [t.id, t.name, pt[0], pt[1], t.time];
-                        csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
-                    });
-                }
-            });
-            const csvContent = csvRows.join('\n');
-            fileName = dataToShare.length === 1 ? `${dataToShare[0].name}_${timestamp}.csv` : `SelectedTracks_${timestamp}.csv`;
-            fileType = 'text/csv';
-            fileToShare = new File([csvContent], fileName, { type: fileType });
-
+            const selectedIds = Array.from(document.querySelectorAll('.track-select:checked')).map(cb => parseInt(cb.dataset.id));
+            dataToShare = jeoTracks.filter(t => selectedIds.includes(t.id));
         } else {
-            // Points CSV
-            const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
-            const csvRows = [header.join(',')];
-            dataToShare.forEach(r => {
-                const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
-                csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
-            });
-            const csvContent = csvRows.join('\n');
-            fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
-            fileType = 'text/csv';
-            fileToShare = new File([csvContent], fileName, { type: fileType });
+            const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+            dataToShare = records.filter(r => selectedIds.includes(r.id));
         }
 
-    } else if (isKml) {
-        if (isTracks) {
-            const kmlContent = generateMultiTrackKML(dataToShare, "JeoCompass Selected Tracks");
-            fileName = dataToShare.length === 1 ? `${dataToShare[0].name}_${timestamp}.kml` : `SelectedTracks_${timestamp}.kml`;
-            fileType = 'application/vnd.google-earth.kml+xml';
-            fileToShare = new File([kmlContent], fileName, { type: fileType });
-        } else {
-            const kmlContent = generateKML(dataToShare, "JeoCompass Selected");
-            fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.kml` : `Selected_${timestamp}.kml`;
-            fileType = 'application/vnd.google-earth.kml+xml';
-            fileToShare = new File([kmlContent], fileName, { type: fileType });
+        if (dataToShare.length === 0) {
+            alert("No items selected for sharing. Please select items from the table.");
+            return;
         }
-    }
 
-    // Prepare text summary
-    let textSummary = `JeoCompass Records (${dataToShare.length} pts):\n\n`;
-    dataToShare.forEach(r => {
-        textSummary += `${r.label || r.id} | ${r.strike}/${r.dip} | Y:${r.y} X:${r.x} | ${r.note || ''}\n`;
-    });
+        const isCsv = document.getElementById('chk-share-csv').checked;
+        const isKml = document.getElementById('chk-share-kml').checked;
 
-    if (navigator.share) {
-        try {
-            const shareData = {
-                title: 'JeoCompass Records',
-                text: textSummary
-            };
+        let fileToShare = null;
+        let fileName = "";
+        let fileType = "";
 
-            if (fileToShare && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
-                shareData.files = [fileToShare];
+        // Prepare File based on selection
+        if (isCsv) {
+            if (isTracks) {
+                // CSV Export for Tracks (Multi-track CSV is tricky, we can combine all points with Track ID)
+                const header = ["TrackID", "Name", "Lat", "Lon", "Date"];
+                const csvRows = [header.join(',')];
+                dataToShare.forEach(t => {
+                    if (t.path) {
+                        t.path.forEach(pt => {
+                            // pt is [lat, lon]
+                            const row = [t.id, t.name, pt[0], pt[1], t.time];
+                            csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+                        });
+                    }
+                });
+                const csvContent = csvRows.join('\n');
+                fileName = dataToShare.length === 1 ? `${dataToShare[0].name}_${timestamp}.csv` : `SelectedTracks_${timestamp}.csv`;
+                fileType = 'text/csv';
+                fileToShare = new File([csvContent], fileName, { type: fileType });
+
+            } else {
+                // Points CSV
+                const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
+                const csvRows = [header.join(',')];
+                dataToShare.forEach(r => {
+                    const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
+                    csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+                });
+                const csvContent = csvRows.join('\n');
+                fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
+                fileType = 'text/csv';
+                fileToShare = new File([csvContent], fileName, { type: fileType });
             }
 
-            await navigator.share(shareData);
-            shareModal.classList.remove('active');
-            setTimeout(resetShareModal, 300);
-            return;
-        } catch (err) {
-            console.error("Navigator share failed", err);
-            if (err.name === 'AbortError') return;
+        } else if (isKml) {
+            if (isTracks) {
+                const kmlContent = generateMultiTrackKML(dataToShare, "JeoCompass Selected Tracks");
+                fileName = dataToShare.length === 1 ? `${dataToShare[0].name}_${timestamp}.kml` : `SelectedTracks_${timestamp}.kml`;
+                fileType = 'application/vnd.google-earth.kml+xml';
+                fileToShare = new File([kmlContent], fileName, { type: fileType });
+            } else {
+                const kmlContent = generateKML(dataToShare, "JeoCompass Selected");
+                fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.kml` : `Selected_${timestamp}.kml`;
+                fileType = 'application/vnd.google-earth.kml+xml';
+                fileToShare = new File([kmlContent], fileName, { type: fileType });
+            }
         }
+
+        // Prepare text summary
+        let textSummary = `JeoCompass Records (${dataToShare.length} pts):\n\n`;
+        dataToShare.forEach(r => {
+            textSummary += `${r.label || r.id} | ${r.strike}/${r.dip} | Y:${r.y} X:${r.x} | ${r.note || ''}\n`;
+        });
+
+        if (navigator.share) {
+            try {
+                const shareData = {
+                    title: 'JeoCompass Records',
+                    text: textSummary
+                };
+
+                if (fileToShare && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
+                    shareData.files = [fileToShare];
+                }
+
+                await navigator.share(shareData);
+                shareModal.classList.remove('active');
+                setTimeout(resetShareModal, 300);
+                return;
+            } catch (err) {
+                console.error("Navigator share failed", err);
+                if (err.name === 'AbortError') return;
+            }
+        }
+
+        // Traditional download fallback if sharing is not available
+        if (fileToShare) {
+            const url = URL.createObjectURL(fileToShare);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        shareModal.classList.remove('active');
+        setTimeout(resetShareModal, 300);
     }
 
-    // Traditional download fallback if sharing is not available
-    if (fileToShare) {
-        const url = URL.createObjectURL(fileToShare);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    const btnWhatsapp = document.getElementById('btn-share-whatsapp');
+    const btnTelegram = document.getElementById('btn-share-telegram');
+    const btnMail = document.getElementById('btn-share-mail');
+
+    if (btnWhatsapp) btnWhatsapp.addEventListener('click', () => socialShare('whatsapp'));
+    if (btnTelegram) btnTelegram.addEventListener('click', () => socialShare('telegram'));
+    if (btnMail) btnMail.addEventListener('click', () => socialShare('mail'));
+
+    // Options Modal Control
+    if (btnMoreOptions) {
+        btnMoreOptions.addEventListener('click', () => {
+            optionsModal.classList.add('active');
+        });
     }
 
-    shareModal.classList.remove('active');
-    setTimeout(resetShareModal, 300);
-}
+    if (document.getElementById('btn-options-cancel')) {
+        document.getElementById('btn-options-cancel').addEventListener('click', () => optionsModal.classList.remove('active'));
+    }
 
-const btnWhatsapp = document.getElementById('btn-share-whatsapp');
-const btnTelegram = document.getElementById('btn-share-telegram');
-const btnMail = document.getElementById('btn-share-mail');
+    // Updated Delete Logic Location (Now inside Options Modal)
+    if (btnDeleteSelected) {
+        btnDeleteSelected.addEventListener('click', () => {
+            const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+            if (selectedIds.length === 0) return;
 
-if (btnWhatsapp) btnWhatsapp.addEventListener('click', () => socialShare('whatsapp'));
-if (btnTelegram) btnTelegram.addEventListener('click', () => socialShare('telegram'));
-if (btnMail) btnMail.addEventListener('click', () => socialShare('mail'));
+            if (confirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
+                records = records.filter(r => !selectedIds.includes(r.id));
+                saveRecords();
+                renderRecords();
+                updateMapMarkers(false);
+                if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
+                if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                optionsModal.classList.remove('active');
+            }
+        });
+    }
 
-// Options Modal Control
-if (btnMoreOptions) {
-    btnMoreOptions.addEventListener('click', () => {
-        optionsModal.classList.add('active');
-    });
-}
-
-if (document.getElementById('btn-options-cancel')) {
-    document.getElementById('btn-options-cancel').addEventListener('click', () => optionsModal.classList.remove('active'));
-}
-
-// Updated Delete Logic Location (Now inside Options Modal)
-if (btnDeleteSelected) {
-    btnDeleteSelected.addEventListener('click', () => {
-        const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
-        if (selectedIds.length === 0) return;
-
-        if (confirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
-            records = records.filter(r => !selectedIds.includes(r.id));
+    /** Global delete helper for Map Popups **/
+    window.deleteRecordFromMap = function (id) {
+        if (confirm(`Record #${id} will be deleted. Are you sure?`)) {
+            records = records.filter(r => r.id !== id);
             saveRecords();
             renderRecords();
             updateMapMarkers(false);
             if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
             if (selectAllCheckbox) selectAllCheckbox.checked = false;
-            optionsModal.classList.remove('active');
         }
-    });
-}
+    };
 
-/** Global delete helper for Map Popups **/
-window.deleteRecordFromMap = function (id) {
-    if (confirm(`Record #${id} will be deleted. Are you sure?`)) {
-        records = records.filter(r => r.id !== id);
-        saveRecords();
-        renderRecords();
-        updateMapMarkers(false);
-        if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
-        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
     }
-};
 
-function downloadFile(content, filename, type) {
-    const blob = new Blob([content], { type: type });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-}
-
-// Lock Toggle Logic
-function updateLockUI() {
-    if (!btnToggleLock) return;
-    if (isRecordsLocked) {
-        btnToggleLock.innerHTML = '🔒';
-        btnToggleLock.classList.remove('unlocked');
-        btnToggleLock.title = 'Unlock';
-    } else {
-        btnToggleLock.innerHTML = '🔓';
-        btnToggleLock.classList.add('unlocked');
-        btnToggleLock.title = 'Lock';
-    }
-}
-
-if (btnToggleLock) {
-    btnToggleLock.addEventListener('click', () => {
-        isRecordsLocked = !isRecordsLocked;
-        updateLockUI();
-        renderRecords();
+    // Lock Toggle Logic
+    function updateLockUI() {
+        if (!btnToggleLock) return;
         if (isRecordsLocked) {
-            // Uncheck all when locking to be safe
-            document.querySelectorAll('.record-select').forEach(cb => cb.checked = false);
-            const selectAll = document.getElementById('select-all-records');
-            if (selectAll) selectAll.checked = false;
-            updateShareButtonState();
+            btnToggleLock.innerHTML = '🔒';
+            btnToggleLock.classList.remove('unlocked');
+            btnToggleLock.title = 'Unlock';
+        } else {
+            btnToggleLock.innerHTML = '🔓';
+            btnToggleLock.classList.add('unlocked');
+            btnToggleLock.title = 'Lock';
+        }
+    }
+
+    if (btnToggleLock) {
+        btnToggleLock.addEventListener('click', () => {
+            isRecordsLocked = !isRecordsLocked;
+            updateLockUI();
+            renderRecords();
+            if (isRecordsLocked) {
+                // Uncheck all when locking to be safe
+                document.querySelectorAll('.record-select').forEach(cb => cb.checked = false);
+                const selectAll = document.getElementById('select-all-records');
+                if (selectAll) selectAll.checked = false;
+                updateShareButtonState();
+            }
+        });
+    }
+
+    // Global auto-lock and auto-save on exit (v456)
+    window.addEventListener('beforeunload', () => {
+        isRecordsLocked = true;
+        if (isTracking && trackPath.length > 0) {
+            saveCurrentTrack();
         }
     });
-}
 
-// Global auto-lock and auto-save on exit (v456)
-window.addEventListener('beforeunload', () => {
-    isRecordsLocked = true;
-    if (isTracking && trackPath.length > 0) {
-        saveCurrentTrack();
-    }
-});
-
-// Handle mobile backgrounding/app switching (v462: Removed auto-save to keep single continuous line)
-document.addEventListener('visibilitychange', () => {
-    // Session is kept in localStorage trackPath, no need to save to list on every backgrounding
-});
-
-// v463: Robust auto-save on exit/tab close
-const handleTerminationSave = () => {
-    isRecordsLocked = true;
-    if (isTracking && trackPath.length > 1) {
-        saveCurrentTrack();
-    }
-};
-
-window.addEventListener('beforeunload', handleTerminationSave);
-window.addEventListener('pagehide', handleTerminationSave);
-
-// Initial flow is handled by autoInitSensors() in the mid-section.
-
-// Desktop Sim
-setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setInterval(() => { targetHeading = (targetHeading + 1) % 360; }, 50); } }, 2000);
-
-// -----------------------------------------------------------------
-// BACKUP & RESTORE EVENTS (Smart Merge)
-// -----------------------------------------------------------------
-
-
-if (document.getElementById('btn-restore-json')) {
-    document.getElementById('btn-restore-json').addEventListener('click', () => {
-        document.getElementById('restore-file-input').click();
+    // Handle mobile backgrounding/app switching (v462: Removed auto-save to keep single continuous line)
+    document.addEventListener('visibilitychange', () => {
+        // Session is kept in localStorage trackPath, no need to save to list on every backgrounding
     });
-}
 
-if (document.getElementById('restore-file-input')) {
-    document.getElementById('restore-file-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    // v463: Robust auto-save on exit/tab close
+    const handleTerminationSave = () => {
+        isRecordsLocked = true;
+        if (isTracking && trackPath.length > 1) {
+            saveCurrentTrack();
+        }
+    };
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
+    window.addEventListener('beforeunload', handleTerminationSave);
+    window.addEventListener('pagehide', handleTerminationSave);
 
-                // Identify incoming data type
-                const incomingRecords = data.records || (Array.isArray(data) ? data : []);
-                const incomingTracks = data.tracks || [];
-                const incomingLayers = data.externalLayers || [];
+    // Initial flow is handled by autoInitSensors() in the mid-section.
 
-                if (incomingRecords.length === 0 && incomingTracks.length === 0 && incomingLayers.length === 0) {
-                    alert("No valid records or tracks found in file.");
-                    return;
-                }
+    // Desktop Sim
+    setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setInterval(() => { targetHeading = (targetHeading + 1) % 360; }, 50); } }, 2000);
 
-                const msg = `SMART RESTORE MODE\n\n` +
-                    `File contains:\n` +
-                    `- ${incomingRecords.length} Points\n` +
-                    `- ${incomingTracks.length} Tracks\n` +
-                    `- ${incomingLayers.length} Layers\n\n` +
-                    `Current data will be KEPT. Only NEW unique data will be added.\n` +
-                    `Do you want to proceed?`;
+    // -----------------------------------------------------------------
+    // BACKUP & RESTORE EVENTS (Smart Merge)
+    // -----------------------------------------------------------------
 
-                if (confirm(msg)) {
-                    let recAdded = 0, recSkipped = 0;
-                    let trackAdded = 0, trackSkipped = 0;
-                    let layerAdded = 0, layerSkipped = 0;
 
-                    // 1. SMART MERGE RECORDS
-                    incomingRecords.forEach(inc => {
-                        const exists = inc.time && records.some(r => r.time === inc.time);
-                        const existsContent = records.some(r =>
-                            r.label === inc.label &&
-                            Math.abs(r.lat - inc.lat) < 0.000001 &&
-                            Math.abs(r.lon - inc.lon) < 0.000001
-                        );
+    if (document.getElementById('btn-restore-json')) {
+        document.getElementById('btn-restore-json').addEventListener('click', () => {
+            document.getElementById('restore-file-input').click();
+        });
+    }
 
-                        if (exists || existsContent) {
-                            recSkipped++;
-                        } else {
-                            const newRec = { ...inc };
-                            newRec.id = nextId++;
-                            records.push(newRec);
-                            recAdded++;
-                        }
-                    });
+    if (document.getElementById('restore-file-input')) {
+        document.getElementById('restore-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-                    // 2. SMART MERGE TRACKS
-                    incomingTracks.forEach(incT => {
-                        const exists = jeoTracks.some(t => t.id === incT.id || t.time === incT.time);
-                        if (exists) {
-                            trackSkipped++;
-                        } else {
-                            jeoTracks.push(incT);
-                            trackAdded++;
-                        }
-                    });
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
 
-                    // 3. SMART MERGE LAYERS
-                    incomingLayers.forEach(incL => {
-                        const exists = externalLayers.some(l => l.name === incL.name);
-                        if (exists) {
-                            layerSkipped++;
-                        } else {
-                            addExternalLayer(incL.name, incL.geojson);
-                            const newL = externalLayers[externalLayers.length - 1];
-                            if (newL) {
-                                newL.visible = incL.visible;
-                                newL.filled = incL.filled;
-                                newL.pointsVisible = incL.pointsVisible !== undefined ? incL.pointsVisible : true;
-                                newL.areasVisible = incL.areasVisible !== undefined ? incL.areasVisible : true;
-                                newL.labelsVisible = incL.labelsVisible !== undefined ? incL.labelsVisible : true;
-                                if (!newL.visible) map.removeLayer(newL.layer);
+                    // Identify incoming data type
+                    const incomingRecords = data.records || (Array.isArray(data) ? data : []);
+                    const incomingTracks = data.tracks || [];
+                    const incomingLayers = data.externalLayers || [];
+
+                    if (incomingRecords.length === 0 && incomingTracks.length === 0 && incomingLayers.length === 0) {
+                        alert("No valid records or tracks found in file.");
+                        return;
+                    }
+
+                    const msg = `SMART RESTORE MODE\n\n` +
+                        `File contains:\n` +
+                        `- ${incomingRecords.length} Points\n` +
+                        `- ${incomingTracks.length} Tracks\n` +
+                        `- ${incomingLayers.length} Layers\n\n` +
+                        `Current data will be KEPT. Only NEW unique data will be added.\n` +
+                        `Do you want to proceed?`;
+
+                    if (confirm(msg)) {
+                        let recAdded = 0, recSkipped = 0;
+                        let trackAdded = 0, trackSkipped = 0;
+                        let layerAdded = 0, layerSkipped = 0;
+
+                        // 1. SMART MERGE RECORDS
+                        incomingRecords.forEach(inc => {
+                            const exists = inc.time && records.some(r => r.time === inc.time);
+                            const existsContent = records.some(r =>
+                                r.label === inc.label &&
+                                Math.abs(r.lat - inc.lat) < 0.000001 &&
+                                Math.abs(r.lon - inc.lon) < 0.000001
+                            );
+
+                            if (exists || existsContent) {
+                                recSkipped++;
+                            } else {
+                                const newRec = { ...inc };
+                                newRec.id = nextId++;
+                                records.push(newRec);
+                                recAdded++;
                             }
-                            layerAdded++;
-                        }
-                    });
+                        });
 
-                    // 4. RESTORE SETTINGS (Optional)
-                    if (data.settings) {
-                        if (manualDeclination === 0 && data.settings.declination) {
-                            manualDeclination = data.settings.declination;
-                            localStorage.setItem('jeoDeclination', manualDeclination);
+                        // 2. SMART MERGE TRACKS
+                        incomingTracks.forEach(incT => {
+                            const exists = jeoTracks.some(t => t.id === incT.id || t.time === incT.time);
+                            if (exists) {
+                                trackSkipped++;
+                            } else {
+                                jeoTracks.push(incT);
+                                trackAdded++;
+                            }
+                        });
+
+                        // 3. SMART MERGE LAYERS
+                        incomingLayers.forEach(incL => {
+                            const exists = externalLayers.some(l => l.name === incL.name);
+                            if (exists) {
+                                layerSkipped++;
+                            } else {
+                                addExternalLayer(incL.name, incL.geojson);
+                                const newL = externalLayers[externalLayers.length - 1];
+                                if (newL) {
+                                    newL.visible = incL.visible;
+                                    newL.filled = incL.filled;
+                                    newL.pointsVisible = incL.pointsVisible !== undefined ? incL.pointsVisible : true;
+                                    newL.areasVisible = incL.areasVisible !== undefined ? incL.areasVisible : true;
+                                    newL.labelsVisible = incL.labelsVisible !== undefined ? incL.labelsVisible : true;
+                                    if (!newL.visible) map.removeLayer(newL.layer);
+                                }
+                                layerAdded++;
+                            }
+                        });
+
+                        // 4. RESTORE SETTINGS (Optional)
+                        if (data.settings) {
+                            if (manualDeclination === 0 && data.settings.declination) {
+                                manualDeclination = data.settings.declination;
+                                localStorage.setItem('jeoDeclination', manualDeclination);
+                            }
+                        }
+
+                        // Save all
+                        saveRecords();
+                        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+                        localStorage.setItem('jeoNextId', nextId);
+                        saveExternalLayers();
+
+                        // Refresh UI
+                        renderRecords();
+                        renderTracks();
+                        renderLayerList();
+                        updateMapMarkers(true);
+
+                        alert(`RESTORE COMPLETE\n\n` +
+                            `Points: +${recAdded} (Skipped: ${recSkipped})\n` +
+                            `Tracks: +${trackAdded} (Skipped: ${trackSkipped})\n` +
+                            `Layers: +${layerAdded} (Skipped: ${layerSkipped})\n\n` +
+                            `Total Points: ${records.length}`);
+
+                        if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
+                    }
+                } catch (err) {
+                    alert("Error: Failed to read file!\n" + err.message);
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+    }
+    renderTracks();
+
+
+    // v470: Initialize Auto-Rec and Live Track checkbox states from localStorage
+    // Wrapped in DOMContentLoaded to ensure elements are available
+    document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
+        const chkAutoTrack = document.getElementById('chk-auto-track');
+        const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+
+        console.log('Initializing tracking settings...', { chkAutoTrack, chkShowLiveTrack });
+
+        // Restore checkbox states from localStorage
+        if (chkAutoTrack) {
+            chkAutoTrack.checked = isTracking;
+            chkAutoTrack.addEventListener('change', (e) => {
+                isTracking = e.target.checked;
+                localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
+
+                // If tracking is disabled and there's an active track, save it
+                if (!isTracking && trackPath.length > 1) {
+                    saveCurrentTrack();
+                }
+
+                console.log('Auto-Rec:', isTracking ? 'ENABLED' : 'DISABLED');
+            });
+            console.log('Auto-Rec checkbox initialized, checked:', chkAutoTrack.checked);
+        } else {
+            console.warn('Auto-Rec checkbox not found in DOM');
+        }
+
+        if (chkShowLiveTrack) {
+            chkShowLiveTrack.checked = showLiveTrack;
+            chkShowLiveTrack.addEventListener('change', (e) => {
+                showLiveTrack = e.target.checked;
+                localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+
+                // Update track polyline visibility immediately
+                if (trackPolyline) {
+                    if (showLiveTrack && map) {
+                        if (!map.hasLayer(trackPolyline)) {
+                            trackPolyline.addTo(map);
+                        }
+                    } else {
+                        if (map && map.hasLayer(trackPolyline)) {
+                            map.removeLayer(trackPolyline);
                         }
                     }
-
-                    // Save all
-                    saveRecords();
-                    localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
-                    localStorage.setItem('jeoNextId', nextId);
-                    saveExternalLayers();
-
-                    // Refresh UI
-                    renderRecords();
-                    renderTracks();
-                    renderLayerList();
-                    updateMapMarkers(true);
-
-                    alert(`RESTORE COMPLETE\n\n` +
-                        `Points: +${recAdded} (Skipped: ${recSkipped})\n` +
-                        `Tracks: +${trackAdded} (Skipped: ${trackSkipped})\n` +
-                        `Layers: +${layerAdded} (Skipped: ${layerSkipped})\n\n` +
-                        `Total Points: ${records.length}`);
-
-                    if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
                 }
-            } catch (err) {
-                alert("Error: Failed to read file!\n" + err.message);
-            }
-            e.target.value = '';
-        };
-        reader.readAsText(file);
+
+                console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
+            });
+            console.log('Live Track checkbox initialized, checked:', chkShowLiveTrack.checked);
+        } else {
+            console.warn('Live Track checkbox not found in DOM');
+        }
     });
-}
-renderTracks();
 
 
-// v470: Initialize Auto-Rec and Live Track checkbox states from localStorage
-// Wrapped in DOMContentLoaded to ensure elements are available
-document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
-    const chkAutoTrack = document.getElementById('chk-auto-track');
-    const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+    // v441: Hybrid Headlight Logic
+    let currentSpeed = 0;
+    let currentCourse = null;
 
-    console.log('Initializing tracking settings...', { chkAutoTrack, chkShowLiveTrack });
-
-    // Restore checkbox states from localStorage
-    if (chkAutoTrack) {
-        chkAutoTrack.checked = isTracking;
-        chkAutoTrack.addEventListener('change', (e) => {
-            isTracking = e.target.checked;
-            localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
-
-            // If tracking is disabled and there's an active track, save it
-            if (!isTracking && trackPath.length > 1) {
-                saveCurrentTrack();
-            }
-
-            console.log('Auto-Rec:', isTracking ? 'ENABLED' : 'DISABLED');
-        });
-        console.log('Auto-Rec checkbox initialized, checked:', chkAutoTrack.checked);
-    } else {
-        console.warn('Auto-Rec checkbox not found in DOM');
-    }
-
-    if (chkShowLiveTrack) {
-        chkShowLiveTrack.checked = showLiveTrack;
-        chkShowLiveTrack.addEventListener('change', (e) => {
-            showLiveTrack = e.target.checked;
-            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
-
-            // Update track polyline visibility immediately
-            if (trackPolyline) {
-                if (showLiveTrack && map) {
-                    if (!map.hasLayer(trackPolyline)) {
-                        trackPolyline.addTo(map);
+    // v454: Headlight Rotation Update (Fixed Direction Priority)
+    function updateHeadlight(heading) {
+        if (typeof liveMarker !== 'undefined' && liveMarker) {
+            const el = liveMarker.getElement();
+            if (el) {
+                const cone = el.querySelector('.heading-cone');
+                if (cone) {
+                    // v454: Improved Hybrid Logic
+                    // Use GPS Course if moving faster than 0.8 m/s (~2.9 km/h)
+                    // This prevents North-East issue when traveling East
+                    let rotation = heading;
+                    if (currentSpeed > 0.8 && currentCourse !== null) {
+                        rotation = currentCourse;
                     }
-                } else {
-                    if (map && map.hasLayer(trackPolyline)) {
-                        map.removeLayer(trackPolyline);
-                    }
+
+                    // Rotate cone (0 = North/Up)
+                    cone.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
+                    cone.style.opacity = '1';
                 }
-            }
-
-            console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
-        });
-        console.log('Live Track checkbox initialized, checked:', chkShowLiveTrack.checked);
-    } else {
-        console.warn('Live Track checkbox not found in DOM');
-    }
-});
-
-
-// v441: Hybrid Headlight Logic
-let currentSpeed = 0;
-let currentCourse = null;
-
-// v454: Headlight Rotation Update (Fixed Direction Priority)
-function updateHeadlight(heading) {
-    if (typeof liveMarker !== 'undefined' && liveMarker) {
-        const el = liveMarker.getElement();
-        if (el) {
-            const cone = el.querySelector('.heading-cone');
-            if (cone) {
-                // v454: Improved Hybrid Logic
-                // Use GPS Course if moving faster than 0.8 m/s (~2.9 km/h)
-                // This prevents North-East issue when traveling East
-                let rotation = heading;
-                if (currentSpeed > 0.8 && currentCourse !== null) {
-                    rotation = currentCourse;
-                }
-
-                // Rotate cone (0 = North/Up)
-                cone.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
-                cone.style.opacity = '1';
             }
         }
     }
-}
