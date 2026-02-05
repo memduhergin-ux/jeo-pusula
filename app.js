@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v531';
+const CACHE_NAME = 'jeocompass-v532';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -602,6 +602,9 @@ function renderCoordinates() {
         const hemisphere = currentCoords.lat >= 0 ? 'N' : 'S';
         const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
 
+        // v532: Define onlineAlt for Dashboard UTM and ensure displayAlt is usable
+        const onlineAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : (gpsAlt || '-');
+
         try {
             const [easting, northing] = proj4('WGS84', utmZoneDef, [currentCoords.lon, currentCoords.lat]);
             coordContent.innerHTML = `
@@ -617,9 +620,9 @@ function renderCoordinates() {
                     <span class="data-label">X</span>
                     <span class="data-value" style="font-size: 1rem;">${Math.round(northing)}</span>
                 </div>
-                <div class="coord-row">
-                    <span class="data-label">Z (Real)</span>
-                    <span class="data-value" style="font-size: 1rem; color: #ff9800; font-weight: bold;">${displayAlt} m</span>
+                <div class="coord-row" style="border-top: 1px solid rgba(255,165,0,0.3); padding-top: 4px;">
+                    <span class="data-label" style="color: #ff9800;">Real Z (Alt)</span>
+                    <span class="data-value" style="font-size: 1.1rem; color: #ff9800; font-weight: bold;">${onlineAlt !== '-' ? onlineAlt + ' m' : 'Searching...'}</span>
                 </div>
             `;
         } catch (e) {
@@ -1473,14 +1476,17 @@ function initMap() {
             let candidates = [];
             const findPolygonsRecursive = (target) => {
                 if (!target) return;
-                // v530: More aggressive area detection (Any layer with getLatLngs and a fill/closed potential)
-                if (target.getLatLngs && (target instanceof L.Polygon || target instanceof L.Polyline)) {
-                    // It counts as a polygon if it is L.Polygon OR has fill enabled OR is currently being drawn as a polygon
-                    const canBeArea = target instanceof L.Polygon || (target.options && target.options.fill) || (target === measureLine && typeof isPolygon !== 'undefined' && isPolygon);
+                // v532: Most aggressive detection for any closed path/area
+                if (target.getLatLngs) {
+                    const isPoly = target instanceof L.Polygon;
+                    const isClosedLine = target instanceof L.Polyline && (target.options && target.options.fill);
+                    const isActiveMeasure = target === measureLine && (typeof isPolygon !== 'undefined' && isPolygon);
 
-                    if (canBeArea && target.getBounds && target.getBounds().contains(e.latlng)) {
-                        if (isPointInPolygon(e.latlng, target)) {
-                            candidates.push(target);
+                    if ((isPoly || isClosedLine || isActiveMeasure) && target.getBounds) {
+                        if (target.getBounds().contains(e.latlng)) {
+                            if (isPointInPolygon(e.latlng, target)) {
+                                candidates.push(target);
+                            }
                         }
                     }
                 } else if (target.eachLayer) {
@@ -1639,8 +1645,11 @@ function updateScaleValues() {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            // v527: Absolute Priority for Online Elevation at center, otherwise "---"
-            displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : "---";
+            // v532: Prioritize Online Elevation in Map UTM bar
+            displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
+        } else {
+            // v532: Use onlineMyAlt for mobile tracking state Real Z
+            displayAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : displayAlt;
         }
 
         if (displayLat) {
@@ -1651,11 +1660,11 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
-                // Simplified display to prevent overflow and ensure icon is visible
+                // v532: Distinct Real Z Color in UTM Bar
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:0.5mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Z:</span><span style="margin-right:0mm;">${displayAlt}</span>
+                    <span style="font-size:0.75em; color:#ff9800; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:0mm; color:#ff9800; font-weight:bold;">${displayAlt}</span>
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
