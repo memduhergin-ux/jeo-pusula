@@ -371,14 +371,14 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v506';
+const CACHE_NAME = 'jeocompass-v510';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
 // Tracking State (v354)
-let isTracking = localStorage.getItem('jeoAutoTrackEnabled') !== 'false'; // v506: Default true if not 'false' (string)
+let isTracking = JSON.parse(localStorage.getItem('jeoAutoTrackEnabled')) !== false; // v510: Default true (boolean)
 let trackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 let trackStartTime = localStorage.getItem('jeoTrackStartTime') || null; // v467: track start time
 let trackPolyline = null;
@@ -402,7 +402,7 @@ const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅ�
 // Track Auto-Recording State (v442)
 let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
 const MAX_TRACKS = 20; // Maksimum izlek sayısı
-let showLiveTrack = localStorage.getItem('jeoShowLiveTrack') !== 'false'; // v506: Default true if not 'false' (string)
+let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // v510: Default true (boolean)
 
 // Measurement State
 let isMeasuring = false;
@@ -2068,14 +2068,21 @@ function toggleTracking() {
     isTracking = !isTracking;
 
     if (!isTracking) {
-        // Kayıt durduruldu - mevcut izleği sessizce kaydet
+        // Tik kaldırıldı: Mevcut kaydı sonlandır ve kaydet
         saveCurrentTrack();
+    } else {
+        // Tik atıldı: Yeni kayıt süreci otomatik olarak navigator.geolocation tarafından (updateTrack ile) tetiklenecek
+        // Ancak gerekirse burada sıfırdan başlatma yapılabilir
+        trackPath = [];
+        trackStartTime = new Date().toISOString();
+        localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
+        localStorage.setItem('jeoTrackStartTime', trackStartTime);
     }
 
     // Sync settings checkbox
     const chkAutoTrack = document.getElementById('chk-auto-track');
     if (chkAutoTrack) chkAutoTrack.checked = isTracking;
-    localStorage.setItem('jeoAutoTrackEnabled', isTracking);
+    localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
 
     if (isTracking) showToast('Track recording started', 1000);
     else showToast('Track Saved', 1000);
@@ -3320,7 +3327,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '506',
+            version: '510',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3938,7 +3945,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
         chkLive.checked = showLiveTrack;
         chkLive.addEventListener('change', (e) => {
             showLiveTrack = e.target.checked;
-            localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
+            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
             updateLiveTrackVisibility();
             console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
         });

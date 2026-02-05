@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=506">
+    <link rel="stylesheet" href="style.css?v=510">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v506</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v510</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -412,43 +412,39 @@
 
     <!-- Options Modal -->
     <div id="options-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 320px;">
-            <div class="modal-header">
-                <h2>Options</h2>
-                <span class="version-text">v506</span>
-            </div>
-            <div class="modal-body" style="padding: 20px 0;">
-                <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Please select
-                    an
-                    action.</div>
-                <button class="save-btn ready" id="btn-delete-selected"
-                    style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
-                    🗑️ Delete Selected Records
-                </button>
-                <button class="save-btn ready" onclick="forceAppUpdate()"
-                    style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold; margin-bottom: 20px;">
-                    🔄 Force Update
-                </button>
+        <span class="version-text">v510</span>
+        <div class="modal-body" style="padding: 20px 0;">
+            <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Please select
+                an
+                action.</div>
+            <button class="save-btn ready" id="btn-delete-selected"
+                style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
+                🗑️ Delete Selected Records
+            </button>
+            <button class="save-btn ready" onclick="forceAppUpdate()"
+                style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold; margin-bottom: 20px;">
+                🔄 Force Update
+            </button>
 
-                <div style="border-top: 1px solid #444; padding-top: 15px;">
-                    <button class="save-btn ready" id="btn-backup-json"
-                        style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
-                        📦 Full Backup (JSON)
-                    </button>
-                    <button class="save-btn ready" id="btn-restore-json"
-                        style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
-                        📂 Restore
-                    </button>
-                    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
-                </div>
-                <div style="text-align: center; margin-top: 20px; color: #666; font-size: 0.8rem;">
-                    JeoCompass v506
-                </div>
+            <div style="border-top: 1px solid #444; padding-top: 15px;">
+                <button class="save-btn ready" id="btn-backup-json"
+                    style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
+                    📦 Full Backup (JSON)
+                </button>
+                <button class="save-btn ready" id="btn-restore-json"
+                    style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
+                    📂 Restore
+                </button>
+                <input type="file" id="restore-file-input" accept=".json" style="display: none;">
             </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-cancel" id="btn-options-cancel">Close</button>
+            <div style="text-align: center; margin-top: 20px; color: #666; font-size: 0.8rem;">
+                JeoCompass v510
             </div>
         </div>
+        <div class="modal-footer">
+            <button class="modal-btn btn-cancel" id="btn-options-cancel">Close</button>
+        </div>
+    </div>
     </div>
 
     <!-- Share Modal (Redesigned v136) -->
@@ -547,9 +543,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=506"></script>
+    <script src="app.js?v=510"></script>
     <script>
-        const JEO_VERSION = '506';
+        const JEO_VERSION = '510';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
