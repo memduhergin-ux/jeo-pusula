@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v469';
+const CACHE_NAME = 'jeocompass-v470';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -3772,6 +3772,52 @@ if (document.getElementById('restore-file-input')) {
     });
 }
 renderTracks();
+
+
+// v470: Initialize Auto-Rec and Live Track checkbox states from localStorage
+(function initTrackingSettings() {
+    const chkAutoTrack = document.getElementById('chk-auto-track');
+    const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+
+    // Restore checkbox states from localStorage
+    if (chkAutoTrack) {
+        chkAutoTrack.checked = isTracking;
+        chkAutoTrack.addEventListener('change', (e) => {
+            isTracking = e.target.checked;
+            localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
+
+            // If tracking is disabled and there's an active track, save it
+            if (!isTracking && trackPath.length > 1) {
+                saveCurrentTrack();
+            }
+
+            console.log('Auto-Rec:', isTracking ? 'ENABLED' : 'DISABLED');
+        });
+    }
+
+    if (chkShowLiveTrack) {
+        chkShowLiveTrack.checked = showLiveTrack;
+        chkShowLiveTrack.addEventListener('change', (e) => {
+            showLiveTrack = e.target.checked;
+            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+
+            // Update track polyline visibility immediately
+            if (trackPolyline) {
+                if (showLiveTrack && map) {
+                    if (!map.hasLayer(trackPolyline)) {
+                        trackPolyline.addTo(map);
+                    }
+                } else {
+                    if (map && map.hasLayer(trackPolyline)) {
+                        map.removeLayer(trackPolyline);
+                    }
+                }
+            }
+
+            console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
+        });
+    }
+})();
 
 
 // v441: Hybrid Headlight Logic
