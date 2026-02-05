@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v502';
+const CACHE_NAME = 'jeocompass-v503';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1852,6 +1852,7 @@ function renderTracks() {
         const liveName = `Track ${liveStartTime.toLocaleDateString('en-GB')} ${liveStartTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
         html += `
             <tr class="live-track-row" style="background: rgba(76, 175, 80, 0.1);">
+                <td></td>
                 <td style="color: #4caf50; font-weight: bold;">🔴 ${liveName}</td>
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
                 <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
@@ -1864,6 +1865,7 @@ function renderTracks() {
 
     html += sortedTracks.map(t => `
         <tr data-id="${t.id}">
+            <td><input type="checkbox" class="track-select" data-id="${t.id}"></td>
             <td onclick="focusTrack(${t.id})">${t.name}</td>
             <td style="font-family:monospace;">${Math.round(t.length || 0)}m</td>
             <td><input type="color" value="${t.color || '#ff5722'}" onchange="updateTrackColor(${t.id}, this.value)" class="track-color-dot"></td>
@@ -2119,20 +2121,26 @@ function updateTrackCountBadge() {
     if (badge) badge.textContent = `(${jeoTracks.length}/${MAX_TRACKS})`;
 }
 
+let activeTab = 'points'; // 'points' or 'tracks'
+
 // Tab Switching
 document.getElementById('tab-points').addEventListener('click', () => {
+    activeTab = 'points';
     document.getElementById('tab-points').classList.add('active');
     document.getElementById('tab-tracks').classList.remove('active');
     document.getElementById('container-points').style.display = 'block';
     document.getElementById('container-tracks').style.display = 'none';
+    updateShareButtonState(); // Update state on switch
 });
 
 document.getElementById('tab-tracks').addEventListener('click', () => {
+    activeTab = 'tracks';
     document.getElementById('tab-tracks').classList.add('active');
     document.getElementById('tab-points').classList.remove('active');
     document.getElementById('container-tracks').style.display = 'block';
     document.getElementById('container-points').style.display = 'none';
     renderTracks();
+    updateShareButtonState(); // Update state on switch
 });
 
 if (btnToggleRecords) {
@@ -2199,7 +2207,12 @@ document.getElementById('records-body').addEventListener('click', (e) => {
 
 // Selection Logic
 function updateShareButtonState() {
-    const selectedCount = document.querySelectorAll('.record-select:checked').length;
+    let selectedCount = 0;
+    if (activeTab === 'points') {
+        selectedCount = document.querySelectorAll('.record-select:checked').length;
+    } else {
+        selectedCount = document.querySelectorAll('.track-select:checked').length;
+    }
     if (btnShare) btnShare.disabled = selectedCount === 0;
 }
 
@@ -2219,6 +2232,60 @@ document.getElementById('records-body').addEventListener('change', (e) => {
     if (e.target.classList.contains('record-select')) {
         e.target.closest('tr').classList.toggle('selected', e.target.checked);
         updateMapMarkers(true);
+        updateShareButtonState();
+    }
+});
+
+const selectAllTracksCheckbox = document.getElementById('select-all-tracks');
+if (selectAllTracksCheckbox) {
+    selectAllTracksCheckbox.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        document.querySelectorAll('.track-select').forEach(cb => {
+            cb.checked = checked;
+            // Optional: highlight row styling for tracks
+            // cb.closest('tr').classList.toggle('selected', checked);
+        });
+        updateShareButtonState();
+    });
+}
+
+// Listener for Delete Selected (btnDeleteSelected defined at top)
+if (btnDeleteSelected) {
+    btnDeleteSelected.addEventListener('click', () => {
+        let isTracks = (activeTab === 'tracks');
+        if (isTracks) {
+            const selectedIds = Array.from(document.querySelectorAll('.track-select:checked')).map(cb => parseInt(cb.dataset.id));
+            if (selectedIds.length === 0) {
+                alert("No tracks selected to delete.");
+                return;
+            }
+            if (confirm(`Are you sure you want to delete ${selectedIds.length} selected track(s)?`)) {
+                jeoTracks = jeoTracks.filter(t => !selectedIds.includes(t.id));
+                localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+                renderTracks();
+                updateMapMarkers(false);
+                if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
+            }
+        } else {
+            // Existing Points Delete Logic
+            const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+            if (selectedIds.length === 0) {
+                alert("No records selected to delete.");
+                return;
+            }
+            if (confirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) {
+                records = records.filter(r => !selectedIds.includes(r.id));
+                saveRecords();
+                renderRecords();
+                updateMapMarkers(true);
+                if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
+            }
+        }
+    });
+}
+
+document.getElementById('tracks-body').addEventListener('change', (e) => {
+    if (e.target.classList.contains('track-select')) {
         updateShareButtonState();
     }
 });
@@ -2351,6 +2418,22 @@ function initializeTrackSettings() {
             updateLiveTrackVisibility();
         });
     }
+});
+
+// Helper to toggle live track visibility
+function updateLiveTrackVisibility() {
+    if (!currentLine) return;
+
+    if (showLiveTrack) {
+        if (!map.hasLayer(currentLine)) {
+            currentLine.addTo(map);
+        }
+    } else {
+        if (map.hasLayer(currentLine)) {
+            map.removeLayer(currentLine);
+        }
+    }
+}
 }
 
 // v469: Call on DOM ready to ensure checkboxes exist before syncing
@@ -3275,7 +3358,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '502',
+            version: '503',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3510,16 +3593,24 @@ window.exportSingleRecordKML = function (id) {
 };
 
 // Updated socialShare handles formats based on radio buttons and triggers native share
-async function socialShare() {
-    const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
-    const dataToShare = records.filter(r => selectedIds.includes(r.id));
+async function socialShare(appTarget = null) {
+    let dataToShare = [];
+    let isTracks = (activeTab === 'tracks');
+    const timestamp = new Date().getTime();
+
+    if (isTracks) {
+        const selectedIds = Array.from(document.querySelectorAll('.track-select:checked')).map(cb => parseInt(cb.dataset.id));
+        dataToShare = jeoTracks.filter(t => selectedIds.includes(t.id));
+    } else {
+        const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
+        dataToShare = records.filter(r => selectedIds.includes(r.id));
+    }
 
     if (dataToShare.length === 0) {
-        alert("No records selected for sharing. Please select records from the table.");
+        alert("No items selected for sharing. Please select items from the table.");
         return;
     }
 
-    const timestamp = new Date().getTime();
     const isCsv = document.getElementById('chk-share-csv').checked;
     const isKml = document.getElementById('chk-share-kml').checked;
 
@@ -3529,21 +3620,50 @@ async function socialShare() {
 
     // Prepare File based on selection
     if (isCsv) {
-        const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
-        const csvRows = [header.join(',')];
-        dataToShare.forEach(r => {
-            const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
-            csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
-        });
-        const csvContent = csvRows.join('\n');
-        fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
-        fileType = 'text/csv';
-        fileToShare = new File([csvContent], fileName, { type: fileType });
+        if (isTracks) {
+            // CSV Export for Tracks (Multi-track CSV is tricky, we can combine all points with Track ID)
+            const header = ["TrackID", "Name", "Lat", "Lon", "Date"];
+            const csvRows = [header.join(',')];
+            dataToShare.forEach(t => {
+                if (t.path) {
+                    t.path.forEach(pt => {
+                        // pt is [lat, lon]
+                        const row = [t.id, t.name, pt[0], pt[1], t.time];
+                        csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+                    });
+                }
+            });
+            const csvContent = csvRows.join('\n');
+            fileName = dataToShare.length === 1 ? `${dataToShare[0].name}_${timestamp}.csv` : `SelectedTracks_${timestamp}.csv`;
+            fileType = 'text/csv';
+            fileToShare = new File([csvContent], fileName, { type: fileType });
+
+        } else {
+            // Points CSV
+            const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
+            const csvRows = [header.join(',')];
+            dataToShare.forEach(r => {
+                const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
+                csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+            });
+            const csvContent = csvRows.join('\n');
+            fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
+            fileType = 'text/csv';
+            fileToShare = new File([csvContent], fileName, { type: fileType });
+        }
+
     } else if (isKml) {
-        const kmlContent = generateKML(dataToShare, "JeoCompass Selected");
-        fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.kml` : `Selected_${timestamp}.kml`;
-        fileType = 'application/vnd.google-earth.kml+xml';
-        fileToShare = new File([kmlContent], fileName, { type: fileType });
+        if (isTracks) {
+            const kmlContent = generateMultiTrackKML(dataToShare, "JeoCompass Selected Tracks");
+            fileName = dataToShare.length === 1 ? `${dataToShare[0].name}_${timestamp}.kml` : `SelectedTracks_${timestamp}.kml`;
+            fileType = 'application/vnd.google-earth.kml+xml';
+            fileToShare = new File([kmlContent], fileName, { type: fileType });
+        } else {
+            const kmlContent = generateKML(dataToShare, "JeoCompass Selected");
+            fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.kml` : `Selected_${timestamp}.kml`;
+            fileType = 'application/vnd.google-earth.kml+xml';
+            fileToShare = new File([kmlContent], fileName, { type: fileType });
+        }
     }
 
     // Prepare text summary
