@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v511';
+const CACHE_NAME = 'jeocompass-v512';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -2080,6 +2080,14 @@ function toggleTracking() {
     if (!isTracking) {
         // Tik kaldırıldı: Mevcut kaydı sonlandır ve sessizce kaydet
         saveCurrentTrack();
+
+        // v512: Auto-Rec OFF -> Live Track also OFF
+        showLiveTrack = false;
+        localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+        const chkLive = document.getElementById('chk-show-live-track');
+        if (chkLive) chkLive.checked = false;
+        updateLiveTrackVisibility();
+
         showToast('Auto-Recording: OFF', 1000);
     } else {
         // Tik atıldı: Yeni kayıt süreci başlasın
@@ -2427,6 +2435,8 @@ const chkShowLiveTrack = document.getElementById('chk-show-live-track');
 
 // Helper to toggle live track visibility (Global Scope)
 function updateLiveTrackVisibility() {
+    if (!map) return; // v512: Safety check to prevent error if map not initialized
+
     if (showLiveTrack) {
         if (trackPath.length > 0) {
             if (trackPolyline) {
@@ -3348,7 +3358,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '511',
+            version: '512',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
