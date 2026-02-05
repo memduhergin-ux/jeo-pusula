@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v527';
+const CACHE_NAME = 'jeocompass-v528';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -577,24 +577,26 @@ function renderCoordinates() {
 
     const gpsAlt = currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0;
     const baroAlt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : '-';
+    // v528: Real Z (Open-Meteo) Display
+    const onlineAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : '-';
 
     if (currentMode === 'wgs') {
         coordContent.innerHTML = `
             <div class="coord-row">
                 <span class="data-label">Enlem</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}Â°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}°</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Boylam</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}Â°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}°</span>
+            </div>
+            <div class="coord-row" style="border-top: 1px solid rgba(255,165,0,0.3); padding-top: 4px;">
+                <span class="data-label" style="color: #ff9800;">Real Z (Alt)</span>
+                <span class="data-value" style="font-size: 1.1rem; color: #ff9800; font-weight: bold;">${onlineAlt !== '-' ? onlineAlt + ' m' : 'Searching...'}</span>
             </div>
             <div class="coord-row">
-                <span class="data-label">Z (Uydu)</span>
-                <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
-            </div>
-            <div class="coord-row">
-                <span class="data-label">Z (Baro)</span>
-                <span class="data-value" style="font-size: 1rem;">${baroAlt} m</span>
+                <span class="data-label">Z (Sensör)</span>
+                <span class="data-value" style="font-size: 0.85rem;">Baro: ${baroAlt}m | GPS: ${gpsAlt}m</span>
             </div>
         `;
     } else {
@@ -617,14 +619,14 @@ function renderCoordinates() {
                     <span class="data-label">X</span>
                     <span class="data-value" style="font-size: 1rem;">${Math.round(northing)}</span>
                 </div>
-                <div class="coord-row">
-                    <span class="data-label">Z (Uydu)</span>
-                    <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
+                <div class="coord-row" style="border-top: 1px solid rgba(255,165,0,0.3); padding-top: 4px;">
+                    <span class="data-label" style="color: #ff9800;">Real Z (Alt)</span>
+                    <span class="data-value" style="font-size: 1.1rem; color: #ff9800; font-weight: bold;">${onlineAlt !== '-' ? onlineAlt + ' m' : 'Searching...'}</span>
                 </div>
                 <div class="coord-row">
-                    <span class="data-label">Z (Baro)</span>
-                    <span class="data-value" style="font-size: 1rem;">${baroAlt} m</span>
-                </div>
+                   <span class="data-label">Z (Sensör)</span>
+                   <span class="data-value" style="font-size: 0.85rem;">Baro: ${baroAlt}m | GPS: ${gpsAlt}m</span>
+               </div>
             `;
         } catch (e) {
             coordContent.innerHTML = '<div class="data-label">UTM Error</div>';
@@ -1477,9 +1479,11 @@ function initMap() {
             let candidates = [];
             const findPolygonsRecursive = (target) => {
                 if (!target) return;
-                // Check if it's a polygon or an area-like layer
-                if (target instanceof L.Polygon || (target.getPath && target.getLatLngs)) {
-                    if (target.getBounds && target.getBounds().contains(e.latlng)) {
+                // v528: Unified area detection (KML, measure, or standard polygon)
+                if (target instanceof L.Polygon || (target.getLatLngs && (target instanceof L.Polyline || target.getPath))) {
+                    // Check if it's actually an area (closed path or Polygon instance)
+                    const isClosed = target instanceof L.Polygon || (target.options && target.options.fill);
+                    if (isClosed && target.getBounds && target.getBounds().contains(e.latlng)) {
                         if (isPointInPolygon(e.latlng, target)) {
                             candidates.push(target);
                         }
@@ -1491,8 +1495,7 @@ function initMap() {
 
             // Aggressive search starting from map and specific groups
             findPolygonsRecursive(map);
-            if (activeMeasurementsGroup) findPolygonsRecursive(activeMeasurementsGroup);
-            if (markerGroup) findPolygonsRecursive(markerGroup);
+            if (typeof markerGroup !== 'undefined') findPolygonsRecursive(markerGroup);
 
             if (candidates.length > 0) {
                 // Priority: Smallest area (most specific)
@@ -2579,30 +2582,29 @@ if (btnHeatmapOff) {
     });
 }
 
-/** Grid Feature Logic (v518: Robust Polygon Handling) **/
+/** Grid Feature Logic (v528: Standard Jordan Curve Algorithm) **/
 function isPointInPolygon(latlng, polygon) {
     if (!polygon || !polygon.getLatLngs) return false;
     let polyPoints = polygon.getLatLngs();
 
-    // v518: Recursive flattening for complex Leaflet structures (Holes, MultiPolygons, KML clusters)
     const flattenPoints = (arr) => {
         if (!Array.isArray(arr)) return [];
-        if (arr.length > 0 && (arr[0].lat !== undefined || arr[0].lng !== undefined)) return arr;
-        return arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flattenPoints(val) : val), []);
+        if (arr.length > 0 && !Array.isArray(arr[0])) return arr;
+        return flattenPoints(arr[0]);
     };
 
     let flatPoints = flattenPoints(polyPoints);
-    if (flatPoints.length === 0) return false;
+    if (!flatPoints || flatPoints.length < 3) return false;
 
-    const lat = latlng.lat, lng = latlng.lng;
-    let isInside = false;
+    const x = latlng.lng, y = latlng.lat;
+    let inside = false;
     for (let i = 0, j = flatPoints.length - 1; i < flatPoints.length; j = i++) {
-        const xi = flatPoints[i].lng, yi = flatPoints[i].lat;
-        const xj = flatPoints[j].lng, yj = flatPoints[j].lat;
-        const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-        if (intersect) isInside = !isInside;
+        let xi = flatPoints[i].lng, yi = flatPoints[i].lat;
+        let xj = flatPoints[j].lng, yj = flatPoints[j].lat;
+        let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
     }
-    return isInside;
+    return inside;
 }
 
 function createAreaGrid(polygon, interval, color = '#00ffcc') {
