@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v518';
+const CACHE_NAME = 'jeocompass-v519';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1442,35 +1442,33 @@ function initMap() {
     /* REMOVED LOCK SYSTEM (v355) */
 
 
-    // Map Click Handler for Interactions (v518: Unified Grid & Measurement)
+    // Map Click Handler for Interactions (v519: Optimized for Grid Priority)
     map.on('click', (e) => {
-        // v518: Priority 1 - Grid Creation on any area (KML or internal)
+        // v519: Priority 1 - Grid Creation
         if (isGridMode && activeGridInterval) {
-            let foundLayer = null;
+            let candidates = [];
             map.eachLayer((layer) => {
-                if (foundLayer) return;
-                // Identify Polygon layer under click
-                if (layer instanceof L.Polygon && layer.getBounds) {
-                    if (layer.getBounds().contains(e.latlng)) {
-                        if (isPointInPolygon(e.latlng, layer)) {
-                            foundLayer = layer;
-                        }
+                // Find all polygons that contain the clicked point
+                if (layer instanceof L.Polygon && layer.getBounds && layer.getBounds().contains(e.latlng)) {
+                    if (isPointInPolygon(e.latlng, layer)) {
+                        candidates.push(layer);
                     }
                 }
             });
 
-            if (foundLayer) {
-                createAreaGrid(foundLayer, activeGridInterval);
-                return; // Suppress other interactions (like parsel query)
+            if (candidates.length > 0) {
+                // Use the last one (usually the one on top)
+                const targetLayer = candidates[candidates.length - 1];
+                createAreaGrid(targetLayer, activeGridInterval);
+                return; // Stop processing other click events
             }
         }
 
         if (isMeasuring) {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {
-            // Handled by Crosshair UI logic
+            // Handled by Crosshair
         }
-        // v437: TKGM Logic Removed completely. 
     });
 
 
@@ -2613,7 +2611,7 @@ function createAreaGrid(polygon, interval) {
             if (currentSegment.length > 0) gridLines.push(currentSegment);
         }
 
-        L.multiPolyline(gridLines, {
+        L.polyline(gridLines, {
             color: '#00ffcc',
             weight: 1,
             opacity: 0.6,
