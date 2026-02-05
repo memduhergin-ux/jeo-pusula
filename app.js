@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v503';
+const CACHE_NAME = 'jeocompass-v504';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -2307,6 +2307,30 @@ if (declinationInput) {
 
 // Navigation Logic
 const views = document.querySelectorAll('.view-section');
+document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // Remove active class from all nav items
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        // Add active class to clicked item
+        const targetBtn = e.target.closest('.nav-item');
+        targetBtn.classList.add('active');
+
+        // Hide all views
+        views.forEach(v => v.classList.remove('active'));
+
+        // Show target view
+        const targetId = targetBtn.dataset.target;
+        const targetView = document.getElementById(targetId);
+        if (targetView) targetView.classList.add('active');
+
+        // Map resize fix
+        if (targetId === 'view-map' && map) {
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+    });
+});
 
 // --------------------------------------------------------------------------
 // KML/KMZ Import & Layer Management
