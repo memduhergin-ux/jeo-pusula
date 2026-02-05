@@ -358,6 +358,7 @@ let nextId = parseInt(localStorage.getItem('jeoNextId')) || 1;
 let map, markerGroup, liveMarker;
 let sensorSource = null; // 'ios', 'absolute', 'relative'
 let followMe = false;
+let isFirstLocationFix = true; // v515: Track first GPS fix to auto-focus map
 let editingRecordId = null;
 let isRecordsLocked = true; // KayÄ±tlar varsayÄ±lan olarak kilitli baÅŸlar
 
@@ -371,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v512';
+const CACHE_NAME = 'jeocompass-v515';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -921,6 +922,13 @@ function startGeolocationWatch() {
                 if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
                     smoothedPos.lat = currentCoords.lat;
                     smoothedPos.lon = currentCoords.lon;
+
+                    // v515: Auto-focus map on very first GPS success
+                    if (isFirstLocationFix && map) {
+                        map.setView([currentCoords.lat, currentCoords.lon], 17);
+                        isFirstLocationFix = false;
+                        console.log("v515: Initial GPS Focus Triggered");
+                    }
                 } else {
                     smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
                     smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
@@ -3358,7 +3366,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '512',
+            version: '515',
             timestamp: timestamp,
             records: records,
             nextId: nextId,

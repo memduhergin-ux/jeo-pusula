@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=512">
+    <link rel="stylesheet" href="style.css?v=515">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v512</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v515</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -223,107 +223,107 @@
 
     <!-- View 3: Records (Kayıtlar) -->
     <div id="view-records" class="view-section">
-        <div class="panel wide-panel" style="margin-top: 10px;">
-            <div class="records-tabs" style="display: flex; align-items: center; gap: 10px;">
-                <button id="tab-points" class="tab-btn active" style="flex: 1 1 0px;">📍 Points</button>
-                <button id="tab-tracks" class="tab-btn" style="flex: 1 1 0px;">👣 Tracks <span id="track-count"
-                        style="font-size:0.7rem; color:#aaa;">(0/20)</span></button>
+        <div class="records-tabs" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <button id="tab-points" class="tab-btn active" style="flex: 1 1 0px;">📍 Points</button>
+            <button id="tab-tracks" class="tab-btn" style="flex: 1 1 0px;">👣 Tracks <span id="track-count"
+                    style="font-size:0.7rem; color:#aaa;">(0/20)</span></button>
+        </div>
+
+        <div class="records-header">
+            <button class="save-btn ready" id="btn-more-options" title="Actions">⋮</button>
+            <button class="save-btn ready" id="btn-toggle-lock" title="Lock/Unlock">🔒</button>
+
+            <div class="search-container">
+                <input type="text" id="record-search" placeholder="Search..." class="form-input">
             </div>
 
-            <div id="container-points" class="records-container active">
-                <div class="records-header">
-                    <button class="save-btn ready" id="btn-more-options" title="Options">⋮</button>
-                    <button class="save-btn ready" id="btn-toggle-lock" title="Lock/Unlock">🔒</button>
+            <button class="save-btn ready" id="btn-share" title="Share Selected" disabled>📤</button>
+        </div>
 
-                    <div class="search-container">
-                        <input type="text" id="record-search" placeholder="Search..." class="form-input">
-                    </div>
-
-                    <button class="save-btn ready" id="btn-share" title="Share" disabled>📤</button>
-                </div>
-                <div style="overflow-x: auto; margin-top: 10px;">
-                    <table class="records-table">
-                        <thead>
-                            <tr>
-                                <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
-                                <th>Label</th>
-                                <th>Y</th>
-                                <th>X</th>
-                                <th>Z</th>
-                                <th>Strike</th>
-                                <th>Dip</th>
-                                <th>Time</th>
-                                <th>Note</th>
-                                <th id="edit-th">Edit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="records-body">
-                            <tr>
-                                <td colspan="8">No records yet</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="container-tracks" class="records-container" style="display: none;">
-                <!-- Track Settings Embedded -->
-                <!-- Track Settings Embedded -->
-                <div
-                    style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                        <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Auto-Rec</span>
-                        <input type="checkbox" id="chk-auto-track"
-                            style="width: 18px; height: 18px; accent-color: #4caf50;">
-                    </label>
-
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                        <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Live Track</span>
-                        <input type="checkbox" id="chk-show-live-track"
-                            style="width: 18px; height: 18px; accent-color: #2196f3;">
-                    </label>
-                </div>
-
-                <!-- GPS Status Dashboard (v461) -->
-                <div id="track-debug-dashboard"
-                    style="margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #444; font-family: monospace; font-size: 0.7rem; color: #4caf50;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <span>GPS STATUS:</span>
-                        <span id="gps-status-val">WAITING</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <span>ACCURACY:</span>
-                        <span id="gps-acc-val">---</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>POINTS:</span>
-                        <span id="track-points-val">0</span>
-                    </div>
-                </div>
-                <div style="overflow-x: auto;">
-                    <table class="records-table">
-                        <thead>
-                            <tr>
-                                <th id="select-all-tracks-th"><input type="checkbox" id="select-all-tracks"></th>
-                                <th>Name</th>
-                                <th>Length</th>
-                                <th>Color</th>
-                                <th>Visible</th>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tracks-body">
-                            <tr>
-                                <td colspan="5">No tracks saved yet</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div id="container-points" class="records-container active">
+            <div style="overflow-x: auto; margin-top: 10px;">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
+                            <th>Label</th>
+                            <th>Y</th>
+                            <th>X</th>
+                            <th>Z</th>
+                            <th>Strike</th>
+                            <th>Dip</th>
+                            <th>Time</th>
+                            <th>Note</th>
+                            <th id="edit-th">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-body">
+                        <tr>
+                            <td colspan="8">No records yet</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+
+        <div id="container-tracks" class="records-container" style="display: none;">
+            <!-- Track Settings Embedded -->
+            <!-- Track Settings Embedded -->
+            <div
+                style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <label
+                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                    <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Auto-Rec</span>
+                    <input type="checkbox" id="chk-auto-track"
+                        style="width: 18px; height: 18px; accent-color: #4caf50;">
+                </label>
+
+                <label
+                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                    <span style="font-weight: bold; color: #eee; font-size: 0.85rem;">Live Track</span>
+                    <input type="checkbox" id="chk-show-live-track"
+                        style="width: 18px; height: 18px; accent-color: #2196f3;">
+                </label>
+            </div>
+
+            <!-- GPS Status Dashboard (v461) -->
+            <div id="track-debug-dashboard"
+                style="margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #444; font-family: monospace; font-size: 0.7rem; color: #4caf50;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>GPS STATUS:</span>
+                    <span id="gps-status-val">WAITING</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>ACCURACY:</span>
+                    <span id="gps-acc-val">---</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>POINTS:</span>
+                    <span id="track-points-val">0</span>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th id="select-all-tracks-th"><input type="checkbox" id="select-all-tracks"></th>
+                            <th>Name</th>
+                            <th>Length</th>
+                            <th>Color</th>
+                            <th>Visible</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracks-body">
+                        <tr>
+                            <td colspan="5">No tracks saved yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     </div>
 
     <!-- Calibration Modal -->
@@ -412,7 +412,7 @@
 
     <!-- Options Modal -->
     <div id="options-modal" class="modal-overlay">
-        <span class="version-text">v512</span>
+        <span class="version-text">v513</span>
         <div class="modal-body" style="padding: 20px 0;">
             <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Please select
                 an
@@ -438,7 +438,7 @@
                 <input type="file" id="restore-file-input" accept=".json" style="display: none;">
             </div>
             <div style="text-align: center; margin-top: 20px; color: #666; font-size: 0.8rem;">
-                JeoCompass v512
+                JeoCompass v515
             </div>
         </div>
         <div class="modal-footer">
@@ -543,9 +543,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=512"></script>
+    <script src="app.js?v=515"></script>
     <script>
-        const JEO_VERSION = '512';
+        const JEO_VERSION = '515';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
