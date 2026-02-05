@@ -371,14 +371,14 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v505';
+const CACHE_NAME = 'jeocompass-v506';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
 // Tracking State (v354)
-let isTracking = JSON.parse(localStorage.getItem('jeoAutoTrackEnabled')) !== false; // Default true if not set
+let isTracking = localStorage.getItem('jeoAutoTrackEnabled') !== 'false'; // v506: Default true if not 'false' (string)
 let trackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 let trackStartTime = localStorage.getItem('jeoTrackStartTime') || null; // v467: track start time
 let trackPolyline = null;
@@ -402,7 +402,7 @@ const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅ�
 // Track Auto-Recording State (v442)
 let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
 const MAX_TRACKS = 20; // Maksimum izlek sayısı
-let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // Canlı izleği haritada göster/gizle (Default True)
+let showLiveTrack = localStorage.getItem('jeoShowLiveTrack') !== 'false'; // v506: Default true if not 'false' (string)
 
 // Measurement State
 let isMeasuring = false;
@@ -2075,7 +2075,7 @@ function toggleTracking() {
     // Sync settings checkbox
     const chkAutoTrack = document.getElementById('chk-auto-track');
     if (chkAutoTrack) chkAutoTrack.checked = isTracking;
-    localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
+    localStorage.setItem('jeoAutoTrackEnabled', isTracking);
 
     if (isTracking) showToast('Track recording started', 1000);
     else showToast('Track Saved', 1000);
@@ -3320,7 +3320,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '505',
+            version: '506',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3938,7 +3938,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
         chkLive.checked = showLiveTrack;
         chkLive.addEventListener('change', (e) => {
             showLiveTrack = e.target.checked;
-            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+            localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
             updateLiveTrackVisibility();
             console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
         });
