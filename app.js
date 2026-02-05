@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v517';
+const CACHE_NAME = 'jeocompass-v518';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -1442,15 +1442,35 @@ function initMap() {
     /* REMOVED LOCK SYSTEM (v355) */
 
 
-    // Map Click Handler for Interactions
+    // Map Click Handler for Interactions (v518: Unified Grid & Measurement)
     map.on('click', (e) => {
+        // v518: Priority 1 - Grid Creation on any area (KML or internal)
+        if (isGridMode && activeGridInterval) {
+            let foundLayer = null;
+            map.eachLayer((layer) => {
+                if (foundLayer) return;
+                // Identify Polygon layer under click
+                if (layer instanceof L.Polygon && layer.getBounds) {
+                    if (layer.getBounds().contains(e.latlng)) {
+                        if (isPointInPolygon(e.latlng, layer)) {
+                            foundLayer = layer;
+                        }
+                    }
+                }
+            });
+
+            if (foundLayer) {
+                createAreaGrid(foundLayer, activeGridInterval);
+                return; // Suppress other interactions (like parsel query)
+            }
+        }
+
         if (isMeasuring) {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {
-            // Handled by Crosshair
+            // Handled by Crosshair UI logic
         }
-        // v437: TKGM Logic Removed completely as requested. 
-        // No default click action on map for now.
+        // v437: TKGM Logic Removed completely. 
     });
 
 
@@ -1460,17 +1480,6 @@ function initMap() {
     loadExternalLayers();
     initMapControls();
 
-    // v516: Listen for grid clicks on map layers
-    map.on('layeradd', (e) => {
-        if (e.layer instanceof L.Polygon || e.layer instanceof L.Polyline) {
-            e.layer.on('click', (ev) => {
-                if (isGridMode && activeGridInterval) {
-                    L.DomEvent.stopPropagation(ev);
-                    createAreaGrid(e.layer, activeGridInterval);
-                }
-            });
-        }
-    });
 }
 
 /** Combined Map Controls (Scale + UTM) **/
@@ -2524,21 +2533,26 @@ if (btnHeatmapOff) {
     });
 }
 
-/** Grid Feature Logic (v516) **/
-/** Grid Feature Logic (v517) **/
+/** Grid Feature Logic (v518: Robust Polygon Handling) **/
 function isPointInPolygon(latlng, polygon) {
     if (!polygon || !polygon.getLatLngs) return false;
     let polyPoints = polygon.getLatLngs();
-    if (Array.isArray(polyPoints[0]) && !polyPoints[0][0].lat) {
-        polyPoints = polyPoints[0];
-    } else if (Array.isArray(polyPoints[0]) && Array.isArray(polyPoints[0][0])) {
-        polyPoints = polyPoints[0][0];
-    }
+
+    // v518: Recursive flattening for complex Leaflet structures (Holes, MultiPolygons, KML clusters)
+    const flattenPoints = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        if (arr.length > 0 && (arr[0].lat !== undefined || arr[0].lng !== undefined)) return arr;
+        return arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flattenPoints(val) : val), []);
+    };
+
+    let flatPoints = flattenPoints(polyPoints);
+    if (flatPoints.length === 0) return false;
+
     const lat = latlng.lat, lng = latlng.lng;
     let isInside = false;
-    for (let i = 0, j = polyPoints.length - 1; i < polyPoints.length; j = i++) {
-        const xi = polyPoints[i].lng, yi = polyPoints[i].lat;
-        const xj = polyPoints[j].lng, yj = polyPoints[j].lat;
+    for (let i = 0, j = flatPoints.length - 1; i < flatPoints.length; j = i++) {
+        const xi = flatPoints[i].lng, yi = flatPoints[i].lat;
+        const xj = flatPoints[j].lng, yj = flatPoints[j].lat;
         const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
         if (intersect) isInside = !isInside;
     }

@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=517">
+    <link rel="stylesheet" href="style.css?v=518">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v517</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v518</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -193,7 +193,7 @@
             </div>
             <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
 
-            <!-- Grid Interval Panel (v517) -->
+            <!-- Grid Interval Panel (v518) -->
             <div id="grid-interval-panel"
                 style="display: none; position: absolute; bottom: 80px; right: 70px; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; z-index: 1000; border: 1px solid #444; flex-direction: column; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
                 <div
@@ -374,7 +374,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v517</p>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v518</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -563,9 +563,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=517"></script>
+    <script src="app.js?v=518"></script>
     <script>
-        const JEO_VERSION = '517';
+        const JEO_VERSION = '518';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
