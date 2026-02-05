@@ -2445,20 +2445,7 @@ function initializeTrackSettings() {
     }
 
 
-    // Helper to toggle live track visibility
-    function updateLiveTrackVisibility() {
-        if (!currentLine) return;
 
-        if (showLiveTrack) {
-            if (!map.hasLayer(currentLine)) {
-                currentLine.addTo(map);
-            }
-        } else {
-            if (map.hasLayer(currentLine)) {
-                map.removeLayer(currentLine);
-            }
-        }
-    }
 }
 
 
@@ -2483,6 +2470,21 @@ if (chkShowLiveTrack) {
         localStorage.setItem('jeoShowLiveTrack', showLiveTrack);
         updateLiveTrackVisibility();
     });
+}
+
+// Helper to toggle live track visibility (Global Scope)
+function updateLiveTrackVisibility() {
+    if (!trackPolyline) return;
+
+    if (showLiveTrack) {
+        if (!map.hasLayer(trackPolyline)) {
+            trackPolyline.addTo(map);
+        }
+    } else {
+        if (map.hasLayer(trackPolyline)) {
+            map.removeLayer(trackPolyline);
+        }
+    }
 }
 
 // Track Settings Modal Listeners REMOVED (Embedded now)
