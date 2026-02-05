@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v532';
+const CACHE_NAME = 'jeocompass-v533';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -602,9 +602,6 @@ function renderCoordinates() {
         const hemisphere = currentCoords.lat >= 0 ? 'N' : 'S';
         const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
 
-        // v532: Define onlineAlt for Dashboard UTM and ensure displayAlt is usable
-        const onlineAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : (gpsAlt || '-');
-
         try {
             const [easting, northing] = proj4('WGS84', utmZoneDef, [currentCoords.lon, currentCoords.lat]);
             coordContent.innerHTML = `
@@ -620,9 +617,13 @@ function renderCoordinates() {
                     <span class="data-label">X</span>
                     <span class="data-value" style="font-size: 1rem;">${Math.round(northing)}</span>
                 </div>
-                <div class="coord-row" style="border-top: 1px solid rgba(255,165,0,0.3); padding-top: 4px;">
-                    <span class="data-label" style="color: #ff9800;">Real Z (Alt)</span>
-                    <span class="data-value" style="font-size: 1.1rem; color: #ff9800; font-weight: bold;">${onlineAlt !== '-' ? onlineAlt + ' m' : 'Searching...'}</span>
+                <div class="coord-row">
+                    <span class="data-label">Z (Uydu)</span>
+                    <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
+                </div>
+                <div class="coord-row">
+                    <span class="data-label">Z (Baro)</span>
+                    <span class="data-value" style="font-size: 1rem;">${baroAlt} m</span>
                 </div>
             `;
         } catch (e) {
@@ -1496,10 +1497,16 @@ function initMap() {
 
             // Aggressive search starting from map and specific groups
             findPolygonsRecursive(map);
-            if (typeof markerGroup !== 'undefined') findPolygonsRecursive(markerGroup);
-            // v531: Aggressive check for measurement tool's polygon/area
+            if (typeof markerGroup !== 'undefined' && markerGroup) findPolygonsRecursive(markerGroup);
+
+            // v533: Specifically check measurement tool layers (Yellow Area)
             if (typeof measureLine !== 'undefined' && measureLine) {
-                findPolygonsRecursive(measureLine);
+                // If measureLine is a layerGroup/FeatureGroup, search children
+                if (measureLine.eachLayer) {
+                    measureLine.eachLayer(l => findPolygonsRecursive(l));
+                } else {
+                    findPolygonsRecursive(measureLine);
+                }
             }
 
             if (candidates.length > 0) {
@@ -1660,11 +1667,11 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
-                // v532: Distinct Real Z Color in UTM Bar
+                // v533: Distinct Real Z Color in UTM Bar (Orange)
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:0.5mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ff9800; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:0mm; color:#ff9800; font-weight:bold;">${displayAlt}</span>
+                    <span style="font-size:0.75em; color:#ff9800; font-weight:bold; margin-right:1px;">Z (Real):</span><span style="margin-right:0mm; color:#ff9800; font-weight:bold;">${displayAlt} m</span>
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
