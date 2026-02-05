@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v472';
+const CACHE_NAME = 'jeocompass-v500';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -3270,7 +3270,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '359',
+            version: '500',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3338,7 +3338,7 @@ if (document.getElementById('btn-backup-json')) {
     document.getElementById('btn-backup-json').addEventListener('click', async () => {
         // FULL BACKUP
         const backupData = {
-            version: JEO_VERSION,
+            version: '500',
             timestamp: new Date().toISOString(),
             records: records, // Points
             tracks: jeoTracks, // Tracks
