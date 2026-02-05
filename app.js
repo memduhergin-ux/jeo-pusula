@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v516';
+const CACHE_NAME = 'jeocompass-v517';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -2525,51 +2525,78 @@ if (btnHeatmapOff) {
 }
 
 /** Grid Feature Logic (v516) **/
+/** Grid Feature Logic (v517) **/
+function isPointInPolygon(latlng, polygon) {
+    if (!polygon || !polygon.getLatLngs) return false;
+    let polyPoints = polygon.getLatLngs();
+    if (Array.isArray(polyPoints[0]) && !polyPoints[0][0].lat) {
+        polyPoints = polyPoints[0];
+    } else if (Array.isArray(polyPoints[0]) && Array.isArray(polyPoints[0][0])) {
+        polyPoints = polyPoints[0][0];
+    }
+    const lat = latlng.lat, lng = latlng.lng;
+    let isInside = false;
+    for (let i = 0, j = polyPoints.length - 1; i < polyPoints.length; j = i++) {
+        const xi = polyPoints[i].lng, yi = polyPoints[i].lat;
+        const xj = polyPoints[j].lng, yj = polyPoints[j].lat;
+        const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+        if (intersect) isInside = !isInside;
+    }
+    return isInside;
+}
+
 function createAreaGrid(polygon, interval) {
     if (!map || !polygon) return;
-
-    // 1. Get Bounds of the polygon
     const bounds = polygon.getBounds();
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-
-    // 2. Setup UTM Zone for Grid (ED50)
+    const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
     const zone = Math.floor((sw.lng + 180) / 6) + 1;
     const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
 
     try {
-        // Project bounds to UTM
         const [minE, minN] = proj4('WGS84', utmZoneDef, [sw.lng, sw.lat]);
         const [maxE, maxN] = proj4('WGS84', utmZoneDef, [ne.lng, ne.lat]);
-
-        // Round to nearest interval to align grid
         const startE = Math.floor(minE / interval) * interval;
         const startN = Math.floor(minN / interval) * interval;
 
         if (currentGridLayer) map.removeLayer(currentGridLayer);
         currentGridLayer = L.layerGroup();
-
         const gridLines = [];
 
-        // Vertical lines (Easting constant)
+        // Sample density: Check every 5m or 100 points
+        const samplingCount = 150;
+
+        // Vertical lines
         for (let e = startE; e <= maxE + interval; e += interval) {
-            const linePoints = [];
-            // Create segments for more accuracy on projection curves
-            for (let n = minN; n <= maxN; n += (maxN - minN) / 10) {
+            let currentSegment = [];
+            for (let i = 0; i <= samplingCount; i++) {
+                const n = minN + (maxN - minN) * (i / samplingCount);
                 const [lng, lat] = proj4(utmZoneDef, 'WGS84', [e, n]);
-                linePoints.push([lat, lng]);
+                const pt = L.latLng(lat, lng);
+                if (isPointInPolygon(pt, polygon)) {
+                    currentSegment.push([lat, lng]);
+                } else if (currentSegment.length > 0) {
+                    gridLines.push(currentSegment);
+                    currentSegment = [];
+                }
             }
-            gridLines.push(linePoints);
+            if (currentSegment.length > 0) gridLines.push(currentSegment);
         }
 
-        // Horizontal lines (Northing constant)
+        // Horizontal lines
         for (let n = startN; n <= maxN + interval; n += interval) {
-            const linePoints = [];
-            for (let e = minE; e <= maxE; e += (maxE - minE) / 10) {
+            let currentSegment = [];
+            for (let i = 0; i <= samplingCount; i++) {
+                const e = minE + (maxE - minE) * (i / samplingCount);
                 const [lng, lat] = proj4(utmZoneDef, 'WGS84', [e, n]);
-                linePoints.push([lat, lng]);
+                const pt = L.latLng(lat, lng);
+                if (isPointInPolygon(pt, polygon)) {
+                    currentSegment.push([lat, lng]);
+                } else if (currentSegment.length > 0) {
+                    gridLines.push(currentSegment);
+                    currentSegment = [];
+                }
             }
-            gridLines.push(linePoints);
+            if (currentSegment.length > 0) gridLines.push(currentSegment);
         }
 
         L.multiPolyline(gridLines, {
@@ -2582,7 +2609,6 @@ function createAreaGrid(polygon, interval) {
 
         currentGridLayer.addTo(map);
         showToast(`Grid Created: ${interval}m`, 2000);
-
     } catch (e) {
         console.error("Grid generation error:", e);
         showToast("Error generating grid", 3000);
@@ -4147,57 +4173,3 @@ function updateHeadlight(heading) {
     }
 }
 
-/** Grid Feature Logic (v516) **/
-function createAreaGrid(polygon, interval) {
-    if (!map || !polygon) return;
-
-    const bounds = polygon.getBounds();
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-
-    const zone = Math.floor((sw.lng + 180) / 6) + 1;
-    const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-
-    try {
-        const [minE, minN] = proj4('WGS84', utmZoneDef, [sw.lng, sw.lat]);
-        const [maxE, maxN] = proj4('WGS84', utmZoneDef, [ne.lng, ne.lat]);
-
-        const startE = Math.floor(minE / interval) * interval;
-        const startN = Math.floor(minN / interval) * interval;
-
-        if (currentGridLayer) map.removeLayer(currentGridLayer);
-        currentGridLayer = L.layerGroup();
-
-        const gridLines = [];
-        for (let e = startE; e <= maxE + interval; e += interval) {
-            const linePoints = [];
-            for (let n = minN; n <= maxN; n += (maxN - minN) / 10) {
-                const [lng, lat] = proj4(utmZoneDef, 'WGS84', [e, n]);
-                linePoints.push([lat, lng]);
-            }
-            gridLines.push(linePoints);
-        }
-        for (let n = startN; n <= maxN + interval; n += interval) {
-            const linePoints = [];
-            for (let e = minE; e <= maxE; e += (maxE - minE) / 10) {
-                const [lng, lat] = proj4(utmZoneDef, 'WGS84', [e, n]);
-                linePoints.push([lat, lng]);
-            }
-            gridLines.push(linePoints);
-        }
-
-        L.polyline(gridLines, {
-            color: '#00ffcc',
-            weight: 1,
-            opacity: 0.6,
-            dashArray: '5, 5',
-            interactive: false
-        }).addTo(currentGridLayer);
-
-        currentGridLayer.addTo(map);
-        showToast(`Grid Created: ${interval}m`, 2000);
-    } catch (e) {
-        console.error("Grid generation error:", e);
-        showToast("Error generating grid", 3000);
-    }
-}
