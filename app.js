@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v525';
+const CACHE_NAME = 'jeocompass-v526';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1469,26 +1469,35 @@ function initMap() {
 
     // Map Click Handler for Interactions (v519: Optimized for Grid Priority)
     map.on('click', (e) => {
-        // v523: Recursive Grid Detection & Priority
+        // v526: Extra Robust Recursive Detection
         if (isGridMode && activeGridInterval) {
             map.closePopup();
             let candidates = [];
 
-            // Recursive helper to find polygons in any layer group (v523)
-            const findPolygons = (target) => {
+            const findPolygonsRecursive = (target) => {
                 if (target instanceof L.Polygon) {
-                    if (target.getBounds().contains(e.latlng) && isPointInPolygon(e.latlng, target)) {
-                        candidates.push(target);
+                    // Stricter check: bounds + point-in-poly
+                    if (target.getBounds && target.getBounds().contains(e.latlng)) {
+                        if (isPointInPolygon(e.latlng, target)) {
+                            candidates.push(target);
+                        }
                     }
                 } else if (target.eachLayer) {
-                    target.eachLayer(layer => findPolygons(layer));
+                    target.eachLayer(layer => findPolygonsRecursive(layer));
                 }
             };
 
-            findPolygons(map);
+            // Search ALL layers: Map, Groups, KMLs
+            findPolygonsRecursive(map);
 
             if (candidates.length > 0) {
-                const targetLayer = candidates[candidates.length - 1];
+                // Priority: Use the one with the smallest area (topmost/most specific)
+                const targetLayer = candidates.reduce((prev, curr) => {
+                    const prevArea = prev.getBounds ? (prev.getBounds().getNorthEast().lat - prev.getBounds().getSouthWest().lat) : 999;
+                    const currArea = curr.getBounds ? (curr.getBounds().getNorthEast().lat - curr.getBounds().getSouthWest().lat) : 999;
+                    return currArea < prevArea ? curr : prev;
+                }, candidates[0]);
+
                 createAreaGrid(targetLayer, activeGridInterval, activeGridColor);
                 return;
             }
@@ -1619,7 +1628,9 @@ function updateScaleValues() {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : getBestAltitude();
+            // v526: If adding point, strictly use online/local specific alt for center. 
+            // Do NOT fallback to user's altitude if they are different locations.
+            displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : "---";
         }
 
         if (displayLat) {

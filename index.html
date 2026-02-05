@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=525">
+    <link rel="stylesheet" href="style.css?v=526">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v525</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v526</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -193,37 +193,39 @@
             </div>
             <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
 
-            <!-- Grid Interval Panel (v525) -->
+            <!-- Grid Interval Panel (v526: Pill Design) -->
             <div id="grid-interval-panel"
-                style="display: none; position: absolute; bottom: 80px; right: 70px; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; z-index: 1000; border: 1px solid #444; flex-direction: column; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                style="display: none; position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 6px 15px; border-radius: 50px; z-index: 2000; border: 1px solid rgba(255,255,255,0.1); flex-direction: row; align-items: center; gap: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: auto; max-width: 90vw;">
+
+                <!-- Label -->
                 <div
-                    style="color: #00ffcc; font-size: 0.75rem; font-weight: bold; text-align: center; margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 5px;">
-                    GRID INTERVAL</div>
-                <button class="grid-opt-btn" data-interval="50">50m</button>
-                <button class="grid-opt-btn" data-interval="100">100m</button>
-                <button class="grid-opt-btn" data-interval="250">250m</button>
-                <button class="grid-opt-btn" data-interval="500">500m</button>
-                <button class="grid-opt-btn" data-interval="1000">1000m</button>
-                <!-- Grid Color Selection (v520) -->
-                <div
-                    style="color: #aaa; font-size: 0.75rem; font-weight: bold; text-align: center; margin: 5px 0 3px 0; border-top: 1px solid #333; padding-top: 5px;">
-                    COLOR</div>
-                <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 5px;">
+                    style="font-size: 0.7rem; color: #00ffcc; font-weight: bold; white-space: nowrap; margin-right: 5px; opacity: 0.8;">
+                    GRID</div>
+
+                <div id="grid-intervals" style="display: flex; gap: 6px; align-items: center;">
+                    <button class="grid-opt-btn active" data-interval="100">100m</button>
+                    <button class="grid-opt-btn" data-interval="250">250m</button>
+                    <button class="grid-opt-btn" data-interval="500">500m</button>
+                    <button class="grid-opt-btn" data-interval="1000">1km</button>
+                </div>
+
+                <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
+
+                <div id="grid-colors" style="display: flex; gap: 8px; align-items: center;">
                     <button class="grid-color-btn active" data-color="#00ffcc"
-                        style="width: 20px; height: 20px; border-radius: 50%; background: #00ffcc; border: 2px solid #fff; cursor: pointer;"></button>
+                        style="width: 18px; height: 18px; border-radius: 50%; background: #00ffcc; border: 2px solid #fff; cursor: pointer;"></button>
                     <button class="grid-color-btn" data-color="#ffff00"
-                        style="width: 20px; height: 20px; border-radius: 50%; background: #ffff00; border: 2px solid transparent; cursor: pointer;"></button>
+                        style="width: 18px; height: 18px; border-radius: 50%; background: #ffff00; border: 2px solid transparent; cursor: pointer;"></button>
                     <button class="grid-color-btn" data-color="#ffffff"
-                        style="width: 20px; height: 20px; border-radius: 50%; background: #ffffff; border: 2px solid transparent; cursor: pointer;"></button>
-                    <button class="grid-color-btn" data-color="#ff0000"
-                        style="width: 20px; height: 20px; border-radius: 50%; background: #ff0000; border: 2px solid transparent; cursor: pointer;"></button>
+                        style="width: 18px; height: 18px; border-radius: 50%; background: #ffffff; border: 2px solid transparent; cursor: pointer;"></button>
+                    <button class="grid-color-btn" data-color="#ff3333"
+                        style="width: 18px; height: 18px; border-radius: 50%; background: #ff3333; border: 2px solid transparent; cursor: pointer;"></button>
                     <button class="grid-color-btn" data-color="#000000"
-                        style="width: 20px; height: 20px; border-radius: 50%; background: #000000; border: 2px solid transparent; cursor: pointer;"></button>
+                        style="width: 18px; height: 18px; border-radius: 50%; background: #000000; border: 1px solid #555; cursor: pointer;"></button>
                 </div>
 
                 <button id="btn-grid-clear"
-                    style="margin-top:5px; background: #f44336; color: white; border: none; padding: 5px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">❌
-                    Clear</button>
+                    style="background: none; border: none; color: #f44336; font-size: 1.1rem; cursor: pointer; padding: 0 5px; opacity: 0.8;">🗑️</button>
             </div>
 
             <!-- Heatmap Radius Control (v401) -->
@@ -391,7 +393,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v525</p>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v526</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -580,9 +582,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=525"></script>
+    <script src="app.js?v=526"></script>
     <script>
-        const JEO_VERSION = '525';
+        const JEO_VERSION = '526';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
