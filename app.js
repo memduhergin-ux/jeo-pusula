@@ -371,14 +371,24 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v510';
+const CACHE_NAME = 'jeocompass-v511';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
 // Tracking State (v354)
-let isTracking = JSON.parse(localStorage.getItem('jeoAutoTrackEnabled')) !== false; // v510: Default true (boolean)
+// v511: Robust initialization for tracking state
+let isTracking = true;
+try {
+    const savedAutoRec = localStorage.getItem('jeoAutoTrackEnabled');
+    if (savedAutoRec !== null) {
+        isTracking = JSON.parse(savedAutoRec) === true;
+    }
+} catch (e) {
+    console.error("Error loading isTracking:", e);
+    isTracking = true;
+}
 let trackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 let trackStartTime = localStorage.getItem('jeoTrackStartTime') || null; // v467: track start time
 let trackPolyline = null;
@@ -2068,24 +2078,35 @@ function toggleTracking() {
     isTracking = !isTracking;
 
     if (!isTracking) {
-        // Tik kaldırıldı: Mevcut kaydı sonlandır ve kaydet
+        // Tik kaldırıldı: Mevcut kaydı sonlandır ve sessizce kaydet
         saveCurrentTrack();
+        showToast('Auto-Recording: OFF', 1000);
     } else {
-        // Tik atıldı: Yeni kayıt süreci otomatik olarak navigator.geolocation tarafından (updateTrack ile) tetiklenecek
-        // Ancak gerekirse burada sıfırdan başlatma yapılabilir
+        // Tik atıldı: Yeni kayıt süreci başlasın
         trackPath = [];
         trackStartTime = new Date().toISOString();
+
+        // v511: Immediate Start - Add current position if available
+        if (smoothedPos.lat !== 0 || smoothedPos.lon !== 0) {
+            trackPath.push([smoothedPos.lat, smoothedPos.lon]);
+        }
+
         localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
         localStorage.setItem('jeoTrackStartTime', trackStartTime);
+        showToast('Auto-Recording: ON', 1000);
     }
 
-    // Sync settings checkbox
-    const chkAutoTrack = document.getElementById('chk-auto-track');
-    if (chkAutoTrack) chkAutoTrack.checked = isTracking;
+    // Explicitly Save Setting
     localStorage.setItem('jeoAutoTrackEnabled', JSON.stringify(isTracking));
 
-    if (isTracking) showToast('Track recording started', 1000);
-    else showToast('Track Saved', 1000);
+    // Sync UI
+    const chkAutoTrack = document.getElementById('chk-auto-track');
+    if (chkAutoTrack) {
+        chkAutoTrack.checked = isTracking;
+    }
+
+    // Refresh display
+    renderTracks();
 }
 
 // v464: Robust Save on Exit/Close Logic
@@ -3327,7 +3348,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '510',
+            version: '511',
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -3929,27 +3950,33 @@ renderTracks();
 // v470: Initialize Auto-Rec and Live Track checkbox states from localStorage
 // Wrapped in DOMContentLoaded to ensure elements are available
 // v505: Consolidated Tracking Settings Initialization
+// v511: Improved Settings Initialization
 document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
     const chkAuto = document.getElementById('chk-auto-track');
     const chkLive = document.getElementById('chk-show-live-track');
 
-    if (chkAuto) {
-        chkAuto.checked = isTracking;
-        chkAuto.addEventListener('change', (e) => {
-            toggleTracking(); // Use central toggle logic
-            console.log('Auto-Rec:', isTracking ? 'ENABLED' : 'DISABLED');
-        });
-    }
+    // v511: Use a small delay to ensure browser auto-fill/restore doesn't override our state
+    setTimeout(() => {
+        if (chkAuto) {
+            chkAuto.checked = isTracking;
+            // Remove any existing listeners and re-add (safeguard)
+            chkAuto.removeEventListener('change', toggleTracking);
+            chkAuto.addEventListener('change', (e) => {
+                toggleTracking();
+                console.log('Auto-Rec Changed:', isTracking);
+            });
+        }
 
-    if (chkLive) {
-        chkLive.checked = showLiveTrack;
-        chkLive.addEventListener('change', (e) => {
-            showLiveTrack = e.target.checked;
-            localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
-            updateLiveTrackVisibility();
-            console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
-        });
-    }
+        if (chkLive) {
+            chkLive.checked = showLiveTrack;
+            chkLive.addEventListener('change', (e) => {
+                showLiveTrack = e.target.checked;
+                localStorage.setItem('jeoShowLiveTrack', JSON.stringify(showLiveTrack));
+                updateLiveTrackVisibility();
+                console.log('Live Track:', showLiveTrack);
+            });
+        }
+    }, 100);
 });
 
 
