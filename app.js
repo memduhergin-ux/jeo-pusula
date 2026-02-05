@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v533';
+const CACHE_NAME = 'jeocompass-v534';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1667,11 +1667,11 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
-                // v533: Distinct Real Z Color in UTM Bar (Orange)
+                // v534: Remove "Real" label to save space, just "Z:" in orange
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:0.5mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ff9800; font-weight:bold; margin-right:1px;">Z (Real):</span><span style="margin-right:0mm; color:#ff9800; font-weight:bold;">${displayAlt} m</span>
+                    <span style="font-size:0.75em; color:#ff9800; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:0mm; color:#ff9800; font-weight:bold;">${displayAlt}m</span>
                     <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
                 `;
             } catch (e) {
@@ -2730,16 +2730,16 @@ document.querySelectorAll('.grid-opt-btn').forEach(btn => {
     });
 });
 
-// v520: Grid Color Listeners
-document.querySelectorAll('.grid-color-btn').forEach(btn => {
+// v534: Grid Color Listeners (Updated class name)
+document.querySelectorAll('.grid-color-opt').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        activeGridColor = e.target.dataset.color;
-        document.querySelectorAll('.grid-color-btn').forEach(b => {
+        activeGridColor = e.currentTarget.dataset.color;
+        document.querySelectorAll('.grid-color-opt').forEach(b => {
             b.classList.remove('active');
-            b.style.border = "2px solid transparent";
+            b.style.border = "1px solid rgba(255,255,255,0.4)"; // Default border
         });
-        e.target.classList.add('active');
-        e.target.style.border = "2px solid #fff";
+        e.currentTarget.classList.add('active');
+        e.currentTarget.style.border = "2px solid #fff"; // Active highlight
         showToast("Grid Color Updated", 1000);
     });
 });
@@ -3382,7 +3382,6 @@ function redrawMeasurement() {
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
-    // Clear old labels first
     activeMeasureLabels.forEach(l => map.removeLayer(l));
     activeMeasureLabels = [];
 
@@ -3410,13 +3409,11 @@ function redrawMeasurement() {
             activeMeasureLabels.push(lab);
         }
 
-        // If polygon and closed, add the closing segment label
         if (isPolygon) {
             const p1 = measurePoints[measurePoints.length - 1];
             const p2 = measurePoints[0];
             const dist = map.distance(p1, p2);
             const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
-
             const point1 = map.latLngToContainerPoint(p1);
             const point2 = map.latLngToContainerPoint(p2);
             let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
@@ -3455,10 +3452,15 @@ function redrawMeasurement() {
         popupText += `<div style="font-size:0.75rem; color:#999; margin-top:10px; font-style:italic;">(Use bottom panel to save)</div>`;
         popupText += `</div>`;
 
-        const popupPos = isPolygon ? measureLine.getBounds().getCenter() : measurePoints[measurePoints.length - 1];
+        // v534: Disable popup interaction if Grid Mode is active
         measureLine.bindPopup(popupText, { closeButton: true });
+        measureLine.on('click', (e) => {
+            if (isGridMode && activeGridInterval) {
+                L.DomEvent.stopPropagation(e);
+                map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+            }
+        });
     }
-
     updateMeasureButtons();
 }
 
