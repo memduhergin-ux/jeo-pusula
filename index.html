@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=528">
+    <link rel="stylesheet" href="style.css?v=529">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v528</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v529</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -193,21 +193,26 @@
             </div>
             <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
 
-            <!-- Grid Interval Panel (v528: Pill Design) -->
+            <!-- Grid Interval Panel (v529: Pill Design) -->
             <div id="grid-interval-panel"
-                style="display: none; position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 6px 15px; border-radius: 50px; z-index: 2000; border: 1px solid rgba(255,255,255,0.1); flex-direction: row; align-items: center; gap: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: auto; max-width: 90vw;">
+                style="display: none; position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 50px; z-index: 2000; border: 1px solid rgba(255,255,255,0.1); flex-direction: row; align-items: center; gap: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: auto; max-width: 98vw;">
 
                 <!-- Label -->
                 <div
                     style="font-size: 0.7rem; color: #00ffcc; font-weight: bold; white-space: nowrap; margin-right: 5px; opacity: 0.8;">
                     GRID</div>
 
-                <div id="grid-intervals" style="display: flex; gap: 6px; align-items: center;">
-                    <button class="grid-opt-btn" data-interval="50">50m</button>
-                    <button class="grid-opt-btn active" data-interval="100">100m</button>
-                    <button class="grid-opt-btn" data-interval="250">250m</button>
-                    <button class="grid-opt-btn" data-interval="500">500m</button>
-                    <button class="grid-opt-btn" data-interval="1000">1km</button>
+                <div id="grid-intervals" style="display: flex; gap: 4px; align-items: center;">
+                    <button class="grid-opt-btn" data-interval="50"
+                        style="padding: 4px 8px; font-size: 0.75rem;">50m</button>
+                    <button class="grid-opt-btn active" data-interval="100"
+                        style="padding: 4px 8px; font-size: 0.75rem;">100m</button>
+                    <button class="grid-opt-btn" data-interval="250"
+                        style="padding: 4px 8px; font-size: 0.75rem;">250m</button>
+                    <button class="grid-opt-btn" data-interval="500"
+                        style="padding: 4px 8px; font-size: 0.75rem;">500m</button>
+                    <button class="grid-opt-btn" data-interval="1000"
+                        style="padding: 4px 8px; font-size: 0.75rem;">1km</button>
                 </div>
 
                 <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
@@ -394,7 +399,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v528</p>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v529</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -583,9 +588,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=528"></script>
+    <script src="app.js?v=529"></script>
     <script>
-        const JEO_VERSION = '528';
+        const JEO_VERSION = '529';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js

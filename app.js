@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v528';
+const CACHE_NAME = 'jeocompass-v529';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -577,8 +577,6 @@ function renderCoordinates() {
 
     const gpsAlt = currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0;
     const baroAlt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : '-';
-    // v528: Real Z (Open-Meteo) Display
-    const onlineAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : '-';
 
     if (currentMode === 'wgs') {
         coordContent.innerHTML = `
@@ -590,13 +588,13 @@ function renderCoordinates() {
                 <span class="data-label">Boylam</span>
                 <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}°</span>
             </div>
-            <div class="coord-row" style="border-top: 1px solid rgba(255,165,0,0.3); padding-top: 4px;">
-                <span class="data-label" style="color: #ff9800;">Real Z (Alt)</span>
-                <span class="data-value" style="font-size: 1.1rem; color: #ff9800; font-weight: bold;">${onlineAlt !== '-' ? onlineAlt + ' m' : 'Searching...'}</span>
+            <div class="coord-row">
+                <span class="data-label">Z (Uydu)</span>
+                <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
             </div>
             <div class="coord-row">
-                <span class="data-label">Z (Sensör)</span>
-                <span class="data-value" style="font-size: 0.85rem;">Baro: ${baroAlt}m | GPS: ${gpsAlt}m</span>
+                <span class="data-label">Z (Baro)</span>
+                <span class="data-value" style="font-size: 1rem;">${baroAlt} m</span>
             </div>
         `;
     } else {
@@ -619,14 +617,14 @@ function renderCoordinates() {
                     <span class="data-label">X</span>
                     <span class="data-value" style="font-size: 1rem;">${Math.round(northing)}</span>
                 </div>
-                <div class="coord-row" style="border-top: 1px solid rgba(255,165,0,0.3); padding-top: 4px;">
-                    <span class="data-label" style="color: #ff9800;">Real Z (Alt)</span>
-                    <span class="data-value" style="font-size: 1.1rem; color: #ff9800; font-weight: bold;">${onlineAlt !== '-' ? onlineAlt + ' m' : 'Searching...'}</span>
+                <div class="coord-row">
+                    <span class="data-label">Z (Uydu)</span>
+                    <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
                 </div>
                 <div class="coord-row">
-                   <span class="data-label">Z (Sensör)</span>
-                   <span class="data-value" style="font-size: 0.85rem;">Baro: ${baroAlt}m | GPS: ${gpsAlt}m</span>
-               </div>
+                    <span class="data-label">Z (Baro)</span>
+                    <span class="data-value" style="font-size: 1rem;">${baroAlt} m</span>
+                </div>
             `;
         } catch (e) {
             coordContent.innerHTML = '<div class="data-label">UTM Error</div>';
@@ -1496,6 +1494,8 @@ function initMap() {
             // Aggressive search starting from map and specific groups
             findPolygonsRecursive(map);
             if (typeof markerGroup !== 'undefined') findPolygonsRecursive(markerGroup);
+            // v529: Specifically check for active measurement line/polygon if it exists
+            if (typeof measureLine !== 'undefined' && measureLine) findPolygonsRecursive(measureLine);
 
             if (candidates.length > 0) {
                 // Priority: Smallest area (most specific)
