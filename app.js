@@ -372,7 +372,8 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v519';
+const CACHE_NAME = 'jeocompass-v521';
+let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -922,6 +923,12 @@ function startGeolocationWatch() {
             currentCoords.acc = p.coords.accuracy;
             currentCoords.alt = p.coords.altitude;
 
+            // v521: Save last known location to localStorage
+            if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
+                localStorage.setItem('jeoLastLat', currentCoords.lat);
+                localStorage.setItem('jeoLastLon', currentCoords.lon);
+            }
+
             // v464: Prevent (0,0) jump from entering smoothedPos
             if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
                 if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
@@ -1188,8 +1195,8 @@ let lastSelectedParcel = null; // Track the last clicked parcel for two-stage ch
 function initMap() {
     if (map) return;
 
-    const initialLat = currentCoords.lat || 39.9334;
-    const initialLon = currentCoords.lon || 32.8597;
+    const initialLat = currentCoords.lat || parseFloat(localStorage.getItem('jeoLastLat')) || 39.9334;
+    const initialLon = currentCoords.lon || parseFloat(localStorage.getItem('jeoLastLon')) || 32.8597;
 
     map = L.map('map-container', {
         maxZoom: 25, // Increased from 23 to 25
@@ -1459,7 +1466,7 @@ function initMap() {
             if (candidates.length > 0) {
                 // Use the last one (usually the one on top)
                 const targetLayer = candidates[candidates.length - 1];
-                createAreaGrid(targetLayer, activeGridInterval);
+                createAreaGrid(targetLayer, activeGridInterval, activeGridColor);
                 return; // Stop processing other click events
             }
         }
@@ -2557,7 +2564,7 @@ function isPointInPolygon(latlng, polygon) {
     return isInside;
 }
 
-function createAreaGrid(polygon, interval) {
+function createAreaGrid(polygon, interval, color = '#00ffcc') {
     if (!map || !polygon) return;
     const bounds = polygon.getBounds();
     const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
@@ -2612,7 +2619,7 @@ function createAreaGrid(polygon, interval) {
         }
 
         L.polyline(gridLines, {
-            color: '#00ffcc',
+            color: color,
             weight: 1,
             opacity: 0.6,
             dashArray: '5, 5',
@@ -2653,6 +2660,20 @@ document.querySelectorAll('.grid-opt-btn').forEach(btn => {
         document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
         showToast(`Interval set: ${activeGridInterval}m. Click an area!`, 2000);
+    });
+});
+
+// v520: Grid Color Listeners
+document.querySelectorAll('.grid-color-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        activeGridColor = e.target.dataset.color;
+        document.querySelectorAll('.grid-color-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.border = "2px solid transparent";
+        });
+        e.target.classList.add('active');
+        e.target.style.border = "2px solid #fff";
+        showToast("Grid Color Updated", 1000);
     });
 });
 
