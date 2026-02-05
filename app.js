@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v529';
+const CACHE_NAME = 'jeocompass-v530';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1477,11 +1477,12 @@ function initMap() {
             let candidates = [];
             const findPolygonsRecursive = (target) => {
                 if (!target) return;
-                // v528: Unified area detection (KML, measure, or standard polygon)
-                if (target instanceof L.Polygon || (target.getLatLngs && (target instanceof L.Polyline || target.getPath))) {
-                    // Check if it's actually an area (closed path or Polygon instance)
-                    const isClosed = target instanceof L.Polygon || (target.options && target.options.fill);
-                    if (isClosed && target.getBounds && target.getBounds().contains(e.latlng)) {
+                // v530: More aggressive area detection (Any layer with getLatLngs and a fill/closed potential)
+                if (target.getLatLngs && (target instanceof L.Polygon || target instanceof L.Polyline)) {
+                    // It counts as a polygon if it is L.Polygon OR has fill enabled OR is currently being drawn as a polygon
+                    const canBeArea = target instanceof L.Polygon || (target.options && target.options.fill) || (target === measureLine && typeof isPolygon !== 'undefined' && isPolygon);
+
+                    if (canBeArea && target.getBounds && target.getBounds().contains(e.latlng)) {
                         if (isPointInPolygon(e.latlng, target)) {
                             candidates.push(target);
                         }
@@ -2582,15 +2583,19 @@ if (btnHeatmapOff) {
     });
 }
 
-/** Grid Feature Logic (v528: Standard Jordan Curve Algorithm) **/
+/** Grid Feature Logic (v530: Robust Jordan Curve Algorithm) **/
 function isPointInPolygon(latlng, polygon) {
     if (!polygon || !polygon.getLatLngs) return false;
     let polyPoints = polygon.getLatLngs();
 
     const flattenPoints = (arr) => {
         if (!Array.isArray(arr)) return [];
-        if (arr.length > 0 && !Array.isArray(arr[0])) return arr;
-        return flattenPoints(arr[0]);
+        if (arr.length === 0) return [];
+        // Leaflet Polygon: [ [L, L, L] ] or [ [L, L], [H, H] ]
+        // Leaflet Polyline: [ L, L, L ]
+        if (arr[0] instanceof L.LatLng || (arr[0].lat !== undefined && arr[0].lng !== undefined)) return arr;
+        if (Array.isArray(arr[0])) return flattenPoints(arr[0]);
+        return arr;
     };
 
     let flatPoints = flattenPoints(polyPoints);
@@ -2599,8 +2604,10 @@ function isPointInPolygon(latlng, polygon) {
     const x = latlng.lng, y = latlng.lat;
     let inside = false;
     for (let i = 0, j = flatPoints.length - 1; i < flatPoints.length; j = i++) {
-        let xi = flatPoints[i].lng, yi = flatPoints[i].lat;
-        let xj = flatPoints[j].lng, yj = flatPoints[j].lat;
+        let pi = flatPoints[i], pj = flatPoints[j];
+        let xi = pi.lng || pi[1], yi = pi.lat || pi[0];
+        let xj = pj.lng || pj[1], yj = pj.lat || pj[0];
+
         let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
         if (intersect) inside = !inside;
     }
