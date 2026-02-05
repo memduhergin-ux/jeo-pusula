@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v521';
+const CACHE_NAME = 'jeocompass-v522';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1451,8 +1451,9 @@ function initMap() {
 
     // Map Click Handler for Interactions (v519: Optimized for Grid Priority)
     map.on('click', (e) => {
-        // v519: Priority 1 - Grid Creation
+        // v522: Priority 1 - Grid Creation & Popup Suppression
         if (isGridMode && activeGridInterval) {
+            map.closePopup(); // Ensure no popups are open
             let candidates = [];
             map.eachLayer((layer) => {
                 // Find all polygons that contain the clicked point
@@ -2769,6 +2770,13 @@ function addExternalLayer(name, geojson) {
 
             // Pass clicks to map handler if in special modes
             layer.on('click', (e) => {
+                // v522: Absolute Grid Priority over KML Popups
+                if (isGridMode && activeGridInterval) {
+                    L.DomEvent.stopPropagation(e);
+                    map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    return;
+                }
+
                 const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
 
                 // If polygon and not filled, ignore clicks inside
