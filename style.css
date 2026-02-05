@@ -1152,6 +1152,29 @@ textarea.form-input {
     font-size: 1.1rem;
 }
 
+.grid-opt-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #eee;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-weight: bold;
+}
+
+.grid-opt-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.grid-opt-btn.active {
+    background: #00ffcc !important;
+    color: #000 !important;
+    border-color: #fff !important;
+}
+
 .records-toggle-fab {
     /* Specific overrides if needed, but flex handles position now */
     background: rgba(33, 33, 33, 0.7);
