@@ -371,7 +371,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v470';
+const CACHE_NAME = 'jeocompass-v471';
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -3775,9 +3775,12 @@ renderTracks();
 
 
 // v470: Initialize Auto-Rec and Live Track checkbox states from localStorage
-(function initTrackingSettings() {
+// Wrapped in DOMContentLoaded to ensure elements are available
+document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
     const chkAutoTrack = document.getElementById('chk-auto-track');
     const chkShowLiveTrack = document.getElementById('chk-show-live-track');
+
+    console.log('Initializing tracking settings...', { chkAutoTrack, chkShowLiveTrack });
 
     // Restore checkbox states from localStorage
     if (chkAutoTrack) {
@@ -3793,6 +3796,9 @@ renderTracks();
 
             console.log('Auto-Rec:', isTracking ? 'ENABLED' : 'DISABLED');
         });
+        console.log('Auto-Rec checkbox initialized, checked:', chkAutoTrack.checked);
+    } else {
+        console.warn('Auto-Rec checkbox not found in DOM');
     }
 
     if (chkShowLiveTrack) {
@@ -3816,8 +3822,11 @@ renderTracks();
 
             console.log('Live Track:', showLiveTrack ? 'VISIBLE' : 'HIDDEN');
         });
+        console.log('Live Track checkbox initialized, checked:', chkShowLiveTrack.checked);
+    } else {
+        console.warn('Live Track checkbox not found in DOM');
     }
-})();
+});
 
 
 // v441: Hybrid Headlight Logic
