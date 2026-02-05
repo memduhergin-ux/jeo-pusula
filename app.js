@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v522';
+const CACHE_NAME = 'jeocompass-v524';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -511,6 +511,15 @@ function initBarometer() {
     }
 }
 initBarometer();
+
+// Z-Priority Helper (v524)
+function getBestAltitude() {
+    // Priority: Online Elevation > Barometer > GPS
+    if (onlineMyAlt !== null) return onlineMyAlt;
+    if (currentCoords.baroAlt !== null) return Math.round(currentCoords.baroAlt);
+    if (currentCoords.alt !== null) return Math.round(currentCoords.alt);
+    return 0;
+}
 
 function updateDisplay() {
     if (compassNeedle) {
@@ -1451,24 +1460,28 @@ function initMap() {
 
     // Map Click Handler for Interactions (v519: Optimized for Grid Priority)
     map.on('click', (e) => {
-        // v522: Priority 1 - Grid Creation & Popup Suppression
+        // v523: Recursive Grid Detection & Priority
         if (isGridMode && activeGridInterval) {
-            map.closePopup(); // Ensure no popups are open
+            map.closePopup();
             let candidates = [];
-            map.eachLayer((layer) => {
-                // Find all polygons that contain the clicked point
-                if (layer instanceof L.Polygon && layer.getBounds && layer.getBounds().contains(e.latlng)) {
-                    if (isPointInPolygon(e.latlng, layer)) {
-                        candidates.push(layer);
+
+            // Recursive helper to find polygons in any layer group (v523)
+            const findPolygons = (target) => {
+                if (target instanceof L.Polygon) {
+                    if (target.getBounds().contains(e.latlng) && isPointInPolygon(e.latlng, target)) {
+                        candidates.push(target);
                     }
+                } else if (target.eachLayer) {
+                    target.eachLayer(layer => findPolygons(layer));
                 }
-            });
+            };
+
+            findPolygons(map);
 
             if (candidates.length > 0) {
-                // Use the last one (usually the one on top)
                 const targetLayer = candidates[candidates.length - 1];
                 createAreaGrid(targetLayer, activeGridInterval, activeGridColor);
-                return; // Stop processing other click events
+                return;
             }
         }
 
@@ -1589,16 +1602,13 @@ function updateScaleValues() {
 
     // Update UTM display (Current or Target?)
     if (utmEl) {
-        let displayLat = currentCoords.lat;
-        let displayLon = currentCoords.lon;
-        // v465: Map View strictly uses Online (Real Z) if available, fallback to Baro/GPS only if necessary
-        let displayAlt = onlineMyAlt !== null ? onlineMyAlt : (currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : (currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0));
+        let displayAlt = getBestAltitude();
 
         if (isAddingPoint && map) {
             const center = map.getCenter();
             displayLat = center.lat;
             displayLon = center.lng;
-            displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : myBestAlt;
+            displayAlt = onlineCenterAlt !== null ? onlineCenterAlt : getBestAltitude();
         }
 
         if (displayLat) {
