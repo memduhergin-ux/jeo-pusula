@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v535';
+const CACHE_NAME = 'jeocompass-v537';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -530,8 +530,11 @@ function updateDisplay() {
         valStrike.textContent = formatStrike(displayedHeading);
     }
 
-    let dip = Math.abs(currentTilt.beta); // currentTilt.beta is now stabilized in handleOrientation
-    if (dip > 90) dip = 180 - dip;
+    let dip = Math.abs(currentTilt.beta);
+    // v536: Improved 90-degree reach. If it's very close to 90, we let it "touch" 90 
+    // before the reflection logic kicks in, avoiding the "jitter pull-down".
+    if (dip > 89.2 && dip < 90.8) dip = 90;
+    else if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
         valDip.textContent = Math.round(dip) + "\u00B0";
@@ -1161,8 +1164,8 @@ function renderRecords(filter = '') {
 
     let displayRecords = records;
     if (filter) {
-        // Global Search: Check all values in the record
         const q = filter.toLowerCase();
+        // Points search
         displayRecords = records.filter(r => {
             return Object.values(r).some(val =>
                 String(val).toLowerCase().includes(q)
@@ -1948,19 +1951,27 @@ function calculateTrackLength(path) {
     return len;
 }
 
-function renderTracks() {
+function renderTracks(filter = '') {
     const tableBody = document.getElementById('tracks-body');
     if (!tableBody) return;
 
-    updateTrackCountBadge(); // v442: Update count badge
+    updateTrackCountBadge();
 
-    if (jeoTracks.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5">No tracks saved yet</td></tr>';
+    let displayTracks = jeoTracks;
+    if (filter) {
+        const q = filter.toLowerCase();
+        displayTracks = jeoTracks.filter(t =>
+            (t.name && t.name.toLowerCase().includes(q)) ||
+            (t.time && t.time.toLowerCase().includes(q))
+        );
+    }
+
+    if (displayTracks.length === 0 && !trackPath.length) {
+        tableBody.innerHTML = '<tr><td colspan="7">No tracks found</td></tr>';
         return;
     }
 
-    // v466: Sort by newest first (descending ID)
-    const sortedTracks = [...jeoTracks].sort((a, b) => b.id - a.id);
+    const sortedTracks = [...displayTracks].sort((a, b) => b.id - a.id);
 
     let html = "";
     // v467: Display Live Track row if exists
@@ -2277,7 +2288,12 @@ if (btnToggleRecords) {
 // Search Logic
 if (recordSearch) {
     recordSearch.addEventListener('input', (e) => {
-        renderRecords(e.target.value);
+        const query = e.target.value;
+        if (activeTab === 'points') {
+            renderRecords(query);
+        } else {
+            renderTracks(query);
+        }
     });
 }
 
@@ -4057,11 +4073,13 @@ if (btnToggleLock) {
         isRecordsLocked = !isRecordsLocked;
         updateLockUI();
         renderRecords();
+        renderTracks(); // v537: Refresh tracks view for lock sync
         if (isRecordsLocked) {
-            // Uncheck all when locking to be safe
-            document.querySelectorAll('.record-select').forEach(cb => cb.checked = false);
-            const selectAll = document.getElementById('select-all-records');
-            if (selectAll) selectAll.checked = false;
+            document.querySelectorAll('.record-select, .track-select').forEach(cb => cb.checked = false);
+            const selectAllRec = document.getElementById('select-all-records');
+            const selectAllTrack = document.getElementById('select-all-tracks');
+            if (selectAllRec) selectAllRec.checked = false;
+            if (selectAllTrack) selectAllTrack.checked = false;
             updateShareButtonState();
         }
     });
