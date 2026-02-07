@@ -1,4 +1,79 @@
-﻿// App Initialization & Splash Screen
+﻿// IndexedDB Configuration for Large KML Persistence (v543)
+const JEO_DB_NAME = 'JeoCompassDB';
+const JEO_DB_VERSION = 1;
+const JEO_STORE_NAME = 'externalLayers';
+
+function openJeoDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(JEO_DB_NAME, JEO_DB_VERSION);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(JEO_STORE_NAME)) {
+                db.createObjectStore(JEO_STORE_NAME, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function dbSaveLayers(layers) {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(JEO_STORE_NAME);
+        await store.clear();
+        for (const layer of layers) {
+            await store.put({
+                id: layer.id,
+                name: layer.name,
+                geojson: layer.geojson,
+                visible: layer.visible,
+                filled: layer.filled,
+                pointsVisible: layer.pointsVisible,
+                areasVisible: layer.areasVisible,
+                labelsVisible: layer.labelsVisible
+            });
+        }
+        return new Promise((resolve) => {
+            tx.oncomplete = () => resolve();
+        });
+    } catch (e) {
+        console.error("IndexedDB Save Error:", e);
+    }
+}
+
+async function dbLoadLayers() {
+    try {
+        const db = await openJeoDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(JEO_STORE_NAME, 'readonly');
+            const store = tx.objectStore(JEO_STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    } catch (e) {
+        console.error("IndexedDB Load Error:", e);
+        return [];
+    }
+}
+
+function showLoading(text = "Dosya işleniyor...") {
+    const overlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+    if (overlay && loadingText) {
+        loadingText.textContent = text;
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// App Initialization & Splash Screen
 function initApp() {
     // 1. Remove Splash Screen
     setTimeout(() => {
@@ -372,7 +447,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v541';
+const CACHE_NAME = 'jeocompass-v544';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -532,8 +607,8 @@ function updateDisplay() {
     }
 
     let dip = Math.abs(currentTilt.beta);
-    // v541: Optimized 90-degree snap (89.5 - 90.5) for better reach on mobile
-    if (dip > 89.5 && dip < 90.5) dip = 90;
+    // v542: Wider 90-degree snap (88.0 - 92.0) to prevent "88 bounce" and ensure stability
+    if (dip > 88.0 && dip < 92.0) dip = 90;
     else if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
@@ -988,13 +1063,13 @@ function startGeolocationWatch() {
 
                 if (followMe) map.panTo(livePos);
 
-                // v525: Stable hybrid rotation (GPS Course walking, Compass stationary)
+                // v544: Focused Navigation - prioritize GPS Course (Heading) over Compass when moving
                 const heading = p.coords.heading;
                 const speed = p.coords.speed || 0;
                 let targetRot = 0;
 
-                // Decision: Moving (> 0.8 m/s) -> Use GPS Course; Stationary -> Use Compass
-                if (heading !== null && heading !== undefined && speed > 0.8) {
+                // Decision: Moving (> 0.2 m/s) -> Use GPS Course only; Stationary -> Use Compass
+                if (heading !== null && heading !== undefined && speed > 0.2) {
                     targetRot = heading;
                 } else {
                     targetRot = displayedHeading; // Compass from sensors
@@ -1220,8 +1295,9 @@ function initMap() {
     const initialLon = currentCoords.lon || parseFloat(localStorage.getItem('jeoLastLon')) || 32.8597;
 
     map = L.map('map-container', {
-        maxZoom: 25, // Increased from 23 to 25
-        minZoom: 1   // Ensure full zoom out flexibility
+        maxZoom: 25,
+        minZoom: 1,
+        preferCanvas: true // v543: Essential for handling large KML datasets (10x faster rendering)
     }).setView([initialLat, initialLon], currentCoords.lat ? 17 : 15);
 
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1672,10 +1748,10 @@ function updateScaleValues() {
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
                 // v534: Remove "Real" label to save space, just "Z:" in orange
                 utmEl.innerHTML = `
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:0.5mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ffeb3b; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:0mm; color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                    <span style="font-size:1.1em; vertical-align: middle; margin-left: 1mm;">${modeLabel}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
+                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:2mm;">${northPart}</span>
+                    <span style="font-size:0.75em; color:#ffeb3b; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:2mm; color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                    <span style="font-size:1.1em; vertical-align: middle; margin-left: 0mm;">${modeLabel}</span>
                 `;
             } catch (e) {
                 utmEl.textContent = "UTM Error";
@@ -2496,6 +2572,10 @@ if (fileImportInput) {
         const file = e.target.files[0];
         if (!file) return;
 
+        showLoading(`${file.name} işleniyor...`);
+        // v543: Small delay to let the UI show the loader before heavy KML parsing starts
+        await new Promise(r => setTimeout(r, 100));
+
         try {
             let fileName = file.name;
             const extension = file.name.split('.').pop().toLowerCase();
@@ -2508,7 +2588,6 @@ if (fileImportInput) {
                 geojsonData = toGeoJSON.kml(kml);
             } else if (extension === 'kmz') {
                 const zip = await JSZip.loadAsync(file);
-                // Find the first .kml file in the zip
                 const kmlFile = Object.values(zip.files).find(f => f.name.toLowerCase().endsWith('.kml'));
                 if (kmlFile) {
                     const text = await kmlFile.async('string');
@@ -2520,7 +2599,7 @@ if (fileImportInput) {
 
             if (geojsonData) {
                 addExternalLayer(fileName, geojsonData);
-                saveExternalLayers(); // Persist
+                await saveExternalLayers(); // Persist (Async v543)
                 layersModal.classList.remove('active');
             } else {
                 alert("No valid KML found.");
@@ -2528,8 +2607,10 @@ if (fileImportInput) {
         } catch (err) {
             console.error(err);
             alert("File could not be read: " + err.message);
+        } finally {
+            hideLoading();
+            fileImportInput.value = ''; // Reset
         }
-        fileImportInput.value = ''; // Reset
     });
 }
 
@@ -3111,29 +3192,34 @@ function removeLayer(id) {
     renderLayerList();
 }
 
-function saveExternalLayers() {
-    const dataToSave = externalLayers.map(l => ({
-        name: l.name,
-        geojson: l.geojson,
-        visible: l.visible,
-        filled: l.filled,
-        pointsVisible: l.pointsVisible,
-        areasVisible: l.areasVisible,
-        labelsVisible: l.labelsVisible
-    }));
-    localStorage.setItem('jeoExternalLayers', JSON.stringify(dataToSave));
+async function saveExternalLayers() {
+    // v543: Store in IndexedDB to avoid 5MB localStorage limit
+    await dbSaveLayers(externalLayers);
     if (isHeatmapActive) updateHeatmapFilterOptions();
 }
 
-function loadExternalLayers() {
-    const saved = localStorage.getItem('jeoExternalLayers');
-    if (!saved) return;
+async function loadExternalLayers() {
+    // v543: Primary storage is now IndexedDB for large file support
+    showLoading("Kayıtlı katmanlar yükleniyor...");
     try {
-        const data = JSON.parse(saved);
-        data.forEach(d => {
+        let data = await dbLoadLayers();
+
+        // v543: Legacy fallback to localStorage (migrate once)
+        if (data.length === 0) {
+            const legacySaved = localStorage.getItem('jeoExternalLayers');
+            if (legacySaved) {
+                data = JSON.parse(legacySaved);
+                console.log("Migrating legacy layers to IndexedDB...");
+                await dbSaveLayers(data);
+                localStorage.removeItem('jeoExternalLayers');
+            }
+        }
+
+        for (const d of data) {
             addExternalLayer(d.name, d.geojson);
             const last = externalLayers[externalLayers.length - 1];
             if (last) {
+                last.id = d.id; // Ensure ID persistence
                 last.visible = d.visible;
                 last.filled = d.filled;
                 last.pointsVisible = d.pointsVisible !== undefined ? d.pointsVisible : true;
@@ -3145,10 +3231,12 @@ function loadExternalLayers() {
                 toggleLayerAreas(last.id, last.areasVisible);
                 toggleLayerLabels(last.id, last.labelsVisible);
             }
-        });
+        }
         renderLayerList();
     } catch (e) {
         console.error("KML loading error:", e);
+    } finally {
+        hideLoading();
     }
 }
 
