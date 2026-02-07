@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v540';
+const CACHE_NAME = 'jeocompass-v541';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -532,8 +532,8 @@ function updateDisplay() {
     }
 
     let dip = Math.abs(currentTilt.beta);
-    // v540: Ultra-precise 90-degree snap (89.8 - 90.2)
-    if (dip > 89.8 && dip < 90.2) dip = 90;
+    // v541: Optimized 90-degree snap (89.5 - 90.5) for better reach on mobile
+    if (dip > 89.5 && dip < 90.5) dip = 90;
     else if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
@@ -1674,8 +1674,8 @@ function updateScaleValues() {
                 utmEl.innerHTML = `
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:1mm;">${eastPart}</span>
                     <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:0.5mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ff9800; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:0mm; color:#ff9800; font-weight:bold;">${displayAlt}m</span>
-                    <span style="font-size:1.1em; vertical-align: middle;">${modeLabel}</span>
+                    <span style="font-size:0.75em; color:#ffeb3b; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:0mm; color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                    <span style="font-size:1.1em; vertical-align: middle; margin-left: 1mm;">${modeLabel}</span>
                 `;
             } catch (e) {
                 utmEl.textContent = "UTM Error";

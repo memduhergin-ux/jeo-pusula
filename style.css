@@ -1545,9 +1545,9 @@ textarea.form-input {
     color: #ffeb3b;
     text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
     white-space: nowrap;
-    display: block;
-    padding-right: 42px;
-    /* Shifting further left (approx +1.5mm) */
+    display: flex;
+    align-items: center;
+    padding-right: 5px;
 }
 
 .scale-bars {
