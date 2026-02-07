@@ -8,7 +8,7 @@
     <title>JeoCompass</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=537">
+    <link rel="stylesheet" href="style.css?v=540">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,7 +25,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v537</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v540</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -382,13 +382,13 @@
                 <table class="records-table">
                     <thead>
                         <tr>
-                            <th id="select-all-tracks-th"><input type="checkbox" id="select-all-tracks"></th>
+                            <th id="select-all-tracks-th" class="locked-hidden"><input type="checkbox"
+                                    id="select-all-tracks"></th>
                             <th>Name</th>
                             <th>Length</th>
                             <th>Color</th>
                             <th>Visible</th>
                             <th>Date</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="tracks-body">
@@ -418,7 +418,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v537</p>
+                        JeoCompass - Version v540</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -431,7 +431,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v537</p>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v540</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -489,34 +489,46 @@
 
     <!-- Options Modal -->
     <div id="options-modal" class="modal-overlay">
-        <div class="modal-body" style="padding: 20px 0;">
-            <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px; text-align: center;">Actions & Tools</div>
-            <button class="save-btn ready" id="btn-delete-selected"
-                style="width: 100%; padding: 15px; background: rgba(244, 67, 54, 0.15); border-color: #f44336; color: #ff5252; font-weight: bold; margin-bottom: 10px;">
-                🗑️ Delete Selected
-            </button>
-            <button class="save-btn ready" onclick="forceAppUpdate()"
-                style="width: 100%; padding: 15px; background: rgba(33, 150, 243, 0.15); border-color: #2196f3; color: #2196f3; font-weight: bold; margin-bottom: 20px;">
-                🔄 Force Update
-            </button>
+        <div class="modal-content"
+            style="max-width: 320px; border-radius: 20px; overflow: hidden; background: #1a1a1a;">
+            <div class="modal-body" style="padding: 25px 20px;">
+                <div
+                    style="font-size: 1rem; color: #fff; margin-bottom: 20px; text-align: center; font-weight: bold; letter-spacing: 1px;">
+                    ACTIONS & TOOLS</div>
 
-            <div style="border-top: 1px solid #444; padding-top: 15px;">
-                <button class="save-btn ready" id="btn-backup-json"
-                    style="width: 100%; padding: 15px; background: rgba(76, 175, 80, 0.15); border-color: #4caf50; color: #4caf50; font-weight: bold; margin-bottom: 10px;">
-                    📦 Full Backup (JSON)
+                <button class="save-btn ready" id="btn-delete-selected"
+                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.1)); border: 1px solid rgba(244, 67, 54, 0.5); color: #ff5252; font-weight: bold; margin-bottom: 12px; border-radius: 12px; transition: all 0.3s ease;">
+                    🗑️ Delete Selected
                 </button>
-                <button class="save-btn ready" id="btn-restore-json"
-                    style="width: 100%; padding: 15px; background: rgba(255, 193, 7, 0.15); border-color: #ffc107; color: #ffc107; font-weight: bold;">
-                    📂 Restore Backup
+
+                <button class="save-btn ready" onclick="forceAppUpdate()"
+                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(33, 150, 243, 0.1)); border: 1px solid rgba(33, 150, 243, 0.5); color: #2196f3; font-weight: bold; margin-bottom: 25px; border-radius: 12px; transition: all 0.3s ease;">
+                    🔄 Force App Update
                 </button>
-                <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+
+                <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 5px;">
+                    <button class="save-btn ready" id="btn-backup-json"
+                        style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1)); border: 1px solid rgba(76, 175, 80, 0.4); color: #4caf50; font-weight: bold; margin-bottom: 12px; border-radius: 12px;">
+                        📦 Full Backup (JSON)
+                    </button>
+                    <button class="save-btn ready" id="btn-restore-json"
+                        style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.1)); border: 1px solid rgba(255, 193, 7, 0.4); color: #ffc107; font-weight: bold; border-radius: 12px;">
+                        📂 Restore Backup
+                    </button>
+                    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+                </div>
             </div>
-            <div style="text-align: center; margin-top: 20px; color: #666; font-size: 0.8rem;">
-                JeoCompass v537
+
+            <div class="modal-footer"
+                style="padding: 15px 20px 25px 20px; flex-direction: column; align-items: center; gap: 12px;">
+                <button class="modal-btn btn-cancel" id="btn-options-cancel"
+                    style="width: 100%; max-width: 180px; padding: 12px; border-radius: 25px; background: #333; border: 1px solid #444; color: #fff; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    Close
+                </button>
+                <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
+                    JeoCompass v540
+                </div>
             </div>
-        </div>
-        <div class="modal-footer" style="display: flex; justify-content: center; width: 100%;">
-            <button class="modal-btn btn-cancel" id="btn-options-cancel" style="min-width: 120px;">Close</button>
         </div>
     </div>
     </div>
@@ -617,9 +629,9 @@
             return false;
         };
     </script>
-    <script src="app.js?v=537"></script>
+    <script src="app.js?v=540"></script>
     <script>
-        const JEO_VERSION = '537';
+        const JEO_VERSION = '540';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js

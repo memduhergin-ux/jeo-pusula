@@ -372,7 +372,8 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v537';
+const CACHE_NAME = 'jeocompass-v540';
+let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -531,9 +532,8 @@ function updateDisplay() {
     }
 
     let dip = Math.abs(currentTilt.beta);
-    // v536: Improved 90-degree reach. If it's very close to 90, we let it "touch" 90 
-    // before the reflection logic kicks in, avoiding the "jitter pull-down".
-    if (dip > 89.2 && dip < 90.8) dip = 90;
+    // v540: Ultra-precise 90-degree snap (89.8 - 90.2)
+    if (dip > 89.8 && dip < 90.2) dip = 90;
     else if (dip > 90) dip = 180 - dip;
 
     if (!lockDip && valDip) {
@@ -1967,7 +1967,7 @@ function renderTracks(filter = '') {
     }
 
     if (displayTracks.length === 0 && !trackPath.length) {
-        tableBody.innerHTML = '<tr><td colspan="7">No tracks found</td></tr>';
+        tableBody.innerHTML = `<tr><td colspan="${isTracksLocked ? 5 : 6}">No tracks found</td></tr>`;
         return;
     }
 
@@ -1980,35 +1980,24 @@ function renderTracks(filter = '') {
         const liveName = `Track ${liveStartTime.toLocaleDateString('en-GB')} ${liveStartTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
         html += `
             <tr class="live-track-row" style="background: rgba(76, 175, 80, 0.1);">
-                <td></td>
+                <td class="${isTracksLocked ? 'locked-hidden' : ''}"></td>
                 <td style="color: #4caf50; font-weight: bold;">🔴 ${liveName}</td>
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
                 <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
                 <td><input type="checkbox" checked disabled></td>
                 <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kayıtta...</td>
-                <td><span style="font-size:0.8rem; color:#888;">Live</span></td>
             </tr>
         `;
     }
 
     html += sortedTracks.map(t => `
         <tr data-id="${t.id}">
-            <td><input type="checkbox" class="track-select" data-id="${t.id}"></td>
+            <td class="${isTracksLocked ? 'locked-hidden' : ''}"><input type="checkbox" class="track-select" data-id="${t.id}"></td>
             <td onclick="focusTrack(${t.id})">${t.name}</td>
             <td style="font-family:monospace;">${Math.round(t.length || 0)}m</td>
             <td><input type="color" value="${t.color || '#ff5722'}" onchange="updateTrackColor(${t.id}, this.value)" class="track-color-dot"></td>
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
-            <td>
-                <div class="action-menu">
-                    <button class="action-btn" onclick="toggleActionMenu('track-'+${t.id}, event)">⋮</button>
-                    <div id="dropdown-track-${t.id}" class="dropdown-content">
-                        <button onclick="exportSingleTrackKML(${t.id})">💾 Save KML</button>
-                        <button onclick="exportSingleTrackCSV(${t.id})">📊 Save CSV</button>
-                        <button class="delete-action" onclick="deleteTrack(${t.id})">🗑️ Delete</button>
-                    </div>
-                </div>
-            </td>
         </tr>
     `).join('');
 
@@ -2263,7 +2252,8 @@ document.getElementById('tab-points').addEventListener('click', () => {
     document.getElementById('tab-tracks').classList.remove('active');
     document.getElementById('container-points').style.display = 'block';
     document.getElementById('container-tracks').style.display = 'none';
-    updateShareButtonState(); // Update state on switch
+    updateShareButtonState();
+    updateLockUI(); // v538: Sync lock icon for points
 });
 
 document.getElementById('tab-tracks').addEventListener('click', () => {
@@ -2273,7 +2263,8 @@ document.getElementById('tab-tracks').addEventListener('click', () => {
     document.getElementById('container-tracks').style.display = 'block';
     document.getElementById('container-points').style.display = 'none';
     renderTracks();
-    updateShareButtonState(); // Update state on switch
+    updateShareButtonState();
+    updateLockUI(); // v538: Sync lock icon for tracks
 });
 
 if (btnToggleRecords) {
@@ -4057,31 +4048,44 @@ function downloadFile(content, filename, type) {
 // Lock Toggle Logic
 function updateLockUI() {
     if (!btnToggleLock) return;
-    if (isRecordsLocked) {
+    const currentLocked = (activeTab === 'points') ? isRecordsLocked : isTracksLocked;
+
+    if (currentLocked) {
         btnToggleLock.innerHTML = '🔒';
         btnToggleLock.classList.remove('unlocked');
+        btnToggleLock.style.backgroundColor = "";
         btnToggleLock.title = 'Unlock';
     } else {
         btnToggleLock.innerHTML = '🔓';
         btnToggleLock.classList.add('unlocked');
+        btnToggleLock.style.backgroundColor = "rgba(76, 175, 80, 0.2)";
         btnToggleLock.title = 'Lock';
     }
 }
 
 if (btnToggleLock) {
     btnToggleLock.addEventListener('click', () => {
-        isRecordsLocked = !isRecordsLocked;
-        updateLockUI();
-        renderRecords();
-        renderTracks(); // v537: Refresh tracks view for lock sync
-        if (isRecordsLocked) {
-            document.querySelectorAll('.record-select, .track-select').forEach(cb => cb.checked = false);
-            const selectAllRec = document.getElementById('select-all-records');
-            const selectAllTrack = document.getElementById('select-all-tracks');
-            if (selectAllRec) selectAllRec.checked = false;
-            if (selectAllTrack) selectAllTrack.checked = false;
-            updateShareButtonState();
+        if (activeTab === 'points') {
+            isRecordsLocked = !isRecordsLocked;
+            renderRecords();
+            if (isRecordsLocked) {
+                document.querySelectorAll('.record-select').forEach(cb => cb.checked = false);
+                const selectAllRec = document.getElementById('select-all-records');
+                if (selectAllRec) selectAllRec.checked = false;
+            }
+        } else {
+            isTracksLocked = !isTracksLocked;
+            renderTracks();
+            if (isTracksLocked) {
+                document.querySelectorAll('.track-select').forEach(cb => cb.checked = false);
+                const selectAllTrack = document.getElementById('select-all-tracks');
+                if (selectAllTrack) selectAllTrack.checked = false;
+            }
         }
+        updateLockUI();
+        updateShareButtonState();
+        showToast((activeTab === 'points' ? "Records " : "Tracks ") +
+            ((activeTab === 'points' ? isRecordsLocked : isTracksLocked) ? "Locked" : "Unlocked"), 1000);
     });
 }
 
