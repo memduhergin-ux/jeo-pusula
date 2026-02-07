@@ -372,7 +372,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v534';
+const CACHE_NAME = 'jeocompass-v535';
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1865,6 +1865,13 @@ function updateMapMarkers(shouldFitBounds = false) {
                 `;
 
                 shape.bindPopup(popupContent);
+                // v535: Enable Grid Interaction for saved geometries
+                shape.on('click', (e) => {
+                    if (isGridMode && activeGridInterval) {
+                        L.DomEvent.stopPropagation(e);
+                        map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    }
+                });
 
                 markerGroup.addLayer(shape);
                 // SKIP THE PIN for geometries as requested
