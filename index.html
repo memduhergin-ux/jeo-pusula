@@ -633,16 +633,49 @@
         </button>
     </div>
 
-    <!-- Error Handler for Debugging -->
+    <!-- Error Handler for Robustness & Stability (v546) -->
     <script>
+        // Track consecutive crash counts for Safe Mode logic
+        const crashKey = 'jeo_crash_count';
+        const lastCrashKey = 'jeo_last_crash_time';
+
         window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert("Hata (Error): " + msg + "\nSatır (Line): " + lineNo);
+            console.error("Global Error Caught:", msg, "at", url, ":", lineNo);
+
+            // Increment crash count if error happens during boot (first 10 seconds)
+            const now = Date.now();
+            const lastCrashTime = parseInt(localStorage.getItem(lastCrashKey) || 0);
+            if (now - window.bootTime < 10000) {
+                let count = parseInt(localStorage.getItem(crashKey) || 0) + 1;
+                localStorage.setItem(crashKey, count);
+                localStorage.setItem(lastCrashKey, now);
+
+                if (count >= 3) {
+                    if (confirm("Uygulama arka arkaya çökmeler yaşadı. Kayıtlı katmanları sıfırlayarak 'Güvenli Mod'da başlatmak ister misiniz?\n\n(The app crashed repeatedly. Start in Safe Mode by clearing layers?)")) {
+                        localStorage.setItem(crashKey, 0);
+                        indexedDB.deleteDatabase('JeoCompassDB');
+                        location.reload();
+                        return true;
+                    }
+                }
+            }
+
+            alert("Bir Hata Oluştu (An Error Occurred):\n" + msg + "\nSatır (Line): " + lineNo + (columnNo ? ":" + columnNo : ""));
             return false;
         };
+
+        window.onunhandledrejection = function (event) {
+            console.error("Async Rejection:", event.reason);
+            alert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
+        };
+
+        window.bootTime = Date.now();
+        // Clear crash counter after 15 seconds of stable operation
+        setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=544"></script>
+    <script src="app.js?v=546"></script>
     <script>
-        const JEO_VERSION = '544';
+        const JEO_VERSION = '546';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js

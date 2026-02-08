@@ -48,6 +48,10 @@ async function dbLoadLayers() {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(JEO_STORE_NAME, 'readonly');
+            // v546: Transaction abort safety
+            tx.onerror = () => reject(new Error("IDB Transaction failed"));
+            tx.onabort = () => reject(new Error("IDB Transaction aborted"));
+
             const store = tx.objectStore(JEO_STORE_NAME);
             const request = store.getAll();
             request.onsuccess = () => resolve(request.result);
@@ -201,7 +205,15 @@ function updateHeatmap() {
     const point1 = map.latLngToContainerPoint(center);
     const point2 = L.point(point1.x + 100, point1.y); // Use 100px sample for precision
     const latlng2 = map.containerPointToLatLng(point2);
-    const mpp = map.distance(center, latlng2) / 100; // Actual Meters Per Pixel
+
+    // Safety check: Ensure map has dimensions (v545)
+    const dist = map.distance(center, latlng2);
+    if (dist <= 0) {
+        console.warn("Heatmap skipped: Map has no valid dimensions yet.");
+        return;
+    }
+
+    const mpp = dist / 100; // Actual Meters Per Pixel
 
     // v426 Topo-Style Ratios: More blur (30%) for smoother topographic contour flow.
     const blurRatio = 0.30;
@@ -212,14 +224,18 @@ function updateHeatmap() {
     const radiusPixels = totalPixels * radiusRatio;
     const blurPixels = totalPixels * blurRatio;
 
-    heatmapLayer = L.heatLayer(points, {
-        radius: radiusPixels,
-        blur: blurPixels,
-        maxOpacity: 0.9,
-        minOpacity: 0.2, // v420: Maximum prominence for 25m - 100m zones
-        gradient: activeGradient,
-        max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
-    }).addTo(map);
+    try {
+        heatmapLayer = L.heatLayer(points, {
+            radius: radiusPixels,
+            blur: blurPixels,
+            maxOpacity: 0.9,
+            minOpacity: 0.2, // v420: Maximum prominence for 25m - 100m zones
+            gradient: activeGradient,
+            max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
+        }).addTo(map);
+    } catch (e) {
+        console.error("Heatmap Layer Creation Failed:", e);
+    }
 }
 
 // v439: Robust Headlight Rotation
@@ -510,7 +526,8 @@ let activeGridInterval = null;
 let currentGridLayer = null;
 
 // KML/KMZ Layers State
-let externalLayers = []; // { id, name, layer, filled: true, visible: true, pointsVisible: true, areasVisible: true }
+let externalLayers = []; // { id, name, layer, filled: true, visible: true, pointsVisible: true, areasVisible: true, labelsVisible: true }
+let allKmlMarkers = []; // v545: Flat array for lightning-fast label optimization
 let layerIdCounter = 1;
 
 // Element Coloring (v401)
@@ -525,6 +542,120 @@ const ELEMENT_COLORS = {
     'ZN': '#03a9f4', // Light Blue
     'PB': '#607d8b'  // Dark Gray
 };
+
+// Smart Label Placement Utility (v383 - Globals for cross-module access)
+let labelOptimizeTimer = null;
+function optimizeMapPoints() {
+    if (!map) return;
+    try {
+        if (labelOptimizeTimer) clearTimeout(labelOptimizeTimer);
+
+        labelOptimizeTimer = setTimeout(() => {
+            if (allKmlMarkers.length === 0) return;
+
+            const mapBounds = map.getBounds();
+            const occupiedRects = []; // Store {top, left, right, bottom} of occupied areas
+            const labelsToPlace = []; // Collect valid labels to process
+
+            // 2. Pre-process markers: Ensure they are visible and visible on map
+            allKmlMarkers.forEach(marker => {
+                // v545: Fast Parent Lookup via ID instead of hasLayer
+                const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
+                if (!parentLayer || !parentLayer.visible || !parentLayer.pointsVisible || !parentLayer.labelsVisible) {
+                    if (marker.getTooltip()) marker.closeTooltip();
+                    return;
+                }
+
+                const el = marker.getElement();
+                if (!el) return;
+
+                const latLng = marker.getLatLng();
+                if (!mapBounds.contains(latLng)) {
+                    if (marker.getTooltip()) marker.closeTooltip();
+                    return;
+                }
+
+                const tooltip = marker.getTooltip();
+                if (!tooltip) return;
+
+                labelsToPlace.push({ marker, tooltip });
+            });
+
+            // 3. Process Labels
+            // v545: Limit to max 500 labels in view for extreme performance on mobile
+            const processLimit = labelsToPlace.slice(0, 500);
+
+            processLimit.forEach(({ marker, tooltip }) => {
+                marker.openTooltip();
+                const tooltipEl = tooltip.getElement();
+                if (!tooltipEl) return;
+
+                // v545: Cache width/height on the tooltip object to avoid layout thrashing
+                if (!tooltip._jeoWidth) {
+                    tooltip._jeoWidth = tooltipEl.offsetWidth;
+                    tooltip._jeoHeight = tooltipEl.offsetHeight;
+                }
+                const labelWidth = tooltip._jeoWidth;
+                const labelHeight = tooltip._jeoHeight;
+
+                const markerPos = map.latLngToLayerPoint(marker.getLatLng());
+
+                // Check 8 directions
+                const padding = 5;
+                const directions = [
+                    { x: -labelWidth / 2, y: -labelHeight - padding }, // N
+                    { x: padding, y: -labelHeight - padding },        // NE
+                    { x: padding, y: -labelHeight / 2 },              // E
+                    { x: padding, y: padding },                      // SE
+                    { x: -labelWidth / 2, y: padding },               // S
+                    { x: -labelWidth - padding, y: padding },         // SW
+                    { x: -labelWidth - padding, y: -labelHeight / 2 }, // W
+                    { x: -labelWidth - padding, y: -labelHeight - padding } // NW
+                ];
+
+                let bestPos = null;
+                for (const dir of directions) {
+                    const rect = {
+                        left: markerPos.x + dir.x,
+                        top: markerPos.y + dir.y,
+                        right: markerPos.x + dir.x + labelWidth,
+                        bottom: markerPos.y + dir.y + labelHeight
+                    };
+
+                    const hasCollision = occupiedRects.some(occ => {
+                        return !(rect.right < occ.left || rect.left > occ.right || rect.bottom < occ.top || rect.top > occ.bottom);
+                    });
+
+                    if (!hasCollision) {
+                        bestPos = { x: dir.x, y: dir.y, rect: rect };
+                        break;
+                    }
+                }
+
+                if (bestPos) {
+                    tooltipEl.style.opacity = "1";
+                    tooltipEl.style.visibility = "visible";
+                    tooltipEl.style.marginLeft = `${bestPos.x}px`;
+                    tooltipEl.style.marginTop = `${bestPos.y}px`;
+                    occupiedRects.push(bestPos.rect);
+                } else {
+                    tooltipEl.style.opacity = "0";
+                    tooltipEl.style.visibility = "hidden";
+                }
+            });
+
+            // Hide the rest
+            if (labelsToPlace.length > 500) {
+                labelsToPlace.slice(500).forEach(({ marker }) => {
+                    if (marker.getTooltip()) marker.closeTooltip();
+                });
+            }
+
+        }, 50);
+    } catch (e) {
+        console.error("optimizeMapPoints failed:", e);
+    }
+}
 
 // Setup Proj4 Definitions
 proj4.defs("ED50", "+proj=longlat +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +no_defs");
@@ -2572,6 +2703,18 @@ if (fileImportInput) {
         const file = e.target.files[0];
         if (!file) return;
 
+        // v546: Memory Guardrails - Avoid browser crashes on massive files
+        const sizeMB = file.size / (1024 * 1024);
+        if (sizeMB > 50) {
+            alert(`Dosya çok büyük (${sizeMB.toFixed(1)}MB). Tarayıcı çökmesini önlemek için 50MB üzerindeki dosyalar engellendi.`);
+            fileImportInput.value = '';
+            return;
+        }
+        if (sizeMB > 10 && !confirm(`Dosya boyutu büyük (${sizeMB.toFixed(1)}MB). İşleme sırasında telefonunuz kısa süreli donabilir. Devam etmek istiyor musunuz?`)) {
+            fileImportInput.value = '';
+            return;
+        }
+
         showLoading(`${file.name} işleniyor...`);
         // v543: Small delay to let the UI show the loader before heavy KML parsing starts
         await new Promise(r => setTimeout(r, 100));
@@ -2851,6 +2994,10 @@ if (btnGridClear) {
 
 function addExternalLayer(name, geojson) {
     if (!map) return;
+    if (!geojson || !geojson.features) {
+        console.error("Invalid GeoJSON for layer:", name);
+        return;
+    }
 
     // Default Style: Blue outline, semi-transparent blue fill
     const style = {
@@ -2861,143 +3008,153 @@ function addExternalLayer(name, geojson) {
         fillOpacity: 0.4 // Default Filled
     };
 
-    const layer = L.geoJSON(geojson, {
-        style: style,
-        pointToLayer: (feature, latlng) => {
-            // Kibar Geological/Pin Icon
-            const iconHtml = `
+    try {
+        const layer = L.geoJSON(geojson, {
+            style: style,
+            pointToLayer: (feature, latlng) => {
+                // Kibar Geological/Pin Icon
+                const iconHtml = `
                 <div class="kml-marker-pin">
                     <div class="kml-marker-dot"></div>
                 </div>
             `;
-            const icon = L.divIcon({
-                className: 'kml-custom-icon',
-                html: iconHtml,
-                iconSize: [8, 8], // Even smaller icon size
-                iconAnchor: [4, 4]
-            });
-            return L.marker(latlng, { icon: icon });
-        },
-        onEachFeature: (feature, layer) => {
-            const featureName = getFeatureName(feature.properties);
-            // v382: Only show labels for Points to prevent clutter on lines/polygons
-            if (featureName && feature.geometry.type === 'Point') {
-                layer.bindTooltip(String(featureName), {
-                    permanent: true,
-                    direction: 'top',
-                    className: 'kml-label',
-                    offset: [0, 0], // v383: Start at center, Smart Label will move it
-                    sticky: false // Changed to false for better stability
+                const icon = L.divIcon({
+                    className: 'kml-custom-icon',
+                    html: iconHtml,
+                    iconSize: [8, 8], // Even smaller icon size
+                    iconAnchor: [4, 4]
                 });
+                const marker = L.marker(latlng, { icon: icon });
+                marker.isKmlMarker = true; // v545: Flag for fast identification
+                marker.jeoLayerId = layerIdCounter; // v545: Fast Parent Lookup
+                allKmlMarkers.push(marker);
+                return marker;
+            },
+            onEachFeature: (feature, layer) => {
+                const featureName = getFeatureName(feature.properties);
+                // v382: Only show labels for Points to prevent clutter on lines/polygons
+                if (featureName && feature.geometry.type === 'Point') {
+                    layer.bindTooltip(String(featureName), {
+                        permanent: true,
+                        direction: 'top',
+                        className: 'kml-label',
+                        offset: [0, 0], // v383: Start at center, Smart Label will move it
+                        sticky: false // Changed to false for better stability
+                    });
 
-                // Performance Fix: Attach source layer to tooltip container for collision detection
-                layer.on('tooltipopen', (e) => {
-                    if (e.tooltip && e.tooltip._container) {
-                        e.tooltip._container._sourceLayer = layer;
+                    // Performance Fix: Attach source layer to tooltip container for collision detection
+                    layer.on('tooltipopen', (e) => {
+                        if (e.tooltip && e.tooltip._container) {
+                            e.tooltip._container._sourceLayer = layer;
+                        }
+                    });
+                }
+                let popupContent = `<div class="map-popup-container">`;
+                if (feature.properties) {
+                    if (feature.properties.name) {
+                        popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
                     }
-                });
-            }
-            let popupContent = `<div class="map-popup-container">`;
-            if (feature.properties) {
-                if (feature.properties.name) {
-                    popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
-                }
-                popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
-                for (let key in feature.properties) {
-                    if (['name', 'styleUrl', 'styleHash', 'styleMapHash', 'description'].indexOf(key) === -1) {
-                        popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
-                    }
-                }
-
-                // Add area for polygons
-                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                    try {
-                        let latlngs = layer.getLatLngs();
-                        if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
-                        else latlngs = latlngs[0][0];
-                        const area = calculateAreaHelper(latlngs);
-                        popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
-                    } catch (e) {
-                        console.error("GIS Area calculation failed", e);
-                    }
-                }
-                popupContent += `</table>`;
-                if (feature.properties.description) {
-                    popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
-                }
-            }
-            popupContent += `</div>`;
-            layer.bindPopup(popupContent);
-
-            // Pass clicks to map handler if in special modes
-            layer.on('click', (e) => {
-                // v522: Absolute Grid Priority over KML Popups
-                if (isGridMode && activeGridInterval) {
-                    L.DomEvent.stopPropagation(e);
-                    map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
-                    return;
-                }
-
-                const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
-
-                // If polygon and not filled, ignore clicks inside
-                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                    const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
-                    if (layerObj && !layerObj.filled) {
-                        // Leaflet handles stroke-only clicks automatically if fill: false,
-                        // but since we might have generic handlers, we double check.
-                        if (e.originalEvent.target.classList.contains('leaflet-interactive') && !e.originalEvent.target.getAttribute('fill')) {
-                            // Border click? Continue.
-                        } else {
-                            // Interior click on a transparent polygon - pass to map
-                            L.DomEvent.stopPropagation(e);
-                            map.fire('click', e);
-                            return;
+                    popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
+                    for (let key in feature.properties) {
+                        if (['name', 'styleUrl', 'styleHash', 'styleMapHash', 'description'].indexOf(key) === -1) {
+                            popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
                         }
                     }
-                }
 
-                if (isMeasuring) {
-                    L.DomEvent.stopPropagation(e); // Stop popup
-                    updateMeasurement(e.latlng);
-                } else if (isAddingPoint) {
-                    L.DomEvent.stopPropagation(e); // Stop popup
-                    // We need to trigger the same logic as map click.
-                    // Since the map click handler is anonymous, let's extract it or copy the logic.
-                    // Copying logic for stability (or we could fire a map click event?)
-                    // Simpler: Fire a synthetic click on the map?
-                    // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
-                    // Let's just run the logic directly or fire map click.
-                    map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    // Add area for polygons
+                    if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                        try {
+                            let latlngs = layer.getLatLngs();
+                            if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
+                            else latlngs = latlngs[0][0];
+                            const area = calculateAreaHelper(latlngs);
+                            popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
+                        } catch (e) {
+                            console.error("GIS Area calculation failed", e);
+                        }
+                    }
+                    popupContent += `</table>`;
+                    if (feature.properties.description) {
+                        popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
+                    }
                 }
-            });
+                popupContent += `</div>`;
+                layer.bindPopup(popupContent);
+
+                // Pass clicks to map handler if in special modes
+                layer.on('click', (e) => {
+                    // v522: Absolute Grid Priority over KML Popups
+                    if (isGridMode && activeGridInterval) {
+                        L.DomEvent.stopPropagation(e);
+                        map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                        return;
+                    }
+
+                    const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
+
+                    // If polygon and not filled, ignore clicks inside
+                    if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                        const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
+                        if (layerObj && !layerObj.filled) {
+                            // Leaflet handles stroke-only clicks automatically if fill: false,
+                            // but since we might have generic handlers, we double check.
+                            if (e.originalEvent.target.classList.contains('leaflet-interactive') && !e.originalEvent.target.getAttribute('fill')) {
+                                // Border click? Continue.
+                            } else {
+                                // Interior click on a transparent polygon - pass to map
+                                L.DomEvent.stopPropagation(e);
+                                map.fire('click', e);
+                                return;
+                            }
+                        }
+                    }
+
+                    if (isMeasuring) {
+                        L.DomEvent.stopPropagation(e); // Stop popup
+                        updateMeasurement(e.latlng);
+                    } else if (isAddingPoint) {
+                        L.DomEvent.stopPropagation(e); // Stop popup
+                        // We need to trigger the same logic as map click.
+                        // Since the map click handler is anonymous, let's extract it or copy the logic.
+                        // Copying logic for stability (or we could fire a map click event?)
+                        // Simpler: Fire a synthetic click on the map?
+                        // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
+                        // Let's just run the logic directly or fire map click.
+                        map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    }
+                });
+            }
+        }).addTo(map);
+
+        const layerObj = {
+            id: layerIdCounter++,
+            name: name,
+            layer: layer,
+            geojson: geojson, // Store for persistence
+            filled: true,
+            visible: true,
+            pointsVisible: true,
+            areasVisible: true,
+            labelsVisible: true
+        };
+        externalLayers.push(layerObj);
+
+        // Zoom to layer
+        try {
+            map.fitBounds(layer.getBounds());
+        } catch (e) {
+            // Empty layer
         }
-    }).addTo(map);
 
-    const layerObj = {
-        id: layerIdCounter++,
-        name: name,
-        layer: layer,
-        geojson: geojson, // Store for persistence
-        filled: true,
-        visible: true,
-        pointsVisible: true,
-        areasVisible: true,
-        labelsVisible: true
-    };
-    externalLayers.push(layerObj);
+        saveExternalLayers();
+        renderLayerList();
+        // Optimized trigger
+        optimizeMapPoints();
 
-    // Zoom to layer
-    try {
-        map.fitBounds(layer.getBounds());
     } catch (e) {
-        // Empty layer
+        console.error("Critical error in addExternalLayer:", e);
+        alert("Katman eklenirken bir hata oluştu: " + e.message);
     }
-
-    saveExternalLayers();
-    renderLayerList();
-    // Optimized trigger
-    optimizeMapPoints();
 }
 
 function renderLayerList() {
@@ -3097,23 +3254,19 @@ function toggleLayerLabels(id, showLabels) {
     l.labelsVisible = showLabels;
 
     l.layer.eachLayer(layer => {
-        const tooltip = layer.getTooltip();
-        if (tooltip) {
-            if (showLabels) {
-                layer.openTooltip();
-                const container = tooltip._container;
-                if (container) {
-                    container.style.display = '';
-                    container.style.opacity = '1';
-                    container.style.visibility = 'visible';
-                }
-            } else {
-                layer.closeTooltip();
-                const container = tooltip._container;
-                if (container) {
-                    container.style.display = 'none';
-                    container.style.opacity = '0';
-                    container.style.visibility = 'hidden';
+        if (layer instanceof L.Marker) {
+            const tooltip = layer.getTooltip();
+            if (tooltip) {
+                if (showLabels) {
+                    layer.openTooltip();
+                    const container = tooltip.getElement();
+                    if (container) {
+                        container.style.display = '';
+                        container.style.opacity = '1';
+                        container.style.visibility = 'visible';
+                    }
+                } else {
+                    layer.closeTooltip();
                 }
             }
         }
@@ -3151,15 +3304,14 @@ function toggleLayerPoints(id, showPoints) {
     l.pointsVisible = showPoints;
 
     l.layer.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+        if (layer instanceof L.Marker) {
             if (showPoints) {
-                if (layer.getElement()) layer.getElement().style.display = '';
-                if (layer._shadow && layer._shadow.style) layer._shadow.style.display = '';
-                if (layer.setOpacity) layer.setOpacity(1);
+                layer.setOpacity(1);
+                // v545: Tooltips follow marker opacity in Leaflet usually, 
+                // but we handle them in toggleLayerLabels separately.
             } else {
-                if (layer.getElement()) layer.getElement().style.display = 'none';
-                if (layer._shadow && layer._shadow.style) layer._shadow.style.display = 'none';
-                if (layer.setOpacity) layer.setOpacity(0);
+                layer.setOpacity(0);
+                if (layer.getTooltip()) layer.closeTooltip();
             }
         }
     });
@@ -3186,6 +3338,14 @@ function removeLayer(id) {
     const index = externalLayers.findIndex(x => x.id === id);
     if (index === -1) return;
     const l = externalLayers[index];
+
+    // v545: Clean up flat marker array
+    l.layer.eachLayer(layer => {
+        if (layer instanceof L.Marker) {
+            allKmlMarkers = allKmlMarkers.filter(m => m !== layer);
+        }
+    });
+
     if (map) map.removeLayer(l.layer);
     externalLayers.splice(index, 1);
     saveExternalLayers();
