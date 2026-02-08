@@ -185,12 +185,22 @@ function updateHeatmap() {
                             }
                         }
 
+                        const text = searchableText.toUpperCase();
                         const p = {
                             lat: f.geometry.coordinates[1],
                             lon: f.geometry.coordinates[0],
                             label: searchableText.trim()
                         };
                         l._jeoPoints.push(p);
+
+                        // v560: Pre-scan elements during initial load for zero-lag filtering
+                        const matches = text.match(ELEMENT_DISCOVERY_PATTERN);
+                        if (matches) {
+                            if (!l._jeoElements) l._jeoElements = new Set();
+                            matches.forEach(m => {
+                                if (PERIODIC_TABLE_SYMBOLS.has(m)) l._jeoElements.add(m);
+                            });
+                        }
                     }
                 });
                 kmlPoints.push(...l._jeoPoints);
@@ -291,34 +301,23 @@ function updateHeatmapFilterOptions() {
     if (!select) return;
     const currentVal = heatmapFilter;
 
-    // v558: Refined Discovery Pattern (1-3 letters) and significant noise filtering
-    const pattern = /\b[A-Z]{1,3}\b/g;
-    // v559: Periodic Table Symbols (Strict Constraint)
-    const PERIODIC_TABLE_SYMBOLS = new Set([
-        'H', 'HE', 'LI', 'BE', 'B', 'C', 'N', 'O', 'F', 'NE', 'NA', 'MG', 'AL', 'SI', 'P', 'S', 'CL', 'AR',
-        'K', 'CA', 'SC', 'TI', 'V', 'CR', 'MN', 'FE', 'CO', 'NI', 'CU', 'ZN', 'GA', 'GE', 'AS', 'SE', 'BR', 'KR',
-        'RB', 'SR', 'Y', 'ZR', 'NB', 'MO', 'TC', 'RU', 'RH', 'PD', 'AG', 'CD', 'IN', 'SN', 'SB', 'TE', 'I', 'XE',
-        'CS', 'BA', 'LA', 'CE', 'PR', 'ND', 'PM', 'SM', 'EU', 'GD', 'TB', 'DY', 'HO', 'ER', 'TM', 'YB', 'LU',
-        'HF', 'TA', 'W', 'RE', 'OS', 'IR', 'PT', 'AU', 'HG', 'TL', 'PB', 'BI', 'PO', 'AT', 'RN',
-        'FR', 'RA', 'AC', 'TH', 'PA', 'U', 'NP', 'PU', 'AM', 'CM', 'BK', 'CF', 'ES', 'FM', 'MD', 'NO', 'LR',
-        'RF', 'DB', 'SG', 'BH', 'HS', 'MT', 'DS', 'RG', 'CN', 'NH', 'FL', 'MC', 'LV', 'TS', 'OG',
-        'REE', 'PGE' // Added Geological common groupings
-    ]);
+    // v560: Lightning-fast aggregation from cached Sets
+    const foundElements = new Set();
 
-    const scanAndAdd = (text) => {
-        const matches = text.match(pattern);
+    // 1. Scan records (usually small set, scan on the fly is safe)
+    records.forEach(r => {
+        const matches = (r.label || '').toUpperCase().match(ELEMENT_DISCOVERY_PATTERN);
         if (matches) {
             matches.forEach(m => {
                 if (PERIODIC_TABLE_SYMBOLS.has(m)) foundElements.add(m);
             });
         }
-    };
+    });
 
-    records.forEach(r => scanAndAdd((r.label || '').toUpperCase()));
-
+    // 2. Aggregate from pre-scanned KML layers
     externalLayers.forEach(l => {
-        if (l.visible && l._jeoPoints) {
-            l._jeoPoints.forEach(p => scanAndAdd((p.label || '').toUpperCase()));
+        if (l.visible && l._jeoElements) {
+            l._jeoElements.forEach(el => foundElements.add(el));
         }
     });
 
@@ -505,7 +504,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v559';
+const CACHE_NAME = 'jeocompass-v560';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -584,6 +583,19 @@ const ELEMENT_COLORS = {
     'ZN': '#03a9f4', // Light Blue
     'PB': '#607d8b'  // Dark Gray
 };
+
+// v560: Optimized discovery pattern and periodic table set (Moved to Global for performance)
+const ELEMENT_DISCOVERY_PATTERN = /\b[A-Z]{1,3}\b/g;
+const PERIODIC_TABLE_SYMBOLS = new Set([
+    'H', 'HE', 'LI', 'BE', 'B', 'C', 'N', 'O', 'F', 'NE', 'NA', 'MG', 'AL', 'SI', 'P', 'S', 'CL', 'AR',
+    'K', 'CA', 'SC', 'TI', 'V', 'CR', 'MN', 'FE', 'CO', 'NI', 'CU', 'ZN', 'GA', 'GE', 'AS', 'SE', 'BR', 'KR',
+    'RB', 'SR', 'Y', 'ZR', 'NB', 'MO', 'TC', 'RU', 'RH', 'PD', 'AG', 'CD', 'IN', 'SN', 'SB', 'TE', 'I', 'XE',
+    'CS', 'BA', 'LA', 'CE', 'PR', 'ND', 'PM', 'SM', 'EU', 'GD', 'TB', 'DY', 'HO', 'ER', 'TM', 'YB', 'LU',
+    'HF', 'TA', 'W', 'RE', 'OS', 'IR', 'PT', 'AU', 'HG', 'TL', 'PB', 'BI', 'PO', 'AT', 'RN',
+    'FR', 'RA', 'AC', 'TH', 'PA', 'U', 'NP', 'PU', 'AM', 'CM', 'BK', 'CF', 'ES', 'FM', 'MD', 'NO', 'LR',
+    'RF', 'DB', 'SG', 'BH', 'HS', 'MT', 'DS', 'RG', 'CN', 'NH', 'FL', 'MC', 'LV', 'TS', 'OG',
+    'REE', 'PGE'
+]);
 
 // v556: Smart Color Generator for Dynamic Elements
 function getElementColor(symbol) {
@@ -1217,7 +1229,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v559: Capture last position before updating smoothedPos for bearing calculation
+            // v560: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
