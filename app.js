@@ -474,7 +474,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v547';
+const CACHE_NAME = 'jeocompass-v549';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -601,13 +601,13 @@ function optimizeMapPoints() {
                 const tooltipEl = tooltip.getElement();
                 if (!tooltipEl) return;
 
-                // v545: Cache width/height on the tooltip object to avoid layout thrashing
-                if (!tooltip._jeoWidth) {
+                // v547: Only cache if dimensions are valid (avoiding zero-size bug during initial load)
+                if ((!tooltip._jeoWidth || tooltip._jeoWidth === 0) && tooltipEl.offsetWidth > 0) {
                     tooltip._jeoWidth = tooltipEl.offsetWidth;
                     tooltip._jeoHeight = tooltipEl.offsetHeight;
                 }
-                const labelWidth = tooltip._jeoWidth;
-                const labelHeight = tooltip._jeoHeight;
+                const labelWidth = tooltip._jeoWidth || 20;
+                const labelHeight = tooltip._jeoHeight || 12;
 
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
@@ -1147,6 +1147,9 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
+            // v549: Capture last position before updating smoothedPos for bearing calculation
+            const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
+
             currentCoords.lat = p.coords.latitude;
             currentCoords.lon = p.coords.longitude;
             currentCoords.acc = p.coords.accuracy;
@@ -1205,17 +1208,26 @@ function startGeolocationWatch() {
 
                 if (followMe) map.panTo(livePos);
 
-                // v547: Focused Navigation - prioritize GPS Course (Heading) over Compass when moving
-                const heading = p.coords.heading;
+                // v549: TRAVEL-ONLY HEADLIGHT
+                // The user specifically wants the headlight to ONLY follow the direction of progress.
+                // We prioritize GPS Kurs (heading), then fallback to manual calculation if available.
+                // We NEVER use the compass sensor (displayedHeading) here anymore.
+                const gpsHeading = p.coords.heading;
                 const speed = p.coords.speed || 0;
-                let targetRot = 0;
+                let targetRot = window.lastMarkerRotation || 0;
 
-                // Decision: Moving (> 0.2 m/s) -> Use GPS Course only; Stationary -> Use Compass
-                if (heading !== null && heading !== undefined && speed > 0.2) {
-                    targetRot = heading;
-                } else {
-                    targetRot = displayedHeading; // Compass from sensors
+                if (gpsHeading !== null && gpsHeading !== undefined && speed > 0.5) {
+                    targetRot = gpsHeading;
+                } else if (lastPos && speed > 0.5) {
+                    // Manual bearing calculation (Backup for devices with null heading)
+                    const dLat = smoothedPos.lat - lastPos.lat;
+                    const dLon = smoothedPos.lon - lastPos.lon;
+                    if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
+                        targetRot = (Math.atan2(dLon, dLat) * 180) / Math.PI;
+                        if (targetRot < 0) targetRot += 360;
+                    }
                 }
+                // If stationary (speed <= 0.5), targetRot remains lastMarkerRotation.
 
                 // Simple smoothing (v525)
                 if (typeof lastMarkerRotation === 'undefined') window.lastMarkerRotation = targetRot;
@@ -1502,160 +1514,8 @@ function initMap() {
     });
 
 
-    // Smart Label Placement (v383 - 8-Way Collision Avoidance)
-    let labelOptimizeTimer = null;
-    function optimizeMapPoints() {
-        if (labelOptimizeTimer) clearTimeout(labelOptimizeTimer);
-
-        labelOptimizeTimer = setTimeout(() => {
-            // 1. Get all visible KML markers and their tooltips
-            const markers = [];
-            externalLayers.forEach(l => {
-                if (!l.visible || !l.pointsVisible) return;
-                l.layer.eachLayer(layer => {
-                    if (layer instanceof L.Marker && layer.getElement() && layer.getElement().querySelector(".kml-custom-icon")) {
-                        markers.push(layer);
-                    }
-                });
-            });
-
-            if (markers.length === 0) return;
-
-            const mapBounds = map.getBounds();
-            const occupiedRects = []; // Store {top, left, right, bottom} of occupied areas
-            const labelsToPlace = []; // Collect valid labels to process
-
-            // 2. Pre-process markers: Ensure they are visible and visible on map
-            markers.forEach(marker => {
-                const el = marker.getElement();
-                if (!el) return;
-
-                // Always show marker (User Rule: Never hide markers)
-                el.style.display = "block";
-                el.style.opacity = "1";
-
-                const latLng = marker.getLatLng();
-                if (!mapBounds.contains(latLng)) {
-                    // Off-screen optimization
-                    if (marker.getTooltip()) {
-                        marker.closeTooltip();
-                    }
-                    return;
-                }
-
-                // If on screen, ensure tooltip is open/created
-                if (marker.getTooltip()) {
-                    if (!map.hasLayer(marker.getTooltip())) {
-                        marker.openTooltip();
-                    }
-                    const tooltip = marker.getTooltip();
-                    const tooltipEl = tooltip.getElement();
-                    // Add marker rect to occupied list
-                    const markerRect = el.getBoundingClientRect();
-                    occupiedRects.push({
-                        left: markerRect.left,
-                        top: markerRect.top,
-                        right: markerRect.right,
-                        bottom: markerRect.bottom
-                    });
-
-                    if (tooltipEl) {
-                        labelsToPlace.push({ marker, tooltip, tooltipEl, markerRect });
-                    }
-                }
-            });
-
-            // 3. Smart Placement Algorithm
-            // Try 8 positions: Top(N), NE, E, SE, S, SW, W, NW
-            const dist = 12;
-            const positions = [
-                { x: 0, y: -dist }, // N
-                { x: dist, y: -dist }, // NE
-                { x: dist, y: 0 }, // E
-                { x: dist, y: dist }, // SE
-                { x: 0, y: dist }, // S
-                { x: -dist, y: dist }, // SW
-                { x: -dist, y: 0 }, // W
-                { x: -dist, y: -dist } // NW
-            ];
-
-            labelsToPlace.forEach(item => {
-                const { tooltipEl, markerRect } = item;
-
-                // RESET positioning styles to get true anchor (Leaflet controls transform)
-                tooltipEl.style.marginLeft = '0px';
-                tooltipEl.style.marginTop = '0px';
-                tooltipEl.style.transform = ''; // Ensure we don't block Leaflet's updates, though usually it manages this inline
-
-                // Force layout update to get accurate dimensions after reset
-                const width = tooltipEl.offsetWidth;
-                const height = tooltipEl.offsetHeight;
-
-                // Leaflet places the tooltip anchor at the marker's location.
-                // We need to calculate collision based on where it WOULD be.
-                // However, without modifying transform, the tooltip stays at the anchor.
-                // We use margins to visualy shift it from that anchor point.
-
-                // Current absolute screen position of the marker center
-                const markerCenter = {
-                    x: markerRect.left + markerRect.width / 2,
-                    y: markerRect.top + markerRect.height / 2
-                };
-
-                let bestPos = null;
-
-                for (let i = 0; i < positions.length; i++) {
-                    const offset = positions[i];
-
-                    // Candidate center position
-                    const targetX = markerCenter.x + offset.x;
-                    const targetY = markerCenter.y + offset.y;
-
-                    const candidateRect = {
-                        left: targetX - width / 2,
-                        right: targetX + width / 2,
-                        top: targetY - height / 2,
-                        bottom: targetY + height / 2
-                    };
-
-                    let collision = false;
-                    for (const obst of occupiedRects) {
-                        if (!(candidateRect.right < obst.left ||
-                            candidateRect.left > obst.right ||
-                            candidateRect.bottom < obst.top ||
-                            candidateRect.top > obst.bottom)) {
-                            collision = true;
-                            break;
-                        }
-                    }
-
-                    if (!collision) {
-                        bestPos = { x: offset.x, y: offset.y, rect: candidateRect };
-                        break;
-                    }
-                }
-
-                if (bestPos) {
-                    tooltipEl.style.opacity = "1";
-                    tooltipEl.style.visibility = "visible";
-                    // Apply offset via margins (Shift from anchor)
-                    tooltipEl.style.marginLeft = `${bestPos.x}px`;
-                    tooltipEl.style.marginTop = `${bestPos.y}px`;
-                    occupiedRects.push(bestPos.rect);
-                } else {
-                    tooltipEl.style.opacity = "0";
-                    tooltipEl.style.visibility = "hidden";
-                }
-            });
-
-        }, 50);
-    }
-
-    map.on('zoomend moveend', () => {
-        optimizeMapPoints();
-    });
-
-    map.on('overlayadd baselayerchange', () => {
+    // Map events for Smart Label Positioning
+    map.on('zoomend moveend overlayadd baselayerchange', () => {
         optimizeMapPoints();
     });
 
@@ -3047,10 +2907,10 @@ function addExternalLayer(name, geojson) {
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
                         permanent: true,
-                        direction: 'top',
+                        direction: 'center', // v547: Center-anchor provides consistent baseline for Smart Label positioning
                         className: 'kml-label',
-                        offset: [0, 0], // v383: Start at center, Smart Label will move it
-                        sticky: false // Changed to false for better stability
+                        offset: [0, 0],
+                        sticky: false
                     });
 
                     // Performance Fix: Attach source layer to tooltip container for collision detection
