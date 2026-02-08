@@ -112,6 +112,14 @@ body {
     box-sizing: border-box !important;
 }
 
+#view-map.active {
+    display: block !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    z-index: 15;
+}
+
 .view-section.active {
     display: block;
     animation: fadeIn 0.3s;
@@ -1085,13 +1093,14 @@ textarea.form-input {
 /* Map & Records View Styles */
 #map-container {
     width: 100%;
-    height: 70vh;
+    height: 100%;
     background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #555;
-    border-radius: 8px;
+    border-radius: 0;
+    margin: 0;
     overflow: hidden;
 }
 
@@ -1177,8 +1186,8 @@ textarea.form-input {
 /* Map FAB Container */
 .map-fab-container {
     position: absolute;
-    bottom: 52px;
-    /* Set just above the bottom bar (38px + padding) */
+    bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Elevated above nav bar and scale panel */
     right: 15px;
     display: flex;
     flex-direction: column;
@@ -1497,8 +1506,8 @@ textarea.form-input {
     justify-content: flex-start;
     gap: 10mm;
     position: absolute;
-    bottom: 0 !important;
-    /* Push down to sit directly on nav bar */
+    bottom: calc(45px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Directly above the nav bar */
     left: 0 !important;
     right: 0 !important;
     width: 100vw;

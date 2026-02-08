@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v583</title>
+    <title>JeoCompass - v585</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=583">
+    <link rel="stylesheet" href="style.css?v=585">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v583</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v585</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -157,7 +157,7 @@
                 ✅ Add Point Here
             </button>
 
-            <div id="map-container" style="height: 100%; border-radius: 8px; z-index: 1;"></div>
+            <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;"></div>
             <div class="map-fab-container">
 
                 <button id="btn-grid-toggle" class="map-fab" title="Poligon İçi Grid">
@@ -678,7 +678,7 @@
     </script>
     <script src="app.js?v=578"></script>
     <script>
-        const JEO_VERSION = '583';
+        const JEO_VERSION = '585';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
