@@ -220,9 +220,20 @@ function updateHeatmap() {
     const radiusRatio = 0.70;
 
     // Total spread (r+b) always equals Ground Radius.
-    const totalPixels = heatmapRadius / mpp;
-    const radiusPixels = totalPixels * radiusRatio;
-    const blurPixels = totalPixels * blurRatio;
+    let totalPixels = heatmapRadius / mpp;
+
+    // v547: Safety Guard - Ensure radius+blur are large enough to create a valid offscreen canvas (>1px)
+    // We also check dist to avoid Infinity/NaN issues
+    if (dist < 0.1 || isNaN(totalPixels) || totalPixels < 1) {
+        totalPixels = 1;
+    }
+
+    let radiusPixels = totalPixels * radiusRatio;
+    let blurPixels = totalPixels * blurRatio;
+
+    // Final floor to prevent 0-sized canvas in Leaflet.heat
+    if (radiusPixels < 1) radiusPixels = 1;
+    if (blurPixels < 1) blurPixels = 1;
 
     try {
         heatmapLayer = L.heatLayer(points, {
