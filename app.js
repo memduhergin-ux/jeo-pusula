@@ -550,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v587';
+const CACHE_NAME = 'jeocompass-v589';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -2737,6 +2737,19 @@ const btnLayersClose = document.getElementById('btn-layers-close');
 const btnImportLayerTrigger = document.getElementById('btn-import-layer-trigger');
 const fileImportInput = document.getElementById('file-import-input');
 const layersList = document.getElementById('layers-list');
+
+// v589: Scale Toggle Logic
+const btnScaleToggle = document.getElementById('btn-scale-toggle');
+if (btnScaleToggle) {
+    btnScaleToggle.addEventListener('click', () => {
+        const wrapper = document.querySelector('.custom-scale-wrapper');
+        if (wrapper) {
+            wrapper.classList.toggle('visible');
+            const isVisible = wrapper.classList.contains('visible');
+            btnScaleToggle.style.backgroundColor = isVisible ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0,0,0,0.7)';
+        }
+    });
+}
 
 if (btnLayers) {
     btnLayers.addEventListener('click', () => {

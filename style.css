@@ -85,9 +85,14 @@ body {
     left: 0;
     overflow-y: auto;
     background: var(--bg-color);
-    /* Ensure opaque background to prevent overlap (v574) */
-    z-index: 10;
-    -webkit-overflow-scrolling: touch;
+}
+
+/* v589: True Full Screen in Landscape (Hide status bar area) */
+@media screen and (orientation: landscape) {
+    #view-map.view-section {
+        top: 0 !important;
+        padding-top: 0 !important;
+    }
 }
 
 .view-section.active {
@@ -1183,29 +1188,13 @@ textarea.form-input {
     }
 }
 
-/* Map FAB (Follow-Me Button) */
-/* Map FAB Container */
-.map-fab-container {
-    position: absolute;
-    bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
-    /* Elevated above nav bar and scale panel */
-    right: calc(15px + env(safe-area-inset-right, 0px)) !important;
-    /* Safe-area aware for landscape */
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    z-index: 1000;
-}
-
 /* Map FAB Buttons (Updated) */
 .map-fab {
     position: relative;
-    /* Changed from absolute */
     width: 42px;
     height: 42px;
     border-radius: 50%;
     background: rgba(40, 40, 40, 0.6);
-    /* Darker glass */
     color: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(8px);
@@ -1216,6 +1205,57 @@ textarea.form-input {
     justify-content: center;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Map FAB Container */
+.map-fab-container {
+    position: absolute;
+    bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+    right: calc(15px + env(safe-area-inset-right, 0px)) !important;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+}
+
+/* v589: Scrollable area for FABs under the Layers button in landscape */
+.map-fab-scroll-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+@media screen and (orientation: landscape) {
+    .map-fab-container {
+        top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+        /* Start near top in landscape */
+        bottom: calc(45px + env(safe-area-inset-bottom, 0px)) !important;
+        right: calc(10px + env(safe-area-inset-right, 0px)) !important;
+        justify-content: flex-start;
+        /* Align to top of the container */
+    }
+
+    .map-fab-scroll-area {
+        overflow-y: auto;
+        padding-right: 5px;
+        /* Space for scrollbar if any */
+        scrollbar-width: none;
+        /* Firefox */
+        -ms-overflow-style: none;
+        /* IE/Edge */
+    }
+
+    .map-fab-scroll-area::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
+    }
+
+    .map-fab {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1rem !important;
+    }
 }
 
 .grid-opt-btn {
@@ -1502,8 +1542,11 @@ textarea.form-input {
 }
 
 /* Grouping Scale and UTM with automatic edge-to-edge layout */
-.custom-scale-wrapper {
+.custom-scale-wrapper.visible {
     display: flex !important;
+}
+
+.custom-scale-wrapper {
     align-items: center;
     justify-content: flex-start;
     gap: 10mm;
