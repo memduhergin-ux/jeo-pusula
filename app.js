@@ -292,6 +292,7 @@ function updateHeatmapFilterOptions() {
     const currentVal = heatmapFilter;
 
     // v556: Smart Discovery Logic
+    const foundElements = new Set();
     // Scan ALL labels for uppercase words consisting of 1-4 letters (e.g. MN, CR, AU, P, REE)
     const pattern = /\b[A-Z]{1,4}\b/g;
     const ignoreList = ['ID', 'NAME', 'DATE', 'TIME', 'POINT', 'AREA', 'TRUE', 'KML'];
@@ -496,7 +497,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v556';
+const CACHE_NAME = 'jeocompass-v557';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -585,8 +586,13 @@ function getElementColor(symbol) {
     for (let i = 0; i < symbol.length; i++) {
         hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const h = Math.abs(hash % 360);
-    return `hsl(${h}, 70%, 50%)`;
+
+    // Convert hash to stable Hex color
+    const r = (hash & 0xFF0000) >> 16;
+    const g = (hash & 0x00FF00) >> 8;
+    const b = hash & 0x0000FF;
+    const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    return hex;
 }
 
 // Smart Label Placement Utility (v383 - Globals for cross-module access)
@@ -1203,7 +1209,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v556: Capture last position before updating smoothedPos for bearing calculation
+            // v557: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
