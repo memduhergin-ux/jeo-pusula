@@ -1225,61 +1225,60 @@ textarea.form-input {
 /* Map FAB Container */
 .map-fab-container {
     position: absolute;
-    bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
-    right: calc(15px + env(safe-area-inset-right, 0px)) !important;
+    /* v596: Moved to top-right to be UNDER the Leaflet Layer Control box */
+    top: calc(55px + env(safe-area-inset-top, 0px)) !important;
+    right: calc(10px + env(safe-area-inset-right, 0px)) !important;
+    bottom: auto !important;
+    /* v596: Unset bottom */
     display: flex;
     flex-direction: column;
     gap: 12px;
-    z-index: 1000;
+    z-index: 2000;
+    /* v596: Higher z-index for visibility */
+    max-height: calc(100vh - 120px);
+    /* v596: Prevent overflow into bottom nav */
+    pointer-events: none;
 }
 
-/* v589: Scrollable area for FABs under the Layers button in landscape */
+.map-fab-container>* {
+    pointer-events: auto;
+}
+
+/* v589: Scrollable area for FABs */
 .map-fab-scroll-area {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    padding-bottom: 20px;
+}
+
+.map-fab-scroll-area::-webkit-scrollbar {
+    display: none;
 }
 
 @media screen and (orientation: landscape) {
     .map-fab-container {
-        top: calc(5px + env(safe-area-inset-top, 0px)) !important;
+        /* v596: Consistent with portrait, just smaller gaps */
+        top: calc(55px + env(safe-area-inset-top, 0px)) !important;
         right: calc(5px + env(safe-area-inset-right, 0px)) !important;
         bottom: 5px !important;
-        height: auto !important;
-        max-height: calc(100vh - 10px) !important;
-        justify-content: flex-start;
-        pointer-events: none;
-        z-index: 2000;
-    }
-
-    .map-fab-container>* {
-        pointer-events: auto;
+        max-height: calc(100vh - 65px) !important;
     }
 
     .map-fab-scroll-area {
-        overflow-y: auto;
-        /* v593: Maximize scroll area space */
-        max-height: calc(100vh - 15px) !important;
-        padding-bottom: 20px;
-        touch-action: pan-y;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        -webkit-overflow-scrolling: touch;
-        display: flex;
-        flex-direction: column;
         gap: 8px;
-        /* Tighter layout */
-    }
-
-    .map-fab-scroll-area::-webkit-scrollbar {
-        display: none;
+        /* Tighter layout for landscape */
     }
 
     .map-fab {
         width: 36px !important;
         height: 36px !important;
         font-size: 1rem !important;
-        margin-bottom: 0;
     }
 }
 
@@ -1585,12 +1584,14 @@ textarea.form-input {
     width: 100vw;
     padding: 6px 15px 4px 15px;
     /* v593: More padding for balanced look */
-    background: rgba(0, 0, 0, 0.9);
+    background: transparent;
+    /* v594/595: Transparent scale strip */
     pointer-events: none;
     z-index: 1000 !important;
     box-sizing: border-box;
     border-radius: 0;
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.7);
+    box-shadow: none;
+    /* v594/595: Removed shadow */
 }
 
 @media screen and (orientation: landscape) {

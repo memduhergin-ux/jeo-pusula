@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v593</title>
+    <title>JeoCompass - v596</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=593">
+    <link rel="stylesheet" href="style.css?v=596">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v593</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v596</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -163,7 +163,12 @@
                     <span class="fab-icon">📂</span>
                 </button>
                 <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale">
-                    <span class="fab-icon" style="font-size: 1.2rem;">📐</span>
+                    <span class="fab-icon" style="display: flex; align-items: center; justify-content: center;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 16h20M2 14v4M12 14v4M22 14v4M7 16V14M17 16V14" />
+                        </svg>
+                    </span>
                 </button>
                 <button id="btn-grid-toggle" class="map-fab" title="Poligon İçi Grid">
                     <span class="fab-icon">🌐</span>
@@ -676,7 +681,7 @@
     </script>
     <script src="app.js?v=578"></script>
     <script>
-        const JEO_VERSION = '593';
+        const JEO_VERSION = '596';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
