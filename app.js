@@ -194,15 +194,17 @@ function updateHeatmap() {
 
     const allSourcePoints = [...recordPoints, ...kmlPoints];
 
-    if (heatmapFilter === 'ALL') {
+    // v553: Normalize filter check
+    const currentFilter = (heatmapFilter || 'ALL').toUpperCase();
+
+    if (currentFilter === 'ALL') {
         points = allSourcePoints.map(p => [p.lat, p.lon, 1]);
     } else {
-        const symbol = heatmapFilter.toUpperCase();
         // v552: Strictly case-insensitive matching
         points = allSourcePoints
             .filter(p => {
                 const label = (p.label || '').toUpperCase();
-                return label.includes(symbol);
+                return label.includes(currentFilter);
             })
             .map(p => [p.lat, p.lon, 1]);
     }
@@ -488,7 +490,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v552';
+const CACHE_NAME = 'jeocompass-v553';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -1182,7 +1184,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v552: Capture last position before updating smoothedPos for bearing calculation
+            // v553: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
@@ -2709,11 +2711,21 @@ function updateLiveTrackVisibility() {
 
 // REMOVED: btnLiveTrackVis listener (Moved to Settings Modal)
 
+// v553: Improved Radius Listeners (Robust Dataset Access)
 document.querySelectorAll('.radius-opt').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        heatmapRadius = parseInt(e.target.dataset.radius);
+    btn.addEventListener('click', function (e) {
+        // Use currentTarget to ensure we point to the button even if sub-elements exist
+        const target = e.currentTarget;
+        const newRadius = parseInt(target.getAttribute('data-radius'));
+        if (isNaN(newRadius)) return;
+
+        heatmapRadius = newRadius;
+
+        // UI feedback
         document.querySelectorAll('.radius-opt').forEach(ob => ob.classList.remove('active'));
-        e.target.classList.add('active');
+        target.classList.add('active');
+
+        console.log("Heatmap Radius Updated:", heatmapRadius);
         if (isHeatmapActive) updateHeatmap();
     });
 });
