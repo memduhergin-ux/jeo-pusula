@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v612</title>
+    <title>JeoCompass - v613</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link r="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=612">
+    <link rel="stylesheet" href="style.css?v=613">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v608</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v613</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -544,7 +544,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v608
+                    JeoCompass v613
                 </div>
             </div>
         </div>
@@ -680,9 +680,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=608"></script>
+    <script src="app.js?v=613"></script>
     <script>
-        const JEO_VERSION = '608';
+        const JEO_VERSION = '613';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

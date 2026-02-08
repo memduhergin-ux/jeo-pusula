@@ -550,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v612';
+const CACHE_NAME = 'jeocompass-v613';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -2210,34 +2210,38 @@ function calculateTrackLength(path) {
     return len;
 }
 
-updateTrackCountBadge();
+function renderTracks(filter = '') {
+    const tableBody = document.getElementById('tracks-body');
+    if (!tableBody) return;
 
-// v612: Sync Header Visibility for Tracks
-const selectAllTracksTh = document.getElementById('select-all-tracks-th');
-if (selectAllTracksTh) selectAllTracksTh.classList.toggle('locked-hidden', isTracksLocked);
+    updateTrackCountBadge();
 
-let displayTracks = jeoTracks;
-if (filter) {
-    const q = filter.toLowerCase();
-    displayTracks = jeoTracks.filter(t =>
-        (t.name && t.name.toLowerCase().includes(q)) ||
-        (t.time && t.time.toLowerCase().includes(q))
-    );
-}
+    // v613: Sync Header Visibility for Tracks
+    const selectAllTracksTh = document.getElementById('select-all-tracks-th');
+    if (selectAllTracksTh) selectAllTracksTh.classList.toggle('locked-hidden', isTracksLocked);
 
-if (displayTracks.length === 0 && !trackPath.length) {
-    tableBody.innerHTML = `<tr><td colspan="${isTracksLocked ? 5 : 6}">No tracks found</td></tr>`;
-    return;
-}
+    let displayTracks = jeoTracks;
+    if (filter) {
+        const q = filter.toLowerCase();
+        displayTracks = jeoTracks.filter(t =>
+            (t.name && t.name.toLowerCase().includes(q)) ||
+            (t.time && t.time.toLowerCase().includes(q))
+        );
+    }
 
-const sortedTracks = [...displayTracks].sort((a, b) => b.id - a.id);
+    if (displayTracks.length === 0 && !trackPath.length) {
+        tableBody.innerHTML = `<tr><td colspan="${isTracksLocked ? 5 : 6}">No tracks found</td></tr>`;
+        return;
+    }
 
-let html = "";
-// v467: Display Live Track row if exists
-if (trackPath.length > 0) {
-    const liveStartTime = trackStartTime ? new Date(trackStartTime) : new Date();
-    const liveName = `Track ${liveStartTime.toLocaleDateString('en-GB')} ${liveStartTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-    html += `
+    const sortedTracks = [...displayTracks].sort((a, b) => b.id - a.id);
+
+    let html = "";
+    // v467: Display Live Track row if exists
+    if (trackPath.length > 0) {
+        const liveStartTime = trackStartTime ? new Date(trackStartTime) : new Date();
+        const liveName = `Track ${liveStartTime.toLocaleDateString('en-GB')} ${liveStartTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+        html += `
             <tr class="live-track-row" style="background: rgba(76, 175, 80, 0.1);">
                 <td class="${isTracksLocked ? 'locked-hidden' : ''}"></td>
                 <td style="color: #4caf50; font-weight: bold;">🔴 ${liveName}</td>
@@ -2247,9 +2251,9 @@ if (trackPath.length > 0) {
                 <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kayıtta...</td>
             </tr>
         `;
-}
+    }
 
-html += sortedTracks.map(t => `
+    html += sortedTracks.map(t => `
         <tr data-id="${t.id}">
             <td class="${isTracksLocked ? 'locked-hidden' : ''}"><input type="checkbox" class="track-select" data-id="${t.id}"></td>
             <td onclick="focusTrack(${t.id})">${t.name}</td>
@@ -2260,7 +2264,7 @@ html += sortedTracks.map(t => `
         </tr>
     `).join('');
 
-tableBody.innerHTML = html;
+    tableBody.innerHTML = html;
 }
 
 window.updateTrackColor = function (id, color) {
