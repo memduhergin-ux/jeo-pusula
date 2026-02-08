@@ -550,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v613';
+const CACHE_NAME = 'jeocompass-v616';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1820,14 +1820,14 @@ function initMapControls() {
                         <span id="scale-mid" class="label-mid"></span>
                         <span id="scale-end" class="label-end"></span>
                     </div>
-                    <div class="scale-bars">
-                        <div class="scale-segment"></div>
-                        <div class="scale-segment"></div>
+                    <div class="scale-row">
+                        <div class="scale-bars">
+                            <div class="scale-segment"></div>
+                            <div class="scale-segment"></div>
+                        </div>
+                        <span id="scale-unit" class="scale-unit"></span>
+                        <div id="map-utm-coords" class="map-utm-coords-new">Location pending...</div>
                     </div>
-                    <span id="scale-unit" class="scale-unit"></span>
-                </div>
-                <div class="utm-control-container">
-                    <div id="map-utm-coords" class="map-utm-coords-new">Location pending...</div>
                 </div>
             `;
             return wrapper;
