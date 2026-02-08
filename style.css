@@ -104,10 +104,10 @@ body {
     justify-content: center;
     align-items: center;
     gap: 15px;
-    /* v579: Increased gap for breathing room */
-    /* v579: Balanced padding for vertical symmetry (Top = Bottom) */
-    padding-top: env(safe-area-inset-top, 20px);
-    padding-bottom: env(safe-area-inset-top, 20px);
+    /* v579: Breathing room gap */
+    /* v579: Balanced padding for vertical symmetry & thread-like alignment */
+    padding-top: env(safe-area-inset-top, 25px);
+    padding-bottom: env(safe-area-inset-top, 25px);
     padding-left: 5vw;
     padding-right: 5vw;
     box-sizing: border-box;
@@ -128,14 +128,15 @@ body {
     }
 }
 
-/* Compass Container */
+/* Compass Container (1. Kısım) */
 .compass-container {
     position: relative;
-    width: 90vw;
+    width: 100%;
+    /* v579: Fill parent padding area for "ip gibi" hiza */
     max-width: 400px;
     aspect-ratio: 1;
-    margin: 0 auto;
-    /* Removed fixed margins for flex centering */
+    box-sizing: border-box;
+    margin: 0;
     border-radius: 20px;
     /* Bruton 5020 Housing - Silver/Aluminum */
     background: linear-gradient(135deg, #d0d0d0, #f0f0f0);
@@ -430,12 +431,12 @@ body {
     transition: transform 0.1s linear;
 }
 
-/* Data Panel - Split Instrument Clusters */
+/* Data Panel (2. Kısım) */
 .data-panel {
-    /* v579: "İp gibi" hizalama - Match 90vw exactly with border-box */
-    width: 90vw;
+    /* v579: "İp gibi" hizalama - Fill parent padding area */
+    width: 100%;
     max-width: 400px;
-    margin: 0 auto;
+    margin: 0;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
@@ -769,14 +770,14 @@ td {
     box-shadow: 0 0 12px rgba(33, 150, 243, 0.4);
 }
 
-/* Coordinates Panel */
+/* Coordinates Panel (3. Kısım) */
 .panel {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 12px 18px;
-    margin: 0 auto;
-    width: 90vw;
+    margin: 0;
+    width: 100%;
     max-width: 400px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
     box-sizing: border-box;
