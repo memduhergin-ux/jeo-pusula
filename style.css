@@ -13,10 +13,11 @@ body {
     color: var(--text-color);
     font-family: 'Inter', sans-serif;
     overflow: hidden;
-    /* App-like feel */
+    /* App-like feel - v566: Using dvh for better mobile viewport handling */
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
 }
 
 /* Navigation Bar */
@@ -26,6 +27,7 @@ body {
     left: 0;
     width: 100%;
     height: 40px;
+    height: calc(40px + env(safe-area-inset-bottom, 0px));
     /* Reduced from 50px */
     background: #1a1a1a;
     display: flex;
@@ -33,6 +35,7 @@ body {
     align-items: center;
     border-top: 1px solid #333;
     z-index: 900;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Remove old global .signature-tag styles */
@@ -67,15 +70,18 @@ body {
 /* View Sections */
 .view-section {
     display: none;
-    padding-bottom: 60px;
-    /* Adjusted from 70px to match shorter nav */
-    /* Space for nav */
+    padding-bottom: 20px;
+    /* v566: Adjusted to prevent gap above nav */
+    padding-top: env(safe-area-inset-top, 25px);
+    /* Safe area for status bar */
     width: 100%;
-    height: 100%;
-    overflow-y: auto;
     position: absolute;
     top: 0;
+    bottom: 40px;
+    /* v566: Explicitly lock to top of nav bar */
     left: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .view-section.active {
@@ -758,6 +764,7 @@ td {
     align-items: center;
     width: 100%;
     margin-bottom: 5px;
+    padding: 5px 10px;
 }
 
 .search-container {

@@ -254,7 +254,14 @@ function updateHeatmap() {
     const radiusRatio = 0.70;
 
     // Total spread (r+b) always equals Ground Radius.
-    let totalPixels = heatmapRadius / mpp;
+    // v565: SMART AUTO Mode (0) - Dynamically scales between ground-distance (50m) and visibility (20px)
+    let totalPixels;
+    if (heatmapRadius <= 0) {
+        // At high zoom, it follows 50m. At low zoom, it floors at 20px so points stay visible.
+        totalPixels = Math.max(50 / mpp, 20);
+    } else {
+        totalPixels = heatmapRadius / mpp;
+    }
 
     // v547: Safety Guard - Ensure radius+blur are large enough to create a valid offscreen canvas (>1px)
     // We also check dist to avoid Infinity/NaN issues
@@ -517,7 +524,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v563';
+const CACHE_NAME = 'jeocompass-v565';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;

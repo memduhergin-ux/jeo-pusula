@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v563</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v566</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -283,8 +283,11 @@
                     style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
                     Heatmap Radius (Meters)</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+                    <button class="radius-opt" data-radius="0"
+                        style="grid-column: span 2; background: rgba(0, 255, 204, 0.2); border-color: rgba(0, 255, 204, 0.4); color: #00ffcc; font-weight: bold;">OTO
+                        (Akıllı Sistem - Tavsiye Edilen)</button>
                     <button class="radius-opt" data-radius="25">25m</button>
-                    <button class="radius-opt active" data-radius="50">50m</button>
+                    <button class="radius-opt" data-radius="50">50m</button>
                     <button class="radius-opt" data-radius="100">100m</button>
                     <button class="radius-opt" data-radius="200">200m</button>
                     <button class="radius-opt" data-radius="300">300m</button>
@@ -429,7 +432,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v563</p>
+                        JeoCompass - Version v566</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -442,7 +445,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v563</p>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">JeoCompass - Version v566</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -537,7 +540,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v563
+                    JeoCompass v566
                 </div>
             </div>
         </div>
@@ -673,9 +676,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=563"></script>
+    <script src="app.js?v=566"></script>
     <script>
-        const JEO_VERSION = '563';
+        const JEO_VERSION = '566';
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
