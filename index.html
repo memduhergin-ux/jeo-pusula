@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v591</title>
+    <title>JeoCompass - v593</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=591">
+    <link rel="stylesheet" href="style.css?v=593">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v591</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v593</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -155,21 +155,16 @@
             ✅ Add Point Here
         </button>
 
-        <!-- v591: Scale Toggle Button (Bottom Left) -->
-        <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale"
-            style="position: absolute; bottom: calc(45px + env(safe-area-inset-bottom, 0px)); left: calc(10px + env(safe-area-inset-left, 0px)); z-index: 2000; width: 42px; height: 42px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.3);">
-            <span class="fab-icon" style="font-size: 1.2rem;">📏</span>
-        </button>
-
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;"></div>
         <div class="map-fab-container">
-            <!-- Layers button stays fixed at top -->
-            <button id="btn-layers" class="map-fab" title="Layers">
-                <span class="fab-icon">📂</span>
-            </button>
-
-            <!-- v591: Scrollable area for other FABs -->
             <div class="map-fab-scroll-area">
+                <!-- v593: Common scroll area for all FABs -->
+                <button id="btn-layers" class="map-fab" title="Layers">
+                    <span class="fab-icon">📂</span>
+                </button>
+                <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale">
+                    <span class="fab-icon" style="font-size: 1.2rem;">📐</span>
+                </button>
                 <button id="btn-grid-toggle" class="map-fab" title="Poligon İçi Grid">
                     <span class="fab-icon">🌐</span>
                 </button>
@@ -681,7 +676,7 @@
     </script>
     <script src="app.js?v=578"></script>
     <script>
-        const JEO_VERSION = '591';
+        const JEO_VERSION = '593';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
