@@ -167,19 +167,28 @@ function updateHeatmap() {
     const recordPoints = records.filter(r => r.lat && r.lon);
 
     // 2. Gather points from KML layers
+    // v551: Optimization - Use Cached KML Points instead of traversing GeoJSON features every time
     const kmlPoints = [];
     externalLayers.forEach(l => {
-        if (l.visible && l.geojson && l.geojson.features) {
-            l.geojson.features.forEach(f => {
-                if (f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates) {
-                    const label = getFeatureName(f.properties) || '';
-                    kmlPoints.push({
-                        lat: f.geometry.coordinates[1],
-                        lon: f.geometry.coordinates[0],
-                        label: label
-                    });
-                }
-            });
+        if (l.visible) {
+            if (l._jeoPoints) {
+                kmlPoints.push(...l._jeoPoints);
+            } else if (l.geojson && l.geojson.features) {
+                // Initial extraction if not cached
+                l._jeoPoints = [];
+                l.geojson.features.forEach(f => {
+                    if (f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates) {
+                        const label = getFeatureName(f.properties) || '';
+                        const p = {
+                            lat: f.geometry.coordinates[1],
+                            lon: f.geometry.coordinates[0],
+                            label: label
+                        };
+                        l._jeoPoints.push(p);
+                    }
+                });
+                kmlPoints.push(...l._jeoPoints);
+            }
         }
     });
 
@@ -474,7 +483,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v549';
+const CACHE_NAME = 'jeocompass-v551';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -562,38 +571,58 @@ function optimizeMapPoints() {
         if (labelOptimizeTimer) clearTimeout(labelOptimizeTimer);
 
         labelOptimizeTimer = setTimeout(() => {
-            if (allKmlMarkers.length === 0) return;
+            const markers = allKmlMarkers;
+            if (markers.length === 0) return;
 
             const mapBounds = map.getBounds();
-            const occupiedRects = []; // Store {top, left, right, bottom} of occupied areas
+            const occupiedRects = []; // Store {top, left, right, bottom} in layer points
             const labelsToPlace = []; // Collect valid labels to process
 
-            // 2. Pre-process markers: Ensure they are visible and visible on map
-            allKmlMarkers.forEach(marker => {
-                // v545: Fast Parent Lookup via ID instead of hasLayer
-                const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
-                if (!parentLayer || !parentLayer.visible || !parentLayer.pointsVisible || !parentLayer.labelsVisible) {
-                    if (marker.getTooltip()) marker.closeTooltip();
-                    return;
-                }
+            // 1. First, treat ALL visible markers (KML + Records) as obstacles
+            // This prevents labels from overlapping the "dots" or orientation symbols
 
-                const el = marker.getElement();
-                if (!el) return;
+            // Collect KML markers that are visible
+            markers.forEach(marker => {
+                const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
+                if (!parentLayer || !parentLayer.visible || !parentLayer.pointsVisible) return;
 
                 const latLng = marker.getLatLng();
-                if (!mapBounds.contains(latLng)) {
-                    if (marker.getTooltip()) marker.closeTooltip();
-                    return;
+                if (!mapBounds.contains(latLng)) return;
+
+                const pos = map.latLngToLayerPoint(latLng);
+                const r = 4; // Marker radius in pixels
+                occupiedRects.push({
+                    left: pos.x - r,
+                    top: pos.y - r,
+                    right: pos.x + r,
+                    bottom: pos.y + r
+                });
+
+                if (parentLayer.labelsVisible && marker.getTooltip()) {
+                    labelsToPlace.push({ marker, tooltip: marker.getTooltip() });
                 }
-
-                const tooltip = marker.getTooltip();
-                if (!tooltip) return;
-
-                labelsToPlace.push({ marker, tooltip });
             });
 
+            // Collect standard record markers
+            if (markerGroup) {
+                markerGroup.eachLayer(layer => {
+                    if (layer instanceof L.Marker) {
+                        const latLng = layer.getLatLng();
+                        if (mapBounds.contains(latLng)) {
+                            const pos = map.latLngToLayerPoint(latLng);
+                            const r = 12; // Standard pins are larger
+                            occupiedRects.push({
+                                left: pos.x - r,
+                                top: pos.y - r,
+                                right: pos.x + r,
+                                bottom: pos.y + r
+                            });
+                        }
+                    }
+                });
+            }
+
             // 3. Process Labels
-            // v545: Limit to max 500 labels in view for extreme performance on mobile
             const processLimit = labelsToPlace.slice(0, 500);
 
             processLimit.forEach(({ marker, tooltip }) => {
@@ -601,27 +630,26 @@ function optimizeMapPoints() {
                 const tooltipEl = tooltip.getElement();
                 if (!tooltipEl) return;
 
-                // v547: Only cache if dimensions are valid (avoiding zero-size bug during initial load)
                 if ((!tooltip._jeoWidth || tooltip._jeoWidth === 0) && tooltipEl.offsetWidth > 0) {
                     tooltip._jeoWidth = tooltipEl.offsetWidth;
                     tooltip._jeoHeight = tooltipEl.offsetHeight;
                 }
-                const labelWidth = tooltip._jeoWidth || 20;
-                const labelHeight = tooltip._jeoHeight || 12;
+                const width = tooltip._jeoWidth || 20;
+                const height = tooltip._jeoHeight || 12;
 
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
-                // Check 8 directions
-                const padding = 5;
+                // Check 8 directions (Center anchor baseline)
+                const pad = 6;
                 const directions = [
-                    { x: -labelWidth / 2, y: -labelHeight - padding }, // N
-                    { x: padding, y: -labelHeight - padding },        // NE
-                    { x: padding, y: -labelHeight / 2 },              // E
-                    { x: padding, y: padding },                      // SE
-                    { x: -labelWidth / 2, y: padding },               // S
-                    { x: -labelWidth - padding, y: padding },         // SW
-                    { x: -labelWidth - padding, y: -labelHeight / 2 }, // W
-                    { x: -labelWidth - padding, y: -labelHeight - padding } // NW
+                    { x: -width / 2, y: -height / 2 - pad - 4 }, // N
+                    { x: pad + 4, y: -height / 2 - pad - 4 },    // NE
+                    { x: pad + 6, y: -height / 2 },              // E
+                    { x: pad + 4, y: height / 2 + pad },         // SE
+                    { x: -width / 2, y: height / 2 + pad },      // S
+                    { x: -width - pad - 2, y: height / 2 + pad }, // SW
+                    { x: -width - pad - 4, y: -height / 2 },     // W
+                    { x: -width - pad - 2, y: -height / 2 - pad - 4 } // NW
                 ];
 
                 let bestPos = null;
@@ -629,8 +657,8 @@ function optimizeMapPoints() {
                     const rect = {
                         left: markerPos.x + dir.x,
                         top: markerPos.y + dir.y,
-                        right: markerPos.x + dir.x + labelWidth,
-                        bottom: markerPos.y + dir.y + labelHeight
+                        right: markerPos.x + dir.x + width,
+                        bottom: markerPos.y + dir.y + height
                     };
 
                     const hasCollision = occupiedRects.some(occ => {
@@ -646,8 +674,9 @@ function optimizeMapPoints() {
                 if (bestPos) {
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
-                    tooltipEl.style.marginLeft = `${bestPos.x}px`;
-                    tooltipEl.style.marginTop = `${bestPos.y}px`;
+                    // Apply offset via margins (Shift from center anchor)
+                    tooltipEl.style.marginLeft = `${bestPos.x + width / 2}px`;
+                    tooltipEl.style.marginTop = `${bestPos.y + height / 2}px`;
                     occupiedRects.push(bestPos.rect);
                 } else {
                     tooltipEl.style.opacity = "0";
@@ -1009,8 +1038,9 @@ function animateCompass() {
     if (displayedHeading >= 360) displayedHeading -= 360;
 
     updateDisplay();
-    // v437: Sync Headlight with Compass
-    updateHeadlight(displayedHeading);
+    // v551: Headlight Sync REMOVED from Compass Animation. 
+    // The map headlight strictly follows GPS/Travel Direction now.
+    // updateHeadlight(displayedHeading); // Disabled to prevent phone-rotation leak
     requestAnimationFrame(animateCompass);
 }
 requestAnimationFrame(animateCompass);
@@ -1147,7 +1177,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v549: Capture last position before updating smoothedPos for bearing calculation
+            // v551: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
