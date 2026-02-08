@@ -1576,9 +1576,8 @@ textarea.form-input {
     align-items: center;
     justify-content: flex-start;
     gap: 10mm;
-    position: absolute;
-    /* v593: Perfectly aligned with bottom nav bar (40px) or screen bottom */
-    bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important;
+    /* v604: Moved higher (52px) to clear the top edge of bottom-nav (40px) in portrait */
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
@@ -1602,12 +1601,11 @@ textarea.form-input {
     }
 
     .map-fab-container {
-        /* v598: Center the 36px FAB under the ~34px Leaflet box (Right: 10px + (34-36)/2 = 9px) */
+        /* v604: Re-aligned with Leaflet Layer box (Right: 10px, Width: 34px) */
         top: calc(55px + env(safe-area-inset-top, 0px)) !important;
-        right: calc(9px + env(safe-area-inset-right, 0px)) !important;
+        right: calc(10px + env(safe-area-inset-right, 0px)) !important;
         bottom: 5px !important;
-        width: 38px !important;
-        /* v598: Forced width for alignment */
+        width: 34px !important;
         align-items: center !important;
         max-height: calc(100vh - 65px) !important;
     }
@@ -1615,8 +1613,13 @@ textarea.form-input {
     .map-utm-coords-new,
     .scale-labels span,
     .scale-unit {
-        /* v597: Ensure readability without the black strip */
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8);
+        /* v604: Sharp 1px outline for extreme clarity in landscape */
+        text-shadow:
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000;
+        font-weight: 800;
     }
 
     .custom-scale-control {

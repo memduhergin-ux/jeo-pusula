@@ -550,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v601';
+const CACHE_NAME = 'jeocompass-v604';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1647,8 +1647,7 @@ function initMap() {
         optimizeMapPoints();
     });
 
-    // Combined Scale and UTM Control (Bottom Left)
-    initMapControls();
+    // initMapControls(); (v602: Removed first occurrence to fix ghosting)
 
     markerGroup = L.layerGroup().addTo(map);
 
@@ -1748,7 +1747,8 @@ function initMap() {
 
     updateMapMarkers(true);
     loadExternalLayers();
-    // initMapControls(); (v601: Removed duplicate call causing ghosting)
+    initMapControls(); // v604: Single definitive call to ensure stable UI
+
 
 
     // v563: Restore UI States for Heatmap/Grid/Filter/Radius on Startup
@@ -1803,7 +1803,11 @@ function initMap() {
 
 /** Combined Map Controls (Scale + UTM) **/
 function initMapControls() {
-    if (document.querySelector('.custom-scale-wrapper')) return;
+    // v604: Robust safeguard to prevent "ghosting" or duplicate controls
+    if (document.querySelector('.custom-scale-wrapper')) {
+        console.log("Map controls already exist. Skipping init.");
+        return;
+    }
 
     const MapControls = L.Control.extend({
         options: { position: 'bottomleft' },

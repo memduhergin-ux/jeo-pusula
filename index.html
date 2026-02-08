@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v601</title>
+    <title>JeoCompass - v604</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link r="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=601">
+    <link rel="stylesheet" href="style.css?v=604">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v601</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v604</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -196,8 +196,12 @@
                     </span>
                 </button>
                 <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
-                    <span class="fab-icon" style="position: relative;">📍<span
-                            style="position: absolute; font-size: 0.7rem; bottom: -2px; right: -4px;">👁️</span></span>
+                    <span class="fab-icon"
+                        style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                        <span style="font-size: 1.25rem; line-height: 1;">👁️</span>
+                        <span
+                            style="position: absolute; font-size: 0.65rem; top: 50%; left: 50%; transform: translate(-50%, -50%); margin-top: -1px; pointer-events: none;">📍</span>
+                    </span>
                 </button>
                 <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
                     <span class="fab-icon">🌈</span>
@@ -680,9 +684,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=578"></script>
+    <script src="app.js?v=604"></script>
     <script>
-        const JEO_VERSION = '601';
+        const JEO_VERSION = '604';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
