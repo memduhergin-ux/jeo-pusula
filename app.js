@@ -63,7 +63,7 @@ async function dbLoadLayers() {
     }
 }
 
-function showLoading(text = "Dosya işleniyor...") {
+function showLoading(text = "Processing file...") {
     const overlay = document.getElementById('loading-overlay');
     const loadingText = document.getElementById('loading-text');
     if (overlay && loadingText) {
@@ -550,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v616';
+const CACHE_NAME = 'jeocompass-v617';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -2796,7 +2796,7 @@ if (fileImportInput) {
             return;
         }
 
-        showLoading(`${file.name} işleniyor...`);
+        showLoading(`${file.name} processing...`);
         // v561: Removed artificial delay, handled by requestAnimationFrame or immediate execution
         // await new Promise(r => setTimeout(r, 100));
 
@@ -3457,7 +3457,7 @@ async function saveExternalLayers() {
 
 async function loadExternalLayers() {
     // v543: Primary storage is now IndexedDB for large file support
-    showLoading("Kayıtlı katmanlar yükleniyor...");
+    showLoading("Loading saved layers...");
     try {
         let data = await dbLoadLayers();
 
