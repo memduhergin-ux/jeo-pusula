@@ -97,17 +97,31 @@ body {
     }
 
     .bottom-nav {
-        display: none !important;
-        /* v592: Hide bottom nav in landscape for more map space */
+        display: flex !important;
+        /* v608: Restore nav in landscape as requested */
+        justify-content: center !important;
+        /* v608: Gather buttons in the center */
+        gap: 30px;
+        /* Balanced spacing for wider screens */
+        padding-left: env(safe-area-inset-left, 15px);
+        padding-right: env(safe-area-inset-right, 15px);
     }
 
-    #view-map.view-section {
+    .bottom-nav .nav-item {
+        flex: none !important;
+        /* v608: Prevent auto-spreading to keep center group */
+        width: 80px;
+    }
+
+    #view-map.view-section,
+    .view-section {
         top: 0 !important;
-        bottom: 0 !important;
-        /* v592: Use full bottom space */
+        bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
+        /* v608: Respect nav bar height */
         padding-top: 0 !important;
     }
 }
+
 
 .view-section.active {
     display: block !important;
@@ -1011,10 +1025,13 @@ td {
 
 .modal-header h2 {
     color: #fff;
-    font-size: 1.1rem;
+    font-size: 1rem;
     margin: 0;
     text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: 1px;
 }
+
 
 .modal-body {
     padding: 15px;
@@ -1578,15 +1595,18 @@ textarea.form-input {
 
 .custom-scale-wrapper {
     display: none;
-    align-items: center;
+    align-items: flex-end;
+    /* v610: Align coords with the scale line (bottom) */
     justify-content: flex-start;
-    gap: 10mm;
+    gap: 3mm;
+    /* v611: Moved coordinates closer to the scale line */
     position: absolute;
     bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
-    padding: 6px 15px 4px 15px;
+    padding: 2px 15px 2px 15px;
+    /* v611: Tighter padding */
     background: transparent;
     pointer-events: none;
     z-index: 1000 !important;
@@ -1659,14 +1679,16 @@ textarea.form-input {
 
 .map-utm-coords-new {
     font-size: 11px;
-    font-family: 'Courier New', monospace;
     font-weight: 900;
     color: #ffeb3b;
     white-space: nowrap;
     display: flex;
     align-items: center;
     padding-right: 5px;
+    padding-bottom: 2px;
+    /* v610: Perfect alignment with scale line baseline */
 }
+
 
 /* v607: Global high-clarity sharp outline for ALL scales and UTM labels in both orientations */
 .map-utm-coords-new,
