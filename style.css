@@ -1,4 +1,8 @@
-﻿:root {
+﻿* {
+    box-sizing: border-box;
+}
+
+:root {
     --bg-color: #121212;
     --text-color: #e0e0e0;
     --accent-color: #00ffcc;
@@ -99,10 +103,14 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    /* v576: Balanced safe area padding for perfect vertical symmetry */
+    gap: 15px;
+    /* v579: Increased gap for breathing room */
+    /* v579: Balanced padding for vertical symmetry (Top = Bottom) */
     padding-top: env(safe-area-inset-top, 20px);
     padding-bottom: env(safe-area-inset-top, 20px);
+    padding-left: 5vw;
+    padding-right: 5vw;
+    box-sizing: border-box;
 }
 
 .view-section.active {
@@ -424,34 +432,36 @@ body {
 
 /* Data Panel - Split Instrument Clusters */
 .data-panel {
-    background: transparent;
-    margin-top: 0;
-    /* v575: Removed extra margin, using flex gap */
+    /* v579: "İp gibi" hizalama - Match 90vw exactly with border-box */
     width: 90vw;
-    /* v575: Sync with compass width */
     max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0;
-    /* Reduced padding */
+    margin: 0 auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
 }
 
 .data-grid {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    /* v578: Pull instruments into focus to prevent leaks */
     align-items: center;
-    gap: 15px;
+    gap: 20px;
+    /* v578: Even tighter gap as requested */
+    width: 100%;
 }
 
 .instrument-cluster {
-    flex: 1;
     display: flex;
     align-items: center;
-    background: #2a2a2a;
-    padding: 8px;
-    border-radius: 10px;
-    border: 1px solid #444;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    background: transparent;
+    /* v578: Clean single-bar appearance */
+    padding: 0;
+    border: none;
+    box-shadow: none;
 }
 
 .cluster-strike {
@@ -759,22 +769,17 @@ td {
     box-shadow: 0 0 12px rgba(33, 150, 243, 0.4);
 }
 
-.save-btn.ready:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 5px rgba(33, 150, 243, 0.4);
-}
-
 /* Coordinates Panel */
 .panel {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 10px 15px;
+    border-radius: 20px;
+    padding: 12px 18px;
     margin: 0 auto;
-    /* v575: Removed extra margin, using flex gap */
     width: 90vw;
     max-width: 400px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
 }
 
 .panel.wide-panel {
