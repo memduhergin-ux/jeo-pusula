@@ -550,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v596';
+const CACHE_NAME = 'jeocompass-v601';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1748,7 +1748,8 @@ function initMap() {
 
     updateMapMarkers(true);
     loadExternalLayers();
-    initMapControls();
+    // initMapControls(); (v601: Removed duplicate call causing ghosting)
+
 
     // v563: Restore UI States for Heatmap/Grid/Filter/Radius on Startup
     setTimeout(() => {

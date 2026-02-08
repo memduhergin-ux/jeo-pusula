@@ -1600,532 +1600,549 @@ textarea.form-input {
         /* v593: Absolute edge since nav is hidden */
         padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
     }
-}
 
+    .map-fab-container {
+        /* v598: Center the 36px FAB under the ~34px Leaflet box (Right: 10px + (34-36)/2 = 9px) */
+        top: calc(55px + env(safe-area-inset-top, 0px)) !important;
+        right: calc(9px + env(safe-area-inset-right, 0px)) !important;
+        bottom: 5px !important;
+        width: 38px !important;
+        /* v598: Forced width for alignment */
+        align-items: center !important;
+        max-height: calc(100vh - 65px) !important;
+    }
 
-.custom-scale-control {
-    position: relative;
-    background: none;
-    backdrop-filter: none;
-    padding: 0;
-    margin: 0 !important;
-    /* Reset margin for auto-centering in flex band */
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
+    .map-utm-coords-new,
+    .scale-labels span,
+    .scale-unit {
+        /* v597: Ensure readability without the black strip */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8);
+    }
 
-.utm-control-container {
-    margin: 0 5px 0 0 !important;
-    pointer-events: none;
-}
+    .custom-scale-control {
+        position: relative;
+        background: none;
+        backdrop-filter: none;
+        padding: 0;
+        margin: 0 !important;
+        /* Reset margin for auto-centering in flex band */
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-.scale-labels {
-    display: flex;
-    justify-content: flex-start;
-    font-size: 11px;
-    font-weight: 900;
-    color: #ffeb3b;
-    height: 15px;
-    margin-bottom: 0mm;
-    /* Closer to the line */
-    width: 2.85cm;
-    /* Adjusted for screen DPI (Target 2cm) */
-    position: relative;
-    padding: 0;
-    text-shadow: 1px 1px 2px #000;
-    box-sizing: border-box;
-}
+    .utm-control-container {
+        margin: 0 5px 0 0 !important;
+        pointer-events: none;
+    }
 
-.label-zero {
-    position: absolute;
-    left: 0;
-    /* Left border position */
-    top: 0;
-    /* Above the tick mark */
-    transform: translateX(-50%);
-    text-align: center;
-}
+    .scale-labels {
+        display: flex;
+        justify-content: flex-start;
+        font-size: 11px;
+        font-weight: 900;
+        color: #ffeb3b;
+        height: 15px;
+        margin-bottom: 0mm;
+        /* Closer to the line */
+        width: 2.85cm;
+        /* Adjusted for screen DPI (Target 2cm) */
+        position: relative;
+        padding: 0;
+        text-shadow: 1px 1px 2px #000;
+        box-sizing: border-box;
+    }
 
-.label-mid {
-    position: absolute;
-    left: 50%;
-    /* Middle border position */
-    top: 0;
-    /* Above the tick mark */
-    transform: translateX(-50%);
-    text-align: center;
-    white-space: nowrap;
-}
+    .label-zero {
+        position: absolute;
+        left: 0;
+        /* Left border position */
+        top: 0;
+        /* Above the tick mark */
+        transform: translateX(-50%);
+        text-align: center;
+    }
 
-.label-end {
-    position: absolute;
-    left: 100%;
-    /* Right border position */
-    top: 0;
-    /* Above the tick mark */
-    transform: translateX(-50%);
-    text-align: center;
-    white-space: nowrap;
-}
+    .label-mid {
+        position: absolute;
+        left: 50%;
+        /* Middle border position */
+        top: 0;
+        /* Above the tick mark */
+        transform: translateX(-50%);
+        text-align: center;
+        white-space: nowrap;
+    }
 
-.scale-unit {
-    position: absolute;
-    left: calc(2.85cm + 6px);
-    /* Right of the bar */
-    bottom: 0px;
-    /* Aligned with the bottom line */
-    font-size: 8px;
-    font-weight: 900;
-    color: #ffeb3b;
-    pointer-events: none;
-    z-index: 1001 !important;
-    text-shadow: 1px 1px 2px #000;
-}
+    .label-end {
+        position: absolute;
+        left: 100%;
+        /* Right border position */
+        top: 0;
+        /* Above the tick mark */
+        transform: translateX(-50%);
+        text-align: center;
+        white-space: nowrap;
+    }
 
-.map-utm-coords-new {
-    font-size: 11px;
-    font-family: 'Courier New', monospace;
-    font-weight: 900;
-    color: #ffeb3b;
-    text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    padding-right: 5px;
-}
+    .scale-unit {
+        position: absolute;
+        left: calc(2.85cm + 6px);
+        /* Right of the bar */
+        bottom: 0px;
+        /* Aligned with the bottom line */
+        font-size: 8px;
+        font-weight: 900;
+        color: #ffeb3b;
+        pointer-events: none;
+        z-index: 1001 !important;
+        text-shadow: 1px 1px 2px #000;
+    }
 
-.scale-bars {
-    display: flex;
-    width: 2.85cm;
-    /* Adjusted for screen DPI */
-    box-sizing: border-box;
-    position: relative;
-}
+    .map-utm-coords-new {
+        font-size: 11px;
+        font-family: 'Courier New', monospace;
+        font-weight: 900;
+        color: #ffeb3b;
+        text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        padding-right: 5px;
+    }
 
-.scale-segment {
-    flex: 1;
-    height: 10px;
-    border-bottom: 3px solid #ffeb3b;
-    /* Only bottom border for horizontal line */
-    border-left: 3px solid #ffeb3b;
-    /* Left tick mark */
-    box-sizing: border-box;
-}
+    .scale-bars {
+        display: flex;
+        width: 2.85cm;
+        /* Adjusted for screen DPI */
+        box-sizing: border-box;
+        position: relative;
+    }
 
-.scale-segment:first-child {
-    border-left: 3px solid #ffeb3b;
-    /* Left tick */
-}
+    .scale-segment {
+        flex: 1;
+        height: 10px;
+        border-bottom: 3px solid #ffeb3b;
+        /* Only bottom border for horizontal line */
+        border-left: 3px solid #ffeb3b;
+        /* Left tick mark */
+        box-sizing: border-box;
+    }
 
-.scale-segment:last-child {
-    border-right: 3px solid #ffeb3b;
-    /* Right tick */
-}
+    .scale-segment:first-child {
+        border-left: 3px solid #ffeb3b;
+        /* Left tick */
+    }
 
-/* Parallel Segment/Edge Labels */
-.segment-label-container {
-    pointer-events: none;
-}
+    .scale-segment:last-child {
+        border-right: 3px solid #ffeb3b;
+        /* Right tick */
+    }
 
-.segment-label {
-    background: none;
-    color: #ffeb3b;
-    /* Match line color */
-    font-size: 11px;
-    font-weight: 900;
-    padding: 0;
-    border: none;
-    white-space: nowrap;
-    text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-    box-shadow: none;
-    margin-top: -6px;
-    /* Offset it slightly away from the line */
-    transition: transform 0.1s ease-out;
-}
+    /* Parallel Segment/Edge Labels */
+    .segment-label-container {
+        pointer-events: none;
+    }
 
-/* KML Point Hiding Helper */
-.leaflet-marker-icon.hidden-point,
-.leaflet-marker-shadow.hidden-point {
-    display: none !important;
-}
+    .segment-label {
+        background: none;
+        color: #ffeb3b;
+        /* Match line color */
+        font-size: 11px;
+        font-weight: 900;
+        padding: 0;
+        border: none;
+        white-space: nowrap;
+        text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+        box-shadow: none;
+        margin-top: -6px;
+        /* Offset it slightly away from the line */
+        transition: transform 0.1s ease-out;
+    }
 
-/* Standard Map Popup Container */
-.map-popup-container {
-    font-family: 'Inter', sans-serif;
-    max-width: 220px;
-    max-height: 30vh;
-    overflow-y: auto;
-    padding: 5px;
-    font-size: 0.85rem;
-    color: #333;
-    scrollbar-width: thin;
-}
+    /* KML Point Hiding Helper */
+    .leaflet-marker-icon.hidden-point,
+    .leaflet-marker-shadow.hidden-point {
+        display: none !important;
+    }
 
-.map-popup-container b {
-    color: #2196f3;
-}
+    /* Standard Map Popup Container */
+    .map-popup-container {
+        font-family: 'Inter', sans-serif;
+        max-width: 220px;
+        max-height: 30vh;
+        overflow-y: auto;
+        padding: 5px;
+        font-size: 0.85rem;
+        color: #333;
+        scrollbar-width: thin;
+    }
 
-.map-popup-container table {
-    width: 100%;
-    border-collapse: collapse;
-}
+    .map-popup-container b {
+        color: #2196f3;
+    }
 
-.map-popup-container tr {
-    border-bottom: 1px solid #eee;
-}
+    .map-popup-container table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-.map-popup-container td {
-    padding: 4px 0;
-}
+    .map-popup-container tr {
+        border-bottom: 1px solid #eee;
+    }
 
-/* Ensure Leaflet popup wrapper is compact */
-.leaflet-popup-content-wrapper {
-    max-width: 240px;
-    border-radius: 8px;
-    padding: 0;
-}
+    .map-popup-container td {
+        padding: 4px 0;
+    }
 
-/* Close previous block properly if needed, but based on view it seems inside. Actually, looks like I pasted inside .leaflet-popup-content brace? No, let's look at lines 1396-1398. Line 1396 opens .leaflet-popup-content {. Line 1397 margin: 8px;. Then my paste started. I need to close that brace first. */
-.leaflet-popup-content {
-    margin: 8px;
-}
+    /* Ensure Leaflet popup wrapper is compact */
+    .leaflet-popup-content-wrapper {
+        max-width: 240px;
+        border-radius: 8px;
+        padding: 0;
+    }
 
-/* Splash Screen */
-#splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #121212;
-    /* Matches app bg */
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    transition: opacity 0.8s ease-out, visibility 0.8s;
-}
+    /* Close previous block properly if needed, but based on view it seems inside. Actually, looks like I pasted inside .leaflet-popup-content brace? No, let's look at lines 1396-1398. Line 1396 opens .leaflet-popup-content {. Line 1397 margin: 8px;. Then my paste started. I need to close that brace first. */
+    .leaflet-popup-content {
+        margin: 8px;
+    }
 
-#splash-screen.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
+    /* Splash Screen */
+    #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #121212;
+        /* Matches app bg */
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition: opacity 0.8s ease-out, visibility 0.8s;
+    }
 
-.splash-content {
-    text-align: center;
-    animation: splash-entry 1s ease-out;
-}
-
-@keyframes splash-entry {
-    from {
+    #splash-screen.hidden {
         opacity: 0;
-        transform: translateY(20px);
+        visibility: hidden;
+        pointer-events: none;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .splash-content {
+        text-align: center;
+        animation: splash-entry 1s ease-out;
     }
-}
 
-.splash-logo {
-    width: 80px;
-    height: 80px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-}
+    @keyframes splash-entry {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
 
-.splash-title {
-    font-family: 'Inter', sans-serif;
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #fff;
-    margin: 0 0 30px 0;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    background: linear-gradient(45deg, #fff, #aaa);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.splash-credit {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 0.9rem;
-    color: #888;
-    margin-bottom: 5px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-.splash-role {
-    color: #ffd700;
-    /* Gold */
-    font-weight: bold;
-}
-
-.splash-name {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: #fff;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    border-top: 1px solid #333;
-    padding-top: 10px;
-    margin-top: 5px;
-    display: inline-block;
-}
-
-.btn-social-share {
-    color: white !important;
-    font-weight: bold !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    border: none !important;
-    transition: transform 0.2s, filter 0.2s !important;
-    margin-top: 5px;
-}
-
-.btn-social-share:active {
-    transform: scale(0.95);
-    filter: brightness(0.9);
-}
-
-.btn-social-disabled {
-    background: #444 !important;
-    border-color: #555 !important;
-    color: #888 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    filter: grayscale(1) !important;
-    opacity: 0.6 !important;
-}
-
-/* KML Label and Marker Enhancements */
-.kml-label {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    color: #fff !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    /* Ultra Bold */
-    text-shadow:
-        -1px -1px 0 #000,
-        1px -1px 0 #000,
-        -1px 1px 0 #000,
-        1px 1px 0 #000,
-        0px 0px 4px #000;
-    /* Strong outline + shadow */
-    white-space: nowrap;
-    pointer-events: none;
-    padding: 0px 1px !important;
-    /* tighter look */
-    transition: opacity 0.3s, visibility 0.3s;
-}
-
-.leaflet-tooltip-pane .kml-label::before {
-    display: none !important;
-}
-
-/* Kibar KML Point Marker */
-.kml-custom-icon {
-    background: transparent;
-    border: none;
-}
-
-.kml-marker-pin {
-    width: 8px;
-    height: 8px;
-    background: rgba(33, 150, 243, 0.2);
-    border: 1.5px solid #2196f3;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 5px rgba(33, 150, 243, 0.4);
-}
-
-.kml-marker-dot {
-    width: 2.5px;
-    height: 2.5px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
-}
-
-.kml-custom-icon:hover .kml-marker-pin {
-    background: rgba(33, 150, 243, 0.4);
-    transform: scale(1.1);
-    transition: transform 0.2s;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
-}
 
-.spinner-small {
-    border: 2px solid rgba(255, 255, 255, .3);
-    border-top-color: #2196f3;
-    border-radius: 50%;
-    width: 15px;
-    height: 15px;
-    animation: spin 1s linear infinite;
-    display: inline-block;
-}
+    .splash-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
 
-/* v543: Large Spinner for Data Processing */
-.spinner-large {
-    border: 4px solid rgba(255, 255, 255, .1);
-    border-top-color: #4caf50;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-}
+    .splash-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: #fff;
+        margin: 0 0 30px 0;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        background: linear-gradient(45deg, #fff, #aaa);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-/* Tracks Management & Tabs */
-.records-tabs {
-    display: flex;
-    gap: 10px;
-    margin: 5px auto 10px auto !important;
-    width: 90vw !important;
-    max-width: 440px !important;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #444;
-}
+    .splash-credit {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.9rem;
+        color: #888;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
 
-.tab-btn {
-    flex: 1;
-    padding: 10px;
-    background: transparent;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.9rem;
-    transition: all 0.3s;
-    border-bottom: 3px solid transparent;
-}
+    .splash-role {
+        color: #ffd700;
+        /* Gold */
+        font-weight: bold;
+    }
 
-.tab-btn.active {
-    color: #4caf50;
-    border-bottom-color: #4caf50;
-    background: rgba(76, 175, 80, 0.05);
-}
+    .splash-name {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: #fff;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-top: 1px solid #333;
+        padding-top: 10px;
+        margin-top: 5px;
+        display: inline-block;
+    }
 
-.records-container {
-    display: none;
-    width: 100%;
-}
+    .btn-social-share {
+        color: white !important;
+        font-weight: bold !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        border: none !important;
+        transition: transform 0.2s, filter 0.2s !important;
+        margin-top: 5px;
+    }
 
-.records-container.active {
-    display: block;
-}
+    .btn-social-share:active {
+        transform: scale(0.95);
+        filter: brightness(0.9);
+    }
 
-.track-color-dot {
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    display: inline-block;
-    vertical-align: middle;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-}
+    .btn-social-disabled {
+        background: #444 !important;
+        border-color: #555 !important;
+        color: #888 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+        filter: grayscale(1) !important;
+        opacity: 0.6 !important;
+    }
 
-.track-action-btn {
-    background: none;
-    border: none;
-    color: #aaa;
-    cursor: pointer;
-    font-size: 1.1rem;
-    padding: 4px;
-    transition: color 0.2s;
-}
+    /* KML Label and Marker Enhancements */
+    .kml-label {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #fff !important;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        /* Ultra Bold */
+        text-shadow:
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000,
+            0px 0px 4px #000;
+        /* Strong outline + shadow */
+        white-space: nowrap;
+        pointer-events: none;
+        padding: 0px 1px !important;
+        /* tighter look */
+        transition: opacity 0.3s, visibility 0.3s;
+    }
 
-.track-action-btn:hover {
-    color: #fff;
-}
+    .leaflet-tooltip-pane .kml-label::before {
+        display: none !important;
+    }
 
-.track-action-btn.delete:hover {
-    color: #f44336;
-}
+    /* Kibar KML Point Marker */
+    .kml-custom-icon {
+        background: transparent;
+        border: none;
+    }
 
-/* Heatmap UI (v401) */
-#heatmap-radius-panel {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 160px !important;
-}
+    .kml-marker-pin {
+        width: 8px;
+        height: 8px;
+        background: rgba(33, 150, 243, 0.2);
+        border: 1.5px solid #2196f3;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 5px rgba(33, 150, 243, 0.4);
+    }
 
-.radius-opt {
-    background: #333;
-    color: #ccc;
-    border: 1px solid #444;
-    padding: 6px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
+    .kml-marker-dot {
+        width: 2.5px;
+        height: 2.5px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+    }
 
-.radius-opt:hover {
-    background: #444;
-    color: #fff;
-}
+    .kml-custom-icon:hover .kml-marker-pin {
+        background: rgba(33, 150, 243, 0.4);
+        transform: scale(1.1);
+        transition: transform 0.2s;
+    }
 
-.radius-opt.active {
-    background: #2196f3;
-    color: white;
-    border-color: #2196f3;
-    font-weight: bold;
-}
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
 
-#btn-heatmap-toggle.active {
-    background: #ff9800 !important;
-    color: white !important;
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
-}
+    .spinner-small {
+        border: 2px solid rgba(255, 255, 255, .3);
+        border-top-color: #2196f3;
+        border-radius: 50%;
+        width: 15px;
+        height: 15px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+    }
 
-/* Visual Element Selector (v407) */
-.element-opt {
-    background: #222;
-    color: #eee;
-    border: 1px solid #444;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    width: 100%;
-    text-align: left;
-}
+    /* v543: Large Spinner for Data Processing */
+    .spinner-large {
+        border: 4px solid rgba(255, 255, 255, .1);
+        border-top-color: #4caf50;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
 
-.element-opt:hover {
-    background: #333;
-}
+    /* Tracks Management & Tabs */
+    .records-tabs {
+        display: flex;
+        gap: 10px;
+        margin: 5px auto 10px auto !important;
+        width: 90vw !important;
+        max-width: 440px !important;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #444;
+    }
 
-.element-opt.active {
-    background: #2196f3;
-    border-color: #2196f3;
-    color: white;
-}
+    .tab-btn {
+        flex: 1;
+        padding: 10px;
+        background: transparent;
+        border: none;
+        color: #888;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        border-bottom: 3px solid transparent;
+    }
 
-.color-dot-mini {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    border: 1px solid white;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-    flex-shrink: 0;
+    .tab-btn.active {
+        color: #4caf50;
+        border-bottom-color: #4caf50;
+        background: rgba(76, 175, 80, 0.05);
+    }
+
+    .records-container {
+        display: none;
+        width: 100%;
+    }
+
+    .records-container.active {
+        display: block;
+    }
+
+    .track-color-dot {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        display: inline-block;
+        vertical-align: middle;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+    }
+
+    .track-action-btn {
+        background: none;
+        border: none;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 4px;
+        transition: color 0.2s;
+    }
+
+    .track-action-btn:hover {
+        color: #fff;
+    }
+
+    .track-action-btn.delete:hover {
+        color: #f44336;
+    }
+
+    /* Heatmap UI (v401) */
+    #heatmap-radius-panel {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: 160px !important;
+    }
+
+    .radius-opt {
+        background: #333;
+        color: #ccc;
+        border: 1px solid #444;
+        padding: 6px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .radius-opt:hover {
+        background: #444;
+        color: #fff;
+    }
+
+    .radius-opt.active {
+        background: #2196f3;
+        color: white;
+        border-color: #2196f3;
+        font-weight: bold;
+    }
+
+    #btn-heatmap-toggle.active {
+        background: #ff9800 !important;
+        color: white !important;
+        box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+    }
+
+    /* Visual Element Selector (v407) */
+    .element-opt {
+        background: #222;
+        color: #eee;
+        border: 1px solid #444;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        width: 100%;
+        text-align: left;
+    }
+
+    .element-opt:hover {
+        background: #333;
+    }
+
+    .element-opt.active {
+        background: #2196f3;
+        border-color: #2196f3;
+        color: white;
+    }
+
+    .color-dot-mini {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1px solid white;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        flex-shrink: 0;
+    }
 }
