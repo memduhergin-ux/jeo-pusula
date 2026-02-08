@@ -265,9 +265,9 @@ function updateHeatmap() {
     let radiusPixels = totalPixels * radiusRatio;
     let blurPixels = totalPixels * blurRatio;
 
-    // Final floor to prevent 0-sized canvas in Leaflet.heat
-    if (radiusPixels < 1) radiusPixels = 1;
-    if (blurPixels < 1) blurPixels = 1;
+    // Final floor to prevent 0-sized canvas in Leaflet.heat (v562: Boosted min size for visibility)
+    if (radiusPixels < 2) radiusPixels = 2;
+    if (blurPixels < 2) blurPixels = 2;
 
     try {
         heatmapLayer = L.heatLayer(points, {
@@ -360,17 +360,27 @@ function toggleHeatmap() {
                 const isOutsideToggle = e.target.id !== 'btn-heatmap-toggle' && !e.target.closest('#btn-heatmap-toggle');
 
                 if (isOutsidePanel && isOutsideToggle) {
+                    // v562 Check: Don't close if browser focused a select or option (common on mobile)
+                    if (document.activeElement && (document.activeElement.id === 'heatmap-element-filter' || document.activeElement.tagName === 'SELECT')) return;
+
                     isHeatmapActive = false;
                     if (btn) btn.classList.remove('active');
                     panel.style.display = 'none';
+                    localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
                     document.removeEventListener('click', closeHandler);
                 }
             };
             document.addEventListener('click', closeHandler);
         }, 300); // Increased delay for stability
-    } else if (heatmapLayer) {
-        map.removeLayer(heatmapLayer);
-        heatmapLayer = null;
+    } else {
+        isHeatmapActive = false;
+        if (btn) btn.classList.remove('active');
+        panel.style.display = 'none';
+        localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
+        if (heatmapLayer) {
+            map.removeLayer(heatmapLayer);
+            heatmapLayer = null;
+        }
     }
 }
 
@@ -507,9 +517,9 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v561';
+const CACHE_NAME = 'jeocompass-v563';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
-let activeGridColor = '#00ffcc'; // v520: Default Grid Color
+let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
 let lastRotations = [];
 const STATIONARY_THRESHOLD = 0.15;
@@ -531,11 +541,11 @@ let trackPath = JSON.parse(localStorage.getItem('jeoTrackPath')) || [];
 let trackStartTime = localStorage.getItem('jeoTrackStartTime') || null; // v467: track start time
 let trackPolyline = null;
 
-// Heatmap State (v401)
+// Heatmap State (v401/v563: Persisted)
 let heatmapLayer = null;
-let isHeatmapActive = false;
-let heatmapRadius = 50; // default meters (v409)
-let heatmapFilter = 'ALL'; // v403
+let isHeatmapActive = localStorage.getItem('jeoHeatmapActive') === 'true';
+let heatmapRadius = parseInt(localStorage.getItem('jeoHeatmapRadius')) || 50; // default meters (v409)
+let heatmapFilter = localStorage.getItem('jeoHeatmapFilter') || 'ALL'; // v403
 
 // Smoothing state (v400)
 let smoothedPos = { lat: 0, lon: 0 };
@@ -564,9 +574,9 @@ let measureMode = 'line'; // 'line' or 'polygon'
 // Add Point State
 let isAddingPoint = false;
 
-// Grid State (v516)
-let isGridMode = false;
-let activeGridInterval = null;
+// Grid State (v516/v563: Persisted)
+let isGridMode = localStorage.getItem('jeoGridMode') === 'true';
+let activeGridInterval = parseInt(localStorage.getItem('jeoGridInterval')) || null;
 let currentGridLayer = null;
 
 // KML/KMZ Layers State
@@ -854,7 +864,7 @@ function updateDisplay() {
     }
 
     renderCoordinates();
-    updateScaleValues();
+    // Removed: updateScaleValues(); (v562: Stopped high-frequency updates to fix dancing scale bar)
 }
 
 // Simple Toast System for User Feedback
@@ -1707,6 +1717,54 @@ function initMap() {
     loadExternalLayers();
     initMapControls();
 
+    // v563: Restore UI States for Heatmap/Grid/Filter/Radius on Startup
+    setTimeout(() => {
+        // 1. Restore Heatmap Select and Active classes
+        const elFilter = document.getElementById('heatmap-element-filter');
+        if (elFilter) elFilter.value = heatmapFilter;
+
+        document.querySelectorAll('.radius-opt').forEach(btn => {
+            if (parseInt(btn.getAttribute('data-radius')) === heatmapRadius) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        const btnHeatmap = document.getElementById('btn-heatmap-toggle');
+        const heatPanel = document.getElementById('heatmap-radius-panel');
+        if (isHeatmapActive) {
+            if (btnHeatmap) btnHeatmap.classList.add('active');
+            if (heatPanel) heatPanel.style.display = 'block';
+            updateHeatmap();
+        }
+
+        // 2. Restore Grid Select and Active classes
+        const btnGrid = document.getElementById('btn-grid-toggle');
+        const gridPanel = document.getElementById('grid-interval-panel');
+        if (isGridMode) {
+            if (btnGrid) btnGrid.classList.add('active');
+            if (gridPanel) gridPanel.style.display = 'flex';
+        }
+
+        document.querySelectorAll('.grid-opt-btn').forEach(btn => {
+            if (parseInt(btn.getAttribute('data-interval')) === activeGridInterval) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        document.querySelectorAll('.grid-color-opt').forEach(btn => {
+            if (btn.getAttribute('data-color') === activeGridColor) {
+                btn.classList.add('active');
+                btn.style.border = "2px solid #fff";
+            } else {
+                btn.classList.remove('active');
+                btn.style.border = "1px solid rgba(255,255,255,0.4)";
+            }
+        });
+    }, 500); // v563: Slight delay to ensure DOM is ready and IDB layers finished loading
 }
 
 /** Combined Map Controls (Scale + UTM) **/
@@ -2768,6 +2826,7 @@ document.querySelectorAll('.radius-opt').forEach(btn => {
         if (isNaN(newRadius)) return;
 
         heatmapRadius = newRadius;
+        localStorage.setItem('jeoHeatmapRadius', newRadius); // v563: Persist radius change
 
         // UI feedback
         document.querySelectorAll('.radius-opt').forEach(ob => ob.classList.remove('active'));
@@ -2782,6 +2841,7 @@ const elFilter = document.getElementById('heatmap-element-filter');
 if (elFilter) {
     elFilter.addEventListener('change', (e) => {
         heatmapFilter = e.target.value;
+        localStorage.setItem('jeoHeatmapFilter', heatmapFilter); // v563: Persist filter change
         if (isHeatmapActive) updateHeatmap();
     });
 }
@@ -2915,6 +2975,7 @@ if (btnGridToggle) {
         isGridMode = !isGridMode;
         btnGridToggle.classList.toggle('active', isGridMode);
         gridPanel.style.display = isGridMode ? 'flex' : 'none';
+        localStorage.setItem('jeoGridMode', isGridMode); // v563: Persist toggle
 
         if (isGridMode) {
             showToast("Grid Mode: ON - Select interval and click on a polygon", 3000);
@@ -2927,9 +2988,11 @@ if (btnGridToggle) {
 
 document.querySelectorAll('.grid-opt-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        activeGridInterval = parseInt(e.target.dataset.interval);
+        const target = e.currentTarget;
+        activeGridInterval = parseInt(target.getAttribute('data-interval'));
+        localStorage.setItem('jeoGridInterval', activeGridInterval); // v563: Persist interval
         document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
+        target.classList.add('active');
         showToast(`Interval set: ${activeGridInterval}m. Click an area!`, 2000);
     });
 });
@@ -2937,12 +3000,13 @@ document.querySelectorAll('.grid-opt-btn').forEach(btn => {
 // v534: Grid Color Listeners (Updated class name)
 document.querySelectorAll('.grid-color-opt').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        activeGridColor = e.currentTarget.dataset.color;
+        const target = e.currentTarget;
+        activeGridColor = target.getAttribute('data-color');
+        localStorage.setItem('jeoGridColor', activeGridColor); // v563: Persist color
         document.querySelectorAll('.grid-color-opt').forEach(b => {
             b.classList.remove('active');
             b.style.border = "1px solid rgba(255,255,255,0.4)"; // Default border
         });
-        e.currentTarget.classList.add('active');
         e.currentTarget.style.border = "2px solid #fff"; // Active highlight
         showToast("Grid Color Updated", 1000);
     });
