@@ -178,11 +178,18 @@ function updateHeatmap() {
                 l._jeoPoints = [];
                 l.geojson.features.forEach(f => {
                     if (f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates) {
-                        const label = getFeatureName(f.properties) || '';
+                        // v554: Scan ALL properties to support external GIS schemas (ExtendedData etc.)
+                        let searchableText = '';
+                        if (f.properties) {
+                            for (const key in f.properties) {
+                                searchableText += String(f.properties[key]) + ' ';
+                            }
+                        }
+
                         const p = {
                             lat: f.geometry.coordinates[1],
                             lon: f.geometry.coordinates[0],
-                            label: label
+                            label: searchableText.trim()
                         };
                         l._jeoPoints.push(p);
                     }
@@ -299,6 +306,7 @@ function updateHeatmapFilterOptions() {
     externalLayers.forEach(l => {
         if (l.visible && l._jeoPoints) {
             l._jeoPoints.forEach(p => {
+                // v554: p.label already contains all properties
                 const labelText = (p.label || '').toUpperCase();
                 for (const el in ELEMENT_COLORS) {
                     if (labelText.includes(el.toUpperCase())) foundElements.add(el);
@@ -490,7 +498,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v553';
+const CACHE_NAME = 'jeocompass-v554';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -1184,7 +1192,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v553: Capture last position before updating smoothedPos for bearing calculation
+            // v554: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
