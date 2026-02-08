@@ -198,8 +198,12 @@ function updateHeatmap() {
         points = allSourcePoints.map(p => [p.lat, p.lon, 1]);
     } else {
         const symbol = heatmapFilter.toUpperCase();
+        // v552: Strictly case-insensitive matching
         points = allSourcePoints
-            .filter(p => (p.label || '').toUpperCase().includes(symbol))
+            .filter(p => {
+                const label = (p.label || '').toUpperCase();
+                return label.includes(symbol);
+            })
             .map(p => [p.lat, p.lon, 1]);
     }
 
@@ -289,10 +293,11 @@ function updateHeatmapFilterOptions() {
         }
     });
 
+    // v552: Efficient extraction using cached points
     externalLayers.forEach(l => {
-        if (l.geojson && l.geojson.features) {
-            l.geojson.features.forEach(f => {
-                const labelText = (getFeatureName(f.properties) || '').toUpperCase();
+        if (l.visible && l._jeoPoints) {
+            l._jeoPoints.forEach(p => {
+                const labelText = (p.label || '').toUpperCase();
                 for (const el in ELEMENT_COLORS) {
                     if (labelText.includes(el.toUpperCase())) foundElements.add(el);
                 }
@@ -483,7 +488,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v551';
+const CACHE_NAME = 'jeocompass-v552';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -1177,7 +1182,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v551: Capture last position before updating smoothedPos for bearing calculation
+            // v552: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
@@ -4431,32 +4436,4 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
         }
     }, 100);
 });
-
-
-// v441: Hybrid Headlight Logic
-let currentSpeed = 0;
-let currentCourse = null;
-
-// v454: Headlight Rotation Update (Fixed Direction Priority)
-function updateHeadlight(heading) {
-    if (typeof liveMarker !== 'undefined' && liveMarker) {
-        const el = liveMarker.getElement();
-        if (el) {
-            const cone = el.querySelector('.heading-cone');
-            if (cone) {
-                // v454: Improved Hybrid Logic
-                // Use GPS Course if moving faster than 0.8 m/s (~2.9 km/h)
-                // This prevents North-East issue when traveling East
-                let rotation = heading;
-                if (currentSpeed > 0.8 && currentCourse !== null) {
-                    rotation = currentCourse;
-                }
-
-                // Rotate cone (0 = North/Up)
-                cone.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
-                cone.style.opacity = '1';
-            }
-        }
-    }
-}
 
