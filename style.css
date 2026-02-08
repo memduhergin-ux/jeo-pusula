@@ -792,10 +792,11 @@ td {
     background: #2196f3;
     color: #fff;
     border-color: #42a5f5;
+    /* v605: Removed excessive blue glow for a cleaner classic look */
     cursor: pointer;
     opacity: 1;
     pointer-events: auto;
-    box-shadow: 0 0 12px rgba(33, 150, 243, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Coordinates Panel (Part 3) */
@@ -820,14 +821,19 @@ td {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    /* v606: Added gap between header buttons to prevent sticking */
     width: 90vw !important;
     max-width: 440px !important;
     margin: 10px auto !important;
-    padding: 12px 20px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    padding: 10px 15px;
+    background: #2a2a2a;
+    /* v605: Replaced glass-bg with solid deep grey */
+    border: 1px solid #444;
+    /* v605: Standard border */
+    border-radius: 12px;
+    /* v605: More professional small radius */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     box-sizing: border-box !important;
 }
 
@@ -1572,31 +1578,137 @@ textarea.form-input {
 
 .custom-scale-wrapper {
     display: none;
-    /* v589: Hidden by default */
     align-items: center;
     justify-content: flex-start;
     gap: 10mm;
-    /* v604: Moved higher (52px) to clear the top edge of bottom-nav (40px) in portrait */
+    position: absolute;
     bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
     padding: 6px 15px 4px 15px;
-    /* v593: More padding for balanced look */
     background: transparent;
-    /* v594/595: Transparent scale strip */
     pointer-events: none;
     z-index: 1000 !important;
     box-sizing: border-box;
-    border-radius: 0;
-    box-shadow: none;
-    /* v594/595: Removed shadow */
 }
+
+.custom-scale-control {
+    position: relative;
+    background: none;
+    padding: 0;
+    margin: 0 !important;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.utm-control-container {
+    margin: 0 5px 0 0 !important;
+    pointer-events: none;
+}
+
+.scale-labels {
+    display: flex;
+    justify-content: flex-start;
+    font-size: 11px;
+    font-weight: 900;
+    color: #ffeb3b;
+    height: 15px;
+    margin-bottom: 0mm;
+    width: 2.85cm;
+    position: relative;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.label-zero {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.label-mid {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.label-end {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.scale-unit {
+    position: absolute;
+    left: calc(2.85cm + 6px);
+    bottom: 0px;
+    font-size: 8px;
+    font-weight: 900;
+    color: #ffeb3b;
+    pointer-events: none;
+    z-index: 1001 !important;
+}
+
+.map-utm-coords-new {
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    font-weight: 900;
+    color: #ffeb3b;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    padding-right: 5px;
+}
+
+/* v607: Global high-clarity sharp outline for ALL scales and UTM labels in both orientations */
+.map-utm-coords-new,
+.map-utm-coords-new span,
+.scale-labels span,
+.scale-unit {
+    text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000,
+        1px 1px 2px #000;
+    font-weight: 800;
+}
+
+.scale-bars {
+    display: flex;
+    width: 2.85cm;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.scale-segment {
+    flex: 1;
+    height: 10px;
+    border-bottom: 3px solid #ffeb3b;
+    border-left: 3px solid #ffeb3b;
+    box-sizing: border-box;
+}
+
+.scale-segment:first-child {
+    border-left: 3px solid #ffeb3b;
+}
+
+.scale-segment:last-child {
+    border-right: 3px solid #ffeb3b;
+}
+
 
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper {
         bottom: 0 !important;
-        /* v593: Absolute edge since nav is hidden */
         padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
     }
 
@@ -1610,138 +1722,6 @@ textarea.form-input {
         max-height: calc(100vh - 65px) !important;
     }
 
-    .map-utm-coords-new,
-    .scale-labels span,
-    .scale-unit {
-        /* v604: Sharp 1px outline for extreme clarity in landscape */
-        text-shadow:
-            -1px -1px 0 #000,
-            1px -1px 0 #000,
-            -1px 1px 0 #000,
-            1px 1px 0 #000;
-        font-weight: 800;
-    }
-
-    .custom-scale-control {
-        position: relative;
-        background: none;
-        backdrop-filter: none;
-        padding: 0;
-        margin: 0 !important;
-        /* Reset margin for auto-centering in flex band */
-        pointer-events: none;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .utm-control-container {
-        margin: 0 5px 0 0 !important;
-        pointer-events: none;
-    }
-
-    .scale-labels {
-        display: flex;
-        justify-content: flex-start;
-        font-size: 11px;
-        font-weight: 900;
-        color: #ffeb3b;
-        height: 15px;
-        margin-bottom: 0mm;
-        /* Closer to the line */
-        width: 2.85cm;
-        /* Adjusted for screen DPI (Target 2cm) */
-        position: relative;
-        padding: 0;
-        text-shadow: 1px 1px 2px #000;
-        box-sizing: border-box;
-    }
-
-    .label-zero {
-        position: absolute;
-        left: 0;
-        /* Left border position */
-        top: 0;
-        /* Above the tick mark */
-        transform: translateX(-50%);
-        text-align: center;
-    }
-
-    .label-mid {
-        position: absolute;
-        left: 50%;
-        /* Middle border position */
-        top: 0;
-        /* Above the tick mark */
-        transform: translateX(-50%);
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    .label-end {
-        position: absolute;
-        left: 100%;
-        /* Right border position */
-        top: 0;
-        /* Above the tick mark */
-        transform: translateX(-50%);
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    .scale-unit {
-        position: absolute;
-        left: calc(2.85cm + 6px);
-        /* Right of the bar */
-        bottom: 0px;
-        /* Aligned with the bottom line */
-        font-size: 8px;
-        font-weight: 900;
-        color: #ffeb3b;
-        pointer-events: none;
-        z-index: 1001 !important;
-        text-shadow: 1px 1px 2px #000;
-    }
-
-    .map-utm-coords-new {
-        font-size: 11px;
-        font-family: 'Courier New', monospace;
-        font-weight: 900;
-        color: #ffeb3b;
-        text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        padding-right: 5px;
-    }
-
-    .scale-bars {
-        display: flex;
-        width: 2.85cm;
-        /* Adjusted for screen DPI */
-        box-sizing: border-box;
-        position: relative;
-    }
-
-    .scale-segment {
-        flex: 1;
-        height: 10px;
-        border-bottom: 3px solid #ffeb3b;
-        /* Only bottom border for horizontal line */
-        border-left: 3px solid #ffeb3b;
-        /* Left tick mark */
-        box-sizing: border-box;
-    }
-
-    .scale-segment:first-child {
-        border-left: 3px solid #ffeb3b;
-        /* Left tick */
-    }
-
-    .scale-segment:last-child {
-        border-right: 3px solid #ffeb3b;
-        /* Right tick */
-    }
 
     /* Parallel Segment/Edge Labels */
     .segment-label-container {
@@ -2010,142 +1990,162 @@ textarea.form-input {
         animation: spin 1s linear infinite;
     }
 
-    /* Tracks Management & Tabs */
-    .records-tabs {
-        display: flex;
-        gap: 10px;
-        margin: 5px auto 10px auto !important;
-        width: 90vw !important;
-        max-width: 440px !important;
-        padding-bottom: 5px;
-        border-bottom: 1px solid #444;
-    }
+    /* v605: Closed landscape media query early to keep records styles global */
+}
 
-    .tab-btn {
-        flex: 1;
-        padding: 10px;
-        background: transparent;
-        border: none;
-        color: #888;
-        cursor: pointer;
-        font-weight: bold;
-        font-size: 0.9rem;
-        transition: all 0.3s;
-        border-bottom: 3px solid transparent;
-    }
+/* Records Tabs & Management (Global v605) */
+.records-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 5px auto 10px auto !important;
+    width: 90vw !important;
+    max-width: 440px !important;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #444;
+}
 
-    .tab-btn.active {
-        color: #4caf50;
-        border-bottom-color: #4caf50;
-        background: rgba(76, 175, 80, 0.05);
-    }
+.tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
 
-    .records-container {
-        display: none;
-        width: 100%;
-    }
+.tab-btn.active {
+    color: #4caf50;
+    border-bottom-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
 
-    .records-container.active {
-        display: block;
-    }
+.records-container {
+    display: none;
+    width: 100%;
+}
 
-    .track-color-dot {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        display: inline-block;
-        vertical-align: middle;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        cursor: pointer;
-    }
+.records-container.active {
+    display: block;
+}
 
-    .track-action-btn {
-        background: none;
-        border: none;
-        color: #aaa;
-        cursor: pointer;
-        font-size: 1.1rem;
-        padding: 4px;
-        transition: color 0.2s;
-    }
+.track-color-dot {
+    width: 24px;
+    /* v606: Changed from dot to line to match map track weight */
+    height: 6px;
+    border-radius: 3px;
+    display: inline-block;
+    vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    background: none;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
 
-    .track-action-btn:hover {
-        color: #fff;
-    }
+/* Ensure color input fills the line indicator */
+input[type="color"].track-color-dot::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
 
-    .track-action-btn.delete:hover {
-        color: #f44336;
-    }
+input[type="color"].track-color-dot::-webkit-color-swatch {
+    border: none;
+}
 
-    /* Heatmap UI (v401) */
-    #heatmap-radius-panel {
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        width: 160px !important;
-    }
 
-    .radius-opt {
-        background: #333;
-        color: #ccc;
-        border: 1px solid #444;
-        padding: 6px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
+.track-action-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    transition: color 0.2s;
+}
 
-    .radius-opt:hover {
-        background: #444;
-        color: #fff;
-    }
+.track-action-btn:hover {
+    color: #fff;
+}
 
-    .radius-opt.active {
-        background: #2196f3;
-        color: white;
-        border-color: #2196f3;
-        font-weight: bold;
-    }
+.track-action-btn.delete:hover {
+    color: #f44336;
+}
 
-    #btn-heatmap-toggle.active {
-        background: #ff9800 !important;
-        color: white !important;
-        box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
-    }
+/* Heatmap & Precision Panels */
+#heatmap-radius-panel {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 160px !important;
+}
 
-    /* Visual Element Selector (v407) */
-    .element-opt {
-        background: #222;
-        color: #eee;
-        border: 1px solid #444;
-        padding: 6px 10px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        width: 100%;
-        text-align: left;
-    }
+.radius-opt {
+    background: #333;
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
 
-    .element-opt:hover {
-        background: #333;
-    }
+.radius-opt:hover {
+    background: #444;
+    color: #fff;
+}
 
-    .element-opt.active {
-        background: #2196f3;
-        border-color: #2196f3;
-        color: white;
-    }
+.radius-opt.active {
+    background: #2196f3;
+    color: white;
+    border-color: #2196f3;
+    font-weight: bold;
+}
 
-    .color-dot-mini {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: 1px solid white;
-        box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-        flex-shrink: 0;
-    }
+#btn-heatmap-toggle.active {
+    background: #ff9800 !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+}
+
+.element-opt {
+    background: #222;
+    color: #eee;
+    border: 1px solid #444;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+}
+
+.element-opt:hover {
+    background: #333;
+}
+
+.element-opt.active {
+    background: #2196f3;
+    border-color: #2196f3;
+    color: white;
+}
+
+.color-dot-mini {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid white;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
 }
