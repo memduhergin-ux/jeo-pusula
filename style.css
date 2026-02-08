@@ -801,14 +801,15 @@ td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    margin-bottom: 5px;
-    padding: 8px 25px;
-    /* Increased side padding for better focus */
-    gap: 6px;
-    /* Reduced gap between elements for compact look */
-    background: rgba(255, 255, 255, 0.02);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    width: 90vw !important;
+    max-width: 440px !important;
+    margin: 10px auto !important;
+    padding: 12px 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box !important;
 }
 
 .search-container {
@@ -1188,7 +1189,8 @@ textarea.form-input {
     position: absolute;
     bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
     /* Elevated above nav bar and scale panel */
-    right: 15px;
+    right: calc(15px + env(safe-area-inset-right, 0px)) !important;
+    /* Safe-area aware for landscape */
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1914,9 +1916,11 @@ textarea.form-input {
 .records-tabs {
     display: flex;
     gap: 10px;
-    margin-bottom: 5px;
-    border-bottom: 1px solid #444;
+    margin: 5px auto 10px auto !important;
+    width: 90vw !important;
+    max-width: 440px !important;
     padding-bottom: 5px;
+    border-bottom: 1px solid #444;
 }
 
 .tab-btn {
