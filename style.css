@@ -99,18 +99,18 @@ body {
 }
 
 #view-compass.active {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    /* v579: Breathing room gap */
-    /* v579: Balanced padding for vertical symmetry & thread-like alignment */
-    padding-top: env(safe-area-inset-top, 25px);
-    padding-bottom: env(safe-area-inset-top, 25px);
-    padding-left: 5vw;
-    padding-right: 5vw;
-    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 15px !important;
+    /* v580: Breathing room */
+    /* v580: Absolute vertical symmetry (Top margin = Bottom margin) */
+    padding-top: env(safe-area-inset-top, 25px) !important;
+    padding-bottom: env(safe-area-inset-top, 25px) !important;
+    padding-left: 5vw !important;
+    padding-right: 5vw !important;
+    box-sizing: border-box !important;
 }
 
 .view-section.active {
@@ -129,14 +129,15 @@ body {
 }
 
 /* Compass Container (1. Kısım) */
+/* Compass Container (Part 1) */
 .compass-container {
     position: relative;
-    width: 100%;
-    /* v579: Fill parent padding area for "ip gibi" hiza */
-    max-width: 400px;
+    width: 90vw !important;
+    /* v580: Forced "ip gibi" hiza */
+    max-width: 400px !important;
     aspect-ratio: 1;
-    box-sizing: border-box;
-    margin: 0;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
     border-radius: 20px;
     /* Bruton 5020 Housing - Silver/Aluminum */
     background: linear-gradient(135deg, #d0d0d0, #f0f0f0);
@@ -432,17 +433,18 @@ body {
 }
 
 /* Data Panel (2. Kısım) */
+/* Data Panel (Part 2) */
 .data-panel {
-    /* v579: "İp gibi" hizalama - Fill parent padding area */
-    width: 100%;
-    max-width: 400px;
-    margin: 0;
+    /* v580: "İp gibi" hizalama - Match compass exactly */
+    width: 90vw !important;
+    max-width: 400px !important;
+    margin: 0 auto !important;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 12px 15px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-    box-sizing: border-box;
+    box-sizing: border-box !important;
 }
 
 .data-grid {
@@ -770,17 +772,17 @@ td {
     box-shadow: 0 0 12px rgba(33, 150, 243, 0.4);
 }
 
-/* Coordinates Panel (3. Kısım) */
+/* Coordinates Panel (Part 3) */
 .panel {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 12px 18px;
-    margin: 0;
-    width: 100%;
-    max-width: 400px;
+    margin: 0 auto !important;
+    width: 90vw !important;
+    max-width: 400px !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-    box-sizing: border-box;
+    box-sizing: border-box !important;
 }
 
 .panel.wide-panel {
