@@ -138,27 +138,22 @@ function updateHeatmap() {
 
         activeGradient = {
             0.0: transparentBase,
-            0.12: transparentBase,
             0.15: baseColor,
-            0.20: line, 0.21: d1,
-            0.40: line, 0.41: d2,
-            0.60: line, 0.61: d3,
-            0.80: line, 0.81: dCore,
-            0.95: dCore, 1.0: ultraDark
+            0.40: d1,
+            0.70: d2,
+            0.90: d3,
+            1.0: dCore
         };
     } else {
-        // v436 Geological Rainbow (Harmonized Core)
-        const line = '#000000';
-        const rainbowTransparent = '#3f51b500'; // Indigo-themed transparency
+        // v567: Professional Rainbow Gradient (Smooth & Readable - No Sharp Black Lines)
+        const rainbowTransparent = '#37474f00'; // Slate-themed transparency
         activeGradient = {
             0.0: rainbowTransparent,
-            0.12: rainbowTransparent,
-            0.15: '#3f51b5',        // Deep Indigo
-            0.20: line, 0.21: '#ffc107', // Gold
-            0.40: line, 0.41: '#ff9800', // Orange
-            0.60: line, 0.61: '#f44336', // Red
-            0.80: line, 0.81: '#440000', // Crimson
-            0.95: '#220000', 1.0: '#110011' // Deep Violet/Nadir Core
+            0.20: '#2196f3', // Blue (Low Density)
+            0.45: '#4caf50', // Green (Medium)
+            0.75: '#ffeb3b', // Yellow (High)
+            0.95: '#f44336', // Red (Intense)
+            1.00: '#b71c1c'  // Deep Red (Core)
         };
     }
 
@@ -254,11 +249,12 @@ function updateHeatmap() {
     const radiusRatio = 0.70;
 
     // Total spread (r+b) always equals Ground Radius.
-    // v565: SMART AUTO Mode (0) - Dynamically scales between ground-distance (50m) and visibility (20px)
+    // v567: SMART RADIUS Mode (0) - Reduced for modesty and better area interpretation
     let totalPixels;
     if (heatmapRadius <= 0) {
-        // At high zoom, it follows 50m. At low zoom, it floors at 20px so points stay visible.
-        totalPixels = Math.max(50 / mpp, 20);
+        // Floor reduced to 10px (from 20px) to keep wide-scale points modest but visible.
+        // Also adjusted base distance to 25m for sharper near-ground view.
+        totalPixels = Math.max(25 / mpp, 10);
     } else {
         totalPixels = heatmapRadius / mpp;
     }
@@ -280,8 +276,8 @@ function updateHeatmap() {
         heatmapLayer = L.heatLayer(points, {
             radius: radiusPixels,
             blur: blurPixels,
-            maxOpacity: 0.9,
-            minOpacity: 0.2, // v420: Maximum prominence for 25m - 100m zones
+            maxOpacity: 0.8, // Slightly more transparent (v567)
+            minOpacity: 0.1, // Much softer edges (v567)
             gradient: activeGradient,
             max: 1.0 // v415: Lock intensity to 1.0 to prevent color shifting during zoom/pan
         }).addTo(map);
@@ -524,7 +520,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v565';
+const CACHE_NAME = 'jeocompass-v572';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1920,7 +1916,7 @@ function formatScaleDistParts(d) {
         val = Math.round(d);
         unit = "m";
     } else {
-        val = (d / 1000).toFixed(2);
+        val = Math.round(d / 1000);
         unit = "km";
     }
     return { val, unit };
@@ -3772,7 +3768,7 @@ function calculateAndDisplayMeasurement() {
 
     let text = "";
     if (totalDistance < 1000) text = Math.round(totalDistance) + " m";
-    else text = (totalDistance / 1000).toFixed(2) + " km";
+    else text = Math.round(totalDistance / 1000) + " km";
 
     measureText.innerHTML = text;
 

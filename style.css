@@ -84,6 +84,17 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+#view-compass {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    /* Consistent vertical spacing */
+    padding-top: calc(env(safe-area-inset-top, 25px) + 10px);
+    padding-bottom: 20px;
+}
+
 .view-section.active {
     display: block;
     animation: fadeIn 0.3s;
@@ -105,8 +116,8 @@ body {
     width: 90vw;
     max-width: 400px;
     aspect-ratio: 1;
-    margin: 10px auto 10px auto;
-    /* Reduced margin */
+    margin: 0 auto;
+    /* Removed fixed margins for flex centering */
     border-radius: 20px;
     /* Bruton 5020 Housing - Silver/Aluminum */
     background: linear-gradient(135deg, #d0d0d0, #f0f0f0);
@@ -404,8 +415,8 @@ body {
 /* Data Panel - Split Instrument Clusters */
 .data-panel {
     background: transparent;
-    margin-top: 5px;
-    /* Reduced from 20px */
+    margin-top: 0;
+    /* Relying on flex gap */
     width: 95vw;
     max-width: 400px;
     margin-left: auto;
@@ -707,15 +718,14 @@ td {
 }
 
 .save-btn {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     background: #444;
     color: #888;
-    border: 2px solid #555;
+    border: 1px solid #555;
     border-radius: 50%;
-    font-size: 0.65rem;
+    font-size: 1rem;
     font-weight: bold;
-    text-transform: uppercase;
     cursor: not-allowed;
     transition: all 0.3s;
     opacity: 0.5;
@@ -723,17 +733,18 @@ td {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5), 1px 1px 2px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
 }
 
 .save-btn.ready {
     background: #2196f3;
     color: #fff;
-    border-color: #1976d2;
+    border-color: #42a5f5;
     cursor: pointer;
     opacity: 1;
     pointer-events: auto;
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.6);
+    box-shadow: 0 0 12px rgba(33, 150, 243, 0.4);
 }
 
 .save-btn.ready:active {
@@ -764,22 +775,39 @@ td {
     align-items: center;
     width: 100%;
     margin-bottom: 5px;
-    padding: 5px 10px;
+    padding: 8px 25px;
+    /* Increased side padding for better focus */
+    gap: 6px;
+    /* Reduced gap between elements for compact look */
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .search-container {
     flex: 1;
-    margin: 0 5px;
-    max-width: 140px;
-    /* Reduced width to prevent overlapping */
+    margin: 0;
+    min-width: 100px;
 }
 
 #record-search {
     width: 100% !important;
     text-align: left;
-    height: 45px;
-    font-size: 0.95rem;
-    padding-left: 10px;
+    height: 38px;
+    /* EXACT Match with button */
+    font-size: 0.85rem;
+    padding: 0 15px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 19px;
+    /* Pill shape */
+    color: #fff;
+    outline: none;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+#record-search:focus {
+    border-color: #2196f3;
 }
 
 #btn-more-options {
@@ -809,8 +837,7 @@ td {
 }
 
 #btn-share {
-    font-size: 1.5rem !important;
-    /* Larger share icon */
+    font-size: 1.25rem !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1449,7 +1476,7 @@ textarea.form-input {
     justify-content: flex-start;
     gap: 10mm;
     position: absolute;
-    bottom: calc(50px - 2.5mm);
+    bottom: calc(40px + env(safe-area-inset-bottom, 0px));
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
