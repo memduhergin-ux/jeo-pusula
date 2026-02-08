@@ -1229,26 +1229,23 @@ textarea.form-input {
 @media screen and (orientation: landscape) {
     .map-fab-container {
         top: calc(10px + env(safe-area-inset-top, 0px)) !important;
-        /* Start near top in landscape */
-        bottom: calc(45px + env(safe-area-inset-bottom, 0px)) !important;
         right: calc(10px + env(safe-area-inset-right, 0px)) !important;
+        bottom: auto !important;
+        /* Anchor to top right instead of bottom */
         justify-content: flex-start;
-        /* Align to top of the container */
     }
 
     .map-fab-scroll-area {
         overflow-y: auto;
+        max-height: calc(100vh - 120px) !important;
+        /* Ensure internal scroll only */
         padding-right: 5px;
-        /* Space for scrollbar if any */
         scrollbar-width: none;
-        /* Firefox */
         -ms-overflow-style: none;
-        /* IE/Edge */
     }
 
     .map-fab-scroll-area::-webkit-scrollbar {
         display: none;
-        /* Chrome/Safari */
     }
 
     .map-fab {
@@ -1547,24 +1544,24 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper {
+    display: none;
+    /* v589: Hidden by default, toggled via button */
     align-items: center;
     justify-content: flex-start;
     gap: 10mm;
     position: absolute;
     bottom: calc(45px + env(safe-area-inset-bottom, 0px)) !important;
-    /* Directly above the nav bar */
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
-    padding: 6px 0 4px 3px;
-    /* Adjusted padding for proper height with labels 3mm above bar */
-    margin: 0 !important;
-    background: rgba(0, 0, 0, 0.75);
+    padding: 6px 0 4px 10px;
+    background: rgba(0, 0, 0, 0.85);
+    /* v590: Stronger backdrop for classic feel */
     pointer-events: none;
     z-index: 1000 !important;
     box-sizing: border-box;
     border-radius: 0;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.6);
 }
 
 .custom-scale-control {
