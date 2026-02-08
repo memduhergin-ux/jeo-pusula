@@ -520,7 +520,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v572';
+const CACHE_NAME = 'jeocompass-v576';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -2657,33 +2657,45 @@ if (declinationInput) {
     if (document.getElementById('btn-calibration-close')) document.getElementById('btn-calibration-close').addEventListener('click', () => calibModal.classList.remove('active'));
 }
 
-// Navigation Logic
+// Navigation Logic (v574: Optimized & Deduplicated)
 const views = document.querySelectorAll('.view-section');
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        // Remove active class from all nav items
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-        // Add active class to clicked item
         const targetBtn = e.target.closest('.nav-item');
+        if (!targetBtn) return;
+
+        const targetId = targetBtn.dataset.target;
+
+        // 1. Remove active state from all nav items
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         targetBtn.classList.add('active');
 
-        // Hide all views
+        // 2. Hide all views and show target
         views.forEach(v => v.classList.remove('active'));
-
-        // Show target view
-        const targetId = targetBtn.dataset.target;
         const targetView = document.getElementById(targetId);
         if (targetView) targetView.classList.add('active');
 
-        // Map resize fix
-        if (targetId === 'view-map' && map) {
+        // 3. Security & State Reset
+        isMeasuring = false;
+        if (typeof updateMeasureModeUI === 'function') updateMeasureModeUI();
+
+        if (!isRecordsLocked) {
+            isRecordsLocked = true;
+            try {
+                if (typeof updateLockUI === 'function') updateLockUI();
+                if (typeof renderRecords === 'function') renderRecords();
+            } catch (err) { console.error("Lock reset error:", err); }
+        }
+
+        // 4. View-specific Logic (Map / Records)
+        if (targetId === 'view-map') {
             setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
+                if (typeof initMap === 'function') initMap();
+                if (map) map.invalidateSize();
+            }, 150); // v574: Slightly increased delay for stability
         }
     });
 });
-
 // --------------------------------------------------------------------------
 // KML/KMZ Import & Layer Management
 // --------------------------------------------------------------------------
@@ -3862,41 +3874,7 @@ function updateMeasurement(latlng) {
     redrawMeasurement();
 }
 
-// View Control
-document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const target = btn.dataset.target; // Changed from 'view' to 'target' to match existing logic
-
-        // Auto-lock when leaving or entering views (security first)
-        isMeasuring = false;
-        updateMeasureModeUI();
-
-        if (!isRecordsLocked) {
-            isRecordsLocked = true;
-            try {
-                updateLockUI();
-                renderRecords();
-            } catch (e) { console.error("Lock error", e); }
-        }
-
-        // Update Nav UI
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        btn.classList.add('active');
-
-        // Update View Visibility
-        views.forEach(v => v.classList.remove('active'));
-        const targetView = document.getElementById(target);
-        if (targetView) targetView.classList.add('active');
-
-        // Special logic for map initialization
-        if (target === 'view-map') {
-            setTimeout(() => {
-                initMap();
-                if (map) map.invalidateSize();
-            }, 100);
-        }
-    });
-});
+// Navigation Logic merged into block around line 2660 (v574)
 
 // Export Logic Refactored (Scope: 'all' or 'selected')
 function exportData(type, scope = 'selected') {

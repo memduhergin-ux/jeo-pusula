@@ -81,18 +81,28 @@ body {
     /* v566: Explicitly lock to top of nav bar */
     left: 0;
     overflow-y: auto;
+    background: var(--bg-color);
+    /* Ensure opaque background to prevent overlap (v574) */
+    z-index: 10;
     -webkit-overflow-scrolling: touch;
 }
 
-#view-compass {
+.view-section.active {
+    display: block !important;
+    /* Force priority over any other display rule */
+    z-index: 20;
+    animation: fadeIn 0.3s;
+}
+
+#view-compass.active {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 15px;
-    /* Consistent vertical spacing */
-    padding-top: calc(env(safe-area-inset-top, 25px) + 10px);
-    padding-bottom: 20px;
+    gap: 8px;
+    /* v576: Balanced safe area padding for perfect vertical symmetry */
+    padding-top: env(safe-area-inset-top, 20px);
+    padding-bottom: env(safe-area-inset-top, 20px);
 }
 
 .view-section.active {
@@ -416,12 +426,14 @@ body {
 .data-panel {
     background: transparent;
     margin-top: 0;
-    /* Relying on flex gap */
-    width: 95vw;
+    /* v575: Removed extra margin, using flex gap */
+    width: 90vw;
+    /* v575: Sync with compass width */
     max-width: 400px;
     margin-left: auto;
     margin-right: auto;
-    padding: 0 10px;
+    padding: 0;
+    /* Reduced padding */
 }
 
 .data-grid {
@@ -758,7 +770,8 @@ td {
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 10px 15px;
-    margin: 5px auto;
+    margin: 0 auto;
+    /* v575: Removed extra margin, using flex gap */
     width: 90vw;
     max-width: 400px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1157,7 +1170,8 @@ textarea.form-input {
 /* Map FAB Container */
 .map-fab-container {
     position: absolute;
-    bottom: 80px;
+    bottom: 52px;
+    /* Set just above the bottom bar (38px + padding) */
     right: 15px;
     display: flex;
     flex-direction: column;
@@ -1476,7 +1490,8 @@ textarea.form-input {
     justify-content: flex-start;
     gap: 10mm;
     position: absolute;
-    bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+    bottom: 0 !important;
+    /* Push down to sit directly on nav bar */
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
