@@ -291,17 +291,25 @@ function updateHeatmapFilterOptions() {
     if (!select) return;
     const currentVal = heatmapFilter;
 
-    // v556: Smart Discovery Logic
-    const foundElements = new Set();
-    // Scan ALL labels for uppercase words consisting of 1-4 letters (e.g. MN, CR, AU, P, REE)
-    const pattern = /\b[A-Z]{1,4}\b/g;
-    const ignoreList = ['ID', 'NAME', 'DATE', 'TIME', 'POINT', 'AREA', 'TRUE', 'KML'];
+    // v558: Refined Discovery Pattern (1-3 letters) and significant noise filtering
+    const pattern = /\b[A-Z]{1,3}\b/g;
+    // v559: Periodic Table Symbols (Strict Constraint)
+    const PERIODIC_TABLE_SYMBOLS = new Set([
+        'H', 'HE', 'LI', 'BE', 'B', 'C', 'N', 'O', 'F', 'NE', 'NA', 'MG', 'AL', 'SI', 'P', 'S', 'CL', 'AR',
+        'K', 'CA', 'SC', 'TI', 'V', 'CR', 'MN', 'FE', 'CO', 'NI', 'CU', 'ZN', 'GA', 'GE', 'AS', 'SE', 'BR', 'KR',
+        'RB', 'SR', 'Y', 'ZR', 'NB', 'MO', 'TC', 'RU', 'RH', 'PD', 'AG', 'CD', 'IN', 'SN', 'SB', 'TE', 'I', 'XE',
+        'CS', 'BA', 'LA', 'CE', 'PR', 'ND', 'PM', 'SM', 'EU', 'GD', 'TB', 'DY', 'HO', 'ER', 'TM', 'YB', 'LU',
+        'HF', 'TA', 'W', 'RE', 'OS', 'IR', 'PT', 'AU', 'HG', 'TL', 'PB', 'BI', 'PO', 'AT', 'RN',
+        'FR', 'RA', 'AC', 'TH', 'PA', 'U', 'NP', 'PU', 'AM', 'CM', 'BK', 'CF', 'ES', 'FM', 'MD', 'NO', 'LR',
+        'RF', 'DB', 'SG', 'BH', 'HS', 'MT', 'DS', 'RG', 'CN', 'NH', 'FL', 'MC', 'LV', 'TS', 'OG',
+        'REE', 'PGE' // Added Geological common groupings
+    ]);
 
     const scanAndAdd = (text) => {
         const matches = text.match(pattern);
         if (matches) {
             matches.forEach(m => {
-                if (!ignoreList.includes(m)) foundElements.add(m);
+                if (PERIODIC_TABLE_SYMBOLS.has(m)) foundElements.add(m);
             });
         }
     };
@@ -497,7 +505,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v557';
+const CACHE_NAME = 'jeocompass-v559';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -1209,7 +1217,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v557: Capture last position before updating smoothedPos for bearing calculation
+            // v559: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
