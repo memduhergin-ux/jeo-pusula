@@ -342,6 +342,36 @@ function updateHeatmapFilterOptions() {
     select.value = foundElements.has(currentVal) ? currentVal : "ALL";
 }
 
+// v583: Element Filter Loading Feedback
+function initHeatmapFilterListener() {
+    const elFilter = document.getElementById('heatmap-element-filter');
+    if (elFilter) {
+        elFilter.addEventListener('mousedown', (e) => {
+            // Only trigger if we aren't already populating
+            if (elFilter.dataset.populating === "true") return;
+            elFilter.dataset.populating = "true";
+
+            showToast("Preparing element list...", 800);
+
+            // Slight delay to allow toast to render before heavy scanning
+            setTimeout(() => {
+                updateHeatmapFilterOptions();
+                elFilter.dataset.populating = "false";
+            }, 100);
+        });
+
+        elFilter.addEventListener('change', (e) => {
+            heatmapFilter = e.target.value;
+            localStorage.setItem('jeoHeatmapFilter', heatmapFilter);
+            updateHeatmap();
+        });
+    }
+}
+// Initialize after DOM load
+document.addEventListener('DOMContentLoaded', initHeatmapFilterListener);
+// Also ensure it works if panel is opened later
+if (document.readyState !== 'loading') initHeatmapFilterListener();
+
 function toggleHeatmap() {
     isHeatmapActive = !isHeatmapActive;
     const btn = document.getElementById('btn-heatmap-toggle');
@@ -520,7 +550,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v581';
+const CACHE_NAME = 'jeocompass-v583';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;

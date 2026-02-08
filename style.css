@@ -74,15 +74,14 @@ body {
 /* View Sections */
 .view-section {
     display: none;
-    padding-bottom: 20px;
-    /* v566: Adjusted to prevent gap above nav */
-    padding-top: env(safe-area-inset-top, 25px);
-    /* Safe area for status bar */
+    /* v582: Strictly constrain the content area between Status Bar and Nav Bar for perfect symmetry */
+    padding: 0;
     width: 100%;
     position: absolute;
-    top: 0;
-    bottom: 40px;
-    /* v566: Explicitly lock to top of nav bar */
+    top: env(safe-area-inset-top, 20px);
+    /* Start exactly after status bar */
+    bottom: calc(42px + env(safe-area-inset-bottom, 0px));
+    /* End exactly before nav bar */
     left: 0;
     overflow-y: auto;
     background: var(--bg-color);
