@@ -125,7 +125,7 @@ function updateHeatmap() {
     const filterKey = (heatmapFilter || 'ALL').toUpperCase();
 
     if (filterKey !== 'ALL') {
-        const baseColor = ELEMENT_COLORS[filterKey] || '#f44336';
+        const baseColor = getElementColor(filterKey);
         const d1 = shadeColor(baseColor, -0.2); // Tier 2
         const d2 = shadeColor(baseColor, -0.4); // Tier 3
         const d3 = shadeColor(baseColor, -0.6); // Tier 4
@@ -134,7 +134,6 @@ function updateHeatmap() {
         const ultraDark = shadeColor(baseColor, -0.98); // v436: Pure monochromatic core
 
         // v436: Themed Transparency (baseColor + 00 alpha) to prevent interpolation shifts
-        // This ensures the fade-out stays in the same hue and kills the "green leak"
         const transparentBase = baseColor + '00';
 
         activeGradient = {
@@ -292,26 +291,25 @@ function updateHeatmapFilterOptions() {
     if (!select) return;
     const currentVal = heatmapFilter;
 
-    // Find all unique elements present in records AND KML layers (v404)
-    const foundElements = new Set();
+    // v556: Smart Discovery Logic
+    // Scan ALL labels for uppercase words consisting of 1-4 letters (e.g. MN, CR, AU, P, REE)
+    const pattern = /\b[A-Z]{1,4}\b/g;
+    const ignoreList = ['ID', 'NAME', 'DATE', 'TIME', 'POINT', 'AREA', 'TRUE', 'KML'];
 
-    records.forEach(r => {
-        const labelText = (r.label || '').toUpperCase();
-        for (const el in ELEMENT_COLORS) {
-            if (labelText.includes(el.toUpperCase())) foundElements.add(el);
+    const scanAndAdd = (text) => {
+        const matches = text.match(pattern);
+        if (matches) {
+            matches.forEach(m => {
+                if (!ignoreList.includes(m)) foundElements.add(m);
+            });
         }
-    });
+    };
 
-    // v552: Efficient extraction using cached points
+    records.forEach(r => scanAndAdd((r.label || '').toUpperCase()));
+
     externalLayers.forEach(l => {
         if (l.visible && l._jeoPoints) {
-            l._jeoPoints.forEach(p => {
-                // v554: p.label already contains all properties
-                const labelText = (p.label || '').toUpperCase();
-                for (const el in ELEMENT_COLORS) {
-                    if (labelText.includes(el.toUpperCase())) foundElements.add(el);
-                }
-            });
+            l._jeoPoints.forEach(p => scanAndAdd((p.label || '').toUpperCase()));
         }
     });
 
@@ -322,7 +320,7 @@ function updateHeatmapFilterOptions() {
 
     let html = '<option value="ALL">🌈 All Points (General)</option>';
     Array.from(foundElements).sort().forEach(el => {
-        const emoji = emojiMap[el] || '📍';
+        const emoji = emojiMap[el] || '⛏️';
         html += `<option value="${el}">${emoji} ${el} Highlights</option>`;
     });
 
@@ -498,7 +496,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v554';
+const CACHE_NAME = 'jeocompass-v556';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -577,6 +575,19 @@ const ELEMENT_COLORS = {
     'ZN': '#03a9f4', // Light Blue
     'PB': '#607d8b'  // Dark Gray
 };
+
+// v556: Smart Color Generator for Dynamic Elements
+function getElementColor(symbol) {
+    if (ELEMENT_COLORS[symbol]) return ELEMENT_COLORS[symbol];
+
+    // Hash-based color generation for stability
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+        hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash % 360);
+    return `hsl(${h}, 70%, 50%)`;
+}
 
 // Smart Label Placement Utility (v383 - Globals for cross-module access)
 let labelOptimizeTimer = null;
@@ -739,7 +750,7 @@ function formatStrike(heading) {
 
 function getFeatureName(properties) {
     if (!properties) return null;
-    const keys = ['name', 'Name', 'NAME', 'label', 'Label', 'LABEL', 'id', 'ID'];
+    const keys = ['name', 'Name', 'NAME', 'label', 'Label', 'LABEL', 'mineraller', 'Mineraller', 'id', 'ID'];
     for (const key of keys) {
         if (properties[key]) return properties[key];
     }
@@ -1192,7 +1203,7 @@ function startGeolocationWatch() {
 
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
-            // v554: Capture last position before updating smoothedPos for bearing calculation
+            // v556: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
             currentCoords.lat = p.coords.latitude;
