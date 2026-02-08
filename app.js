@@ -474,7 +474,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v544';
+const CACHE_NAME = 'jeocompass-v547';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -1205,7 +1205,7 @@ function startGeolocationWatch() {
 
                 if (followMe) map.panTo(livePos);
 
-                // v544: Focused Navigation - prioritize GPS Course (Heading) over Compass when moving
+                // v547: Focused Navigation - prioritize GPS Course (Heading) over Compass when moving
                 const heading = p.coords.heading;
                 const speed = p.coords.speed || 0;
                 let targetRot = 0;
