@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v590</title>
+    <title>JeoCompass - v591</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=590">
+    <link rel="stylesheet" href="style.css?v=591">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,7 +36,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v590</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v591</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -155,50 +155,60 @@
             ✅ Add Point Here
         </button>
 
+        <!-- v591: Scale Toggle Button (Bottom Left) -->
+        <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale"
+            style="position: absolute; bottom: calc(45px + env(safe-area-inset-bottom, 0px)); left: calc(10px + env(safe-area-inset-left, 0px)); z-index: 2000; width: 42px; height: 42px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.3);">
+            <span class="fab-icon" style="font-size: 1.2rem;">📏</span>
+        </button>
+
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;"></div>
         <div class="map-fab-container">
-            <!-- content continues... -->
-
-            <button id="btn-grid-toggle" class="map-fab" title="Poligon İçi Grid">
-                <span class="fab-icon">🌐</span>
-            </button>
-            <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
-                <span class="fab-icon">📍+</span>
-            </button>
-            <button id="btn-add-point" class="map-fab" title="Add Point (Map Target)">
-                <span class="fab-icon">🎯</span>
-            </button>
-            <button id="btn-measure" class="map-fab" title="Measure Distance">
-                <span class="fab-icon">📏</span>
-            </button>
-            <button id="id-btn-polygon" class="map-fab" title="Measure Area (Polygon)">
-                <span class="fab-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L4.5 9L7 21H17L19.5 9L12 2Z" stroke="currentColor" stroke-width="2" fill="none" />
-                        <circle cx="12" cy="2" r="2" fill="currentColor" />
-                        <circle cx="4.5" cy="9" r="2" fill="currentColor" />
-                        <circle cx="7" cy="21" r="2" fill="currentColor" />
-                        <circle cx="17" cy="21" r="2" fill="currentColor" />
-                        <circle cx="19.5" cy="9" r="2" fill="currentColor" />
-                    </svg>
-                </span>
-            </button>
+            <!-- Layers button stays fixed at top -->
             <button id="btn-layers" class="map-fab" title="Layers">
                 <span class="fab-icon">📂</span>
             </button>
-            <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
-                <span class="fab-icon">📍</span>
-            </button>
-            <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
-                <span class="fab-icon">🌈</span>
-            </button>
-            <button id="btn-follow-me" class="map-fab" title="Follow Me">
-                <div class="crosshair-wrapper">
-                    <div class="crosshair-circle"></div>
-                    <div class="crosshair-line-v"></div>
-                    <div class="crosshair-line-h"></div>
-                </div>
-            </button>
+
+            <!-- v591: Scrollable area for other FABs -->
+            <div class="map-fab-scroll-area">
+                <button id="btn-grid-toggle" class="map-fab" title="Poligon İçi Grid">
+                    <span class="fab-icon">🌐</span>
+                </button>
+                <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
+                    <span class="fab-icon">📍+</span>
+                </button>
+                <button id="btn-add-point" class="map-fab" title="Add Point (Map Target)">
+                    <span class="fab-icon">🎯</span>
+                </button>
+                <button id="btn-measure" class="map-fab" title="Measure Distance">
+                    <span class="fab-icon">📏</span>
+                </button>
+                <button id="id-btn-polygon" class="map-fab" title="Measure Area (Polygon)">
+                    <span class="fab-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L4.5 9L7 21H17L19.5 9L12 2Z" stroke="currentColor" stroke-width="2"
+                                fill="none" />
+                            <circle cx="12" cy="2" r="2" fill="currentColor" />
+                            <circle cx="4.5" cy="9" r="2" fill="currentColor" />
+                            <circle cx="7" cy="21" r="2" fill="currentColor" />
+                            <circle cx="17" cy="21" r="2" fill="currentColor" />
+                            <circle cx="19.5" cy="9" r="2" fill="currentColor" />
+                        </svg>
+                    </span>
+                </button>
+                <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
+                    <span class="fab-icon">📍</span>
+                </button>
+                <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
+                    <span class="fab-icon">🌈</span>
+                </button>
+                <button id="btn-follow-me" class="map-fab" title="Follow Me">
+                    <div class="crosshair-wrapper">
+                        <div class="crosshair-circle"></div>
+                        <div class="crosshair-line-v"></div>
+                        <div class="crosshair-line-h"></div>
+                    </div>
+                </button>
+            </div>
         </div>
         <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
 
@@ -671,7 +681,7 @@
     </script>
     <script src="app.js?v=578"></script>
     <script>
-        const JEO_VERSION = '590';
+        const JEO_VERSION = '591';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

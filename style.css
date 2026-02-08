@@ -1231,17 +1231,28 @@ textarea.form-input {
         top: calc(10px + env(safe-area-inset-top, 0px)) !important;
         right: calc(10px + env(safe-area-inset-right, 0px)) !important;
         bottom: auto !important;
-        /* Anchor to top right instead of bottom */
+        /* v591: Anchor to top right */
+        height: calc(100vh - 80px) !important;
+        /* v591: Fixed height container */
         justify-content: flex-start;
+        pointer-events: none;
+        /* v591: Allow clicks to pass to map unless on buttons */
+    }
+
+    .map-fab-container>* {
+        pointer-events: auto;
+        /* v591: Re-enable for buttons */
     }
 
     .map-fab-scroll-area {
         overflow-y: auto;
-        max-height: calc(100vh - 120px) !important;
-        /* Ensure internal scroll only */
-        padding-right: 5px;
+        max-height: calc(100vh - 150px) !important;
+        padding-bottom: 20px;
+        touch-action: pan-y;
+        /* v591: Only allow vertical drag */
         scrollbar-width: none;
         -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
     }
 
     .map-fab-scroll-area::-webkit-scrollbar {
@@ -1249,9 +1260,11 @@ textarea.form-input {
     }
 
     .map-fab {
-        width: 36px !important;
-        height: 36px !important;
+        width: 38px !important;
+        height: 38px !important;
         font-size: 1rem !important;
+        margin-bottom: 2px;
+        /* v591: Tighter layout */
     }
 }
 
@@ -1545,7 +1558,7 @@ textarea.form-input {
 
 .custom-scale-wrapper {
     display: none;
-    /* v589: Hidden by default, toggled via button */
+    /* v589: Hidden by default */
     align-items: center;
     justify-content: flex-start;
     gap: 10mm;
@@ -1554,14 +1567,14 @@ textarea.form-input {
     left: 0 !important;
     right: 0 !important;
     width: 100vw;
-    padding: 6px 0 4px 10px;
-    background: rgba(0, 0, 0, 0.85);
-    /* v590: Stronger backdrop for classic feel */
+    padding: 6px 0 4px 20px;
+    /* v591: More left padding */
+    background: rgba(0, 0, 0, 0.9);
     pointer-events: none;
     z-index: 1000 !important;
     box-sizing: border-box;
     border-radius: 0;
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.7);
 }
 
 .custom-scale-control {
