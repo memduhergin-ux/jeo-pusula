@@ -237,9 +237,12 @@ function updateHeatmap() {
     const point2 = L.point(point1.x + 100, point1.y); // Use 100px sample for precision
     const latlng2 = map.containerPointToLatLng(point2);
 
-    // Safety check: Ensure map has dimensions (v545)
+    // Safety check: Ensure map has dimensions and is visible (v545/v561)
+    const mapSize = map.getSize();
+    if (mapSize.x <= 0 || mapSize.y <= 0) return;
+
     const dist = map.distance(center, latlng2);
-    if (dist <= 0) {
+    if (dist <= 0 || isNaN(dist)) {
         console.warn("Heatmap skipped: Map has no valid dimensions yet.");
         return;
     }
@@ -504,7 +507,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v560';
+const CACHE_NAME = 'jeocompass-v561';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = '#00ffcc'; // v520: Default Grid Color
 let isStationary = false;
@@ -1736,7 +1739,7 @@ function initMapControls() {
     });
 
     new MapControls().addTo(map);
-    map.on('zoomend moveend move', updateScaleValues);
+    map.on('zoomend moveend', updateScaleValues); // v561: Removed frequent 'move' event to fix flickering
     map.on('zoomend', () => {
         if (isHeatmapActive) updateHeatmap();
     });
@@ -2669,8 +2672,8 @@ if (fileImportInput) {
         }
 
         showLoading(`${file.name} işleniyor...`);
-        // v543: Small delay to let the UI show the loader before heavy KML parsing starts
-        await new Promise(r => setTimeout(r, 100));
+        // v561: Removed artificial delay, handled by requestAnimationFrame or immediate execution
+        // await new Promise(r => setTimeout(r, 100));
 
         try {
             let fileName = file.name;
