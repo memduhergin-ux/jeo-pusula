@@ -2189,124 +2189,237 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 
 
-/* v637: Elegant & Compact Routing UI */
+/* v639: Active Navigation Mode UI (Google Maps Style) */
+#nav-top-bar {
+    position: fixed;
+    top: env(safe-area-inset-top, 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 94%;
+    max-width: 500px;
+    background: #007043;
+    /* Google Green */
+    color: white;
+    padding: 15px 20px;
+    border-radius: 16px;
+    z-index: 11000;
+    display: none;
+    /* Hidden by default */
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    font-family: 'Inter', sans-serif;
+}
+
+#nav-top-bar i {
+    font-size: 1.8rem;
+}
+
+#nav-top-bar .instruction-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+    flex: 1;
+}
+
+#nav-bottom-bar {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: 94%;
+    max-width: 500px;
+    background: white;
+    color: #333;
+    height: 70px;
+    border-radius: 50px;
+    /* Circular capsule */
+    z-index: 11000;
+    display: none;
+    /* Hidden by default */
+    align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.3);
+}
+
+.nav-btn-close {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    border: none;
+    font-size: 1.5rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.nav-info-center {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-time {
+    color: #007043;
+    font-weight: 800;
+    font-size: 1.3rem;
+}
+
+.nav-stats {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 600;
+}
+
+.nav-btn-alt {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #ddd;
+    color: #333;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Logic: When nav-active class is on body, hide standard routing UI */
+body.nav-mode-active .leaflet-routing-container {
+    display: none !important;
+}
+
+body.nav-mode-active #nav-top-bar,
+body.nav-mode-active #nav-bottom-bar {
+    display: flex;
+}
+
+
+/* v638: Micro UI & Staggered Labels */
 .leaflet-routing-container {
-    width: 92% !important;
-    max-width: 480px !important;
+    width: 90% !important;
+    max-width: 440px !important;
     position: fixed !important;
-    bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    background: rgba(15, 15, 15, 0.95) !important;
+    background: rgba(10, 10, 10, 0.98) !important;
     color: white !important;
-    border-radius: 20px !important;
-    backdrop-filter: blur(25px) !important;
-    -webkit-backdrop-filter: blur(25px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.9) !important;
     z-index: 10001 !important;
-    padding: 10px !important;
-    max-height: 155px !important;
+    padding: 8px !important;
+    /* Smaller padding */
+    max-height: 140px !important;
+    /* Tighter panel */
     display: flex !important;
     flex-direction: column !important;
     pointer-events: auto !important;
     overflow: hidden !important;
-    font-family: 'Outfit', sans-serif !important;
 }
 
-/* Elegant Pinned Controls (v637) */
 .routing-controls-v624 {
     display: flex !important;
     order: -1 !important;
-    gap: 10px !important;
+    gap: 8px !important;
     width: 100% !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
 }
 
 .routing-btn {
     flex: 1 !important;
-    padding: 10px 15px !important;
-    /* Smaller, more elegant */
-    border-radius: 12px !important;
+    padding: 8px 12px !important;
+    /* NORMAL SIZE */
+    border-radius: 10px !important;
     border: none !important;
-    font-weight: 800 !important;
-    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    /* Smaller font */
     cursor: pointer !important;
     text-transform: uppercase !important;
-    transition: all 0.3s ease;
 }
 
 .routing-btn-confirm {
     background: #007bff !important;
     color: white !important;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
 }
 
 .routing-btn-cancel {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(50, 50, 50, 0.9) !important;
     color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Compact Map Labels (v637: Elegant) */
+/* Micro Map Labels (v638) */
 .route-label-badge {
     background: white !important;
-    color: #333 !important;
-    padding: 4px 10px !important;
+    color: #222 !important;
+    padding: 2px 8px !important;
+    /* Tiny */
     border-radius: 4px !important;
-    /* Slightly squared for elegance */
-    font-weight: 700 !important;
-    font-size: 0.8rem !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    border: 1.5px solid #ccc !important;
+    font-weight: 800 !important;
+    font-size: 0.72rem !important;
+    /* Micro font */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+    border: 1.5px solid #bbb !important;
     z-index: 5000 !important;
     white-space: nowrap !important;
+    pointer-events: auto !important;
+    display: flex !important;
+}
+
+/* Staggering: Active on Right, Alt on Left (v638) */
+.label-side-active {
+    transform: translate(15%, -110%) !important;
+    border-color: #007bff !important;
+    color: #007bff !important;
+    z-index: 5100 !important;
+}
+
+.label-side-alt {
+    transform: translate(-115%, -110%) !important;
+    opacity: 0.95 !important;
 }
 
 .route-label-badge.active {
     background: #007bff !important;
     color: white !important;
     border-color: white !important;
-    z-index: 5005 !important;
-    transform: translate(-50%, -130%) scale(1.1) !important;
 }
 
-/* Selection State Logic: Hide passive route info (v637) */
+/* Panel Meta: Only ACTIVE route info shows below buttons */
 .leaflet-routing-alt {
     display: none !important;
-    /* Hide all by default */
 }
 
 .leaflet-routing-alt-selected {
     display: block !important;
-    /* Only show selected */
-    border: none !important;
-    padding: 0 !important;
+    padding: 4px 0 !important;
+}
+
+.leaflet-routing-alt-selected h2,
+.leaflet-routing-alt-selected h3 {
     margin: 0 !important;
-    background: transparent !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .leaflet-routing-alt-selected h2 {
-    font-size: 0.9rem !important;
-    margin-bottom: 4px !important;
-    color: #eee !important;
+    font-size: 0.8rem !important;
+    color: #ccc !important;
 }
-
 
 .leaflet-routing-alt-selected h3 {
-    font-size: 0.85rem !important;
-    font-weight: 400 !important;
-    color: #aaa !important;
-}
-
-/* Clear Redundant Shells */
-.routing-fixed-controls {
-    display: none !important;
-}
-
-/* Selection State for alternative paths via Leaflet Routing Machine */
-.leaflet-routing-alt-selected {
-    border-color: #007bff !important;
+    font-size: 0.75rem !important;
+    color: #888 !important;
 }
 
 color: white !important;

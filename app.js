@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v637';
+const CACHE_NAME = 'jeocompass-v639';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4608,8 +4608,9 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v637: Aesthetic & Elegant Routing Update
+// v639: Active Navigation Mode Transition
 let routeLabels = [];
+let isNavMode = false;
 
 function startRouting(targetLat, targetLng) {
     if (!map) return;
@@ -4640,25 +4641,27 @@ function startRouting(targetLat, targetLng) {
             routeLabels = [];
 
             if (routes && routes.length > 0) {
-                // v637: Elegant Map Fitting
+                // v638: Compact Map Fitting
                 const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [60, 60, 260, 60] });
+                map.fitBounds(L.latLngBounds(allCoords), { padding: [50, 50, 200, 50] });
 
                 routes.forEach((route, idx) => {
-                    // v637: Precise midpoint placement
                     const pointIdx = Math.floor(route.coordinates.length * 0.5);
                     const labelPoint = route.coordinates[pointIdx];
                     const km = (route.summary.totalDistance / 1000).toFixed(1);
                     const mins = Math.round(route.summary.totalTime / 60);
                     const timeStr = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
 
+                    // v638: Active on Right, Alt on Left
+                    const sideClass = (idx === 0) ? 'label-side-active' : 'label-side-alt';
+
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
-                            className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'}`,
+                            className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'} ${sideClass}`,
                             html: `<span>${km} km, ${timeStr}</span>`,
-                            iconSize: [80, 24]
+                            iconSize: [0, 0] // Auto-sizing handled by CSS
                         }),
-                        zIndexOffset: 5000,
+                        zIndexOffset: 5000 + (routes.length - idx),
                         interactive: true
                     }).addTo(map);
 
@@ -4673,12 +4676,15 @@ function startRouting(targetLat, targetLng) {
                     const selectedRoute = ev.route;
                     routeLabels.forEach((lbl, idx) => {
                         const el = lbl.getElement();
-                        if (el) el.className = `route-label-badge ${routes[idx] === selectedRoute ? 'active' : 'alternative'}`;
+                        if (el) {
+                            const sideClass = (routes[idx] === selectedRoute) ? 'label-side-active' : 'label-side-alt';
+                            el.className = `route-label-badge ${routes[idx] === selectedRoute ? 'active' : 'alternative'} ${sideClass}`;
+                        }
                     });
                 });
             }
 
-            // v637: Compact Button Rendering
+            // v638: Tighter Button Rendering
             const container = routingControl.getContainer();
             if (container && !container.querySelector('.routing-controls-v624')) {
                 const controls = document.createElement('div');
@@ -4689,10 +4695,7 @@ function startRouting(targetLat, targetLng) {
                 btnConfirm.innerHTML = "🚀 START";
                 btnConfirm.onclick = (ev) => {
                     L.DomEvent.stopPropagation(ev);
-                    routeLabels.forEach(l => map.removeLayer(l));
-                    routeLabels = [];
-                    controls.style.display = 'none';
-                    showToast("Navigation started", 2000);
+                    enterNavigationMode(routingControl.getRouter().getSelectedRoute() || routes[0]);
                 };
 
                 const btnCancel = document.createElement('button');
@@ -4710,21 +4713,76 @@ function startRouting(targetLat, targetLng) {
         });
 
         map.closePopup();
-        showToast("Preview ready. Select route and START.", 4000);
+        showToast("Route preview ready.", 3000);
     } catch (e) {
         alert("Route error: " + e.message);
     }
 }
 
+function enterNavigationMode(selectedRoute) {
+    if (!selectedRoute) return;
+    isNavMode = true;
+    document.body.classList.add('nav-mode-active');
+
+    // Clear preview clutter
+    routeLabels.forEach(l => map.removeLayer(l));
+    routeLabels = [];
+
+    // UI injection for Top/Bottom bars (v639)
+    let topBar = document.getElementById('nav-top-bar');
+    if (!topBar) {
+        topBar = document.createElement('div');
+        topBar.id = 'nav-top-bar';
+        document.body.appendChild(topBar);
+    }
+
+    const firstStep = selectedRoute.instructions[0] ? selectedRoute.instructions[0].text : "Follow the path";
+    topBar.innerHTML = `<i class="fa fa-arrow-up"></i><div class="instruction-text">${firstStep}</div>`;
+    topBar.style.display = 'flex';
+
+    let bottomBar = document.getElementById('nav-bottom-bar');
+    if (!bottomBar) {
+        bottomBar = document.createElement('div');
+        bottomBar.id = 'nav-bottom-bar';
+        document.body.appendChild(bottomBar);
+    }
+
+    const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
+    const mins = Math.round(selectedRoute.summary.totalTime / 60);
+    const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    bottomBar.innerHTML = `
+        <button class="nav-btn-close" onclick="clearRouting()">✕</button>
+        <div class="nav-info-center">
+            <div class="nav-time">${mins} min</div>
+            <div class="nav-stats">${km} km • ${arrivalTime}</div>
+        </div>
+        <button class="nav-btn-alt"><i class="fa fa-ellipsis-h"></i></button>
+    `;
+    bottomBar.style.display = 'flex';
+
+    // Fit map to active route only
+    map.fitBounds(L.polyline(selectedRoute.coordinates).getBounds(), { padding: [100, 50, 150, 50] });
+    showToast("Navigation Active", 2000);
+}
+
 function clearRouting() {
+    isNavMode = false;
+    document.body.classList.remove('nav-mode-active');
     if (routingControl) {
         map.removeControl(routingControl);
         routingControl = null;
     }
-    const shell = document.getElementById('routing-fixed-shell');
-    if (shell) shell.classList.remove('active');
     routeLabels.forEach(l => map.removeLayer(l));
     routeLabels = [];
+
+    const topBar = document.getElementById('nav-top-bar');
+    if (topBar) topBar.style.display = 'none';
+    const bottomBar = document.getElementById('nav-bottom-bar');
+    if (bottomBar) bottomBar.style.display = 'none';
+
+    const controls = document.querySelector('.routing-fixed-controls');
+    if (controls) controls.style.display = 'none';
 }
 
 // v622: Reverted Crosshair logic (Add route button removed)
