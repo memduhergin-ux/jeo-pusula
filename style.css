@@ -2189,56 +2189,110 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 
 
-/* v629: Google Maps Style Premium Interaction */
+/* v633: Guaranteed UI Visibility & Interaction */
 .leaflet-routing-container {
-    width: 95% !important;
-    max-width: 450px !important;
-    margin: 0 auto !important;
+    width: 94% !important;
+    max-width: 550px !important;
     position: fixed !important;
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-    top: auto !important;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    padding: 12px 18px !important;
-    background: rgba(20, 20, 20, 0.98) !important;
+    background: rgba(18, 18, 18, 0.99) !important;
     color: white !important;
-    border-radius: 24px !important;
-    backdrop-filter: blur(30px) !important;
-    -webkit-backdrop-filter: blur(30px) !important;
-    border: 1px solid rgba(0, 255, 204, 0.2) !important;
-    box-shadow: 0 -15px 50px rgba(0, 0, 0, 0.7) !important;
-    font-family: 'Outfit', 'Montserrat', sans-serif !important;
-    z-index: 10000 !important;
+    border-radius: 20px !important;
+    backdrop-filter: blur(40px) !important;
+    -webkit-backdrop-filter: blur(40px) !important;
+    border: 2px solid #0088ff !important;
+    box-shadow: 0 -20px 80px rgba(0, 0, 0, 0.9) !important;
+    z-index: 10001 !important;
+    padding: 15px !important;
+    max-height: 220px !important;
+    /* Increased height to fit buttons */
+    overflow: visible !important;
+    /* Allow buttons to breathe */
     pointer-events: auto !important;
-    max-height: 110px;
-    overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hide clutter strictly */
 .leaflet-routing-itinerary,
-/* High-Visibility Map Labels (v631) */
+/* Internal controls container inside the black box */
+.routing-controls-v624 {
+    display: flex !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 15px !important;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.routing-btn {
+    flex: 1 !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    border: none !important;
+    font-weight: 900 !important;
+    font-size: 1.1rem !important;
+    cursor: pointer !important;
+    text-transform: uppercase !important;
+}
+
+.routing-btn-confirm {
+    background: #0088ff !important;
+    color: white !important;
+    animation: btnPulse 2s infinite;
+}
+
+.routing-btn-cancel {
+    background: #333 !important;
+    color: white !important;
+}
+
+@keyframes btnPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 136, 255, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 15px rgba(0, 136, 255, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 136, 255, 0);
+    }
+}
+
+/* High-Visibility Map Labels (v633) */
 .route-label-badge {
-    background: white !important;
-    color: #1a1a1a !important;
+    background: #ffcc00 !important;
+    /* Bright Yellow for attention */
+    color: #000 !important;
     padding: 6px 14px !important;
     border-radius: 50px !important;
-    font-weight: 800 !important;
-    font-size: 0.95rem !important;
-    white-space: nowrap !important;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5) !important;
-    border: 3px solid #2196f3 !important;
-    /* Active Blue */
+    font-weight: 900 !important;
+    font-size: 1rem !important;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6) !important;
+    border: 3px solid #000 !important;
+    z-index: 2000 !important;
     pointer-events: auto !important;
-    /* Make clickable */
+    white-space: nowrap !important;
+    /* Original properties that are still needed */
     transform: translate(-50%, -100%) !important;
-    /* Move above the line */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    z-index: 1000 !important;
     transition: all 0.3s ease;
     cursor: pointer !important;
+}
+
+.route-label-badge.active {
+    background: #0088ff !important;
+    color: white !important;
+    border-color: white !important;
+}
+
+/* Hide the redundant external shell from v632 */
+.routing-fixed-controls {
+    display: none !important;
 }
 
 .route-label-badge.alternative {

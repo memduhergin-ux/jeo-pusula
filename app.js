@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v632';
+const CACHE_NAME = 'jeocompass-v633';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4607,7 +4607,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v632: Stability & Guaranteed Start Button UI
+// v633: Guaranteed Routing Visibility & Interaction
 let routeLabels = [];
 
 function startRouting(targetLat, targetLng) {
@@ -4628,8 +4628,8 @@ function startRouting(targetLat, targetLng) {
             draggableWaypoints: false,
             fitSelectedRoutes: true,
             showAlternatives: true,
-            altLineOptions: { styles: [{ color: '#777', opacity: 0.4, weight: 10 }] },
-            lineOptions: { styles: [{ color: '#0088ff', opacity: 0.9, weight: 12 }], addWaypoints: false },
+            altLineOptions: { styles: [{ color: '#777', opacity: 0.3, weight: 12 }] },
+            lineOptions: { styles: [{ color: '#0088ff', opacity: 0.9, weight: 14 }], addWaypoints: false },
             createMarker: function () { return null; }
         }).addTo(map);
 
@@ -4639,23 +4639,24 @@ function startRouting(targetLat, targetLng) {
             routeLabels = [];
 
             if (routes && routes.length > 0) {
+                // v633: Better Map Fitting [Top, Right, Bottom, Left]
                 const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 220, 40] });
+                map.fitBounds(L.latLngBounds(allCoords), { padding: [60, 60, 240, 60] });
 
                 routes.forEach((route, idx) => {
-                    const pointIdx = Math.floor(route.coordinates.length * 0.25);
+                    const pointIdx = Math.floor(route.coordinates.length * 0.3); // 30% mark
                     const labelPoint = route.coordinates[pointIdx];
                     const km = (route.summary.totalDistance / 1000).toFixed(1);
                     const mins = Math.round(route.summary.totalTime / 60);
-                    const timeStr = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} min`;
+                    const timeStr = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
 
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
                             className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'}`,
                             html: `<span>${km} km, ${timeStr}</span>`,
-                            iconSize: [120, 35]
+                            iconSize: [110, 36]
                         }),
-                        zIndexOffset: 1000,
+                        zIndexOffset: 2000,
                         interactive: true
                     }).addTo(map);
 
@@ -4666,6 +4667,7 @@ function startRouting(targetLat, targetLng) {
                     routeLabels.push(label);
                 });
 
+                // Path Line click selection (v633)
                 routingControl.on('routeselected', function (ev) {
                     const selectedRoute = ev.route;
                     routeLabels.forEach((lbl, idx) => {
@@ -4674,39 +4676,40 @@ function startRouting(targetLat, targetLng) {
                     });
                 });
             }
+
+            // v633: ENSURE BUTTONS ARE INSIDE THE BLACK PANEL
+            const container = routingControl.getContainer();
+            if (container && !container.querySelector('.routing-controls-v624')) {
+                const controls = document.createElement('div');
+                controls.className = "routing-controls-v624";
+
+                const btnConfirm = document.createElement('button');
+                btnConfirm.className = "routing-btn routing-btn-confirm";
+                btnConfirm.innerHTML = "🚀 START";
+                btnConfirm.onclick = (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    routeLabels.forEach(l => map.removeLayer(l));
+                    routeLabels = [];
+                    controls.style.display = 'none';
+                    showToast("Navigation started", 2000);
+                };
+
+                const btnCancel = document.createElement('button');
+                btnCancel.className = "routing-btn routing-btn-cancel";
+                btnCancel.innerHTML = "✕ CANCEL";
+                btnCancel.onclick = (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    clearRouting();
+                };
+
+                controls.appendChild(btnConfirm);
+                controls.appendChild(btnCancel);
+                container.appendChild(controls);
+            }
         });
 
-        // v632: Guaranteed UI Shell
-        let shell = document.getElementById('routing-fixed-shell');
-        if (!shell) {
-            shell = document.createElement('div');
-            shell.id = 'routing-fixed-shell';
-            shell.className = 'routing-fixed-controls';
-            document.body.appendChild(shell);
-        }
-        shell.innerHTML = '';
-
-        const btnConfirm = document.createElement('button');
-        btnConfirm.className = "routing-btn routing-btn-confirm";
-        btnConfirm.innerHTML = "🚀 START";
-        btnConfirm.onclick = () => {
-            shell.classList.remove('active');
-            routeLabels.forEach(l => map.removeLayer(l));
-            routeLabels = [];
-            showToast("Navigation started", 2000);
-        };
-
-        const btnCancel = document.createElement('button');
-        btnCancel.className = "routing-btn routing-btn-cancel";
-        btnCancel.innerHTML = "✕ CANCEL";
-        btnCancel.onclick = () => clearRouting();
-
-        shell.appendChild(btnConfirm);
-        shell.appendChild(btnCancel);
-        shell.classList.add('active');
-
         map.closePopup();
-        showToast("Preview ready. Tap path or START.", 4000);
+        showToast("Preview ready. Tap path or START.", 4500);
     } catch (e) {
         alert("Route error: " + e.message);
     }
