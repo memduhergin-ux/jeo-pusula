@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v645';
+const CACHE_NAME = 'jeocompass-v647';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3469,8 +3469,8 @@ async function saveExternalLayers() {
 }
 
 async function loadExternalLayers() {
-    // v543: Primary storage is now IndexedDB for large file support
-    showLoading("Loading saved layers...");
+    // v647: Non-blocking background loading
+    // showLoading("Loading saved layers..."); // Removed to prevent blocking UI on start/resume
     try {
         let data = await dbLoadLayers();
 
@@ -3503,10 +3503,14 @@ async function loadExternalLayers() {
             }
         }
         renderLayerList();
+        if (data.length > 0) {
+            showToast(`${data.length} Layers Loaded`, 2000); // Friendly non-blocking notification
+        }
     } catch (e) {
         console.error("KML loading error:", e);
+        showToast("Error loading layers", 3000);
     } finally {
-        hideLoading();
+        // hideLoading(); // Not needed as we didn't show it
     }
 }
 

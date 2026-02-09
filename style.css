@@ -2251,13 +2251,43 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     border-top-color: white;
 }
 
-/* Positioning Offsets to Sit Flush Against the Road */
+/* v646: Side-Specific Label Positioning (No Overlap) */
+
+/* Active Route: Right Side of Road */
 .label-side-active {
-    transform: translate(-50%, -100%) translateY(-12px) !important;
+    transform: translate(14px, -50%) !important;
+    /* Push Right */
+    left: 0 !important;
+    top: 0 !important;
 }
 
+/* Tail points LEFT towards road */
+.label-side-active::after {
+    top: 50% !important;
+    left: -8px !important;
+    bottom: auto !important;
+    transform: translateY(-50%) rotate(90deg) !important;
+    border-top-color: #1a73e8 !important;
+    /* Blue tail */
+}
+
+/* Alternative Route: Left Side of Road */
 .label-side-alt {
-    transform: translate(-50%, -100%) translateY(-12px) !important;
+    transform: translate(-100%, -50%) translateX(-14px) !important;
+    /* Push Left */
+    left: 0 !important;
+    top: 0 !important;
+}
+
+/* Tail points RIGHT towards road */
+.label-side-alt::after {
+    top: 50% !important;
+    right: -8px !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: translateY(-50%) rotate(-90deg) !important;
+    border-top-color: white !important;
+    /* White tail */
 }
 
 /* v645: Google Maps Style Bottom Sheet & Info Panel */
