@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v677';
+const CACHE_NAME = 'jeocompass-v678';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3466,10 +3466,12 @@ function toggleLayerAreas(id, showAreas) {
     l.areasVisible = showAreas;
 
     l.layer.eachLayer(layer => {
-        // Check if it's a path (polyline, polygon) and not a marker/circlemarker
-        if (layer instanceof L.Path && !(layer instanceof L.Marker || layer instanceof L.CircleMarker)) {
-            if (layer.getElement()) {
-                layer.getElement().style.display = showAreas ? '' : 'none';
+        // v678: Use setStyle for consistent visibility of paths/polygons (non-markers)
+        if (layer instanceof L.Path && !(layer instanceof L.Marker || layer.isKmlMarker)) {
+            if (showAreas) {
+                layer.setStyle({ opacity: 1, fillOpacity: l.filled ? 0.4 : 0 });
+            } else {
+                layer.setStyle({ opacity: 0, fillOpacity: 0 });
             }
         }
     });
