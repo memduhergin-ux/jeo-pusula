@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v674';
+const CACHE_NAME = 'jeocompass-v675';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -739,7 +739,7 @@ function optimizeMapPoints() {
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
                 // Check 8 directions (Center anchor baseline)
-                const pad = 6;
+                const pad = 1; // v675: Minimal pad for "dip dibe" look
                 const directions = [
                     { x: -width / 2, y: -height / 2 - pad - 4 }, // N
                     { x: pad + 4, y: -height / 2 - pad - 4 },    // NE
@@ -3153,10 +3153,10 @@ function addExternalLayer(name, geojson) {
                 // v666: Revert to "Old Style" Simple CircleMarker
                 // User requested "Eski hali" (Old state) - usually implies simple vector circle
                 const marker = L.circleMarker(latlng, {
-                    radius: 6, // v674: Reverted to blue dot (v672 style)
-                    fillColor: '#2196f3', // v674: Blue interior
-                    color: '#ffffff', // v674: White border
-                    weight: 2, // v674: Thin border
+                    radius: 5, // v675: Reverted to blue dot (radius 5 for elegance)
+                    fillColor: '#2196f3',
+                    color: '#ffffff',
+                    weight: 2,
                     opacity: 1,
                     fillOpacity: 1
                 });

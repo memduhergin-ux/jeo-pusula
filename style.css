@@ -1958,7 +1958,7 @@ textarea.form-input {
             -1px 1px 0 #000,
             1px 1px 0 #000,
             0px 0px 4px #000;
-        /* Strong outline + shadow */
+        /* Strong outline + shadow for transparent text */
         white-space: nowrap;
         pointer-events: none;
         padding: 0px 1px !important;
