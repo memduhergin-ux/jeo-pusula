@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v647';
+const CACHE_NAME = 'jeocompass-v649';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4663,16 +4663,16 @@ function startRouting(targetLat, targetLng) {
                         timeStr = `${totalMins} dk.`;
                     }
 
-                    const sideClass = (idx === 0) ? 'label-side-active' : 'label-side-alt';
-
+                    // v649: New Nested Bubble Structure
+                    const isFirst = (idx === 0);
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
-                            className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'} ${sideClass}`,
-                            html: `<span>${timeStr}</span>`, // v643: Only time, no KM
-                            iconSize: null,
-                            iconAnchor: [0, 0] // Centered base for tail logic
+                            className: 'route-label-container', // Pure container, no style
+                            html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
+                            iconSize: [0, 0],
+                            iconAnchor: [0, 0] // Leaflet anchors this point. Offsets happen in CSS
                         }),
-                        zIndexOffset: 5100 + (routes.length - idx),
+                        zIndexOffset: isFirst ? 6000 : 5000,
                         interactive: true
                     }).addTo(map);
 
@@ -4686,12 +4686,17 @@ function startRouting(targetLat, targetLng) {
                 routingControl.on('routeselected', function (ev) {
                     currentActiveRoute = ev.route;
 
-                    // Update Map Labels
+                    // v649: Update Label Styles (Container -> Inner Bubble)
                     routeLabels.forEach((lbl, idx) => {
-                        const el = lbl.getElement();
+                        const el = lbl.getElement(); // This is the .route-label-container
                         if (el) {
-                            const sideClass = (routes[idx] === currentActiveRoute) ? 'label-side-active' : 'label-side-alt';
-                            el.className = `route-label-badge ${routes[idx] === currentActiveRoute ? 'active' : 'alternative'} ${sideClass}`;
+                            const bubble = el.querySelector('.route-bubble');
+                            if (bubble) {
+                                // Reset classes and apply new state
+                                bubble.className = `route-bubble ${routes[idx] === currentActiveRoute ? 'bubble-active' : 'bubble-alt'}`;
+                                // Update z-index of marker to bring active to front
+                                lbl.setZIndexOffset(routes[idx] === currentActiveRoute ? 6000 : 5000);
+                            }
                         }
                     });
 
@@ -4702,7 +4707,7 @@ function startRouting(targetLat, targetLng) {
                         const r = currentActiveRoute;
                         const totalMins = Math.round(r.summary.totalTime / 60);
                         const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-                        const kmStr = (r.summary.totalDistance / 1000).toFixed(0); // v644 matches integer KM in screenshot
+                        const kmStr = (r.summary.totalDistance / 1000).toFixed(0);
 
                         altPanel.innerHTML = `
                             <div class="info-main-title">${timeStr} <span class="info-km-span">(${kmStr} km)</span></div>
