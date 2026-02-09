@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v641';
+const CACHE_NAME = 'jeocompass-v645';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4608,10 +4608,10 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v641: Ultimate Aesthetic & Navigation Flow
+// v642: Label Stabilization & CSS Cleanup
 let routeLabels = [];
 let isNavMode = false;
-let currentActiveRoute = null; // Track selection manually
+let currentActiveRoute = null;
 
 function startRouting(targetLat, targetLng) {
     if (!map) return;
@@ -4619,7 +4619,7 @@ function startRouting(targetLat, targetLng) {
 
     const startPos = (currentCoords.lat && currentCoords.lon) ? [currentCoords.lat, currentCoords.lon] : null;
     if (!startPos) {
-        alert("GPS location required for routing.");
+        alert("GPS location required.");
         return;
     }
 
@@ -4647,20 +4647,26 @@ function startRouting(targetLat, targetLng) {
                 map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 180, 40] });
 
                 routes.forEach((route, idx) => {
-                    // Center labels on midpoints - v641
-                    const pointIdx = Math.floor(route.coordinates.length * 0.5);
+                    const pointIdx = Math.floor(route.coordinates.length * 0.45); // Slightly before midpoint to avoid overlaying
                     const labelPoint = route.coordinates[pointIdx];
-                    const km = (route.summary.totalDistance / 1000).toFixed(1);
-                    const mins = Math.round(route.summary.totalTime / 60);
-                    const timeStr = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+
+                    // v643: Google Maps Turkish Time Format "1 sa. 34 dk."
+                    const totalMins = Math.round(route.summary.totalTime / 60);
+                    let timeStr = "";
+                    if (totalMins >= 60) {
+                        timeStr = `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.`;
+                    } else {
+                        timeStr = `${totalMins} dk.`;
+                    }
+
                     const sideClass = (idx === 0) ? 'label-side-active' : 'label-side-alt';
 
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
                             className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'} ${sideClass}`,
-                            html: `<span>${km} km, ${timeStr}</span>`,
-                            iconSize: [0, 0],
-                            iconAnchor: [0, 0] // Root to the path
+                            html: `<span>${timeStr}</span>`, // v643: Only time, no KM
+                            iconSize: null,
+                            iconAnchor: [0, 0] // Centered base for tail logic
                         }),
                         zIndexOffset: 5100 + (routes.length - idx),
                         interactive: true
@@ -4675,6 +4681,8 @@ function startRouting(targetLat, targetLng) {
 
                 routingControl.on('routeselected', function (ev) {
                     currentActiveRoute = ev.route;
+
+                    // Update Map Labels
                     routeLabels.forEach((lbl, idx) => {
                         const el = lbl.getElement();
                         if (el) {
@@ -4682,6 +4690,22 @@ function startRouting(targetLat, targetLng) {
                             el.className = `route-label-badge ${routes[idx] === currentActiveRoute ? 'active' : 'alternative'} ${sideClass}`;
                         }
                     });
+
+                    // v644: Inject Rich HTML for Bottom Sheet Details
+                    const container = routingControl.getContainer();
+                    const altPanel = container.querySelector('.leaflet-routing-alt-selected');
+                    if (altPanel) {
+                        const r = currentActiveRoute;
+                        const totalMins = Math.round(r.summary.totalTime / 60);
+                        const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
+                        const kmStr = (r.summary.totalDistance / 1000).toFixed(0); // v644 matches integer KM in screenshot
+
+                        altPanel.innerHTML = `
+                            <div class="info-main-title">${timeStr} <span class="info-km-span">(${kmStr} km)</span></div>
+                            <div class="info-sub-desc">Trafik koşulları nedeniyle şu anki en hızlı rota.</div>
+                            <div class="info-eco"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
+                        `;
+                    }
                 });
             }
 
@@ -4692,7 +4716,7 @@ function startRouting(targetLat, targetLng) {
 
                 const btnConfirm = document.createElement('button');
                 btnConfirm.className = "routing-btn routing-btn-confirm";
-                btnConfirm.innerHTML = "🚀 START";
+                btnConfirm.innerHTML = `<i class="fa fa-location-arrow" style="margin-right:8px"></i>Başla`; // v644: Turkish label matching Screenshot
                 btnConfirm.onclick = (ev) => {
                     L.DomEvent.stopPropagation(ev);
                     enterNavigationMode(currentActiveRoute);
@@ -4700,7 +4724,7 @@ function startRouting(targetLat, targetLng) {
 
                 const btnCancel = document.createElement('button');
                 btnCancel.className = "routing-btn routing-btn-cancel";
-                btnCancel.innerHTML = "✕ CANCEL";
+                btnCancel.innerHTML = "İptal";
                 btnCancel.onclick = (ev) => {
                     L.DomEvent.stopPropagation(ev);
                     clearRouting();
@@ -4713,7 +4737,7 @@ function startRouting(targetLat, targetLng) {
         });
 
         map.closePopup();
-        showToast("Preview ready.", 1500);
+        showToast("Routes found.", 1500);
     } catch (e) {
         alert("Route error: " + e.message);
     }
