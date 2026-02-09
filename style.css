@@ -2189,123 +2189,121 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 
 
-/* v633: Guaranteed UI Visibility & Interaction */
+/* v634: Pinned Controls at the TOP of the panel */
 .leaflet-routing-container {
     width: 94% !important;
     max-width: 550px !important;
     position: fixed !important;
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     background: rgba(18, 18, 18, 0.99) !important;
     color: white !important;
-    border-radius: 20px !important;
+    border-radius: 24px !important;
     backdrop-filter: blur(40px) !important;
     -webkit-backdrop-filter: blur(40px) !important;
-    border: 2px solid #0088ff !important;
+    border: 1px solid #0088ff !important;
     box-shadow: 0 -20px 80px rgba(0, 0, 0, 0.9) !important;
     z-index: 10001 !important;
-    padding: 15px !important;
-    max-height: 220px !important;
-    /* Increased height to fit buttons */
-    overflow: visible !important;
-    /* Allow buttons to breathe */
+    padding: 12px !important;
+    max-height: 180px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    /* Stack vertically: Buttons top, text below */
     pointer-events: auto !important;
+    overflow: hidden !important;
 }
 
-/* Hide clutter strictly */
-.leaflet-routing-itinerary,
-/* Internal controls container inside the black box */
+/* Force buttons to the top of the container */
 .routing-controls-v624 {
     display: flex !important;
+    order: -1 !important;
+    /* Move to top if added via JS elsewhere */
     gap: 12px !important;
     width: 100% !important;
-    margin-top: 15px !important;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 12px !important;
+    z-index: 10005 !important;
 }
 
 .routing-btn {
     flex: 1 !important;
-    padding: 16px !important;
+    padding: 14px !important;
     border-radius: 12px !important;
     border: none !important;
     font-weight: 900 !important;
     font-size: 1.1rem !important;
     cursor: pointer !important;
-    text-transform: uppercase !important;
 }
 
 .routing-btn-confirm {
     background: #0088ff !important;
     color: white !important;
-    animation: btnPulse 2s infinite;
+    box-shadow: 0 0 20px rgba(0, 136, 255, 0.6);
 }
 
 .routing-btn-cancel {
-    background: #333 !important;
+    background: #444 !important;
     color: white !important;
 }
 
-@keyframes btnPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 136, 255, 0.7);
-    }
-
-    70% {
-        box-shadow: 0 0 0 15px rgba(0, 136, 255, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 136, 255, 0);
-    }
+/* Hide instructions strictly */
+.leaflet-routing-alt-instructions,
+.leaflet-routing-instructions,
+.leaflet-routing-itinerary {
+    display: none !important;
 }
 
-/* High-Visibility Map Labels (v633) */
+
+/* v636: True Google Maps Style Labels */
 .route-label-badge {
-    background: #ffcc00 !important;
-    /* Bright Yellow for attention */
-    color: #000 !important;
+    background: white !important;
+    color: #333 !important;
     padding: 6px 14px !important;
     border-radius: 50px !important;
-    font-weight: 900 !important;
-    font-size: 1rem !important;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6) !important;
-    border: 3px solid #000 !important;
-    z-index: 2000 !important;
+    font-weight: 800 !important;
+    font-size: 0.9rem !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    border: 2px solid #ccc !important;
+    z-index: 5000 !important;
     pointer-events: auto !important;
     white-space: nowrap !important;
-    /* Original properties that are still needed */
-    transform: translate(-50%, -100%) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.3s ease;
     cursor: pointer !important;
+    transition: all 0.2s ease;
+}
+
+/* Offset positions for overlapping paths (v636) */
+.label-pos-top {
+    transform: translate(-50%, -145%) !important;
+}
+
+.label-pos-bottom {
+    transform: translate(-50%, 45%) !important;
 }
 
 .route-label-badge.active {
     background: #0088ff !important;
     color: white !important;
     border-color: white !important;
-}
-
-/* Hide the redundant external shell from v632 */
-.routing-fixed-controls {
-    display: none !important;
+    box-shadow: 0 6px 20px rgba(0, 136, 255, 0.5) !important;
+    z-index: 5001 !important;
 }
 
 .route-label-badge.alternative {
-    background: #f8f8f8 !important;
-    border-color: #999 !important;
-    /* Grey for alternative */
+    background: white !important;
+    border-color: #ddd !important;
     color: #666 !important;
-    opacity: 0.9 !important;
-    font-weight: 700 !important;
 }
 
-.route-label-badge:active {
-    transform: translate(-50%, -100%) scale(0.95) !important;
+.route-label-badge:hover {
+    scale: 1.05;
+}
+
+/* Clear Redundant Shells */
+.routing-fixed-controls {
+    display: none !important;
 }
 
 /* Selection State for alternative paths via Leaflet Routing Machine */

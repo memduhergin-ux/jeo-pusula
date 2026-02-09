@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v633';
+const CACHE_NAME = 'jeocompass-v636';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4607,7 +4607,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v633: Guaranteed Routing Visibility & Interaction
+// v634: Pinned Controls at TOP for Guaranteed Visibility
 let routeLabels = [];
 
 function startRouting(targetLat, targetLng) {
@@ -4639,24 +4639,28 @@ function startRouting(targetLat, targetLng) {
             routeLabels = [];
 
             if (routes && routes.length > 0) {
-                // v633: Better Map Fitting [Top, Right, Bottom, Left]
+                // v634: Increased Bottom Padding for guaranteed visibility of markers
                 const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [60, 60, 240, 60] });
+                map.fitBounds(L.latLngBounds(allCoords), { padding: [80, 80, 300, 80] });
 
                 routes.forEach((route, idx) => {
-                    const pointIdx = Math.floor(route.coordinates.length * 0.3); // 30% mark
+                    // v636: Center labels on midpoints (45-55% range)
+                    const pointIdx = Math.floor(route.coordinates.length * 0.5);
                     const labelPoint = route.coordinates[pointIdx];
                     const km = (route.summary.totalDistance / 1000).toFixed(1);
                     const mins = Math.round(route.summary.totalTime / 60);
                     const timeStr = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
 
+                    // Alternate Top/Bottom to avoid overlap
+                    const posClass = (idx % 2 === 0) ? 'label-pos-top' : 'label-pos-bottom';
+
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
-                            className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'}`,
+                            className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'} ${posClass}`,
                             html: `<span>${km} km, ${timeStr}</span>`,
-                            iconSize: [110, 36]
+                            iconSize: [100, 30]
                         }),
-                        zIndexOffset: 2000,
+                        zIndexOffset: 5000,
                         interactive: true
                     }).addTo(map);
 
@@ -4672,12 +4676,15 @@ function startRouting(targetLat, targetLng) {
                     const selectedRoute = ev.route;
                     routeLabels.forEach((lbl, idx) => {
                         const el = lbl.getElement();
-                        if (el) el.className = `route-label-badge ${routes[idx] === selectedRoute ? 'active' : 'alternative'}`;
+                        if (el) {
+                            const posClass = (idx % 2 === 0) ? 'label-pos-top' : 'label-pos-bottom';
+                            el.className = `route-label-badge ${routes[idx] === selectedRoute ? 'active' : 'alternative'} ${posClass}`;
+                        }
                     });
                 });
             }
 
-            // v633: ENSURE BUTTONS ARE INSIDE THE BLACK PANEL
+            // v634: PREPEND BUTTONS (Top of Panel)
             const container = routingControl.getContainer();
             if (container && !container.querySelector('.routing-controls-v624')) {
                 const controls = document.createElement('div');
@@ -4704,12 +4711,13 @@ function startRouting(targetLat, targetLng) {
 
                 controls.appendChild(btnConfirm);
                 controls.appendChild(btnCancel);
-                container.appendChild(controls);
+                // v634: Prepend to put them before the itinerary text
+                container.prepend(controls);
             }
         });
 
         map.closePopup();
-        showToast("Preview ready. Tap path or START.", 4500);
+        showToast("Preview ready. Tap path or START at top.", 5000);
     } catch (e) {
         alert("Route error: " + e.message);
     }
