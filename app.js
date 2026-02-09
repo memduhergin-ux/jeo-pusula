@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v664';
+const CACHE_NAME = 'jeocompass-v665';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4668,6 +4668,7 @@ function startRouting(targetLat, targetLng) {
             draggableWaypoints: false,
             fitSelectedRoutes: true,
             showAlternatives: true,
+            position: 'bottomleft', // v665: Force control to Bottom-Left container
             altLineOptions: { styles: [{ color: '#777', opacity: 0.3, weight: 6 }] },
             lineOptions: { styles: [{ color: '#007bff', opacity: 0.85, weight: 8 }], addWaypoints: false },
             createMarker: function () { return null; }
@@ -4738,6 +4739,19 @@ function startRouting(targetLat, targetLng) {
                     // v656: Update Bottom Sheet Details
                     updateRouteInfoPanel(currentActiveRoute, routingControl);
                 });
+
+                // v665: Force Hide Non-Selected Alternatives immediately
+                setTimeout(() => {
+                    const container = routingControl.getContainer();
+                    if (container) {
+                        const alts = container.querySelectorAll('.leaflet-routing-alt');
+                        alts.forEach(el => {
+                            if (!el.classList.contains('leaflet-routing-alt-selected')) {
+                                el.style.display = 'none';
+                            }
+                        });
+                    }
+                }, 100);
             }
 
             const container = routingControl.getContainer();
