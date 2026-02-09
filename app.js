@@ -232,9 +232,10 @@ function updateHeatmap() {
     const point2 = L.point(point1.x + 100, point1.y); // Use 100px sample for precision
     const latlng2 = map.containerPointToLatLng(point2);
 
-    // Safety check: Ensure map has dimensions and is visible (v545/v561)
+    // Safety check: Ensure map has dimensions and is visible (v545/v561/v618)
     const mapSize = map.getSize();
-    if (mapSize.x <= 0 || mapSize.y <= 0) return;
+    const container = map.getContainer();
+    if (mapSize.x <= 0 || mapSize.y <= 0 || !container || container.offsetWidth <= 0) return;
 
     const dist = map.distance(center, latlng2);
     if (dist <= 0 || isNaN(dist)) {
@@ -550,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v617';
+const CACHE_NAME = 'jeocompass-v620';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1569,6 +1570,7 @@ let liveLayer = L.layerGroup(); // Layer for live location
 let highlightLayer = L.layerGroup(); // Layer for parcel boundaries
 let activeMapLayer = "Street (OSM)"; // Track active layer globally
 let lastSelectedParcel = null; // Track the last clicked parcel for two-stage check
+let routingControl = null; // v620: Global Routing Control
 
 function initMap() {
     if (map) return;
@@ -2172,7 +2174,10 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div style="margin-bottom: 5px;"><b>Strike / Dip:</b> ${r.strike} / ${r.dip}</div>
                     <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'No note'}"</div>
-                    <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="startRouting(${r.lat}, ${r.lon})" style="flex: 1; background: #2196f3; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;">🧭 Rota</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️</button>
+                    </div>
                 </div>
             `);
 
@@ -3175,6 +3180,13 @@ function addExternalLayer(name, geojson) {
                         popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
                     }
                 }
+                if (feature.geometry && feature.geometry.type === 'Point') {
+                    const [lng, lat] = feature.geometry.coordinates;
+                    popupContent += `
+                        <div style="margin-top:10px; display:flex; gap:5px;">
+                            <button onclick="startRouting(${lat}, ${lng})" style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px;">🧭 Rota</button>
+                        </div>`;
+                }
                 popupContent += `</div>`;
                 layer.bindPopup(popupContent);
 
@@ -3524,14 +3536,16 @@ if (btnAddPoint) {
             }
 
             btnAddPoint.classList.add('active-add-point');
-            // Show Crosshair and Confirm Button
+            // Show Crosshair and Confirm Container (v620)
+            const confirmContainer = document.getElementById('btn-confirm-point-container');
             if (crosshair) crosshair.style.display = 'block';
-            if (btnConfirmPoint) btnConfirmPoint.style.display = 'block';
+            if (confirmContainer) confirmContainer.style.display = 'flex';
             updateScaleValues(); // Refresh UI labels
         } else {
             btnAddPoint.classList.remove('active-add-point');
+            const confirmContainer = document.getElementById('btn-confirm-point-container');
             if (crosshair) crosshair.style.display = 'none';
-            if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+            if (confirmContainer) confirmContainer.style.display = 'none';
             updateScaleValues(); // Refresh UI labels
         }
     });
@@ -4594,3 +4608,73 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
     }, 100);
 });
 
+
+// v620: Routing Engine Integration
+function startRouting(targetLat, targetLng) {
+    if (!map) return;
+
+    // Clear existing route
+    clearRouting();
+
+    const startPos = (currentCoords.lat && currentCoords.lon) ? [currentCoords.lat, currentCoords.lon] : null;
+    if (!startPos) {
+        alert("Konumunuz alınamadı. Rota için GPS sinyali gereklidir.");
+        return;
+    }
+
+    try {
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(startPos[0], startPos[1]),
+                L.latLng(targetLat, targetLng)
+            ],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            showAlternatives: false,
+            lineOptions: {
+                styles: [{ color: '#2196f3', opacity: 0.8, weight: 8 }]
+            },
+            createMarker: function () { return null; } // Use existing markers
+        }).addTo(map);
+
+        // Custom styling for routing container
+        const container = routingControl.getContainer();
+        if (container) {
+            container.style.background = "rgba(0,0,0,0.8)";
+            container.style.color = "white";
+            container.style.borderRadius = "12px";
+            container.style.backdropFilter = "blur(10px)";
+            container.style.border = "1px solid rgba(255,255,255,0.2)";
+
+            // Add close button to routing panel
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = "✕";
+            closeBtn.style.cssText = "position:absolute; top:5px; right:5px; background:#f44336; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px; font-weight:bold; z-index:1001;";
+            closeBtn.onclick = clearRouting;
+            container.appendChild(closeBtn);
+        }
+
+        map.closePopup();
+        showToast("Rota oluşturuldu", 2000);
+    } catch (e) {
+        console.error("Routing Error:", e);
+        alert("Rota hesaplanamadı: " + e.message);
+    }
+}
+
+function clearRouting() {
+    if (routingControl) {
+        map.removeControl(routingControl);
+        routingControl = null;
+    }
+}
+
+// Update Crosshair UI for Routing (v620)
+if (document.getElementById('btn-confirm-route')) {
+    document.getElementById('btn-confirm-route').addEventListener('click', () => {
+        const center = map.getCenter();
+        startRouting(center.lat, center.lng);
+    });
+}

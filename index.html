@@ -5,13 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v617</title>
+    <title>JeoCompass - v618</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link r="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=617">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css?v=620">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
@@ -24,9 +26,9 @@
         <div class="spinner-large"></div>
         <div id="loading-text"
             style="color: white; margin-top: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 0 20px;">
-            Dosya işleniyor...</div>
-        <div style="color: #aaa; margin-top: 10px; font-size: 0.8rem;">Lütfen bekleyin, bu işlem büyük dosyalarda biraz
-            zaman alabilir.</div>
+            Processing file...</div>
+        <div style="color: #aaa; margin-top: 10px; font-size: 0.8rem;">Please wait, this process may take some time for
+            large files.</div>
     </div>
 
     <!-- Splash Screen -->
@@ -36,7 +38,7 @@
             <h1 class="splash-title">JeoCompass</h1>
             <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
             <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v617</div>
+            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v618</div>
         </div>
     </div>
     <!-- View 1: Compass (Pusula) -->
@@ -150,10 +152,17 @@
             </svg>
         </div>
 
-        <button id="btn-confirm-point"
-            style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2000; cursor: pointer;">
-            ✅ Add Point Here
-        </button>
+        <div id="btn-confirm-point-container"
+            style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; gap: 10px;">
+            <button id="btn-confirm-point"
+                style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">
+                ✅ Nokta Ekle
+            </button>
+            <button id="btn-confirm-route"
+                style="background: #2196f3; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">
+                🧭 Rota
+            </button>
+        </div>
 
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;"></div>
         <div class="map-fab-container">
@@ -164,9 +173,13 @@
                 </button>
                 <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale">
                     <span class="fab-icon" style="display: flex; align-items: center; justify-content: center;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 16h20M2 14v4M12 14v4M22 14v4M7 16V14M17 16V14" />
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Segmented Block Scale Design -->
+                            <rect x="3" y="11" width="6" height="4" fill="currentColor" />
+                            <rect x="9" y="11" width="6" height="4" stroke="currentColor" stroke-width="1.5" />
+                            <rect x="15" y="11" width="6" height="4" fill="currentColor" />
+                            <path d="M3 9V11M9 9V11M15 9V11M21 9V11" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" />
                         </svg>
                     </span>
                 </button>
@@ -544,7 +557,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v617
+                    JeoCompass v618
                 </div>
             </div>
         </div>
@@ -673,6 +686,11 @@
 
         window.onunhandledrejection = function (event) {
             console.error("Async Rejection:", event.reason);
+            const errorMsg = (event.reason ? event.reason.message || event.reason : "").toString();
+            if (errorMsg.includes("ServiceWorker") && errorMsg.includes("fetching")) {
+                console.log("ServiceWorker fetch error suppressed");
+                return;
+            }
             alert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
         };
 
@@ -680,9 +698,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=617"></script>
+    <script src="app.js?v=620"></script>
     <script>
-        const JEO_VERSION = '617';
+        const JEO_VERSION = '620';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -690,8 +708,8 @@
                 navigator.serviceWorker.register(`sw.js?v=${JEO_VERSION}`)
                     .then(reg => {
                         console.log('Service Worker registered');
-                        reg.update();
-                        setInterval(() => { reg.update(); }, 1000 * 60);
+                        reg.update().catch(() => { });
+                        setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
                     })
                     .catch(err => console.log('Service Worker failed', err));
             });
