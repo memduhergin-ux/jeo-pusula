@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v667';
+const CACHE_NAME = 'jeocompass-v673';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -2181,8 +2181,22 @@ function updateMapMarkers(shouldFitBounds = false) {
                 className: 'geology-marker-pin',
                 html: `
                     <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px; display: flex; align-items: center; justify-content: center; position: relative;">
-                        <div class="red-dot-symbol" style="width:${12 * scaleFactor}px; height:${12 * scaleFactor}px; background-color: ${pinColor}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
-                        <div class="marker-id-label-v3" style="font-size:${labelFontSize}px; padding: 1px ${4 * scaleFactor}px; top:-${4 * scaleFactor}px; right:-${6 * scaleFactor}px;">${labelText}</div>
+                        <!-- v669: Much larger red dot with thick white border -->
+                        <div class="red-dot-symbol" style="
+                            width:${20 * scaleFactor}px; 
+                            height:${20 * scaleFactor}px; 
+                            background-color: ${pinColor}; 
+                            border-radius: 50%; 
+                            border: ${3 * scaleFactor}px solid white; 
+                            box-shadow: 0 0 6px rgba(0,0,0,0.6);
+                        "></div>
+                        <!-- v669: Adjusted label size and position -->
+                        <div class="marker-id-label-v3" style="
+                            font-size:${labelFontSize * 1.2}px; 
+                            padding: 2px ${5 * scaleFactor}px; 
+                            top:-${8 * scaleFactor}px; 
+                            right:-${10 * scaleFactor}px;
+                        ">${labelText}</div>
                     </div>
                 `,
                 iconSize: [iconBaseSize, iconBaseSize],
@@ -3139,12 +3153,12 @@ function addExternalLayer(name, geojson) {
                 // v666: Revert to "Old Style" Simple CircleMarker
                 // User requested "Eski hali" (Old state) - usually implies simple vector circle
                 const marker = L.circleMarker(latlng, {
-                    radius: 6,
-                    fillColor: '#2196f3',
-                    color: '#ffffff',
-                    weight: 2,
+                    radius: 10, // v668: Increased size
+                    fillColor: '#f44336', // v668: Red interior
+                    color: '#ffffff', // v668: White border
+                    weight: 3, // v668: Thicker border
                     opacity: 1,
-                    fillOpacity: 0.8
+                    fillOpacity: 1 // v668: Fully solid
                 });
 
                 marker.isKmlMarker = true; // v545: Flag for fast identification
@@ -3158,9 +3172,9 @@ function addExternalLayer(name, geojson) {
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
                         permanent: true,
-                        direction: 'top', // v666: Changed from 'center' to 'top' to avoid overlaying the dot
+                        direction: 'center', // v673: Reverted to 'center' to allow `optimizeMapPoints` 8-way placement logic to work correctly
                         className: 'kml-label',
-                        offset: [0, -8], // v666: Shifted up slightly
+                        offset: [0, 0], // v673: Let smart placement handle the offset
                         sticky: false
                     });
 
@@ -4701,6 +4715,9 @@ function startRouting(targetLat, targetLng) {
                     routeLabels.push(label);
                 });
 
+                // v671: Force select the first route immediately to trigger UI classes
+                routingControl.selectRoute(routes[0]);
+
                 // v656: Initial Panel Update (Fixes Empty White Box)
                 updateRouteInfoPanel(routes[0], routingControl);
 
@@ -4731,10 +4748,12 @@ function startRouting(targetLat, targetLng) {
                         alts.forEach(el => {
                             if (!el.classList.contains('leaflet-routing-alt-selected')) {
                                 el.style.display = 'none';
+                            } else {
+                                el.style.display = 'block'; // v671: Ensure selected is visible
                             }
                         });
                     }
-                }, 100);
+                }, 200);
             }
 
             const container = routingControl.getContainer();
