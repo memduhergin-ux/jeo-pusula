@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v623';
+const CACHE_NAME = 'jeocompass-v625';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4657,29 +4657,45 @@ function startRouting(targetLat, targetLng) {
         if (container) {
             const alt = container.querySelector('.leaflet-routing-alt');
             if (alt) {
-                alt.title = "Rota planı için tıklayın";
+                alt.title = "Click for route plan";
                 alt.onclick = (ev) => {
                     L.DomEvent.stopPropagation(ev);
                     container.classList.toggle('routing-expanded');
                 };
             }
 
-            // Add dedicated Cancel button
-            const cancelBtn = document.createElement('button');
-            cancelBtn.innerHTML = "Rotayı İptal Et / Kapat";
-            cancelBtn.className = "routing-cancel-btn";
-            cancelBtn.onclick = (ev) => {
+            // v624: Add Confirmation Controls
+            const controls = document.createElement('div');
+            controls.className = "routing-controls-v624";
+            controls.id = "routing-confirmation-ui";
+
+            const btnConfirm = document.createElement('button');
+            btnConfirm.className = "routing-btn routing-btn-confirm";
+            btnConfirm.innerHTML = "✅ Start";
+            btnConfirm.onclick = (ev) => {
+                L.DomEvent.stopPropagation(ev);
+                controls.style.display = 'none'; // Hide confirmation after starting
+                showToast("Route started", 2000);
+            };
+
+            const btnCancel = document.createElement('button');
+            btnCancel.className = "routing-btn routing-btn-cancel";
+            btnCancel.innerHTML = "❌ Cancel";
+            btnCancel.onclick = (ev) => {
                 L.DomEvent.stopPropagation(ev);
                 clearRouting();
             };
-            container.appendChild(cancelBtn);
+
+            controls.appendChild(btnConfirm);
+            controls.appendChild(btnCancel);
+            container.appendChild(controls);
         }
 
         map.closePopup();
-        showToast("Rota oluşturuldu. Plan için çizgiye veya panele tıklayın.", 3500);
+        showToast("Route preview ready. Confirm to start.", 3500);
     } catch (e) {
         console.error("Routing Error:", e);
-        alert("Rota hesaplanamadı: " + e.message);
+        alert("Could not prepare route: " + e.message);
     }
 }
 

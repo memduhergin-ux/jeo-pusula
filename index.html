@@ -8,7 +8,7 @@
     <title>JeoCompass - v618</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=623">
+    <link rel="stylesheet" href="style.css?v=625">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
@@ -154,7 +154,7 @@
 
         <button id="btn-confirm-point"
             style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2000; cursor: pointer;">
-            ✅ Nokta Ekle
+            ✅ Add Point
         </button>
 
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;"></div>
@@ -176,7 +176,7 @@
                         </svg>
                     </span>
                 </button>
-                <button id="btn-grid-toggle" class="map-fab" title="Poligon İçi Grid">
+                <button id="btn-grid-toggle" class="map-fab" title="Inner Polygon Grid">
                     <span class="fab-icon">🌐</span>
                 </button>
                 <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
@@ -691,9 +691,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=623"></script>
+    <script src="app.js?v=625"></script>
     <script>
-        const JEO_VERSION = '623';
+        const JEO_VERSION = '625';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
