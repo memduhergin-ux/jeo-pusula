@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v620';
+const CACHE_NAME = 'jeocompass-v622';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3536,16 +3536,14 @@ if (btnAddPoint) {
             }
 
             btnAddPoint.classList.add('active-add-point');
-            // Show Crosshair and Confirm Container (v620)
-            const confirmContainer = document.getElementById('btn-confirm-point-container');
+            // Show Crosshair and Confirm Button (Reverted v622)
             if (crosshair) crosshair.style.display = 'block';
-            if (confirmContainer) confirmContainer.style.display = 'flex';
+            if (confirmBtn) confirmBtn.style.display = 'block';
             updateScaleValues(); // Refresh UI labels
         } else {
             btnAddPoint.classList.remove('active-add-point');
-            const confirmContainer = document.getElementById('btn-confirm-point-container');
             if (crosshair) crosshair.style.display = 'none';
-            if (confirmContainer) confirmContainer.style.display = 'none';
+            if (confirmBtn) confirmBtn.style.display = 'none';
             updateScaleValues(); // Refresh UI labels
         }
     });
@@ -4609,7 +4607,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v620: Routing Engine Integration
+// v622: Interactive Routing Engine Integration (Simplified Workflow)
 function startRouting(targetLat, targetLng) {
     if (!map) return;
 
@@ -4634,30 +4632,51 @@ function startRouting(targetLat, targetLng) {
             fitSelectedRoutes: true,
             showAlternatives: false,
             lineOptions: {
-                styles: [{ color: '#2196f3', opacity: 0.8, weight: 8 }]
+                styles: [{ color: '#2196f3', opacity: 0.8, weight: 12 }],
+                addWaypoints: false,
+                extendToWaypoints: false
             },
             createMarker: function () { return null; } // Use existing markers
         }).addTo(map);
 
-        // Custom styling for routing container
+        // v622: Make routing line clickable
+        routingControl.on('routesfound', function (e) {
+            if (routingControl._line && routingControl._line.on) {
+                routingControl._line.on('click', function (ev) {
+                    L.DomEvent.stopPropagation(ev);
+                    const container = routingControl.getContainer();
+                    if (container) {
+                        container.classList.toggle('routing-expanded');
+                    }
+                });
+            }
+        });
+
+        // Custom styling for routing container (v622 Style)
         const container = routingControl.getContainer();
         if (container) {
-            container.style.background = "rgba(0,0,0,0.8)";
-            container.style.color = "white";
-            container.style.borderRadius = "12px";
-            container.style.backdropFilter = "blur(10px)";
-            container.style.border = "1px solid rgba(255,255,255,0.2)";
+            const alt = container.querySelector('.leaflet-routing-alt');
+            if (alt) {
+                alt.title = "Rota planı için tıklayın";
+                alt.onclick = (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    container.classList.toggle('routing-expanded');
+                };
+            }
 
-            // Add close button to routing panel
-            const closeBtn = document.createElement('button');
-            closeBtn.innerHTML = "✕";
-            closeBtn.style.cssText = "position:absolute; top:5px; right:5px; background:#f44336; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px; font-weight:bold; z-index:1001;";
-            closeBtn.onclick = clearRouting;
-            container.appendChild(closeBtn);
+            // Add dedicated Cancel button
+            const cancelBtn = document.createElement('button');
+            cancelBtn.innerHTML = "Rotayı İptal Et / Kapat";
+            cancelBtn.className = "routing-cancel-btn";
+            cancelBtn.onclick = (ev) => {
+                L.DomEvent.stopPropagation(ev);
+                clearRouting();
+            };
+            container.appendChild(cancelBtn);
         }
 
         map.closePopup();
-        showToast("Rota oluşturuldu", 2000);
+        showToast("Rota oluşturuldu. Plan için çizgiye veya panele tıklayın.", 3500);
     } catch (e) {
         console.error("Routing Error:", e);
         alert("Rota hesaplanamadı: " + e.message);
@@ -4671,10 +4690,4 @@ function clearRouting() {
     }
 }
 
-// Update Crosshair UI for Routing (v620)
-if (document.getElementById('btn-confirm-route')) {
-    document.getElementById('btn-confirm-route').addEventListener('click', () => {
-        const center = map.getCenter();
-        startRouting(center.lat, center.lng);
-    });
-}
+// v622: Reverted Crosshair logic (Add route button removed)

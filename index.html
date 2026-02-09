@@ -8,7 +8,7 @@
     <title>JeoCompass - v618</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=620">
+    <link rel="stylesheet" href="style.css?v=622">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
@@ -152,17 +152,10 @@
             </svg>
         </div>
 
-        <div id="btn-confirm-point-container"
-            style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; gap: 10px;">
-            <button id="btn-confirm-point"
-                style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">
-                ✅ Nokta Ekle
-            </button>
-            <button id="btn-confirm-route"
-                style="background: #2196f3; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;">
-                🧭 Rota
-            </button>
-        </div>
+        <button id="btn-confirm-point"
+            style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2000; cursor: pointer;">
+            ✅ Nokta Ekle
+        </button>
 
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;"></div>
         <div class="map-fab-container">
@@ -698,9 +691,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=620"></script>
+    <script src="app.js?v=622"></script>
     <script>
-        const JEO_VERSION = '620';
+        const JEO_VERSION = '622';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
