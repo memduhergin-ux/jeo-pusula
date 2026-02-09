@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v655';
+const CACHE_NAME = 'jeocompass-v660';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4687,11 +4687,12 @@ function startRouting(targetLat, targetLng) {
                         icon: L.divIcon({
                             className: 'route-label-container', // Pure container, no style
                             html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
-                            iconSize: [0, 0],
-                            iconAnchor: [0, 0] // Leaflet anchors this point. Offsets happen in CSS
+                            iconSize: [0, 0], // CSS handles size
+                            iconAnchor: [0, 0] // CSS handles offset
                         }),
-                        zIndexOffset: isFirst ? 6000 : 5000,
-                        interactive: true
+                        zIndexOffset: isFirst ? 9000 : 8000, // v658: Boost Z-Index to be above EVERYTHING
+                        interactive: true,
+                        riseOnHover: true
                     }).addTo(map);
 
                     label.on('click', (ev) => {
@@ -4701,38 +4702,26 @@ function startRouting(targetLat, targetLng) {
                     routeLabels.push(label);
                 });
 
+                // v656: Initial Panel Update (Fixes Empty White Box)
+                updateRouteInfoPanel(routes[0], routingControl);
+
                 routingControl.on('routeselected', function (ev) {
                     currentActiveRoute = ev.route;
 
-                    // v649: Update Label Styles (Container -> Inner Bubble)
+                    // v649: Update Label Styles
                     routeLabels.forEach((lbl, idx) => {
-                        const el = lbl.getElement(); // This is the .route-label-container
+                        const el = lbl.getElement();
                         if (el) {
                             const bubble = el.querySelector('.route-bubble');
                             if (bubble) {
-                                // Reset classes and apply new state
                                 bubble.className = `route-bubble ${routes[idx] === currentActiveRoute ? 'bubble-active' : 'bubble-alt'}`;
-                                // Update z-index of marker to bring active to front
                                 lbl.setZIndexOffset(routes[idx] === currentActiveRoute ? 6000 : 5000);
                             }
                         }
                     });
 
-                    // v644: Inject Rich HTML for Bottom Sheet Details
-                    const container = routingControl.getContainer();
-                    const altPanel = container.querySelector('.leaflet-routing-alt-selected');
-                    if (altPanel) {
-                        const r = currentActiveRoute;
-                        const totalMins = Math.round(r.summary.totalTime / 60);
-                        const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-                        const kmStr = (r.summary.totalDistance / 1000).toFixed(0);
-
-                        altPanel.innerHTML = `
-                            <div class="info-main-title">${timeStr} <span class="info-km-span">(${kmStr} km)</span></div>
-                            <div class="info-sub-desc">Trafik koşulları nedeniyle şu anki en hızlı rota.</div>
-                            <div class="info-eco"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
-                        `;
-                    }
+                    // v656: Update Bottom Sheet Details
+                    updateRouteInfoPanel(currentActiveRoute, routingControl);
                 });
             }
 
@@ -4836,6 +4825,53 @@ function clearRouting() {
     lastRouteUpdatePos = null;
 }
 
+// v656: Helper to inject Route Info HTML
+function updateRouteInfoPanel(route, control) {
+    if (!route || !control) return;
+    const container = control.getContainer();
+    if (!container) return;
+
+    // Wait 1 tick for DOM to ready or force selection
+    setTimeout(() => {
+        const altPanel = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected') || container.querySelector('.leaflet-routing-alt');
+        // Fallback to first alt if selected class not yet applied logic-wise
+
+        if (altPanel) {
+            const totalMins = Math.round(route.summary.totalTime / 60);
+            const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
+            const kmStr = (route.summary.totalDistance / 1000).toFixed(1); // v656: 1 decimal for better precision
+
+            // v659: Extract Route Name (Via ...)
+            let routeName = route.name;
+            if (!routeName || routeName.length === 0) {
+                // Fallback: Find the road with the longest distance in instructions
+                if (route.instructions && route.instructions.length > 0) {
+                    let maxDist = 0;
+                    let bestName = "";
+                    route.instructions.forEach(instr => {
+                        if (instr.road && instr.road.trim() !== "" && instr.distance > maxDist) {
+                            maxDist = instr.distance;
+                            bestName = instr.road;
+                        }
+                    });
+                    if (bestName) routeName = bestName;
+                }
+            }
+            // Final fallback
+            const viaText = routeName ? `${routeName} üzerinden` : "En hızlı güzergah";
+
+            altPanel.innerHTML = `
+                <div class="info-main-title is-updated">${timeStr} <span class="info-km-span">(${kmStr} km)</span></div>
+                <div class="info-sub-desc">${viaText}</div>
+                <div class="info-eco"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
+            `;
+            // Force display block for single panel mode
+            altPanel.style.display = 'block';
+        }
+    }, 50);
+}
+
+
 // v622: Reverted Crosshair logic (Add route button removed)
 
 // v651: Dynamic Routing Engine (Recalculate / Consume Line)
@@ -4862,4 +4898,23 @@ function updateRouteStart(lat, lon) {
         lastRouteUpdatePos = L.latLng(lat, lon);
         // console.log("v651: Route Start Updated to", lat, lon);
     }
+}
+
+// v660: Dedicated Navigation Tracker (Ensure "Route Consumption")
+if ('geolocation' in navigator) {
+    navigator.geolocation.watchPosition(
+        (pos) => {
+            const { latitude, longitude } = pos.coords;
+            // Update global coords just in case
+            currentCoords.lat = latitude;
+            currentCoords.lon = longitude;
+
+            // Trigger Route Update
+            if (isNavMode) {
+                updateRouteStart(latitude, longitude);
+            }
+        },
+        (err) => { console.warn("Nav GPS Error:", err); },
+        { enableHighAccuracy: true, maximumAge: 0 }
+    );
 }
