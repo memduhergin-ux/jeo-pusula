@@ -1943,6 +1943,7 @@ textarea.form-input {
     }
 
     /* KML Label and Marker Enhancements */
+    /* v667: Reverted to Standard KML Label (User: "Don't confuse KML labels") */
     .kml-label {
         background: transparent !important;
         border: none !important;
@@ -2204,6 +2205,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         border: none !important;
     }
 
+    /* v667: Route Bubble Styles - NO ARROWS (User Request) */
     .route-bubble {
         font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
         font-weight: 600 !important;
@@ -2217,36 +2219,16 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         padding: 6px 12px;
         border-radius: 16px;
         position: relative;
-        /* transition: transform 0.15s ease-out !important; */
     }
 
-    /* The Bubble Tail (Triangle) */
-    .route-bubble::after {
-        content: '';
-        position: absolute;
-        bottom: -6px;
-        /* Adjust tail position */
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 6px solid white;
-        /* Default tail color */
-    }
+    /* v667: Removed ::after (Triangle/Tail) to make them simple badges */
 
     /* Active Route (Maps Blue) */
     .bubble-active {
         background: #1a73e8 !important;
         color: white !important;
         border: 2px solid white !important;
-        /* Start with white border for contrast */
         z-index: 6000 !important;
-    }
-
-    .bubble-active::after {
-        border-top-color: #1a73e8;
     }
 
     /* Alternative Route (Maps White) */
@@ -2257,19 +2239,17 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         z-index: 5000 !important;
     }
 
-    .bubble-alt::after {
-        border-top-color: white;
-    }
-
     /* v649/v657: Visual Offsets handled by CSS on the *bubble* not container */
     /* Active: Shift Up to sit on line */
     .bubble-active {
-        transform: translateY(-40px) !important;
+        transform: translateY(-20px) !important;
+        /* v667: Adjusted offset since tail is gone */
     }
 
     /* Alt: Shift Up and Left/Right slightly */
     .bubble-alt {
-        transform: translateY(-40px) !important;
+        transform: translateY(-20px) !important;
+        /* v667: Adjusted offset since tail is gone */
         opacity: 0.9;
     }
 

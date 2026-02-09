@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v665';
+const CACHE_NAME = 'jeocompass-v667';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3136,34 +3136,17 @@ function addExternalLayer(name, geojson) {
         const layer = L.geoJSON(geojson, {
             style: style,
             pointToLayer: (feature, latlng) => {
-                // Kibar Geological/Pin Icon
-                const iconHtml = `
-                <div class="kml-marker-pin" style="
-                    width: 20px;
-                    height: 20px;
-                    background: #2196f3;
-                    border: 2px solid white;
-                    border-radius: 50%;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                ">
-                    <div class="kml-marker-dot" style="
-                        width: 6px;
-                        height: 6px;
-                        background: white;
-                        border-radius: 50%;
-                    "></div>
-                </div>
-            `;
-                const icon = L.divIcon({
-                    className: 'kml-custom-icon', // Helper class for selection
-                    html: iconHtml,
-                    iconSize: [24, 24], // v663: Restored to standard size (was 8x8)
-                    iconAnchor: [12, 12] // Center
+                // v666: Revert to "Old Style" Simple CircleMarker
+                // User requested "Eski hali" (Old state) - usually implies simple vector circle
+                const marker = L.circleMarker(latlng, {
+                    radius: 6,
+                    fillColor: '#2196f3',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
                 });
-                const marker = L.marker(latlng, { icon: icon });
+
                 marker.isKmlMarker = true; // v545: Flag for fast identification
                 marker.jeoLayerId = layerIdCounter; // v545: Fast Parent Lookup
                 allKmlMarkers.push(marker);
@@ -3175,9 +3158,9 @@ function addExternalLayer(name, geojson) {
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
                         permanent: true,
-                        direction: 'center', // v547: Center-anchor provides consistent baseline for Smart Label positioning
+                        direction: 'top', // v666: Changed from 'center' to 'top' to avoid overlaying the dot
                         className: 'kml-label',
-                        offset: [0, 0],
+                        offset: [0, -8], // v666: Shifted up slightly
                         sticky: false
                     });
 
