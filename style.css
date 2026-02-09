@@ -2189,89 +2189,69 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 
 
-/* v628: Google Maps Style Bottom Routing Sheet */
+/* v629: Google Maps Style Premium Interaction */
 .leaflet-routing-container {
     width: 95% !important;
     max-width: 450px !important;
     margin: 0 auto !important;
     position: fixed !important;
     bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-    /* Move to bottom */
     top: auto !important;
-    /* Reset top */
     left: 50% !important;
     transform: translateX(-50%) !important;
     padding: 12px 18px !important;
-    background: rgba(20, 20, 20, 0.96) !important;
+    background: rgba(20, 20, 20, 0.98) !important;
     color: white !important;
     border-radius: 24px !important;
     backdrop-filter: blur(30px) !important;
     -webkit-backdrop-filter: blur(30px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(0, 255, 204, 0.2) !important;
+    box-shadow: 0 -15px 50px rgba(0, 0, 0, 0.7) !important;
     font-family: 'Outfit', 'Montserrat', sans-serif !important;
-    z-index: 9999 !important;
+    z-index: 10000 !important;
     pointer-events: auto !important;
-    max-height: 120px;
-    /* Short height for summary view */
+    max-height: 110px;
     overflow: hidden;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Expanded state for Bottom Sheet */
-.leaflet-routing-container.routing-expanded {
-    max-height: 70vh !important;
-    border-radius: 24px 24px 0 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    overflow-y: auto !important;
-}
-
-/* STRICT HIDING OF CLUTTER */
-.leaflet-routing-container .leaflet-routing-itinerary,
-.leaflet-routing-container .leaflet-routing-geocoders,
-.leaflet-routing-container .leaflet-routing-add-waypoint,
-.leaflet-routing-container .leaflet-routing-itinerary-instructions {
+/* Hide clutter strictly */
+.leaflet-routing-itinerary,
+.leaflet-routing-geocoders,
+.leaflet-routing-add-waypoint {
     display: none !important;
 }
 
-/* Reveal only when expanded */
-.routing-expanded .leaflet-routing-itinerary,
-.routing-expanded .leaflet-routing-itinerary-instructions {
-    display: block !important;
-}
-
-/* Routing Summary Bar Layout */
-.leaflet-routing-alt {
+/* Map-Based Route Labels (v629) */
+.route-label-badge {
+    background: white !important;
+    color: #333 !important;
+    padding: 4px 10px !important;
+    border-radius: 20px !important;
+    font-weight: 800 !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    border: 2px solid #2196f3 !important;
+    pointer-events: none !important;
+    transform: translate(-50%, -50%) !important;
     display: flex !important;
-    flex-direction: column !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    background: transparent !important;
+    align-items: center !important;
+    gap: 4px !important;
 }
 
-/* Hide all summaries except the first one */
-.leaflet-routing-alt:not(:first-child) {
-    display: none !important;
+.route-label-badge.alternative {
+    background: #f0f0f0 !important;
+    border-color: #999 !important;
+    opacity: 0.9 !important;
 }
 
-.leaflet-routing-alt h2 {
-    font-size: 0.8rem !important;
-    color: rgba(255, 255, 255, 0.6) !important;
-    margin: 0 0 4px 0 !important;
-    font-weight: 500 !important;
+/* Selection State for alternative paths via Leaflet Routing Machine */
+.leaflet-routing-alt-selected {
+    border-color: #00ffcc !important;
 }
 
-.leaflet-routing-alt h3 {
-    font-size: 1.2rem !important;
-    color: #00ffcc !important;
-    margin: 0 !important;
-    font-weight: 900 !important;
-}
-
-/* Confirmation Controls in Bottom Bar */
+/* Confirmation Controls in v629 */
 .routing-controls-v624 {
     display: flex !important;
     gap: 12px !important;
@@ -2286,20 +2266,16 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     padding: 14px !important;
     border-radius: 16px !important;
     border: none !important;
-    font-weight: 700 !important;
-    font-size: 1rem !important;
+    font-weight: 800 !important;
+    font-size: 1.05rem !important;
     cursor: pointer !important;
-    transition: transform 0.2s, background 0.2s;
-}
-
-.routing-btn:active {
-    transform: scale(0.96);
+    transition: all 0.2s;
 }
 
 .routing-btn-confirm {
-    background: #4caf50 !important;
+    background: #2196f3 !important;
     color: white !important;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
 }
 
 .routing-btn-cancel {
@@ -2307,9 +2283,12 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     color: white !important;
 }
 
+.routing-btn:active {
+    transform: scale(0.95);
+}
+
+
 /* Expanded Instruction Styling */
 .routing-expanded .leaflet-routing-itinerary-instructions table {
     width: 100% !important;
-    color: #eee !important;
-    font-size: 0.8rem !important;
 }
