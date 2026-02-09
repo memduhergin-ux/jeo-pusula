@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v639';
+const CACHE_NAME = 'jeocompass-v640';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4608,9 +4608,10 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v639: Active Navigation Mode Transition
+// v640: Critical Fixes & Final UI Shrink
 let routeLabels = [];
 let isNavMode = false;
+let currentActiveRoute = null; // Track selection manually
 
 function startRouting(targetLat, targetLng) {
     if (!map) return;
@@ -4639,11 +4640,11 @@ function startRouting(targetLat, targetLng) {
             const routes = e.routes;
             routeLabels.forEach(l => map.removeLayer(l));
             routeLabels = [];
+            currentActiveRoute = routes[0]; // Default
 
             if (routes && routes.length > 0) {
-                // v638: Compact Map Fitting
                 const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [50, 50, 200, 50] });
+                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 160, 40] });
 
                 routes.forEach((route, idx) => {
                     const pointIdx = Math.floor(route.coordinates.length * 0.5);
@@ -4651,15 +4652,14 @@ function startRouting(targetLat, targetLng) {
                     const km = (route.summary.totalDistance / 1000).toFixed(1);
                     const mins = Math.round(route.summary.totalTime / 60);
                     const timeStr = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
-
-                    // v638: Active on Right, Alt on Left
                     const sideClass = (idx === 0) ? 'label-side-active' : 'label-side-alt';
 
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
                             className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'} ${sideClass}`,
                             html: `<span>${km} km, ${timeStr}</span>`,
-                            iconSize: [0, 0] // Auto-sizing handled by CSS
+                            iconSize: [0, 0],
+                            iconAnchor: [0, 0] // Anchor at the path
                         }),
                         zIndexOffset: 5000 + (routes.length - idx),
                         interactive: true
@@ -4673,18 +4673,17 @@ function startRouting(targetLat, targetLng) {
                 });
 
                 routingControl.on('routeselected', function (ev) {
-                    const selectedRoute = ev.route;
+                    currentActiveRoute = ev.route;
                     routeLabels.forEach((lbl, idx) => {
                         const el = lbl.getElement();
                         if (el) {
-                            const sideClass = (routes[idx] === selectedRoute) ? 'label-side-active' : 'label-side-alt';
-                            el.className = `route-label-badge ${routes[idx] === selectedRoute ? 'active' : 'alternative'} ${sideClass}`;
+                            const sideClass = (routes[idx] === currentActiveRoute) ? 'label-side-active' : 'label-side-alt';
+                            el.className = `route-label-badge ${routes[idx] === currentActiveRoute ? 'active' : 'alternative'} ${sideClass}`;
                         }
                     });
                 });
             }
 
-            // v638: Tighter Button Rendering
             const container = routingControl.getContainer();
             if (container && !container.querySelector('.routing-controls-v624')) {
                 const controls = document.createElement('div');
@@ -4695,7 +4694,7 @@ function startRouting(targetLat, targetLng) {
                 btnConfirm.innerHTML = "🚀 START";
                 btnConfirm.onclick = (ev) => {
                     L.DomEvent.stopPropagation(ev);
-                    enterNavigationMode(routingControl.getRouter().getSelectedRoute() || routes[0]);
+                    enterNavigationMode(currentActiveRoute);
                 };
 
                 const btnCancel = document.createElement('button');
@@ -4713,7 +4712,7 @@ function startRouting(targetLat, targetLng) {
         });
 
         map.closePopup();
-        showToast("Route preview ready.", 3000);
+        showToast("Preview ready.", 2000);
     } catch (e) {
         alert("Route error: " + e.message);
     }
@@ -4724,28 +4723,20 @@ function enterNavigationMode(selectedRoute) {
     isNavMode = true;
     document.body.classList.add('nav-mode-active');
 
-    // Clear preview clutter
     routeLabels.forEach(l => map.removeLayer(l));
     routeLabels = [];
 
-    // UI injection for Top/Bottom bars (v639)
-    let topBar = document.getElementById('nav-top-bar');
-    if (!topBar) {
-        topBar = document.createElement('div');
-        topBar.id = 'nav-top-bar';
-        document.body.appendChild(topBar);
-    }
+    let topBar = document.getElementById('nav-top-bar') || document.createElement('div');
+    topBar.id = 'nav-top-bar';
+    if (!topBar.parentNode) document.body.appendChild(topBar);
 
     const firstStep = selectedRoute.instructions[0] ? selectedRoute.instructions[0].text : "Follow the path";
     topBar.innerHTML = `<i class="fa fa-arrow-up"></i><div class="instruction-text">${firstStep}</div>`;
     topBar.style.display = 'flex';
 
-    let bottomBar = document.getElementById('nav-bottom-bar');
-    if (!bottomBar) {
-        bottomBar = document.createElement('div');
-        bottomBar.id = 'nav-bottom-bar';
-        document.body.appendChild(bottomBar);
-    }
+    let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
+    bottomBar.id = 'nav-bottom-bar';
+    if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
 
     const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
     const mins = Math.round(selectedRoute.summary.totalTime / 60);
@@ -4761,13 +4752,13 @@ function enterNavigationMode(selectedRoute) {
     `;
     bottomBar.style.display = 'flex';
 
-    // Fit map to active route only
     map.fitBounds(L.polyline(selectedRoute.coordinates).getBounds(), { padding: [100, 50, 150, 50] });
     showToast("Navigation Active", 2000);
 }
 
 function clearRouting() {
     isNavMode = false;
+    currentActiveRoute = null;
     document.body.classList.remove('nav-mode-active');
     if (routingControl) {
         map.removeControl(routingControl);
