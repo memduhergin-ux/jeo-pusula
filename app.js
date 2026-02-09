@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v622';
+const CACHE_NAME = 'jeocompass-v623';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3538,12 +3538,12 @@ if (btnAddPoint) {
             btnAddPoint.classList.add('active-add-point');
             // Show Crosshair and Confirm Button (Reverted v622)
             if (crosshair) crosshair.style.display = 'block';
-            if (confirmBtn) confirmBtn.style.display = 'block';
+            if (btnConfirmPoint) btnConfirmPoint.style.display = 'block';
             updateScaleValues(); // Refresh UI labels
         } else {
             btnAddPoint.classList.remove('active-add-point');
             if (crosshair) crosshair.style.display = 'none';
-            if (confirmBtn) confirmBtn.style.display = 'none';
+            if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
             updateScaleValues(); // Refresh UI labels
         }
     });
