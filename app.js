@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v673';
+const CACHE_NAME = 'jeocompass-v674';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3153,12 +3153,12 @@ function addExternalLayer(name, geojson) {
                 // v666: Revert to "Old Style" Simple CircleMarker
                 // User requested "Eski hali" (Old state) - usually implies simple vector circle
                 const marker = L.circleMarker(latlng, {
-                    radius: 10, // v668: Increased size
-                    fillColor: '#f44336', // v668: Red interior
-                    color: '#ffffff', // v668: White border
-                    weight: 3, // v668: Thicker border
+                    radius: 6, // v674: Reverted to blue dot (v672 style)
+                    fillColor: '#2196f3', // v674: Blue interior
+                    color: '#ffffff', // v674: White border
+                    weight: 2, // v674: Thin border
                     opacity: 1,
-                    fillOpacity: 1 // v668: Fully solid
+                    fillOpacity: 1
                 });
 
                 marker.isKmlMarker = true; // v545: Flag for fast identification
@@ -3397,7 +3397,8 @@ function toggleLayerLabels(id, showLabels) {
     l.labelsVisible = showLabels;
 
     l.layer.eachLayer(layer => {
-        if (layer instanceof L.Marker) {
+        // v674: Support CircleMarker (instanceof L.Path with isKmlMarker flag)
+        if (layer instanceof L.Marker || layer.isKmlMarker) {
             const tooltip = layer.getTooltip();
             if (tooltip) {
                 if (showLabels) {
@@ -3447,13 +3448,14 @@ function toggleLayerPoints(id, showPoints) {
     l.pointsVisible = showPoints;
 
     l.layer.eachLayer(layer => {
-        if (layer instanceof L.Marker) {
+        // v674: Support CircleMarker (Vector layers handle visibility via path style or setStyle)
+        if (layer instanceof L.Marker || layer.isKmlMarker) {
             if (showPoints) {
-                layer.setOpacity(1);
-                // v545: Tooltips follow marker opacity in Leaflet usually, 
-                // but we handle them in toggleLayerLabels separately.
+                if (layer.setOpacity) layer.setOpacity(1);
+                if (layer.setStyle) layer.setStyle({ opacity: 1, fillOpacity: 1 });
             } else {
-                layer.setOpacity(0);
+                if (layer.setOpacity) layer.setOpacity(0);
+                if (layer.setStyle) layer.setStyle({ opacity: 0, fillOpacity: 0 });
                 if (layer.getTooltip()) layer.closeTooltip();
             }
         }
