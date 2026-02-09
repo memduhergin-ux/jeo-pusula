@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v649';
+const CACHE_NAME = 'jeocompass-v651';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -849,6 +849,27 @@ function initBarometer() {
                     const p0 = 1013.25;
                     const alt = 44330 * (1 - Math.pow(p / p0, 1 / 5.255));
                     currentCoords.baroAlt = alt;
+                    // v516: Heading Line Update
+                    if (headingLine) {
+                        const lat = currentCoords.lat;
+                        const lon = currentCoords.lon;
+                        const heading = displayedHeading; // Assuming displayedHeading is available globally or from another source
+                        if (lat !== null && lon !== null && heading !== null) {
+                            headingLine.setLatLngs([
+                                [lat, lon],
+                                calculateDestination(lat, lon, 50000, heading) // 50km line
+                            ]);
+                        }
+                    }
+
+                    // v651: Dynamic Navigation Update
+                    if (isNavMode) {
+                        const lat = currentCoords.lat;
+                        const lon = currentCoords.lon;
+                        if (lat !== null && lon !== null) {
+                            updateRouteStart(lat, lon);
+                        }
+                    }
                 });
                 sensor.start();
                 return;
@@ -3469,8 +3490,8 @@ async function saveExternalLayers() {
 }
 
 async function loadExternalLayers() {
-    // v647: Non-blocking background loading
-    // showLoading("Loading saved layers..."); // Removed to prevent blocking UI on start/resume
+    // v650: Restored blocking loading screen as per user request
+    showLoading("Loading saved layers...");
     try {
         let data = await dbLoadLayers();
 
@@ -3503,14 +3524,11 @@ async function loadExternalLayers() {
             }
         }
         renderLayerList();
-        if (data.length > 0) {
-            showToast(`${data.length} Layers Loaded`, 2000); // Friendly non-blocking notification
-        }
     } catch (e) {
         console.error("KML loading error:", e);
         showToast("Error loading layers", 3000);
     } finally {
-        // hideLoading(); // Not needed as we didn't show it
+        hideLoading(); // v650: Correctly hide the overlay
     }
 }
 
@@ -4725,7 +4743,7 @@ function startRouting(targetLat, targetLng) {
 
                 const btnConfirm = document.createElement('button');
                 btnConfirm.className = "routing-btn routing-btn-confirm";
-                btnConfirm.innerHTML = `<i class="fa fa-location-arrow" style="margin-right:8px"></i>Başla`; // v644: Turkish label matching Screenshot
+                btnConfirm.innerHTML = `<i class="fa fa-location-arrow" style="margin-right:8px"></i>Start`; // v651: Changed to English 'Start'
                 btnConfirm.onclick = (ev) => {
                     L.DomEvent.stopPropagation(ev);
                     enterNavigationMode(currentActiveRoute);
@@ -4816,3 +4834,32 @@ function clearRouting() {
 }
 
 // v622: Reverted Crosshair logic (Add route button removed)
+// Clear dynamic routing watcher
+lastRouteUpdatePos = null;
+}
+
+// v651: Dynamic Routing Engine (Recalculate / Consume Line)
+let lastRouteUpdatePos = null;
+function updateRouteStart(lat, lon) {
+    if (!isNavMode || !routingControl) return;
+
+    // Use a threshold to avoid excessive API calls (e.g., 20 meters)
+    if (lastRouteUpdatePos) {
+        const dist = map.distance([lat, lon], lastRouteUpdatePos);
+        if (dist < 20) return; // Too small movement
+    }
+
+    // Update start point of the route to current location
+    // This visually "consumes" the path and triggers recalculation if off-route
+    const waypoints = routingControl.getWaypoints();
+    if (waypoints && waypoints.length >= 2) {
+        // Keep the target (last waypoint), update the start (first waypoint)
+        const target = waypoints[waypoints.length - 1];
+        routingControl.setWaypoints([
+            L.latLng(lat, lon),
+            target.latLng
+        ]);
+        lastRouteUpdatePos = L.latLng(lat, lon);
+        // console.log("v651: Route Start Updated to", lat, lon);
+    }
+}
