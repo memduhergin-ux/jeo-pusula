@@ -2217,33 +2217,41 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 /* Hide clutter strictly */
 .leaflet-routing-itinerary,
-.leaflet-routing-geocoders,
-.leaflet-routing-add-waypoint {
-    display: none !important;
-}
-
-/* Map-Based Route Labels (v629) */
+/* High-Visibility Map Labels (v631) */
 .route-label-badge {
     background: white !important;
-    color: #333 !important;
-    padding: 4px 10px !important;
-    border-radius: 20px !important;
+    color: #1a1a1a !important;
+    padding: 6px 14px !important;
+    border-radius: 50px !important;
     font-weight: 800 !important;
-    font-size: 0.85rem !important;
+    font-size: 0.95rem !important;
     white-space: nowrap !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    border: 2px solid #2196f3 !important;
-    pointer-events: none !important;
-    transform: translate(-50%, -50%) !important;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5) !important;
+    border: 3px solid #2196f3 !important;
+    /* Active Blue */
+    pointer-events: auto !important;
+    /* Make clickable */
+    transform: translate(-50%, -100%) !important;
+    /* Move above the line */
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    justify-content: center !important;
+    z-index: 1000 !important;
+    transition: all 0.3s ease;
+    cursor: pointer !important;
 }
 
 .route-label-badge.alternative {
-    background: #f0f0f0 !important;
+    background: #f8f8f8 !important;
     border-color: #999 !important;
+    /* Grey for alternative */
+    color: #666 !important;
     opacity: 0.9 !important;
+    font-weight: 700 !important;
+}
+
+.route-label-badge:active {
+    transform: translate(-50%, -100%) scale(0.95) !important;
 }
 
 /* Selection State for alternative paths via Leaflet Routing Machine */
@@ -2251,31 +2259,30 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     border-color: #00ffcc !important;
 }
 
-/* Confirmation Controls in v629 */
+/* Force Controls to be visible */
 .routing-controls-v624 {
     display: flex !important;
-    gap: 12px !important;
+    flex-direction: row !important;
+    gap: 15px !important;
     width: 100% !important;
-    margin-top: 12px !important;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 5px !important;
+    z-index: 10002 !important;
 }
 
 .routing-btn {
     flex: 1 !important;
-    padding: 14px !important;
-    border-radius: 16px !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
     border: none !important;
-    font-weight: 800 !important;
-    font-size: 1.05rem !important;
+    font-weight: 900 !important;
+    font-size: 1.1rem !important;
     cursor: pointer !important;
-    transition: all 0.2s;
 }
 
 .routing-btn-confirm {
     background: #2196f3 !important;
     color: white !important;
-    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+    box-shadow: 0 5px 20px rgba(33, 150, 243, 0.5);
 }
 
 .routing-btn-cancel {
