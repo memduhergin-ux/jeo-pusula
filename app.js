@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v676';
+const CACHE_NAME = 'jeocompass-v677';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3150,7 +3150,7 @@ function addExternalLayer(name, geojson) {
                 // v666: Revert to "Old Style" Simple CircleMarker
                 // User requested "Eski hali" (Old state) - usually implies simple vector circle
                 const marker = L.circleMarker(latlng, {
-                    radius: 5, // v675: Reverted to blue dot (radius 5 for elegance)
+                    radius: 4, // v677: Reverted to blue dot (radius 4 as requested)
                     fillColor: '#2196f3',
                     color: '#ffffff',
                     weight: 2,
