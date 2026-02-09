@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v678';
+const CACHE_NAME = 'jeocompass-v679';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1648,6 +1648,11 @@ function initMap() {
     map.createPane('tracking-pane');
     map.getPane('tracking-pane').style.zIndex = 650;
     map.getPane('tracking-pane').style.pointerEvents = 'none';
+
+    // v679: Create Dedicated Routing Pane (High priority above KML, below markers)
+    map.createPane('routing-pane');
+    map.getPane('routing-pane').style.zIndex = 850;
+    map.getPane('routing-pane').style.pointerEvents = 'none';
 
     const overlayMaps = {
         "Live Location": liveLayer
@@ -4667,8 +4672,13 @@ function startRouting(targetLat, targetLng) {
             fitSelectedRoutes: true,
             showAlternatives: true,
             position: 'bottomleft', // v665: Force control to Bottom-Left container
-            altLineOptions: { styles: [{ color: '#777', opacity: 0.3, weight: 6 }] },
-            lineOptions: { styles: [{ color: '#007bff', opacity: 0.85, weight: 8 }], addWaypoints: false },
+            altLineOptions: {
+                styles: [{ color: '#777', opacity: 0.4, weight: 8, pane: 'routing-pane' }]
+            },
+            lineOptions: {
+                styles: [{ color: '#1a73e8', opacity: 0.95, weight: 12, pane: 'routing-pane' }],
+                addWaypoints: false
+            },
             createMarker: function () { return null; }
         }).addTo(map);
 
@@ -4863,20 +4873,18 @@ function updateRouteInfoPanel(route, control) {
     const container = control.getContainer();
     if (!container) return;
 
-    // Wait 1 tick for DOM to ready or force selection
+    // v679: Harden finding the panel
     setTimeout(() => {
-        const altPanel = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected') || container.querySelector('.leaflet-routing-alt');
-        // Fallback to first alt if selected class not yet applied logic-wise
+        let altPanel = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected');
+        if (!altPanel) altPanel = container.querySelector('.leaflet-routing-alt');
 
         if (altPanel) {
             const totalMins = Math.round(route.summary.totalTime / 60);
             const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-            const kmStr = (route.summary.totalDistance / 1000).toFixed(1); // v656: 1 decimal for better precision
+            const kmStr = (route.summary.totalDistance / 1000).toFixed(1);
 
-            // v659: Extract Route Name (Via ...)
             let routeName = route.name;
             if (!routeName || routeName.length === 0) {
-                // Fallback: Find the road with the longest distance in instructions
                 if (route.instructions && route.instructions.length > 0) {
                     let maxDist = 0;
                     let bestName = "";
@@ -4889,18 +4897,22 @@ function updateRouteInfoPanel(route, control) {
                     if (bestName) routeName = bestName;
                 }
             }
-            // Final fallback
             const viaText = routeName ? `${routeName} üzerinden` : "En hızlı güzergah";
 
-            altPanel.innerHTML = `
-                <div class="info-main-title is-updated">${timeStr} <span class="info-km-span">(${kmStr} km)</span></div>
-                <div class="info-sub-desc">${viaText}</div>
-                <div class="info-eco"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
-            `;
-            // Force display block for single panel mode
+            // v679: Aggressive injection with visibility force
             altPanel.style.display = 'block';
+            altPanel.innerHTML = `
+                <div class="info-main-title is-updated" style="display:block !important; visibility:visible !important; opacity:1 !important;">
+                    ${timeStr} <span class="info-km-span">(${kmStr} km)</span>
+                </div>
+                <div class="info-sub-desc" style="display:block !important; visibility:visible !important;">${viaText}</div>
+                <div class="info-eco" style="display:flex !important; visibility:visible !important;"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
+            `;
+            console.log("v679: Navigation panel content injected successfully.");
+        } else {
+            console.warn("v679: Failed to find altPanel for route info.");
         }
-    }, 50);
+    }, 100);
 }
 
 

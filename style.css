@@ -2255,11 +2255,12 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 /* v645: Google Maps Style Bottom Sheet & Info Panel */
+/* v679: Positioned ABOVE bottom nav bar (42px + safe area) */
 .leaflet-routing-container {
     width: 100% !important;
     max-width: 500px !important;
     position: fixed !important;
-    bottom: 0 !important;
+    bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
@@ -2277,12 +2278,13 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 /* v651: Single Panel Mode - Hide non-selected alternatives */
+/* v679: Removed restrictive !important to allow JS toggling */
 .leaflet-routing-alt {
-    display: none !important;
+    display: none;
 }
 
 .leaflet-routing-alt.leaflet-routing-alt-selected {
-    display: block !important;
+    display: block;
 }
 
 .routing-controls-v624 {
@@ -2311,8 +2313,9 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 .routing-btn-cancel {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: #f1f3f4 !important;
     color: #3c4043 !important;
+    border: 1px solid #dadce0 !important;
 }
 
 .info-main-title {
