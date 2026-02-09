@@ -2279,6 +2279,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         max-width: 500px !important;
         position: fixed !important;
         bottom: 0 !important;
+        top: auto !important;
+        /* v661: Override leaflet-top to ensure bottom docking */
         left: 50% !important;
         transform: translateX(-50%) !important;
         background: #ffffff !important;

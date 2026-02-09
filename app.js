@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v660';
+const CACHE_NAME = 'jeocompass-v664';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -3138,15 +3138,30 @@ function addExternalLayer(name, geojson) {
             pointToLayer: (feature, latlng) => {
                 // Kibar Geological/Pin Icon
                 const iconHtml = `
-                <div class="kml-marker-pin">
-                    <div class="kml-marker-dot"></div>
+                <div class="kml-marker-pin" style="
+                    width: 20px;
+                    height: 20px;
+                    background: #2196f3;
+                    border: 2px solid white;
+                    border-radius: 50%;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <div class="kml-marker-dot" style="
+                        width: 6px;
+                        height: 6px;
+                        background: white;
+                        border-radius: 50%;
+                    "></div>
                 </div>
             `;
                 const icon = L.divIcon({
-                    className: 'kml-custom-icon',
+                    className: 'kml-custom-icon', // Helper class for selection
                     html: iconHtml,
-                    iconSize: [8, 8], // Even smaller icon size
-                    iconAnchor: [4, 4]
+                    iconSize: [24, 24], // v663: Restored to standard size (was 8x8)
+                    iconAnchor: [12, 12] // Center
                 });
                 const marker = L.marker(latlng, { icon: icon });
                 marker.isKmlMarker = true; // v545: Flag for fast identification
@@ -4687,8 +4702,8 @@ function startRouting(targetLat, targetLng) {
                         icon: L.divIcon({
                             className: 'route-label-container', // Pure container, no style
                             html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
-                            iconSize: [0, 0], // CSS handles size
-                            iconAnchor: [0, 0] // CSS handles offset
+                            iconSize: null, // v662: Let CSS determine size (width: max-content)
+                            iconAnchor: null // v662: Centered via CSS transform
                         }),
                         zIndexOffset: isFirst ? 9000 : 8000, // v658: Boost Z-Index to be above EVERYTHING
                         interactive: true,
