@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v675';
+const CACHE_NAME = 'jeocompass-v676';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -721,10 +721,8 @@ function optimizeMapPoints() {
                 });
             }
 
-            // 3. Process Labels
-            const processLimit = labelsToPlace.slice(0, 500);
-
-            processLimit.forEach(({ marker, tooltip }) => {
+            // 3. Process Labels (v676: No Hiding)
+            labelsToPlace.forEach(({ marker, tooltip }) => {
                 marker.openTooltip();
                 const tooltipEl = tooltip.getElement();
                 if (!tooltipEl) return;
@@ -778,17 +776,16 @@ function optimizeMapPoints() {
                     tooltipEl.style.marginTop = `${bestPos.y + height / 2}px`;
                     occupiedRects.push(bestPos.rect);
                 } else {
-                    tooltipEl.style.opacity = "0";
-                    tooltipEl.style.visibility = "hidden";
+                    // v676: Fallback to North instead of hiding (User: "No Hiding")
+                    const fallbackDir = directions[0];
+                    tooltipEl.style.opacity = "1";
+                    tooltipEl.style.visibility = "visible";
+                    tooltipEl.style.marginLeft = `${fallbackDir.x + width / 2}px`;
+                    tooltipEl.style.marginTop = `${fallbackDir.y + height / 2}px`;
+                    // Note: We don't push to occupiedRects if it's a fallback collision, 
+                    // or we could if we want others to avoid it too. Let's not to avoid cascades.
                 }
             });
-
-            // Hide the rest
-            if (labelsToPlace.length > 500) {
-                labelsToPlace.slice(500).forEach(({ marker }) => {
-                    if (marker.getTooltip()) marker.closeTooltip();
-                });
-            }
 
         }, 50);
     } catch (e) {

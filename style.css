@@ -1942,65 +1942,7 @@ textarea.form-input {
         opacity: 0.6 !important;
     }
 
-    /* KML Label and Marker Enhancements */
-    /* v667: Reverted to Standard KML Label (User: "Don't confuse KML labels") */
-    .kml-label {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: #fff !important;
-        font-size: 10px !important;
-        font-weight: 800 !important;
-        /* Ultra Bold */
-        text-shadow:
-            -1px -1px 0 #000,
-            1px -1px 0 #000,
-            -1px 1px 0 #000,
-            1px 1px 0 #000,
-            0px 0px 4px #000;
-        /* Strong outline + shadow for transparent text */
-        white-space: nowrap;
-        pointer-events: none;
-        padding: 0px 1px !important;
-        /* tighter look */
-        transition: opacity 0.3s, visibility 0.3s;
-    }
 
-    .leaflet-tooltip-pane .kml-label::before {
-        display: none !important;
-    }
-
-    /* Kibar KML Point Marker */
-    .kml-custom-icon {
-        background: transparent;
-        border: none;
-    }
-
-    .kml-marker-pin {
-        width: 8px;
-        height: 8px;
-        background: rgba(33, 150, 243, 0.2);
-        border: 1.5px solid #2196f3;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 5px rgba(33, 150, 243, 0.4);
-    }
-
-    .kml-marker-dot {
-        width: 2.5px;
-        height: 2.5px;
-        background: #fff;
-        border-radius: 50%;
-        box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
-    }
-
-    .kml-custom-icon:hover .kml-marker-pin {
-        background: rgba(33, 150, 243, 0.4);
-        transform: scale(1.1);
-        transition: transform 0.2s;
-    }
 
     @keyframes spin {
         to {
@@ -2029,6 +1971,66 @@ textarea.form-input {
     }
 
     /* v605: Closed landscape media query early to keep records styles global */
+}
+
+/* KML Label and Marker Enhancements (Global v676) */
+.leaflet-tooltip.kml-label,
+.kml-label {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #fff !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    /* Ultra Bold */
+    text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000,
+        0px 0px 4px #000;
+    /* Strong outline + shadow for transparent text */
+    white-space: nowrap;
+    pointer-events: none;
+    padding: 0px 1px !important;
+    /* tighter look */
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.leaflet-tooltip-pane .kml-label::before {
+    display: none !important;
+}
+
+/* Kibar KML Point Marker (Global v676) */
+.kml-custom-icon {
+    background: transparent;
+    border: none;
+}
+
+.kml-marker-pin {
+    width: 8px;
+    height: 8px;
+    background: rgba(33, 150, 243, 0.2);
+    border: 1.5px solid #2196f3;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 5px rgba(33, 150, 243, 0.4);
+}
+
+.kml-marker-dot {
+    width: 2.5px;
+    height: 2.5px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.kml-custom-icon:hover .kml-marker-pin {
+    background: rgba(33, 150, 243, 0.4);
+    transform: scale(1.1);
+    transition: transform 0.2s;
 }
 
 /* Records Tabs & Management (Global v605) */
