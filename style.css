@@ -2304,11 +2304,21 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     border: none !important;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15) !important;
     z-index: 10001 !important;
-    padding: 18px 22px calc(18px + env(safe-area-inset-bottom, 0px)) 22px !important;
+    padding: 12px 22px calc(12px + env(safe-area-inset-bottom, 0px)) 22px !important;
+    /* v651: Reduced padding */
     max-height: 240px !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
+}
+
+/* v651: Single Panel Mode - Hide non-selected alternatives */
+.leaflet-routing-alt {
+    display: none !important;
+}
+
+.leaflet-routing-alt.leaflet-routing-alt-selected {
+    display: block !important;
 }
 
 .routing-controls-v624 {
@@ -2316,8 +2326,18 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     order: -1 !important;
     /* Keep buttons at TOP level within container - fills gap below */
     gap: 12px !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 0px !important;
+    /* v651: Zero gap */
+    padding-bottom: 0px !important;
     width: 100% !important;
+}
+
+/* v651: Seamless Button-Panel Integration */
+.routing-btn {
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 4px !important;
+    /* Square off bottom for connected look? Or keep rounded */
+    /* Let's keep rounded but tight */
 }
 
 .routing-btn {

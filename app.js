@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v651';
+const CACHE_NAME = 'jeocompass-v655';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4831,12 +4831,12 @@ function clearRouting() {
 
     const controls = document.querySelector('.routing-fixed-controls');
     if (controls) controls.style.display = 'none';
+
+    // v651: Clear dynamic routing watcher
+    lastRouteUpdatePos = null;
 }
 
 // v622: Reverted Crosshair logic (Add route button removed)
-// Clear dynamic routing watcher
-lastRouteUpdatePos = null;
-}
 
 // v651: Dynamic Routing Engine (Recalculate / Consume Line)
 let lastRouteUpdatePos = null;

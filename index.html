@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>JeoCompass - v636</title>
+    <title>JeoCompass - v653</title>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=649">
+    <link rel="stylesheet" href="style.css?v=655">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -27,20 +27,23 @@
         <div class="spinner-large"></div>
         <div id="loading-text"
             style="color: white; margin-top: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 0 20px;">
-            Processing file...</div>
-        <div style="color: #aaa; margin-top: 10px; font-size: 0.8rem;">Please wait, this process may take some time for
-            large files.</div>
+            Loading KML layers, please wait...</div>
+        <div style="color: #aaa; margin-top: 10px; font-size: 0.8rem;">Wait time may vary depending on file size.</div>
     </div>
 
     <!-- Splash Screen -->
-    <div id="splash-screen">
-        <div class="splash-content">
-            <img src="icon-512.png" alt="JeoCompass Logo" class="splash-logo">
-            <h1 class="splash-title">JeoCompass</h1>
-            <div class="splash-credit">Designed by <span class="splash-role">Geologist</span></div>
-            <div class="splash-name">M. E. TAŞPINAR</div>
-            <div class="splash-version" style="color: #666; font-size: 0.7rem; margin-top: 10px;">v618</div>
+    <div id="splash-screen"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: #1a1a1a;">
+        <div class="splash-content"
+            style="text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <img src="icon-512.png" alt="JeoCompass Logo" class="splash-logo"
+                style="width: 120px; margin-bottom: 20px;">
+            <div class="splash-credit" style="margin-bottom: 5px; color: #aaa; font-size: 0.9rem;">Designed by <span
+                    class="splash-role" style="color: #4caf50; font-weight: bold;">Geologist</span></div>
+            <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
         </div>
+        <div class="splash-version"
+            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v655</div>
     </div>
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
@@ -692,9 +695,9 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=649"></script>
+    <script src="app.js?v=655"></script>
     <script>
-        const JEO_VERSION = '649';
+        const JEO_VERSION = '655';
         console.log("App Version: v" + JEO_VERSION);
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
