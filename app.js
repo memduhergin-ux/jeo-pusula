@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v640';
+const CACHE_NAME = 'jeocompass-v641';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4608,7 +4608,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v640: Critical Fixes & Final UI Shrink
+// v641: Ultimate Aesthetic & Navigation Flow
 let routeLabels = [];
 let isNavMode = false;
 let currentActiveRoute = null; // Track selection manually
@@ -4644,9 +4644,10 @@ function startRouting(targetLat, targetLng) {
 
             if (routes && routes.length > 0) {
                 const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 160, 40] });
+                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 180, 40] });
 
                 routes.forEach((route, idx) => {
+                    // Center labels on midpoints - v641
                     const pointIdx = Math.floor(route.coordinates.length * 0.5);
                     const labelPoint = route.coordinates[pointIdx];
                     const km = (route.summary.totalDistance / 1000).toFixed(1);
@@ -4659,9 +4660,9 @@ function startRouting(targetLat, targetLng) {
                             className: `route-label-badge ${idx === 0 ? 'active' : 'alternative'} ${sideClass}`,
                             html: `<span>${km} km, ${timeStr}</span>`,
                             iconSize: [0, 0],
-                            iconAnchor: [0, 0] // Anchor at the path
+                            iconAnchor: [0, 0] // Root to the path
                         }),
-                        zIndexOffset: 5000 + (routes.length - idx),
+                        zIndexOffset: 5100 + (routes.length - idx),
                         interactive: true
                     }).addTo(map);
 
@@ -4712,7 +4713,7 @@ function startRouting(targetLat, targetLng) {
         });
 
         map.closePopup();
-        showToast("Preview ready.", 2000);
+        showToast("Preview ready.", 1500);
     } catch (e) {
         alert("Route error: " + e.message);
     }
@@ -4731,7 +4732,7 @@ function enterNavigationMode(selectedRoute) {
     if (!topBar.parentNode) document.body.appendChild(topBar);
 
     const firstStep = selectedRoute.instructions[0] ? selectedRoute.instructions[0].text : "Follow the path";
-    topBar.innerHTML = `<i class="fa fa-arrow-up"></i><div class="instruction-text">${firstStep}</div>`;
+    topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${firstStep}</div>`;
     topBar.style.display = 'flex';
 
     let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
@@ -4748,12 +4749,17 @@ function enterNavigationMode(selectedRoute) {
             <div class="nav-time">${mins} min</div>
             <div class="nav-stats">${km} km • ${arrivalTime}</div>
         </div>
-        <button class="nav-btn-alt"><i class="fa fa-ellipsis-h"></i></button>
+        <button class="nav-btn-alt"><i class="fa fa-ellipsis-v"></i></button>
     `;
     bottomBar.style.display = 'flex';
 
-    map.fitBounds(L.polyline(selectedRoute.coordinates).getBounds(), { padding: [100, 50, 150, 50] });
-    showToast("Navigation Active", 2000);
+    // Google Maps Style: Zoom to USER location on start
+    if (currentCoords.lat && currentCoords.lon) {
+        map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
+    } else {
+        map.fitBounds(L.polyline(selectedRoute.coordinates).getBounds(), { padding: [100, 50, 150, 50] });
+    }
+    showToast("Navigation Active", 1500);
 }
 
 function clearRouting() {
