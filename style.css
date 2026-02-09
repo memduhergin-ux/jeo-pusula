@@ -2188,35 +2188,58 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 
-/* v626: Minimalist Top Bar Routing UI - Fully Fixed */
+
+/* v628: Google Maps Style Bottom Routing Sheet */
 .leaflet-routing-container {
     width: 95% !important;
     max-width: 450px !important;
-    /* Slightly wider for buttons */
     margin: 0 auto !important;
     position: fixed !important;
-    top: env(safe-area-inset-top, 10px) !important;
-    left: 2.5% !important;
-    right: 2.5% !important;
-    padding: 10px 14px !important;
-    background: rgba(15, 15, 15, 0.9) !important;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Move to bottom */
+    top: auto !important;
+    /* Reset top */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    padding: 12px 18px !important;
+    background: rgba(20, 20, 20, 0.96) !important;
     color: white !important;
-    border-radius: 18px !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+    border-radius: 24px !important;
+    backdrop-filter: blur(30px) !important;
+    -webkit-backdrop-filter: blur(30px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6) !important;
     font-family: 'Outfit', 'Montserrat', sans-serif !important;
-    z-index: 5000 !important;
+    z-index: 9999 !important;
     pointer-events: auto !important;
-    transition: all 0.4s ease;
+    max-height: 120px;
+    /* Short height for summary view */
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Hide clutter */
-.leaflet-routing-itinerary-instructions,
-.leaflet-routing-geocoders,
-.leaflet-routing-add-waypoint {
+/* Expanded state for Bottom Sheet */
+.leaflet-routing-container.routing-expanded {
+    max-height: 70vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow-y: auto !important;
+}
+
+/* STRICT HIDING OF CLUTTER */
+.leaflet-routing-container .leaflet-routing-itinerary,
+.leaflet-routing-container .leaflet-routing-geocoders,
+.leaflet-routing-container .leaflet-routing-add-waypoint,
+.leaflet-routing-container .leaflet-routing-itinerary-instructions {
     display: none !important;
+}
+
+/* Reveal only when expanded */
+.routing-expanded .leaflet-routing-itinerary,
+.routing-expanded .leaflet-routing-itinerary-instructions {
+    display: block !important;
 }
 
 /* Routing Summary Bar Layout */
@@ -2229,64 +2252,64 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     background: transparent !important;
 }
 
+/* Hide all summaries except the first one */
+.leaflet-routing-alt:not(:first-child) {
+    display: none !important;
+}
+
 .leaflet-routing-alt h2 {
-    font-size: 0.85rem !important;
-    color: rgba(255, 255, 255, 0.7) !important;
-    margin: 0 0 2px 0 !important;
+    font-size: 0.8rem !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    margin: 0 0 4px 0 !important;
     font-weight: 500 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .leaflet-routing-alt h3 {
-    font-size: 0.95rem !important;
+    font-size: 1.2rem !important;
     color: #00ffcc !important;
     margin: 0 !important;
-    font-weight: 800 !important;
+    font-weight: 900 !important;
 }
 
-/* Confirmation Controls in Bar */
+/* Confirmation Controls in Bottom Bar */
 .routing-controls-v624 {
     display: flex !important;
-    gap: 10px !important;
+    gap: 12px !important;
     width: 100% !important;
-    margin-top: 10px !important;
+    margin-top: 12px !important;
+    padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 10px;
 }
 
 .routing-btn {
     flex: 1 !important;
-    padding: 12px !important;
-    border-radius: 12px !important;
+    padding: 14px !important;
+    border-radius: 16px !important;
     border: none !important;
     font-weight: 700 !important;
-    font-size: 0.9rem !important;
+    font-size: 1rem !important;
     cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, background 0.2s;
+}
+
+.routing-btn:active {
+    transform: scale(0.96);
 }
 
 .routing-btn-confirm {
     background: #4caf50 !important;
     color: white !important;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
 }
 
 .routing-btn-cancel {
-    background: #f44336 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
     color: white !important;
 }
 
-/* Expanded view for instructions */
-.routing-expanded .leaflet-routing-itinerary-instructions {
-    display: block !important;
-    max-height: 250px;
-    overflow-y: auto;
-    margin-top: 10px;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.9);
+/* Expanded Instruction Styling */
+.routing-expanded .leaflet-routing-itinerary-instructions table {
+    width: 100% !important;
+    color: #eee !important;
+    font-size: 0.8rem !important;
 }

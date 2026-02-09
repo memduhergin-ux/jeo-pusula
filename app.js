@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v626';
+const CACHE_NAME = 'jeocompass-v628';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4607,7 +4607,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 });
 
 
-// v622: Interactive Routing Engine Integration (Simplified Workflow)
+// v622: Interactive Routing Engine Integration// v627: Ultra-Minimalist Top Bar Routing Logic
 function startRouting(targetLat, targetLng) {
     if (!map) return;
 
@@ -4630,31 +4630,43 @@ function startRouting(targetLat, targetLng) {
             addWaypoints: false,
             draggableWaypoints: false,
             fitSelectedRoutes: true,
-            showAlternatives: false,
+            showAlternatives: false, // Strictly NO alternatives v627
+            altLineOptions: { styles: [] }, // Hide alternative lines
             lineOptions: {
                 styles: [{ color: '#2196f3', opacity: 0.8, weight: 12 }],
                 addWaypoints: false,
-                extendToWaypoints: false
+                extendToWaypoints: false,
+                missingRouteTolerance: 0
             },
-            createMarker: function () { return null; } // Use existing markers
+            createMarker: function () { return null; }
         }).addTo(map);
 
-        // v622: Make routing line clickable
+        // Adjust map to fit route with top padding to avoid bar overlap
         routingControl.on('routesfound', function (e) {
+            const routes = e.routes;
+            if (routes && routes.length > 0) {
+                // v627: Force use of only one route in itinerary UI
+                if (routingControl._selectedRoute !== routes[0]) {
+                    routingControl._selectedRoute = routes[0];
+                }
+
+                const bounds = L.latLngBounds(routes[0].coordinates);
+                // v628: Padding for Bottom Sheet [Top, Right, Bottom, Left]
+                map.fitBounds(bounds, { padding: [40, 40, 140, 40] });
+            }
+
             if (routingControl._line && routingControl._line.on) {
                 routingControl._line.on('click', function (ev) {
                     L.DomEvent.stopPropagation(ev);
                     const container = routingControl.getContainer();
-                    if (container) {
-                        container.classList.toggle('routing-expanded');
-                    }
+                    if (container) container.classList.toggle('routing-expanded');
                 });
             }
         });
 
-        // Custom styling for routing container (v622 Style)
         const container = routingControl.getContainer();
         if (container) {
+            // Click summary to expand
             const alt = container.querySelector('.leaflet-routing-alt');
             if (alt) {
                 alt.title = "Click for route plan";
@@ -4664,7 +4676,7 @@ function startRouting(targetLat, targetLng) {
                 };
             }
 
-            // v624: Add Confirmation Controls
+            // v627: Add Confirmation Controls
             const controls = document.createElement('div');
             controls.className = "routing-controls-v624";
             controls.id = "routing-confirmation-ui";
@@ -4674,7 +4686,7 @@ function startRouting(targetLat, targetLng) {
             btnConfirm.innerHTML = "✅ Start";
             btnConfirm.onclick = (ev) => {
                 L.DomEvent.stopPropagation(ev);
-                controls.style.display = 'none'; // Hide confirmation after starting
+                controls.style.display = 'none';
                 showToast("Route started", 2000);
             };
 
