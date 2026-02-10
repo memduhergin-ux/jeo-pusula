@@ -551,7 +551,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v679';
+const CACHE_NAME = 'jeocompass-v680';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -1644,15 +1644,18 @@ function initMap() {
     liveLayer.addTo(map);
     highlightLayer.addTo(map);
 
-    // Create High-Priority Tracking Pane (v397)
-    map.createPane('tracking-pane');
-    map.getPane('tracking-pane').style.zIndex = 650;
-    map.getPane('tracking-pane').style.pointerEvents = 'none';
+    // v680: Safer pane creation (Check if exists first)
+    if (!map.getPane('tracking-pane')) {
+        map.createPane('tracking-pane');
+        map.getPane('tracking-pane').style.zIndex = 650;
+        map.getPane('tracking-pane').style.pointerEvents = 'none';
+    }
 
-    // v679: Create Dedicated Routing Pane (High priority above KML, below markers)
-    map.createPane('routing-pane');
-    map.getPane('routing-pane').style.zIndex = 850;
-    map.getPane('routing-pane').style.pointerEvents = 'none';
+    if (!map.getPane('routing-pane')) {
+        map.createPane('routing-pane');
+        map.getPane('routing-pane').style.zIndex = 850;
+        map.getPane('routing-pane').style.pointerEvents = 'none';
+    }
 
     const overlayMaps = {
         "Live Location": liveLayer
@@ -4663,6 +4666,13 @@ function startRouting(targetLat, targetLng) {
         return;
     }
 
+    // v680: Immediate feedback and safe routing-pane check
+    showToast("Calculating route...", 2000);
+    if (map && !map.getPane('routing-pane')) {
+        map.createPane('routing-pane');
+        map.getPane('routing-pane').style.zIndex = 850;
+    }
+
     try {
         routingControl = L.Routing.control({
             waypoints: [L.latLng(startPos[0], startPos[1]), L.latLng(targetLat, targetLng)],
@@ -4768,36 +4778,15 @@ function startRouting(targetLat, targetLng) {
             }
 
             const container = routingControl.getContainer();
-            if (container && !container.querySelector('.routing-controls-v624')) {
-                const controls = document.createElement('div');
-                controls.className = "routing-controls-v624";
-
-                const btnConfirm = document.createElement('button');
-                btnConfirm.className = "routing-btn routing-btn-confirm";
-                btnConfirm.innerHTML = `<i class="fa fa-location-arrow" style="margin-right:8px"></i>Start`; // v651: Changed to English 'Start'
-                btnConfirm.onclick = (ev) => {
-                    L.DomEvent.stopPropagation(ev);
-                    enterNavigationMode(currentActiveRoute);
-                };
-
-                const btnCancel = document.createElement('button');
-                btnCancel.className = "routing-btn routing-btn-cancel";
-                btnCancel.innerHTML = "İptal";
-                btnCancel.onclick = (ev) => {
-                    L.DomEvent.stopPropagation(ev);
-                    clearRouting();
-                };
-
-                controls.appendChild(btnConfirm);
-                controls.appendChild(btnCancel);
-                container.prepend(controls);
+            if (container) {
+                injectRoutingButtons(container);
             }
         });
 
         map.closePopup();
-        showToast("Routes found.", 1500);
     } catch (e) {
-        alert("Route error: " + e.message);
+        console.error("v680 Route error:", e);
+        showToast("Route failure: " + e.message, 3000);
     }
 }
 
@@ -4873,12 +4862,15 @@ function updateRouteInfoPanel(route, control) {
     const container = control.getContainer();
     if (!container) return;
 
-    // v679: Harden finding the panel
+    // v679/v680: Harden finding the panel with more aggressive retries
     setTimeout(() => {
         let altPanel = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected');
         if (!altPanel) altPanel = container.querySelector('.leaflet-routing-alt');
 
-        if (altPanel) {
+        // v680: Fallback to the container itself if altPanel is missing or Leaflet-Routing UI changed
+        const TARGET = altPanel || container;
+
+        if (TARGET) {
             const totalMins = Math.round(route.summary.totalTime / 60);
             const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
             const kmStr = (route.summary.totalDistance / 1000).toFixed(1);
@@ -4899,20 +4891,54 @@ function updateRouteInfoPanel(route, control) {
             }
             const viaText = routeName ? `${routeName} üzerinden` : "En hızlı güzergah";
 
-            // v679: Aggressive injection with visibility force
-            altPanel.style.display = 'block';
-            altPanel.innerHTML = `
-                <div class="info-main-title is-updated" style="display:block !important; visibility:visible !important; opacity:1 !important;">
-                    ${timeStr} <span class="info-km-span">(${kmStr} km)</span>
+            // v679/v680: Force visibility and populate content
+            TARGET.style.display = 'block';
+            TARGET.style.minHeight = '120px'; // v680: Ensure panel isn't collapsed
+            TARGET.innerHTML = `
+                <div class="info-main-title is-updated" style="display:block !important; visibility:visible !important; opacity:1 !important; color:#1e8e3e !important;">
+                    ${timeStr} <span class="info-km-span" style="color:#1e8e3e !important; opacity:0.8;">(${kmStr} km)</span>
                 </div>
-                <div class="info-sub-desc" style="display:block !important; visibility:visible !important;">${viaText}</div>
-                <div class="info-eco" style="display:flex !important; visibility:visible !important;"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
+                <div class="info-sub-desc" style="display:block !important; visibility:visible !important; color:#70757a !important;">${viaText}</div>
+                <div class="info-eco" style="display:flex !important; visibility:visible !important; color:#1e8e3e !important;"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
             `;
-            console.log("v679: Navigation panel content injected successfully.");
-        } else {
-            console.warn("v679: Failed to find altPanel for route info.");
+
+            // v680: Re-inject controls if they were wiped by the innerHTML update
+            if (!container.querySelector('.routing-controls-v624')) {
+                injectRoutingButtons(container);
+            }
+
+            console.log("v680: Navigation panel content synchronized successfully.");
         }
-    }, 100);
+    }, 150);
+}
+
+// v680: Dedicated helper to inject Start/Cancel buttons
+function injectRoutingButtons(container) {
+    if (!container || container.querySelector('.routing-controls-v624')) return;
+
+    const controls = document.createElement('div');
+    controls.className = "routing-controls-v624";
+    controls.style.marginTop = "15px";
+
+    const btnConfirm = document.createElement('button');
+    btnConfirm.className = "routing-btn routing-btn-confirm";
+    btnConfirm.innerHTML = `<i class="fa fa-location-arrow" style="margin-right:8px"></i>Start`;
+    btnConfirm.onclick = (ev) => {
+        L.DomEvent.stopPropagation(ev);
+        enterNavigationMode(currentActiveRoute);
+    };
+
+    const btnCancel = document.createElement('button');
+    btnCancel.className = "routing-btn routing-btn-cancel";
+    btnCancel.innerHTML = "İptal";
+    btnCancel.onclick = (ev) => {
+        L.DomEvent.stopPropagation(ev);
+        clearRouting();
+    };
+
+    controls.appendChild(btnConfirm);
+    controls.appendChild(btnCancel);
+    container.prepend(controls);
 }
 
 

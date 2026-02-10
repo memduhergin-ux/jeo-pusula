@@ -2255,7 +2255,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 /* v645: Google Maps Style Bottom Sheet & Info Panel */
-/* v679: Positioned ABOVE bottom nav bar (42px + safe area) */
+/* v680: Positioned ABOVE bottom nav bar (42px + safe area) + HIGH PRIORITY */
 .leaflet-routing-container {
     width: 100% !important;
     max-width: 500px !important;
@@ -2269,9 +2269,10 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     border-radius: 28px 28px 0 0 !important;
     border: none !important;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15) !important;
-    z-index: 10001 !important;
+    z-index: 20000 !important;
     padding: 12px 22px calc(12px + env(safe-area-inset-bottom, 0px)) 22px !important;
-    max-height: 240px !important;
+    min-height: 140px !important;
+    max-height: 280px !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
