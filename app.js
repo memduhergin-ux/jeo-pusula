@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v717
-const CACHE_NAME = 'jeo-cache-v717';
-const JEO_VERSION = 'v717';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v720
+const CACHE_NAME = 'jeo-cache-v720';
+const JEO_VERSION = 'v720';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -2065,6 +2065,15 @@ function makeDraggable(element, storageKey) {
 
     function dragMouseDown(e) {
         e = e || window.event;
+        // v720: Stop event from reaching the map
+        if (e.stopPropagation) e.stopPropagation();
+        if (typeof L !== 'undefined' && L.DomEvent) L.DomEvent.stopPropagation(e);
+
+        // v720: Disable map dragging during UI drag
+        if (typeof map !== 'undefined' && map && map.dragging) {
+            map.dragging.disable();
+        }
+
         // get the mouse cursor position at startup:
         if (e.type === 'touchstart') {
             pos3 = e.touches[0].clientX;
@@ -2118,6 +2127,11 @@ function makeDraggable(element, storageKey) {
         document.onmousemove = null;
         document.ontouchend = null;
         document.ontouchmove = null;
+
+        // v720: Re-enable map dragging
+        if (typeof map !== 'undefined' && map && map.dragging) {
+            map.dragging.enable();
+        }
 
         // Save position
         if (storageKey) {
@@ -3064,8 +3078,19 @@ if (btnScaleToggle) {
             wrapper.classList.toggle('visible');
             const isVisible = wrapper.classList.contains('visible');
             btnScaleToggle.style.backgroundColor = isVisible ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0,0,0,0.7)';
+
             // v718: Persist visibility state
             localStorage.setItem('jeoScaleVisible', JSON.stringify(isVisible));
+
+            // v719: Reset to default position when toggled ON
+            if (isVisible) {
+                wrapper.style.removeProperty('top');
+                wrapper.style.removeProperty('left');
+                wrapper.style.removeProperty('bottom');
+                wrapper.style.removeProperty('right');
+                localStorage.removeItem('jeoScalePos');
+            }
+
             // v718: Remove inline display to prevent conflicts with class
             wrapper.style.removeProperty('display');
         }
