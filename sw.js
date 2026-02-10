@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v709';
+const CACHE_NAME = 'jeo-cache-v710';
 const ASSETS = [
     './',
     'index.html',

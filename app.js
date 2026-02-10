@@ -1,6 +1,6 @@
 ﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v709
-const CACHE_NAME = 'jeocompass-v709';
-const JEO_VERSION = 'v709';
+const CACHE_NAME = 'jeo-cache-v710';
+const JEO_VERSION = 'v710';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -2905,7 +2905,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         // v708: Toggle Map Floating Buttons
         const fabContainer = document.querySelector('.map-fab-container');
         if (fabContainer) {
-            fabContainer.style.display = (targetId === 'view-map') ? 'block' : 'none';
+            fabContainer.style.display = (targetId === 'view-map') ? 'flex' : 'none';
         }
 
         // 3. Security & State Reset
@@ -2928,6 +2928,15 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             }, 150); // v574: Slightly increased delay for stability
         }
     });
+});
+
+// v710: Ensure Map Buttons visibility is correct on startup
+document.addEventListener('DOMContentLoaded', () => {
+    const activeView = document.querySelector('.view-section.active');
+    const fabContainer = document.querySelector('.map-fab-container');
+    if (activeView && fabContainer) {
+        fabContainer.style.display = (activeView.id === 'view-map') ? 'flex' : 'none';
+    }
 });
 // --------------------------------------------------------------------------
 // KML/KMZ Import & Layer Management
