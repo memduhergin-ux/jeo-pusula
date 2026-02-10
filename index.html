@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>Jeoloji Pusulası v684</title>
-    <!-- Jeoloji Pusulası v684 -->
-    <meta name="version" content="v684">
-    <meta name="jeo-version" content="v684">
+    <title>Jeoloji Pusulası v685</title>
+    <!-- Jeoloji Pusulası v685 -->
+    <meta name="version" content="v685">
+    <meta name="jeo-version" content="v685">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=684">
+    <link rel="stylesheet" href="style.css?v=685">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -39,6 +39,9 @@
         style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: #1a1a1a;">
         <div class="splash-content"
             style="text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <div
+                style="width: 120px; font-size: 1.1rem; font-weight: bold; color: #4caf50; margin-bottom: 10px; text-align: center; word-wrap: break-word; line-height: 1.2;">
+                JEOCOMPASS</div>
             <img src="icon-512.png" alt="JeoCompass Logo" class="splash-logo"
                 style="width: 120px; margin-bottom: 20px;">
             <div class="splash-credit" style="margin-bottom: 5px; color: #aaa; font-size: 0.9rem;">Designed by <span
@@ -46,7 +49,7 @@
             <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
         </div>
         <div class="splash-version"
-            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v684</div>
+            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v685</div>
     </div>
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
@@ -449,7 +452,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v684</p>
+                        JeoCompass - Version v685</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -462,7 +465,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v684</div>
+                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v685</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -557,7 +560,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v684
+                    JeoCompass v685
                 </div>
             </div>
         </div>
@@ -698,13 +701,13 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=684"></script>
+    <script src="app.js?v=685"></script>
     <script>
-        console.log("App Version: v684");
+        console.log("App Version: v685");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=684`)
+                navigator.serviceWorker.register(`sw.js?v=685`)
                     .then(reg => {
                         console.log('Service Worker registered');
                         reg.update().catch(() => { });
