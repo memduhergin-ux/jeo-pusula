@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v689
-const CACHE_NAME = 'jeocompass-v689';
-const JEO_VERSION = 'v689';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v690
+const CACHE_NAME = 'jeocompass-v690';
+const JEO_VERSION = 'v690';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4676,11 +4676,10 @@ function startRouting(targetLat, targetLng) {
     }
 
     try {
-        // v689: Multi-Server Routing Strategy (Corrected)
+        // v690: Multi-Server Routing Strategy (CSP Fixed)
         const OSRM_SERVERS = [
-            'https://routing.openstreetmap.de/routed-car/route/v1', // 1. FOSSGIS (Primary)
-            'https://router.project-osrm.org/route/v1',             // 2. OSRM Demo (Backup)
-            'https://osrm.geofabrik.de/5d089125/v1'                 // 3. Geofabrik (Fall-fallback)
+            'https://routing.openstreetmap.de/routed-car/route/v1', // 1. FOSSGIS (Primary - Best)
+            'https://router.project-osrm.org/route/v1'              // 2. OSRM Demo (Backup)
         ];
 
         let currentServerIndex = 0;
@@ -4689,7 +4688,7 @@ function startRouting(targetLat, targetLng) {
             return L.Routing.osrmv1({
                 serviceUrl: url,
                 profile: 'driving',
-                timeout: 10000 // 10s
+                timeout: 15000 // Increased timeout to 15s
             });
         }
 
@@ -4699,7 +4698,7 @@ function startRouting(targetLat, targetLng) {
             }
 
             const serverUrl = OSRM_SERVERS[serverIndex];
-            console.log(`v689 Router Try [${serverIndex}]:`, serverUrl);
+            console.log(`v690 Router Try [${serverIndex}]:`, serverUrl);
 
             routingControl = L.Routing.control({
                 router: createRouter(serverUrl),
@@ -4721,11 +4720,14 @@ function startRouting(targetLat, targetLng) {
                 console.error(`Router [${serverIndex}] Fail:`, err);
                 if (serverIndex < OSRM_SERVERS.length - 1) {
                     showToast(`Sunucu ${serverIndex + 1} yanıt vermedi, alternatif deneniyor...`, 2000);
-                    setTimeout(() => initRouting(serverIndex + 1), 500);
+                    setTimeout(() => initRouting(serverIndex + 1), 1000);
                 } else {
-                    let msg = "Tüm rota sunucuları başarısız oldu.";
-                    if (err.error && err.error.status) msg += ` (Kod: ${err.error.status})`;
-                    showToast(msg, 4000);
+                    let msg = "İnternet bağlantısı veya Sunucu hatası.";
+                    if (err.error && err.error.status) {
+                        msg += ` (Kod: ${err.error.status})`;
+                        if (err.error.status === -1) msg = "Güvenlik Duvarı/CSP Hatası (Bağlantı Engellendi).";
+                    }
+                    showToast(msg, 5000);
                     clearRouting();
                 }
             });
