@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v693
-const CACHE_NAME = 'jeocompass-v693';
-const JEO_VERSION = 'v693';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v694
+const CACHE_NAME = 'jeocompass-v694';
+const JEO_VERSION = 'v694';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4893,26 +4893,43 @@ function updateRouteInfoPanel(route, control, isDirect = false) {
     }
 }
 
-topBar.id = 'nav-top-bar';
-if (!topBar.parentNode) document.body.appendChild(topBar);
+// v694: Restored enterNavigationMode
+function enterNavigationMode(selectedRoute) {
+    if (!selectedRoute) return;
+    isNavMode = true;
+    document.body.classList.add('nav-mode-active');
 
-// v682: Fallback for empty instructions
-let instruction = "Yolu takip edin";
-if (selectedRoute.instructions && selectedRoute.instructions[0]) {
-    instruction = selectedRoute.instructions[0].text;
-}
-topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${instruction}</div>`;
-topBar.style.display = 'flex';
+    routeLabels.forEach(l => map.removeLayer(l));
+    routeLabels = [];
 
-let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
-bottomBar.id = 'nav-bottom-bar';
-if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
+    let topBar = document.getElementById('nav-top-bar') || document.createElement('div');
+    topBar.id = 'nav-top-bar';
+    if (!topBar.parentNode) document.body.appendChild(topBar);
 
-const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
-const mins = Math.round(selectedRoute.summary.totalTime / 60) || 1;
-const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let instruction = "Yolu takip edin";
+    if (selectedRoute.instructions && selectedRoute.instructions[0]) {
+        instruction = selectedRoute.instructions[0].text;
+    }
 
-bottomBar.innerHTML = `
+    // v692: Improved Top Bar for Direct Route
+    const isDirect = !selectedRoute.instructions;
+    if (isDirect) {
+        topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">Hedef Yönü (Kuş Uçuşu)</div>`;
+    } else {
+        topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${instruction}</div>`;
+    }
+
+    topBar.style.display = 'flex';
+
+    let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
+    bottomBar.id = 'nav-bottom-bar';
+    if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
+
+    const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
+    const mins = Math.round(selectedRoute.summary.totalTime / 60) || 1;
+    const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    bottomBar.innerHTML = `
         <button class="nav-btn-close" onclick="clearRouting()">✕</button>
         <div class="nav-info-center">
             <div class="nav-time">${mins} dk</div>
@@ -4920,11 +4937,11 @@ bottomBar.innerHTML = `
         </div>
         <button class="nav-btn-alt"><i class="fa fa-ellipsis-v"></i></button>
     `;
-bottomBar.style.display = 'flex';
+    bottomBar.style.display = 'flex';
 
-if (currentCoords.lat && currentCoords.lon) {
-    map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
-}
+    if (currentCoords.lat && currentCoords.lon) {
+        map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
+    }
 }
 
 function clearRouting() {
