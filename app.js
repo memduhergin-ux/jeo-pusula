@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v706
-const CACHE_NAME = 'jeocompass-v706';
-const JEO_VERSION = 'v706';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v707
+const CACHE_NAME = 'jeocompass-v707';
+const JEO_VERSION = 'v707';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -1576,20 +1576,20 @@ function startGeolocationWatch() {
         } catch (e) {
             console.error("WatchPosition internal error:", e);
         }
-    }
-}, (err) => {
-    console.warn("Location error:", err);
-    const gpsStatusVal = document.getElementById('gps-status-val');
-    if (gpsStatusVal) {
-        gpsStatusVal.textContent = "ERROR: " + err.code;
-        gpsStatusVal.style.color = "#f44336";
-    }
-    // v461: Restart on timeout or lost signal
-    if (err.code === 3) { // TIMEOUT
-        console.log("Restarting Geolocation due to timeout...");
-        startGeolocationWatch();
-    }
-}, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+
+    }, (err) => {
+        console.warn("Location error:", err);
+        const gpsStatusVal = document.getElementById('gps-status-val');
+        if (gpsStatusVal) {
+            gpsStatusVal.textContent = "ERROR: " + err.code;
+            gpsStatusVal.style.color = "#f44336";
+        }
+        // v461: Restart on timeout or lost signal
+        if (err.code === 3) { // TIMEOUT
+            console.log("Restarting Geolocation due to timeout...");
+            startGeolocationWatch();
+        }
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
 }
 startGeolocationWatch();
 
