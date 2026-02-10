@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v704
-const CACHE_NAME = 'jeocompass-v704';
-const JEO_VERSION = 'v704';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v705
+const CACHE_NAME = 'jeocompass-v705';
+const JEO_VERSION = 'v705';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -1453,10 +1453,12 @@ function startGeolocationWatch() {
                     }
                 });
             }
+        } catch (e) {
+            console.error("Geo Watch Error:", e);
         }
 
-            // v464: Prevent (0,0) jump from entering smoothedPos
-            if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
+        // v464: Prevent (0,0) jump from entering smoothedPos
+        if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
             if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
                 smoothedPos.lat = currentCoords.lat;
                 smoothedPos.lon = currentCoords.lon;
