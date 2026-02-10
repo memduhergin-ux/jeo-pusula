@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v694
-const CACHE_NAME = 'jeocompass-v694';
-const JEO_VERSION = 'v694';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v699
+const CACHE_NAME = 'jeocompass-v699';
+const JEO_VERSION = 'v699';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4653,419 +4653,100 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 
 
 // v642: Label Stabilization & CSS Cleanup
-let routeLabels = [];
-let isNavMode = false;
-let currentActiveRoute = null;
-
+// v697: Google Maps Native Integration (Internal Navigation Removed)
 function startRouting(targetLat, targetLng) {
-    if (!map) return;
-    clearRouting();
-
-    const startPos = (currentCoords.lat && currentCoords.lon) ? [currentCoords.lat, currentCoords.lon] : null;
-    if (!startPos) {
-        alert("GPS location required.");
+    if (!targetLat || !targetLng) {
+        showToast("Hedef konum geçersiz.", 2000);
         return;
     }
+    // Direct link to Google Maps Navigation
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
+    window.open(url, '_blank');
+}
 
-    // v682: Simple feedback
-    showToast("Rota aranıyor...", 2000);
-    if (map && !map.getPane('routing-pane')) {
-        map.createPane('routing-pane');
-        map.getPane('routing-pane').style.zIndex = 850;
-        map.getPane('routing-pane').style.pointerEvents = 'none';
-    }
+// v697: Cleaned up unused routing variables and functions
+// (L.Routing.control, OSRM_SERVERS, drawDirectRoute, et al. have been removed)
 
-    try {
-        // v690: Multi-Server Routing Strategy (CSP Fixed)
-        const OSRM_SERVERS = [
-            'https://routing.openstreetmap.de/routed-car/route/v1', // 1. FOSSGIS (Primary - Best)
-            'https://router.project-osrm.org/route/v1'              // 2. OSRM Demo (Backup)
-        ];
+// v697: Restore Basic GPS Tracking (Essential for Google Maps Start Point)
+let userLocationMarker = null;
+let userHeadingMarker = null; // Headlight indicator
 
-        let currentServerIndex = 0;
+if ('geolocation' in navigator) {
+    const geoOptions = {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+    };
 
-        function createRouter(url) {
-            return L.Routing.osrmv1({
-                serviceUrl: url,
-                profile: 'driving',
-                timeout: 15000 // Increased timeout to 15s
-            });
+    function onLocationUpdate(pos) {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+        const heading = pos.coords.heading;
+
+        // Update global state
+        if (typeof currentCoords !== 'undefined') {
+            currentCoords.lat = lat;
+            currentCoords.lon = lng;
+            currentCoords.acc = accuracy;
         }
 
-        function initRouting(serverIndex) {
-            if (routingControl) {
-                try { map.removeControl(routingControl); } catch (e) { }
-            }
+        if (!map) return;
 
-            const serverUrl = OSRM_SERVERS[serverIndex];
-            console.log(`v690 Router Try [${serverIndex}]:`, serverUrl);
-
-            routingControl = L.Routing.control({
-                router: createRouter(serverUrl),
-                waypoints: [L.latLng(startPos[0], startPos[1]), L.latLng(targetLat, targetLng)],
-                routeWhileDragging: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                showAlternatives: true,
-                position: 'bottomleft',
-                lineOptions: {
-                    styles: [{ color: '#1a73e8', opacity: 0.9, weight: 12, pane: 'routing-pane' }],
-                    addWaypoints: false
-                },
-                createMarker: function () { return null; }
+        // Create/Update Marker
+        if (!userLocationMarker) {
+            userLocationMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                fillColor: "#4285F4", // Google Blue
+                color: "#ffffff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
             }).addTo(map);
 
-            routingControl.on('routingerror', function (err) {
-                console.error(`Router [${serverIndex}] Fail:`, err);
-                if (serverIndex < OSRM_SERVERS.length - 1) {
-                    showToast(`Sunucu ${serverIndex + 1} yanıt vermedi, alternatif deneniyor...`, 2000);
-                    setTimeout(() => initRouting(serverIndex + 1), 1000);
-                } else {
-                    let msg = "İnternet bağlantısı veya Sunucu hatası.";
-                    if (err.error && err.error.status) {
-                        msg += ` (Kod: ${err.error.status})`;
-                        if (err.error.status === -1) msg = "Güvenlik Duvarı/CSP Hatası (Bağlantı Engellendi).";
-                    }
-                    showToast(msg, 5000);
-                    clearRouting();
-                }
-            });
-
-            routingControl.on('routesfound', function (e) {
-                const routes = e.routes;
-                routeLabels.forEach(l => map.removeLayer(l));
-                routeLabels = [];
-                currentActiveRoute = routes[0];
-
-                if (routes && routes.length > 0) {
-                    const allCoords = routes.flatMap(r => r.coordinates);
-                    map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 150, 40] });
-
-                    routes.forEach((route, idx) => {
-                        const pointIdx = Math.floor(route.coordinates.length * 0.45);
-                        const labelPoint = route.coordinates[pointIdx];
-                        const totalMins = Math.round(route.summary.totalTime / 60) || 1;
-                        const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-
-                        const isFirst = (idx === 0);
-                        const label = L.marker(labelPoint, {
-                            icon: L.divIcon({
-                                className: 'route-label-container',
-                                html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
-                                iconSize: null,
-                                iconAnchor: null
-                            }),
-                            zIndexOffset: isFirst ? 10000 : 9000
-                        }).addTo(map);
-
-                        label.on('click', (ev) => {
-                            L.DomEvent.stopPropagation(ev);
-                            routingControl.selectRoute(route);
-                        });
-                        routeLabels.push(label);
-                    });
-
-                    routingControl.selectRoute(routes[0]);
-                    updateRouteInfoPanel(routes[0], routingControl);
-
-                    routingControl.on('routeselected', function (ev) {
-                        currentActiveRoute = ev.route;
-                        routeLabels.forEach((lbl, idx) => {
-                            const el = lbl.getElement();
-                            if (el) {
-                                const bubble = el.querySelector('.route-bubble');
-                                if (bubble) {
-                                    bubble.className = `route-bubble ${routes[idx] === currentActiveRoute ? 'bubble-active' : 'bubble-alt'}`;
-                                }
-                            }
-                        });
-                        updateRouteInfoPanel(currentActiveRoute, routingControl);
-                    });
-
-                    setTimeout(() => {
-                        const container = routingControl.getContainer();
-                        if (container) {
-                            const alts = container.querySelectorAll('.leaflet-routing-alt');
-                            alts.forEach(el => el.style.display = el.classList.contains('leaflet-routing-alt-selected') ? 'block' : 'none');
-                        }
-                    }, 100);
-                }
-            });
+            // Initial Center
+            map.setView([lat, lng], 16);
+        } else {
+            userLocationMarker.setLatLng([lat, lng]);
         }
 
-        // Init
-        initRouting(0);
-        map.closePopup();
-
-    } catch (e) {
-        showToast("Hata: " + e.message, 2000);
-    }
-}
-
-// v691: Helper to clear LRM control but keep our manual layers
-function clearRoutingControlOnly() {
-    if (routingControl) {
-        try { map.removeControl(routingControl); } catch (e) { }
-        routingControl = null;
-    }
-}
-
-// v691: Draw Direct Line (Fallback)
-function drawDirectRoute(start, end) {
-    // Clear existing labels
-    routeLabels.forEach(l => map.removeLayer(l));
-    routeLabels = [];
-
-    const latlngs = [
-        L.latLng(start[0], start[1]),
-        L.latLng(end[0], end[1])
-    ];
-
-    const polyline = L.polyline(latlngs, {
-        color: '#ff5722', // Orange for direct line
-        weight: 8,
-        opacity: 0.8,
-        dashArray: '10, 10', // Dashed line to indicate it's not a road
-        pane: 'routing-pane'
-    }).addTo(map);
-
-    // Add to routeLabels so it gets cleared later
-    routeLabels.push(polyline);
-
-    // Calculate details
-    const distanceMeters = map.distance(latlngs[0], latlngs[1]);
-    const distanceKm = (distanceMeters / 1000).toFixed(2);
-
-    // Create a fake route object for the info panel
-    const directRoute = {
-        summary: {
-            totalDistance: distanceMeters,
-            totalTime: distanceMeters / 1.4 // Assume walking speed ~1.4 m/s (5km/h) as fallback time
-        },
-        coordinates: latlngs
-    };
-
-    updateRouteInfoPanel(directRoute, null, true); // true = isDirect
-
-    // Fit bounds
-    map.fitBounds(L.latLngBounds(latlngs), { padding: [50, 50, 150, 50] });
-
-    // Add label at midpoint
-    const midLat = (start[0] + end[0]) / 2;
-    const midLng = (start[1] + end[1]) / 2;
-
-    const label = L.marker([midLat, midLng], {
-        icon: L.divIcon({
-            className: 'route-label-container',
-            html: `<div class="route-bubble bubble-active" style="background:#ff5722;"><span>${distanceKm} km (Kuş Uçuşu)</span></div>`,
-            iconSize: null,
-            iconAnchor: null
-        })
-    }).addTo(map);
-    routeLabels.push(label);
-}
-
-function updateRouteInfoPanel(route, control, isDirect = false) {
-    const summary = route.summary;
-    const distanceKm = (summary.totalDistance / 1000).toFixed(1);
-    const timeMins = Math.round(summary.totalTime / 60);
-    const timeHours = Math.floor(timeMins / 60);
-
-    let timeStr = "";
-    if (timeHours > 0) timeStr += `${timeHours} sa `;
-    timeStr += `${timeMins % 60} dk`;
-
-    const instructions = isDirect ?
-        "Doğrusal Rota (Yol verisi alınamadı)" :
-        (route.instructions ? route.instructions.length + " adımlı rota" : "Rota hesaplandı");
-
-    // Existing update logic...
-    // We need to inject this into the UI
-
-    // ... (rest of the UI update logic would be here, but we can reuse the existing DOM elements)
-    // Assuming UI elements exist:
-    const topBar = document.getElementById('nav-top-bar');
-    if (topBar) {
-        topBar.querySelector('.nav-dist').textContent = `${distanceKm} km`;
-        topBar.querySelector('.nav-time').textContent = timeStr;
-        topBar.querySelector('.nav-meta').textContent = instructions;
-    }
-}
-
-// v694: Restored enterNavigationMode
-function enterNavigationMode(selectedRoute) {
-    if (!selectedRoute) return;
-    isNavMode = true;
-    document.body.classList.add('nav-mode-active');
-
-    routeLabels.forEach(l => map.removeLayer(l));
-    routeLabels = [];
-
-    let topBar = document.getElementById('nav-top-bar') || document.createElement('div');
-    topBar.id = 'nav-top-bar';
-    if (!topBar.parentNode) document.body.appendChild(topBar);
-
-    let instruction = "Yolu takip edin";
-    if (selectedRoute.instructions && selectedRoute.instructions[0]) {
-        instruction = selectedRoute.instructions[0].text;
-    }
-
-    // v692: Improved Top Bar for Direct Route
-    const isDirect = !selectedRoute.instructions;
-    if (isDirect) {
-        topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">Hedef Yönü (Kuş Uçuşu)</div>`;
-    } else {
-        topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${instruction}</div>`;
-    }
-
-    topBar.style.display = 'flex';
-
-    let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
-    bottomBar.id = 'nav-bottom-bar';
-    if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
-
-    const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
-    const mins = Math.round(selectedRoute.summary.totalTime / 60) || 1;
-    const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    bottomBar.innerHTML = `
-        <button class="nav-btn-close" onclick="clearRouting()">✕</button>
-        <div class="nav-info-center">
-            <div class="nav-time">${mins} dk</div>
-            <div class="nav-stats">${km} km • ${arrivalTime}</div>
-        </div>
-        <button class="nav-btn-alt"><i class="fa fa-ellipsis-v"></i></button>
-    `;
-    bottomBar.style.display = 'flex';
-
-    if (currentCoords.lat && currentCoords.lon) {
-        map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
-    }
-}
-
-function clearRouting() {
-    isNavMode = false;
-    currentActiveRoute = null;
-    document.body.classList.remove('nav-mode-active');
-    if (routingControl) {
-        map.removeControl(routingControl);
-        routingControl = null;
-    }
-    routeLabels.forEach(l => map.removeLayer(l));
-    routeLabels = [];
-
-    const topBar = document.getElementById('nav-top-bar');
-    if (topBar) topBar.style.display = 'none';
-    const bottomBar = document.getElementById('nav-bottom-bar');
-    if (bottomBar) bottomBar.style.display = 'none';
-    lastRouteUpdatePos = null;
-}
-
-// v682: THE simplest panel injection
-function updateRouteInfoPanel(route, control) {
-    if (!route || !control) return;
-    const container = control.getContainer();
-    if (!container) return;
-
-    setTimeout(() => {
-        let target = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected') || container.querySelector('.leaflet-routing-alt');
-        if (!target) {
-            target = document.createElement('div');
-            target.className = "leaflet-routing-alt leaflet-routing-alt-selected";
-            container.appendChild(target);
+        // Headlight / Heading Indicator (Restored v698)
+        if (!userHeadingMarker) {
+            userHeadingMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'heading-cone',
+                    html: '<div style="width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 60px solid rgba(255, 215, 0, 0.4); transform-origin: bottom center;"></div>',
+                    iconSize: [40, 60],
+                    iconAnchor: [20, 60]
+                }),
+                pane: 'markerPane',
+                zIndexOffset: -1 // Behind the dot
+            }).addTo(map);
+        } else {
+            userHeadingMarker.setLatLng([lat, lng]);
         }
 
-        const totalMins = Math.round(route.summary.totalTime / 60) || 1;
-        const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-        const kmStr = (route.summary.totalDistance / 1000).toFixed(1);
-
-        target.style.display = 'block';
-        target.innerHTML = `
-            <div class="info-main-title v681-fix">
-                ${timeStr} <span class="info-km-span">(${kmStr} km)</span>
-            </div>
-            <div class="routing-controls-v624" style="margin-top:10px;">
-                <button class="routing-btn routing-btn-confirm" onclick="enterNavigationMode(currentActiveRoute)">BAŞLAT</button>
-                <button class="routing-btn routing-btn-cancel" onclick="clearRouting()">İptal</button>
-            </div>
-        `;
-    }, 200);
-}
-
-// v680: Dedicated helper to inject Start/Cancel buttons
-function injectRoutingButtons(container) {
-    if (!container || container.querySelector('.routing-controls-v624')) return;
-
-    const controls = document.createElement('div');
-    controls.className = "routing-controls-v624";
-    controls.style.marginTop = "15px";
-
-    const btnConfirm = document.createElement('button');
-    btnConfirm.className = "routing-btn routing-btn-confirm";
-    btnConfirm.innerHTML = `<i class="fa fa-location-arrow" style="margin-right:8px"></i>Start`;
-    btnConfirm.onclick = (ev) => {
-        L.DomEvent.stopPropagation(ev);
-        enterNavigationMode(currentActiveRoute);
-    };
-
-    const btnCancel = document.createElement('button');
-    btnCancel.className = "routing-btn routing-btn-cancel";
-    btnCancel.innerHTML = "İptal";
-    btnCancel.onclick = (ev) => {
-        L.DomEvent.stopPropagation(ev);
-        clearRouting();
-    };
-
-    controls.appendChild(btnConfirm);
-    controls.appendChild(btnCancel);
-    container.prepend(controls);
-}
-
-
-// v622: Reverted Crosshair logic (Add route button removed)
-
-// v651: Dynamic Routing Engine (Recalculate / Consume Line)
-let lastRouteUpdatePos = null;
-function updateRouteStart(lat, lon) {
-    if (!isNavMode || !routingControl) return;
-
-    // Use a threshold to avoid excessive API calls (e.g., 20 meters)
-    if (lastRouteUpdatePos) {
-        const dist = map.distance([lat, lon], lastRouteUpdatePos);
-        if (dist < 20) return; // Too small movement
-    }
-
-    // Update start point of the route to current location
-    // This visually "consumes" the path and triggers recalculation if off-route
-    const waypoints = routingControl.getWaypoints();
-    if (waypoints && waypoints.length >= 2) {
-        // Keep the target (last waypoint), update the start (first waypoint)
-        const target = waypoints[waypoints.length - 1];
-        routingControl.setWaypoints([
-            L.latLng(lat, lon),
-            target.latLng
-        ]);
-        lastRouteUpdatePos = L.latLng(lat, lon);
-        // console.log("v651: Route Start Updated to", lat, lon);
-    }
-}
-
-// v660: Dedicated Navigation Tracker (Ensure "Route Consumption")
-if ('geolocation' in navigator) {
-    navigator.geolocation.watchPosition(
-        (pos) => {
-            const { latitude, longitude } = pos.coords;
-            // Update global coords just in case
-            currentCoords.lat = latitude;
-            currentCoords.lon = longitude;
-
-            // Trigger Route Update
-            if (isNavMode) {
-                updateRouteStart(latitude, longitude);
+        if (heading !== null && !isNaN(heading)) {
+            const icon = userHeadingMarker.getElement();
+            if (icon) {
+                // v699: Fix - Rotate ONLY the inner div to avoid messing with Leaflet's positioning transform
+                const innerDiv = icon.querySelector('div');
+                if (innerDiv) {
+                    innerDiv.style.transform = `rotate(${heading}deg)`;
+                    // Maintain the harvest gold color
+                    innerDiv.style.borderBottomColor = 'rgba(255, 215, 0, 0.4)';
+                }
+                userHeadingMarker.setOpacity(1);
             }
-        },
-        (err) => { console.warn("Nav GPS Error:", err); },
-        { enableHighAccuracy: true, maximumAge: 0 }
-    );
+        } else {
+            // Hide if no heading data
+            userHeadingMarker.setOpacity(0);
+        }
+    }
+
+    function onLocationError(err) {
+        console.warn("GPS Error:", err);
+    }
+
+    navigator.geolocation.watchPosition(onLocationUpdate, onLocationError, geoOptions);
 }
