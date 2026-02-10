@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v707
-const CACHE_NAME = 'jeocompass-v707';
-const JEO_VERSION = 'v707';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v709
+const CACHE_NAME = 'jeocompass-v709';
+const JEO_VERSION = 'v709';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -88,7 +88,7 @@ function initApp() {
             splash.classList.add('hidden');
             setTimeout(() => splash.remove(), 1000);
         }
-    }, 2500);
+    }, 1500);
 
     // 2. Request Wake Lock (Screen On)
     try {
@@ -1994,12 +1994,10 @@ function initMapControls() {
                 <div class="custom-scale-control">
                     <div class="scale-labels">
                         <span class="label-zero">0</span>
-                        <span id="scale-mid" class="label-mid"></span>
                         <span id="scale-end" class="label-end"></span>
                     </div>
                     <div class="scale-row">
                         <div class="scale-bars">
-                            <div class="scale-segment"></div>
                             <div class="scale-segment"></div>
                         </div>
                         <span id="scale-unit" class="scale-unit"></span>
@@ -2066,18 +2064,14 @@ function updateScaleValues() {
     const latLngEnd = map.containerPointToLatLng(pEnd);
     const distance = map.distance(centerLatLng, latLngEnd);
 
-    let midVal = distance / 2;
     let endVal = distance;
 
-    const midEl = document.getElementById('scale-mid');
     const endEl = document.getElementById('scale-end');
     const unitEl = document.getElementById('scale-unit');
     const utmEl = document.getElementById('map-utm-coords');
 
-    const formattedMid = formatScaleDistParts(midVal);
     const formattedEnd = formatScaleDistParts(endVal);
 
-    if (midEl) midEl.textContent = formattedMid.val;
     if (endEl) endEl.textContent = formattedEnd.val;
     if (unitEl) unitEl.textContent = formattedEnd.unit;
 
@@ -2907,6 +2901,12 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         views.forEach(v => v.classList.remove('active'));
         const targetView = document.getElementById(targetId);
         if (targetView) targetView.classList.add('active');
+
+        // v708: Toggle Map Floating Buttons
+        const fabContainer = document.querySelector('.map-fab-container');
+        if (fabContainer) {
+            fabContainer.style.display = (targetId === 'view-map') ? 'block' : 'none';
+        }
 
         // 3. Security & State Reset
         isMeasuring = false;
