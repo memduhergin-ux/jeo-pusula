@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v685
-const CACHE_NAME = 'jeocompass-v685';
-const JEO_VERSION = 'v685';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v686
+const CACHE_NAME = 'jeocompass-v686';
+const JEO_VERSION = 'v686';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4676,14 +4676,18 @@ function startRouting(targetLat, targetLng) {
     }
 
     try {
-        // v685: Use default router (LRM handles OSRM automatically)
+        // v686: Switch to FOSSGIS OSRM Server (More reliable than demo server)
         routingControl = L.Routing.control({
+            router: L.Routing.osrmv1({
+                serviceUrl: 'https://routing.openstreetmap.de/routed-car/route/v1',
+                profile: 'driving'
+            }),
             waypoints: [L.latLng(startPos[0], startPos[1]), L.latLng(targetLat, targetLng)],
             routeWhileDragging: false,
             addWaypoints: false,
             draggableWaypoints: false,
             fitSelectedRoutes: true,
-            showAlternatives: false,
+            showAlternatives: true,
             position: 'bottomleft',
             lineOptions: {
                 styles: [{ color: '#1a73e8', opacity: 0.9, weight: 12, pane: 'routing-pane' }],
@@ -4693,18 +4697,25 @@ function startRouting(targetLat, targetLng) {
         }).addTo(map);
 
         routingControl.on('routingerror', function (err) {
-            console.error("LRM Routing Error v685:", err);
-            let msg = "Rota bulunamadı.";
-            if (err.error && err.error.message) {
-                if (err.error.message.includes("Too Many Requests")) {
-                    msg = "Sunucu yoğun, lütfen tekrar deneyin.";
-                } else if (err.error.message.includes("HTTP request failed")) {
-                    msg = "Rota servisi yanıt vermiyor.";
+            console.error("LRM Routing Error v686:", err);
+            let msg = "Rota servisi yanıt vermiyor (FOSSGIS).";
+
+            if (err.error) {
+                // HTTP Status checking
+                if (err.error.status) {
+                    msg += ` (Kod: ${err.error.status})`;
+                    if (err.error.status === 429) msg = "Çok fazla istek, bekleyip deneyin.";
+                    if (err.error.status === 400) msg = "Rota hesaplanamıyor (Geçersiz konum).";
+                } else if (err.error.type) {
+                    msg += ` (${err.error.type})`;
                 }
-            } else if (err.error && err.error.status === 0) {
+            } else {
                 msg = "İnternet bağlantınızı kontrol edin.";
             }
-            showToast(msg, 4000);
+
+            // Fallback: If routing fails, draw a straight line? 
+            // For now, just show the detailed error.
+            showToast(msg, 5000);
             clearRouting();
         });
 
