@@ -1283,6 +1283,9 @@ textarea.form-input {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     padding-bottom: 20px;
+    /* v729: Ensure it respects container bounds */
+    height: 100%;
+    min-height: 0;
 }
 
 .map-fab-scroll-area::-webkit-scrollbar {
@@ -1291,16 +1294,17 @@ textarea.form-input {
 
 @media screen and (orientation: landscape) {
     .map-fab-container {
-        /* v596: Consistent with portrait, just smaller gaps */
+        /* v729: Remove fixed bottom to allow max-height to handle layout reliably */
         top: calc(55px + env(safe-area-inset-top, 0px)) !important;
         right: calc(5px + env(safe-area-inset-right, 0px)) !important;
-        bottom: 5px !important;
-        max-height: calc(100vh - 65px) !important;
+        bottom: auto !important;
+        max-height: calc(100vh - 100px) !important;
     }
 
     .map-fab-scroll-area {
         gap: 8px;
-        /* Tighter layout for landscape */
+        /* v729: Significant padding to clear the bottom navigation bar */
+        padding-bottom: 60px !important;
     }
 
     .map-fab {

@@ -8,13 +8,13 @@
     <!-- v690: Content Security Policy to allow OSRM/GraphHopper connections -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
-    <title>Jeoloji Pusulası v728</title>
-    <!-- Jeoloji Pusulası v728 -->
-    <meta name="version" content="v728">
-    <meta name="jeo-version" content="v728">
+    <title>Jeoloji Pusulası v729</title>
+    <!-- Jeoloji Pusulası v729 -->
+    <meta name="version" content="v729">
+    <meta name="jeo-version" content="v729">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=728">
+    <link rel="stylesheet" href="style.css?v=729">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -52,7 +52,7 @@
             <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
         </div>
         <div class="splash-version"
-            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v728</div>
+            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v729</div>
     </div>
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
@@ -585,7 +585,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v727
+                    JeoCompass v729
                 </div>
             </div>
         </div>
@@ -726,15 +726,15 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=728"></script>
+    <script src="app.js?v=729"></script>
     <script>
-        console.log("App Version: v728");
+        console.log("App Version: v729");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=728`)
+                navigator.serviceWorker.register(`sw.js?v=729`)
                     .then(reg => {
-                        console.log('Service Worker registered v728');
+                        console.log('Service Worker registered v729');
                         reg.update().catch(() => { });
                         setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
                     })
