@@ -1,11 +1,13 @@
-﻿// IndexedDB Configuration for Large KML Persistence (v543)
-const JEO_DB_NAME = 'JeoCompassDB';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v682
+const CACHE_NAME = 'jeocompass-v682';
+const JEO_VERSION = 'v682';
+const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
 
 function openJeoDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(JEO_DB_NAME, JEO_DB_VERSION);
+        const request = indexedDB.open(DB_NAME, JEO_DB_VERSION);
         request.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(JEO_STORE_NAME)) {
@@ -551,7 +553,6 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-const CACHE_NAME = 'jeocompass-v680';
 let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
@@ -4666,11 +4667,12 @@ function startRouting(targetLat, targetLng) {
         return;
     }
 
-    // v680: Immediate feedback and safe routing-pane check
-    showToast("Calculating route...", 2000);
+    // v682: Simple feedback
+    showToast("Rota aranıyor...", 2000);
     if (map && !map.getPane('routing-pane')) {
         map.createPane('routing-pane');
         map.getPane('routing-pane').style.zIndex = 850;
+        map.getPane('routing-pane').style.pointerEvents = 'none';
     }
 
     try {
@@ -4681,52 +4683,46 @@ function startRouting(targetLat, targetLng) {
             draggableWaypoints: false,
             fitSelectedRoutes: true,
             showAlternatives: true,
-            position: 'bottomleft', // v665: Force control to Bottom-Left container
-            altLineOptions: {
-                styles: [{ color: '#777', opacity: 0.4, weight: 8, pane: 'routing-pane' }]
-            },
+            position: 'bottomleft',
             lineOptions: {
-                styles: [{ color: '#1a73e8', opacity: 0.95, weight: 12, pane: 'routing-pane' }],
+                // v682: High contrast solid blue line
+                styles: [{ color: '#1a73e8', opacity: 0.9, weight: 12, pane: 'routing-pane' }],
                 addWaypoints: false
             },
             createMarker: function () { return null; }
         }).addTo(map);
 
+        routingControl.on('routingerror', function (err) {
+            console.error("LRM Error:", err);
+            showToast("Rota bulunamadı.", 3000);
+            clearRouting();
+        });
+
         routingControl.on('routesfound', function (e) {
             const routes = e.routes;
             routeLabels.forEach(l => map.removeLayer(l));
             routeLabels = [];
-            currentActiveRoute = routes[0]; // Default
+            currentActiveRoute = routes[0];
 
             if (routes && routes.length > 0) {
                 const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 180, 40] });
+                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 150, 40] });
 
                 routes.forEach((route, idx) => {
-                    const pointIdx = Math.floor(route.coordinates.length * 0.45); // Slightly before midpoint to avoid overlaying
+                    const pointIdx = Math.floor(route.coordinates.length * 0.45);
                     const labelPoint = route.coordinates[pointIdx];
+                    const totalMins = Math.round(route.summary.totalTime / 60) || 1;
+                    const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
 
-                    // v643: Google Maps Turkish Time Format "1 sa. 34 dk."
-                    const totalMins = Math.round(route.summary.totalTime / 60);
-                    let timeStr = "";
-                    if (totalMins >= 60) {
-                        timeStr = `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.`;
-                    } else {
-                        timeStr = `${totalMins} dk.`;
-                    }
-
-                    // v649: New Nested Bubble Structure
                     const isFirst = (idx === 0);
                     const label = L.marker(labelPoint, {
                         icon: L.divIcon({
-                            className: 'route-label-container', // Pure container, no style
+                            className: 'route-label-container',
                             html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
-                            iconSize: null, // v662: Let CSS determine size (width: max-content)
-                            iconAnchor: null // v662: Centered via CSS transform
+                            iconSize: null,
+                            iconAnchor: null
                         }),
-                        zIndexOffset: isFirst ? 9000 : 8000, // v658: Boost Z-Index to be above EVERYTHING
-                        interactive: true,
-                        riseOnHover: true
+                        zIndexOffset: isFirst ? 10000 : 9000
                     }).addTo(map);
 
                     label.on('click', (ev) => {
@@ -4736,57 +4732,36 @@ function startRouting(targetLat, targetLng) {
                     routeLabels.push(label);
                 });
 
-                // v671: Force select the first route immediately to trigger UI classes
                 routingControl.selectRoute(routes[0]);
-
-                // v656: Initial Panel Update (Fixes Empty White Box)
                 updateRouteInfoPanel(routes[0], routingControl);
 
                 routingControl.on('routeselected', function (ev) {
                     currentActiveRoute = ev.route;
-
-                    // v649: Update Label Styles
                     routeLabels.forEach((lbl, idx) => {
                         const el = lbl.getElement();
                         if (el) {
                             const bubble = el.querySelector('.route-bubble');
                             if (bubble) {
                                 bubble.className = `route-bubble ${routes[idx] === currentActiveRoute ? 'bubble-active' : 'bubble-alt'}`;
-                                lbl.setZIndexOffset(routes[idx] === currentActiveRoute ? 6000 : 5000);
                             }
                         }
                     });
-
-                    // v656: Update Bottom Sheet Details
                     updateRouteInfoPanel(currentActiveRoute, routingControl);
                 });
 
-                // v665: Force Hide Non-Selected Alternatives immediately
                 setTimeout(() => {
                     const container = routingControl.getContainer();
                     if (container) {
                         const alts = container.querySelectorAll('.leaflet-routing-alt');
-                        alts.forEach(el => {
-                            if (!el.classList.contains('leaflet-routing-alt-selected')) {
-                                el.style.display = 'none';
-                            } else {
-                                el.style.display = 'block'; // v671: Ensure selected is visible
-                            }
-                        });
+                        alts.forEach(el => el.style.display = el.classList.contains('leaflet-routing-alt-selected') ? 'block' : 'none');
                     }
-                }, 200);
-            }
-
-            const container = routingControl.getContainer();
-            if (container) {
-                injectRoutingButtons(container);
+                }, 100);
             }
         });
 
         map.closePopup();
     } catch (e) {
-        console.error("v680 Route error:", e);
-        showToast("Route failure: " + e.message, 3000);
+        showToast("Hata: " + e.message, 2000);
     }
 }
 
@@ -4802,8 +4777,12 @@ function enterNavigationMode(selectedRoute) {
     topBar.id = 'nav-top-bar';
     if (!topBar.parentNode) document.body.appendChild(topBar);
 
-    const firstStep = selectedRoute.instructions[0] ? selectedRoute.instructions[0].text : "Follow the path";
-    topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${firstStep}</div>`;
+    // v682: Fallback for empty instructions
+    let instruction = "Yolu takip edin";
+    if (selectedRoute.instructions && selectedRoute.instructions[0]) {
+        instruction = selectedRoute.instructions[0].text;
+    }
+    topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${instruction}</div>`;
     topBar.style.display = 'flex';
 
     let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
@@ -4811,26 +4790,22 @@ function enterNavigationMode(selectedRoute) {
     if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
 
     const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
-    const mins = Math.round(selectedRoute.summary.totalTime / 60);
+    const mins = Math.round(selectedRoute.summary.totalTime / 60) || 1;
     const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     bottomBar.innerHTML = `
         <button class="nav-btn-close" onclick="clearRouting()">✕</button>
         <div class="nav-info-center">
-            <div class="nav-time">${mins} min</div>
+            <div class="nav-time">${mins} dk</div>
             <div class="nav-stats">${km} km • ${arrivalTime}</div>
         </div>
         <button class="nav-btn-alt"><i class="fa fa-ellipsis-v"></i></button>
     `;
     bottomBar.style.display = 'flex';
 
-    // Google Maps Style: Zoom to USER location on start
     if (currentCoords.lat && currentCoords.lon) {
         map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
-    } else {
-        map.fitBounds(L.polyline(selectedRoute.coordinates).getBounds(), { padding: [100, 50, 150, 50] });
     }
-    showToast("Navigation Active", 1500);
 }
 
 function clearRouting() {
@@ -4848,68 +4823,38 @@ function clearRouting() {
     if (topBar) topBar.style.display = 'none';
     const bottomBar = document.getElementById('nav-bottom-bar');
     if (bottomBar) bottomBar.style.display = 'none';
-
-    const controls = document.querySelector('.routing-fixed-controls');
-    if (controls) controls.style.display = 'none';
-
-    // v651: Clear dynamic routing watcher
     lastRouteUpdatePos = null;
 }
 
-// v656: Helper to inject Route Info HTML
+// v682: THE simplest panel injection
 function updateRouteInfoPanel(route, control) {
     if (!route || !control) return;
     const container = control.getContainer();
     if (!container) return;
 
-    // v679/v680: Harden finding the panel with more aggressive retries
     setTimeout(() => {
-        let altPanel = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected');
-        if (!altPanel) altPanel = container.querySelector('.leaflet-routing-alt');
-
-        // v680: Fallback to the container itself if altPanel is missing or Leaflet-Routing UI changed
-        const TARGET = altPanel || container;
-
-        if (TARGET) {
-            const totalMins = Math.round(route.summary.totalTime / 60);
-            const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-            const kmStr = (route.summary.totalDistance / 1000).toFixed(1);
-
-            let routeName = route.name;
-            if (!routeName || routeName.length === 0) {
-                if (route.instructions && route.instructions.length > 0) {
-                    let maxDist = 0;
-                    let bestName = "";
-                    route.instructions.forEach(instr => {
-                        if (instr.road && instr.road.trim() !== "" && instr.distance > maxDist) {
-                            maxDist = instr.distance;
-                            bestName = instr.road;
-                        }
-                    });
-                    if (bestName) routeName = bestName;
-                }
-            }
-            const viaText = routeName ? `${routeName} üzerinden` : "En hızlı güzergah";
-
-            // v679/v680: Force visibility and populate content
-            TARGET.style.display = 'block';
-            TARGET.style.minHeight = '120px'; // v680: Ensure panel isn't collapsed
-            TARGET.innerHTML = `
-                <div class="info-main-title is-updated" style="display:block !important; visibility:visible !important; opacity:1 !important; color:#1e8e3e !important;">
-                    ${timeStr} <span class="info-km-span" style="color:#1e8e3e !important; opacity:0.8;">(${kmStr} km)</span>
-                </div>
-                <div class="info-sub-desc" style="display:block !important; visibility:visible !important; color:#70757a !important;">${viaText}</div>
-                <div class="info-eco" style="display:flex !important; visibility:visible !important; color:#1e8e3e !important;"><i class="fa fa-leaf"></i> Daha az CO2 salınımı.</div>
-            `;
-
-            // v680: Re-inject controls if they were wiped by the innerHTML update
-            if (!container.querySelector('.routing-controls-v624')) {
-                injectRoutingButtons(container);
-            }
-
-            console.log("v680: Navigation panel content synchronized successfully.");
+        let target = container.querySelector('.leaflet-routing-alt.leaflet-routing-alt-selected') || container.querySelector('.leaflet-routing-alt');
+        if (!target) {
+            target = document.createElement('div');
+            target.className = "leaflet-routing-alt leaflet-routing-alt-selected";
+            container.appendChild(target);
         }
-    }, 150);
+
+        const totalMins = Math.round(route.summary.totalTime / 60) || 1;
+        const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
+        const kmStr = (route.summary.totalDistance / 1000).toFixed(1);
+
+        target.style.display = 'block';
+        target.innerHTML = `
+            <div class="info-main-title v681-fix">
+                ${timeStr} <span class="info-km-span">(${kmStr} km)</span>
+            </div>
+            <div class="routing-controls-v624" style="margin-top:10px;">
+                <button class="routing-btn routing-btn-confirm" onclick="enterNavigationMode(currentActiveRoute)">BAŞLAT</button>
+                <button class="routing-btn routing-btn-cancel" onclick="clearRouting()">İptal</button>
+            </div>
+        `;
+    }, 200);
 }
 
 // v680: Dedicated helper to inject Start/Cancel buttons
