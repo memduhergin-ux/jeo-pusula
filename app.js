@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v690
-const CACHE_NAME = 'jeocompass-v690';
-const JEO_VERSION = 'v690';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v691
+const CACHE_NAME = 'jeocompass-v691';
+const JEO_VERSION = 'v691';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4803,35 +4803,116 @@ function startRouting(targetLat, targetLng) {
     }
 }
 
-function enterNavigationMode(selectedRoute) {
-    if (!selectedRoute) return;
-    isNavMode = true;
-    document.body.classList.add('nav-mode-active');
+// v691: Helper to clear LRM control but keep our manual layers
+function clearRoutingControlOnly() {
+    if (routingControl) {
+        try { map.removeControl(routingControl); } catch (e) { }
+        routingControl = null;
+    }
+}
 
+// v691: Draw Direct Line (Fallback)
+function drawDirectRoute(start, end) {
+    // Clear existing labels
     routeLabels.forEach(l => map.removeLayer(l));
     routeLabels = [];
 
-    let topBar = document.getElementById('nav-top-bar') || document.createElement('div');
-    topBar.id = 'nav-top-bar';
-    if (!topBar.parentNode) document.body.appendChild(topBar);
+    const latlngs = [
+        L.latLng(start[0], start[1]),
+        L.latLng(end[0], end[1])
+    ];
 
-    // v682: Fallback for empty instructions
-    let instruction = "Yolu takip edin";
-    if (selectedRoute.instructions && selectedRoute.instructions[0]) {
-        instruction = selectedRoute.instructions[0].text;
+    const polyline = L.polyline(latlngs, {
+        color: '#ff5722', // Orange for direct line
+        weight: 8,
+        opacity: 0.8,
+        dashArray: '10, 10', // Dashed line to indicate it's not a road
+        pane: 'routing-pane'
+    }).addTo(map);
+
+    // Add to routeLabels so it gets cleared later
+    routeLabels.push(polyline);
+
+    // Calculate details
+    const distanceMeters = map.distance(latlngs[0], latlngs[1]);
+    const distanceKm = (distanceMeters / 1000).toFixed(2);
+
+    // Create a fake route object for the info panel
+    const directRoute = {
+        summary: {
+            totalDistance: distanceMeters,
+            totalTime: distanceMeters / 1.4 // Assume walking speed ~1.4 m/s (5km/h) as fallback time
+        },
+        coordinates: latlngs
+    };
+
+    updateRouteInfoPanel(directRoute, null, true); // true = isDirect
+
+    // Fit bounds
+    map.fitBounds(L.latLngBounds(latlngs), { padding: [50, 50, 150, 50] });
+
+    // Add label at midpoint
+    const midLat = (start[0] + end[0]) / 2;
+    const midLng = (start[1] + end[1]) / 2;
+
+    const label = L.marker([midLat, midLng], {
+        icon: L.divIcon({
+            className: 'route-label-container',
+            html: `<div class="route-bubble bubble-active" style="background:#ff5722;"><span>${distanceKm} km (Kuş Uçuşu)</span></div>`,
+            iconSize: null,
+            iconAnchor: null
+        })
+    }).addTo(map);
+    routeLabels.push(label);
+}
+
+function updateRouteInfoPanel(route, control, isDirect = false) {
+    const summary = route.summary;
+    const distanceKm = (summary.totalDistance / 1000).toFixed(1);
+    const timeMins = Math.round(summary.totalTime / 60);
+    const timeHours = Math.floor(timeMins / 60);
+
+    let timeStr = "";
+    if (timeHours > 0) timeStr += `${timeHours} sa `;
+    timeStr += `${timeMins % 60} dk`;
+
+    const instructions = isDirect ?
+        "Doğrusal Rota (Yol verisi alınamadı)" :
+        (route.instructions ? route.instructions.length + " adımlı rota" : "Rota hesaplandı");
+
+    // Existing update logic...
+    // We need to inject this into the UI
+
+    // ... (rest of the UI update logic would be here, but we can reuse the existing DOM elements)
+    // Assuming UI elements exist:
+    const topBar = document.getElementById('nav-top-bar');
+    if (topBar) {
+        topBar.querySelector('.nav-dist').textContent = `${distanceKm} km`;
+        topBar.querySelector('.nav-time').textContent = timeStr;
+        topBar.querySelector('.nav-meta').textContent = instructions;
     }
-    topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${instruction}</div>`;
-    topBar.style.display = 'flex';
+}
 
-    let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
-    bottomBar.id = 'nav-bottom-bar';
-    if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
+topBar.id = 'nav-top-bar';
+if (!topBar.parentNode) document.body.appendChild(topBar);
 
-    const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
-    const mins = Math.round(selectedRoute.summary.totalTime / 60) || 1;
-    const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+// v682: Fallback for empty instructions
+let instruction = "Yolu takip edin";
+if (selectedRoute.instructions && selectedRoute.instructions[0]) {
+    instruction = selectedRoute.instructions[0].text;
+}
+topBar.innerHTML = `<i class="fa fa-location-arrow"></i><div class="instruction-text">${instruction}</div>`;
+topBar.style.display = 'flex';
 
-    bottomBar.innerHTML = `
+let bottomBar = document.getElementById('nav-bottom-bar') || document.createElement('div');
+bottomBar.id = 'nav-bottom-bar';
+if (!bottomBar.parentNode) document.body.appendChild(bottomBar);
+
+const km = (selectedRoute.summary.totalDistance / 1000).toFixed(1);
+const mins = Math.round(selectedRoute.summary.totalTime / 60) || 1;
+const arrivalTime = new Date(Date.now() + selectedRoute.summary.totalTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+bottomBar.innerHTML = `
         <button class="nav-btn-close" onclick="clearRouting()">✕</button>
         <div class="nav-info-center">
             <div class="nav-time">${mins} dk</div>
@@ -4839,11 +4920,11 @@ function enterNavigationMode(selectedRoute) {
         </div>
         <button class="nav-btn-alt"><i class="fa fa-ellipsis-v"></i></button>
     `;
-    bottomBar.style.display = 'flex';
+bottomBar.style.display = 'flex';
 
-    if (currentCoords.lat && currentCoords.lon) {
-        map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
-    }
+if (currentCoords.lat && currentCoords.lon) {
+    map.setView([currentCoords.lat, currentCoords.lon], 18, { animate: true });
+}
 }
 
 function clearRouting() {
