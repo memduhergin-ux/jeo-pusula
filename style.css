@@ -1650,7 +1650,7 @@ textarea.form-input {
     color: #ffeb3b;
     height: 15px;
     margin-bottom: 0mm;
-    width: 2.85cm;
+    width: 1.42cm;
     position: relative;
     padding: 0;
     box-sizing: border-box;
@@ -1721,7 +1721,7 @@ textarea.form-input {
 
 .scale-bars {
     display: flex;
-    width: 2.85cm;
+    width: 1.42cm;
     box-sizing: border-box;
     position: relative;
 }
