@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v699
-const CACHE_NAME = 'jeocompass-v699';
-const JEO_VERSION = 'v699';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v700
+const CACHE_NAME = 'jeocompass-v700';
+const JEO_VERSION = 'v700';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4667,86 +4667,9 @@ function startRouting(targetLat, targetLng) {
 // v697: Cleaned up unused routing variables and functions
 // (L.Routing.control, OSRM_SERVERS, drawDirectRoute, et al. have been removed)
 
-// v697: Restore Basic GPS Tracking (Essential for Google Maps Start Point)
-let userLocationMarker = null;
-let userHeadingMarker = null; // Headlight indicator
+// v700: Duplicate GPS logic removed as per user request. 
+// Relying on the original 'liveMarker' system.
 
-if ('geolocation' in navigator) {
-    const geoOptions = {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-    };
-
-    function onLocationUpdate(pos) {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const accuracy = pos.coords.accuracy;
-        const heading = pos.coords.heading;
-
-        // Update global state
-        if (typeof currentCoords !== 'undefined') {
-            currentCoords.lat = lat;
-            currentCoords.lon = lng;
-            currentCoords.acc = accuracy;
-        }
-
-        if (!map) return;
-
-        // Create/Update Marker
-        if (!userLocationMarker) {
-            userLocationMarker = L.circleMarker([lat, lng], {
-                radius: 8,
-                fillColor: "#4285F4", // Google Blue
-                color: "#ffffff",
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.9
-            }).addTo(map);
-
-            // Initial Center
-            map.setView([lat, lng], 16);
-        } else {
-            userLocationMarker.setLatLng([lat, lng]);
-        }
-
-        // Headlight / Heading Indicator (Restored v698)
-        if (!userHeadingMarker) {
-            userHeadingMarker = L.marker([lat, lng], {
-                icon: L.divIcon({
-                    className: 'heading-cone',
-                    html: '<div style="width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 60px solid rgba(255, 215, 0, 0.4); transform-origin: bottom center;"></div>',
-                    iconSize: [40, 60],
-                    iconAnchor: [20, 60]
-                }),
-                pane: 'markerPane',
-                zIndexOffset: -1 // Behind the dot
-            }).addTo(map);
-        } else {
-            userHeadingMarker.setLatLng([lat, lng]);
-        }
-
-        if (heading !== null && !isNaN(heading)) {
-            const icon = userHeadingMarker.getElement();
-            if (icon) {
-                // v699: Fix - Rotate ONLY the inner div to avoid messing with Leaflet's positioning transform
-                const innerDiv = icon.querySelector('div');
-                if (innerDiv) {
-                    innerDiv.style.transform = `rotate(${heading}deg)`;
-                    // Maintain the harvest gold color
-                    innerDiv.style.borderBottomColor = 'rgba(255, 215, 0, 0.4)';
-                }
-                userHeadingMarker.setOpacity(1);
-            }
-        } else {
-            // Hide if no heading data
-            userHeadingMarker.setOpacity(0);
-        }
-    }
-
-    function onLocationError(err) {
-        console.warn("GPS Error:", err);
-    }
-
-    navigator.geolocation.watchPosition(onLocationUpdate, onLocationError, geoOptions);
+function onLocationError(err) {
+    console.warn("GPS Error:", err);
 }
