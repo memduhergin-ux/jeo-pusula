@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v683
-const CACHE_NAME = 'jeocompass-v683';
-const JEO_VERSION = 'v683';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v684
+const CACHE_NAME = 'jeocompass-v684';
+const JEO_VERSION = 'v684';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4676,10 +4676,10 @@ function startRouting(targetLat, targetLng) {
     }
 
     try {
-        // v683: Use a more stable OSRM server (FOSSGIS) to avoid "Route not found" errors
+        // v684: Fixed OSRM endpoint - using correct modern API
         routingControl = L.Routing.control({
             router: L.Routing.osrmv1({
-                serviceUrl: 'https://router.project-osrm.org/viaroute', // Fallback
+                serviceUrl: 'https://router.project-osrm.org/route/v1',
                 profile: 'driving'
             }),
             waypoints: [L.latLng(startPos[0], startPos[1]), L.latLng(targetLat, targetLng)],
@@ -4690,7 +4690,6 @@ function startRouting(targetLat, targetLng) {
             showAlternatives: true,
             position: 'bottomleft',
             lineOptions: {
-                // v683: High contrast solid blue line with high priority
                 styles: [{ color: '#1a73e8', opacity: 0.9, weight: 12, pane: 'routing-pane' }],
                 addWaypoints: false
             },
@@ -4698,8 +4697,7 @@ function startRouting(targetLat, targetLng) {
         }).addTo(map);
 
         routingControl.on('routingerror', function (err) {
-            console.error("LRM Routing Error v683:", err);
-            // v683: More detailed error info for the user
+            console.error("LRM Routing Error v684:", err);
             let msg = "Rota bulunamadı.";
             if (err.error && err.error.message && err.error.message.includes("Too Many Requests")) {
                 msg = "Sunucu yoğun, lütfen tekrar deneyin.";
