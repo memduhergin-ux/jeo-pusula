@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v705
-const CACHE_NAME = 'jeocompass-v705';
-const JEO_VERSION = 'v705';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v706
+const CACHE_NAME = 'jeocompass-v706';
+const JEO_VERSION = 'v706';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -1453,130 +1453,129 @@ function startGeolocationWatch() {
                     }
                 });
             }
-        } catch (e) {
-            console.error("Geo Watch Error:", e);
-        }
 
-        // v464: Prevent (0,0) jump from entering smoothedPos
-        if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
-            if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
-                smoothedPos.lat = currentCoords.lat;
-                smoothedPos.lon = currentCoords.lon;
 
-                // v515: Auto-focus map on very first GPS success
-                if (isFirstLocationFix && map) {
-                    map.setView([currentCoords.lat, currentCoords.lon], 17);
-                    isFirstLocationFix = false;
-                    console.log("v515: Initial GPS Focus Triggered");
-                }
-            } else {
-                smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
-                smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
-            }
-        }
+            // v464: Prevent (0,0) jump from entering smoothedPos
+            if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
+                if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
+                    smoothedPos.lat = currentCoords.lat;
+                    smoothedPos.lon = currentCoords.lon;
 
-        // Update GPS Dashboard (v461)
-        const gpsAccVal = document.getElementById('gps-acc-val');
-        const gpsStatusVal = document.getElementById('gps-status-val');
-        const trackPointsVal = document.getElementById('track-points-val');
-
-        if (gpsAccVal) gpsAccVal.textContent = `${Math.round(currentCoords.acc)}m`;
-        if (gpsStatusVal) {
-            gpsStatusVal.textContent = currentCoords.acc <= 100 ? "GOOD" : "POOR";
-            gpsStatusVal.style.color = currentCoords.acc <= 100 ? "#4caf50" : "#ff9800";
-        }
-        if (trackPointsVal) trackPointsVal.textContent = trackPath.length;
-
-        // Update Live Marker
-        if (map && currentCoords.lat) {
-            const livePos = [smoothedPos.lat, smoothedPos.lon];
-            if (!liveMarker) {
-                const liveIcon = L.divIcon({
-                    className: 'heartbeat-container',
-                    html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                });
-                liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
-            } else {
-                liveMarker.setLatLng(livePos);
-            }
-
-            if (followMe) map.panTo(livePos);
-
-            // v549: TRAVEL-ONLY HEADLIGHT
-            // The user specifically wants the headlight to ONLY follow the direction of progress.
-            // We prioritize GPS Kurs (heading), then fallback to manual calculation if available.
-            // We NEVER use the compass sensor (displayedHeading) here anymore.
-            const gpsHeading = p.coords.heading;
-            const speed = p.coords.speed || 0;
-            let targetRot = window.lastMarkerRotation || 0;
-
-            if (gpsHeading !== null && gpsHeading !== undefined && speed > 0.5) {
-                targetRot = gpsHeading;
-            } else if (lastPos && speed > 0.5) {
-                // Manual bearing calculation (Backup for devices with null heading)
-                const dLat = smoothedPos.lat - lastPos.lat;
-                const dLon = smoothedPos.lon - lastPos.lon;
-                if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
-                    targetRot = (Math.atan2(dLon, dLat) * 180) / Math.PI;
-                    if (targetRot < 0) targetRot += 360;
-                }
-            }
-            // If stationary (speed <= 0.5), targetRot remains lastMarkerRotation.
-
-            // Simple smoothing (v525)
-            if (typeof lastMarkerRotation === 'undefined') window.lastMarkerRotation = targetRot;
-            let diff = targetRot - lastMarkerRotation;
-            while (diff < -180) diff += 360;
-            while (diff > 180) diff -= 360;
-            lastMarkerRotation += diff * 0.3; // 30% lerp factor
-
-            const markerEl = liveMarker.getElement();
-            if (markerEl) {
-                const cone = markerEl.querySelector('.heading-cone');
-                if (cone) {
-                    cone.style.transform = `translate(-50%, 0) rotate(${lastMarkerRotation}deg)`;
+                    // v515: Auto-focus map on very first GPS success
+                    if (isFirstLocationFix && map) {
+                        map.setView([currentCoords.lat, currentCoords.lon], 17);
+                        isFirstLocationFix = false;
+                        console.log("v515: Initial GPS Focus Triggered");
+                    }
+                } else {
+                    smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
+                    smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
                 }
             }
 
-            // v462: Ensure track line always connects to live marker center
-            if (showLiveTrack && trackPolyline && map.hasLayer(trackPolyline)) {
-                trackPolyline.setLatLngs([...trackPath, livePos]);
+            // Update GPS Dashboard (v461)
+            const gpsAccVal = document.getElementById('gps-acc-val');
+            const gpsStatusVal = document.getElementById('gps-status-val');
+            const trackPointsVal = document.getElementById('track-points-val');
+
+            if (gpsAccVal) gpsAccVal.textContent = `${Math.round(currentCoords.acc)}m`;
+            if (gpsStatusVal) {
+                gpsStatusVal.textContent = currentCoords.acc <= 100 ? "GOOD" : "POOR";
+                gpsStatusVal.style.color = currentCoords.acc <= 100 ? "#4caf50" : "#ff9800";
             }
-        }
+            if (trackPointsVal) trackPointsVal.textContent = trackPath.length;
 
-        // --- TRACKING LOGIC ---
-        if (isTracking) {
-            const acc = p.coords.accuracy;
-            if (acc <= 100 && (smoothedPos.lat !== 0 || smoothedPos.lon !== 0)) {
-                const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
-                const currentPoint = L.latLng(smoothedPos.lat, smoothedPos.lon);
-                const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
-
-                if (dist >= 1) {
-                    updateTrack(smoothedPos.lat, smoothedPos.lon);
-                }
-
-                // v465: Periodic "Real Z" fetching for current position (every 15-20 seconds)
-                const now = Date.now();
-                if (now - lastFetches.me > 15000) {
-                    lastFetches.me = now;
-                    fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
-                        if (alt !== null) {
-                            onlineMyAlt = alt;
-                            updateScaleValues(); // Update Map Z display
-                        }
+            // Update Live Marker
+            if (map && currentCoords.lat) {
+                const livePos = [smoothedPos.lat, smoothedPos.lon];
+                if (!liveMarker) {
+                    const liveIcon = L.divIcon({
+                        className: 'heartbeat-container',
+                        html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
                     });
+                    liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
+                } else {
+                    liveMarker.setLatLng(livePos);
                 }
-            } else {
-                if (acc > 100) {
-                    console.log("GPS Accuracy Poor:", acc);
+
+                if (followMe) map.panTo(livePos);
+
+                // v549: TRAVEL-ONLY HEADLIGHT
+                // The user specifically wants the headlight to ONLY follow the direction of progress.
+                // We prioritize GPS Kurs (heading), then fallback to manual calculation if available.
+                // We NEVER use the compass sensor (displayedHeading) here anymore.
+                const gpsHeading = p.coords.heading;
+                const speed = p.coords.speed || 0;
+                let targetRot = window.lastMarkerRotation || 0;
+
+                if (gpsHeading !== null && gpsHeading !== undefined && speed > 0.5) {
+                    targetRot = gpsHeading;
+                } else if (lastPos && speed > 0.5) {
+                    // Manual bearing calculation (Backup for devices with null heading)
+                    const dLat = smoothedPos.lat - lastPos.lat;
+                    const dLon = smoothedPos.lon - lastPos.lon;
+                    if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
+                        targetRot = (Math.atan2(dLon, dLat) * 180) / Math.PI;
+                        if (targetRot < 0) targetRot += 360;
+                    }
+                }
+                // If stationary (speed <= 0.5), targetRot remains lastMarkerRotation.
+
+                // Simple smoothing (v525)
+                if (typeof lastMarkerRotation === 'undefined') window.lastMarkerRotation = targetRot;
+                let diff = targetRot - lastMarkerRotation;
+                while (diff < -180) diff += 360;
+                while (diff > 180) diff -= 360;
+                lastMarkerRotation += diff * 0.3; // 30% lerp factor
+
+                const markerEl = liveMarker.getElement();
+                if (markerEl) {
+                    const cone = markerEl.querySelector('.heading-cone');
+                    if (cone) {
+                        cone.style.transform = `translate(-50%, 0) rotate(${lastMarkerRotation}deg)`;
+                    }
+                }
+
+                // v462: Ensure track line always connects to live marker center
+                if (showLiveTrack && trackPolyline && map.hasLayer(trackPolyline)) {
+                    trackPolyline.setLatLngs([...trackPath, livePos]);
                 }
             }
+
+            // --- TRACKING LOGIC ---
+            if (isTracking) {
+                const acc = p.coords.accuracy;
+                if (acc <= 100 && (smoothedPos.lat !== 0 || smoothedPos.lon !== 0)) {
+                    const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
+                    const currentPoint = L.latLng(smoothedPos.lat, smoothedPos.lon);
+                    const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
+
+                    if (dist >= 1) {
+                        updateTrack(smoothedPos.lat, smoothedPos.lon);
+                    }
+
+                    // v465: Periodic "Real Z" fetching for current position (every 15-20 seconds)
+                    const now = Date.now();
+                    if (now - lastFetches.me > 15000) {
+                        lastFetches.me = now;
+                        fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
+                            if (alt !== null) {
+                                onlineMyAlt = alt;
+                                updateScaleValues(); // Update Map Z display
+                            }
+                        });
+                    }
+                } else {
+                    if (acc > 100) {
+                        console.log("GPS Accuracy Poor:", acc);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("WatchPosition internal error:", e);
         }
-    } catch (e) {
-        console.error("WatchPosition internal error:", e);
     }
 }, (err) => {
     console.warn("Location error:", err);
