@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v686
-const CACHE_NAME = 'jeocompass-v686';
-const JEO_VERSION = 'v686';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v687
+const CACHE_NAME = 'jeocompass-v687';
+const JEO_VERSION = 'v687';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4676,114 +4676,67 @@ function startRouting(targetLat, targetLng) {
     }
 
     try {
-        // v686: Switch to FOSSGIS OSRM Server (More reliable than demo server)
-        routingControl = L.Routing.control({
-            router: L.Routing.osrmv1({
-                serviceUrl: 'https://routing.openstreetmap.de/routed-car/route/v1',
-                profile: 'driving'
-            }),
-            waypoints: [L.latLng(startPos[0], startPos[1]), L.latLng(targetLat, targetLng)],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            draggableWaypoints: false,
-            fitSelectedRoutes: true,
-            showAlternatives: true,
-            position: 'bottomleft',
-            lineOptions: {
-                styles: [{ color: '#1a73e8', opacity: 0.9, weight: 12, pane: 'routing-pane' }],
-                addWaypoints: false
-            },
-            createMarker: function () { return null; }
-        }).addTo(map);
+        currentActiveRoute = routes[0];
 
-        routingControl.on('routingerror', function (err) {
-            console.error("LRM Routing Error v686:", err);
-            let msg = "Rota servisi yanıt vermiyor (FOSSGIS).";
+        if (routes && routes.length > 0) {
+            const allCoords = routes.flatMap(r => r.coordinates);
+            map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 150, 40] });
 
-            if (err.error) {
-                // HTTP Status checking
-                if (err.error.status) {
-                    msg += ` (Kod: ${err.error.status})`;
-                    if (err.error.status === 429) msg = "Çok fazla istek, bekleyip deneyin.";
-                    if (err.error.status === 400) msg = "Rota hesaplanamıyor (Geçersiz konum).";
-                } else if (err.error.type) {
-                    msg += ` (${err.error.type})`;
-                }
-            } else {
-                msg = "İnternet bağlantınızı kontrol edin.";
-            }
+            routes.forEach((route, idx) => {
+                const pointIdx = Math.floor(route.coordinates.length * 0.45);
+                const labelPoint = route.coordinates[pointIdx];
+                const totalMins = Math.round(route.summary.totalTime / 60) || 1;
+                const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
 
-            // Fallback: If routing fails, draw a straight line? 
-            // For now, just show the detailed error.
-            showToast(msg, 5000);
-            clearRouting();
-        });
+                const isFirst = (idx === 0);
+                const label = L.marker(labelPoint, {
+                    icon: L.divIcon({
+                        className: 'route-label-container',
+                        html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
+                        iconSize: null,
+                        iconAnchor: null
+                    }),
+                    zIndexOffset: isFirst ? 10000 : 9000
+                }).addTo(map);
 
-        routingControl.on('routesfound', function (e) {
-            const routes = e.routes;
-            routeLabels.forEach(l => map.removeLayer(l));
-            routeLabels = [];
-            currentActiveRoute = routes[0];
-
-            if (routes && routes.length > 0) {
-                const allCoords = routes.flatMap(r => r.coordinates);
-                map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40, 150, 40] });
-
-                routes.forEach((route, idx) => {
-                    const pointIdx = Math.floor(route.coordinates.length * 0.45);
-                    const labelPoint = route.coordinates[pointIdx];
-                    const totalMins = Math.round(route.summary.totalTime / 60) || 1;
-                    const timeStr = totalMins >= 60 ? `${Math.floor(totalMins / 60)} sa. ${totalMins % 60} dk.` : `${totalMins} dk.`;
-
-                    const isFirst = (idx === 0);
-                    const label = L.marker(labelPoint, {
-                        icon: L.divIcon({
-                            className: 'route-label-container',
-                            html: `<div class="route-bubble ${isFirst ? 'bubble-active' : 'bubble-alt'}"><span>${timeStr}</span></div>`,
-                            iconSize: null,
-                            iconAnchor: null
-                        }),
-                        zIndexOffset: isFirst ? 10000 : 9000
-                    }).addTo(map);
-
-                    label.on('click', (ev) => {
-                        L.DomEvent.stopPropagation(ev);
-                        routingControl.selectRoute(route);
-                    });
-                    routeLabels.push(label);
+                label.on('click', (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    routingControl.selectRoute(route);
                 });
+                routeLabels.push(label);
+            });
 
-                routingControl.selectRoute(routes[0]);
-                updateRouteInfoPanel(routes[0], routingControl);
+            routingControl.selectRoute(routes[0]);
+            updateRouteInfoPanel(routes[0], routingControl);
 
-                routingControl.on('routeselected', function (ev) {
-                    currentActiveRoute = ev.route;
-                    routeLabels.forEach((lbl, idx) => {
-                        const el = lbl.getElement();
-                        if (el) {
-                            const bubble = el.querySelector('.route-bubble');
-                            if (bubble) {
-                                bubble.className = `route-bubble ${routes[idx] === currentActiveRoute ? 'bubble-active' : 'bubble-alt'}`;
-                            }
+            routingControl.on('routeselected', function (ev) {
+                currentActiveRoute = ev.route;
+                routeLabels.forEach((lbl, idx) => {
+                    const el = lbl.getElement();
+                    if (el) {
+                        const bubble = el.querySelector('.route-bubble');
+                        if (bubble) {
+                            bubble.className = `route-bubble ${routes[idx] === currentActiveRoute ? 'bubble-active' : 'bubble-alt'}`;
                         }
-                    });
-                    updateRouteInfoPanel(currentActiveRoute, routingControl);
-                });
-
-                setTimeout(() => {
-                    const container = routingControl.getContainer();
-                    if (container) {
-                        const alts = container.querySelectorAll('.leaflet-routing-alt');
-                        alts.forEach(el => el.style.display = el.classList.contains('leaflet-routing-alt-selected') ? 'block' : 'none');
                     }
-                }, 100);
-            }
-        });
+                });
+                updateRouteInfoPanel(currentActiveRoute, routingControl);
+            });
 
-        map.closePopup();
-    } catch (e) {
-        showToast("Hata: " + e.message, 2000);
-    }
+            setTimeout(() => {
+                const container = routingControl.getContainer();
+                if (container) {
+                    const alts = container.querySelectorAll('.leaflet-routing-alt');
+                    alts.forEach(el => el.style.display = el.classList.contains('leaflet-routing-alt-selected') ? 'block' : 'none');
+                }
+            }, 100);
+        }
+    });
+
+    map.closePopup();
+} catch (e) {
+    showToast("Hata: " + e.message, 2000);
+}
 }
 
 function enterNavigationMode(selectedRoute) {
