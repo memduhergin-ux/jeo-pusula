@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v687
-const CACHE_NAME = 'jeocompass-v687';
-const JEO_VERSION = 'v687';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v688
+const CACHE_NAME = 'jeocompass-v688';
+const JEO_VERSION = 'v688';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
