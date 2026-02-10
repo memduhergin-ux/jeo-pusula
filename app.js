@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v713
-const CACHE_NAME = 'jeo-cache-v713';
-const JEO_VERSION = 'v713';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v717
+const CACHE_NAME = 'jeo-cache-v717';
+const JEO_VERSION = 'v717';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -2014,15 +2014,30 @@ function initMapControls() {
     // v713: Draggable Scale Bar Logic
     const scaleWrapper = document.querySelector('.custom-scale-wrapper');
     if (scaleWrapper) {
+        // v718: Restore visibility from localStorage (default: true)
+        const isScaleVisible = JSON.parse(localStorage.getItem('jeoScaleVisible') ?? 'true');
+        if (isScaleVisible) {
+            scaleWrapper.classList.add('visible');
+        } else {
+            scaleWrapper.classList.remove('visible');
+        }
+
+        // Sync toggle button color
+        const btnScale = document.getElementById('btn-scale-toggle');
+        if (btnScale) {
+            btnScale.style.backgroundColor = isScaleVisible ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0,0,0,0.7)';
+        }
+
         makeDraggable(scaleWrapper, 'jeoScalePos');
 
         // Restore Position
         const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
         if (savedPos) {
-            scaleWrapper.style.left = savedPos.left;
-            scaleWrapper.style.top = savedPos.top;
-            scaleWrapper.style.bottom = 'auto'; // Override default bottom
-            scaleWrapper.style.right = 'auto';
+            scaleWrapper.style.setProperty('left', savedPos.left, 'important');
+            scaleWrapper.style.setProperty('top', savedPos.top, 'important');
+            scaleWrapper.style.setProperty('bottom', 'auto', 'important');
+            scaleWrapper.style.setProperty('right', 'auto', 'important');
+            scaleWrapper.style.setProperty('position', 'fixed', 'important');
         }
     }
 
@@ -2050,7 +2065,6 @@ function makeDraggable(element, storageKey) {
 
     function dragMouseDown(e) {
         e = e || window.event;
-        // e.preventDefault(); // Don't prevent default, might block clicks if we had buttons
         // get the mouse cursor position at startup:
         if (e.type === 'touchstart') {
             pos3 = e.touches[0].clientX;
@@ -2060,6 +2074,11 @@ function makeDraggable(element, storageKey) {
             pos4 = e.clientY;
         }
 
+        // v715: Force fixed positioning to break out of Leaflet containers
+        element.style.setProperty('position', 'fixed', 'important');
+        element.style.setProperty('bottom', 'auto', 'important');
+        element.style.setProperty('right', 'auto', 'important');
+
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
         document.ontouchend = closeDragElement;
@@ -2068,7 +2087,10 @@ function makeDraggable(element, storageKey) {
 
     function elementDrag(e) {
         e = e || window.event;
-        // e.preventDefault(); // Stop scrolling on touch
+        // v714: Prevent scrolling on mobile to allow vertical drag
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
 
         let clientX, clientY;
         if (e.type === 'touchmove') {
@@ -2088,7 +2110,6 @@ function makeDraggable(element, storageKey) {
         // set the element's new position:
         element.style.top = (element.offsetTop - pos2) + "px";
         element.style.left = (element.offsetLeft - pos1) + "px";
-        element.style.bottom = 'auto'; // Important to override CSS
     }
 
     function closeDragElement() {
@@ -3043,6 +3064,10 @@ if (btnScaleToggle) {
             wrapper.classList.toggle('visible');
             const isVisible = wrapper.classList.contains('visible');
             btnScaleToggle.style.backgroundColor = isVisible ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0,0,0,0.7)';
+            // v718: Persist visibility state
+            localStorage.setItem('jeoScaleVisible', JSON.stringify(isVisible));
+            // v718: Remove inline display to prevent conflicts with class
+            wrapper.style.removeProperty('display');
         }
     });
 }

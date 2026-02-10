@@ -1596,6 +1596,8 @@ textarea.form-input {
 /* Grouping Scale and UTM with automatic edge-to-edge layout */
 .custom-scale-wrapper.visible {
     display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .custom-scale-wrapper {
@@ -1605,14 +1607,17 @@ textarea.form-input {
     justify-content: flex-start;
     gap: 3mm;
     /* v611: Moved coordinates closer to the scale line */
-    position: absolute;
-    bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
-    left: 10px !important;
-    /* v713: Changed from 100vw to auto for dragging */
-    width: auto;
+    /* v611: Moved coordinates closer to the scale line */
+    position: fixed;
+    /* v715: Fixed positioning for true 2D dragging */
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    /* v716: Removed !important to allow JS to move it. Added fit-content and right: auto to prevent stretching. */
+    width: fit-content;
+    right: auto;
     padding: 5px;
-    background: rgba(0, 0, 0, 0.2);
-    /* v713: Subtle background for touch target */
+    background: rgba(0, 0, 0, 0.4);
+    /* v716: Darker background for better visibility */
     border-radius: 8px;
     pointer-events: auto;
     /* v713: Enable interaction */
@@ -1638,7 +1643,7 @@ textarea.form-input {
 .scale-row {
     display: flex;
     align-items: flex-end;
-    /* All elements aligned to the scale line bottom */
+    /* v714: Strictly align bottoms of text and line */
     gap: 4px;
     /* "az boşluk" after unit */
 }
@@ -1707,7 +1712,9 @@ textarea.form-input {
     align-items: center;
     padding-right: 5px;
     padding-bottom: 0px;
-    /* v713: Lowered to align with scale line */
+    /* v714: Strictly 0px for baseline alignment */
+    line-height: 1;
+    /* v714: Prevent line-height from adding invisible space */
 }
 
 
