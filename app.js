@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v700
-const CACHE_NAME = 'jeocompass-v700';
-const JEO_VERSION = 'v700';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v701
+const CACHE_NAME = 'jeocompass-v701';
+const JEO_VERSION = 'v701';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -287,6 +287,122 @@ function updateHeatmap() {
     } catch (e) {
         console.error("Heatmap Layer Creation Failed:", e);
     }
+
+    // v701: Update Legend
+    updateHeatmapLegend(filterKey);
+}
+
+// v701: Heatmap Legend Logic
+function initHeatmapLegend() {
+    const legend = document.getElementById('heatmap-legend');
+    const header = document.getElementById('legend-header');
+    if (!legend || !header) return;
+
+    let isDragging = false;
+    let initialX, initialY;
+    let currentX, currentY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    header.addEventListener('mousedown', dragStart);
+    header.addEventListener('touchstart', dragStart, { passive: false });
+
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag, { passive: false });
+
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchend', dragEnd);
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            initialX = e.touches[0].clientX - xOffset;
+            initialY = e.touches[0].clientY - yOffset;
+        } else {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+        }
+
+        if (e.target === header || e.target.parentNode === header) {
+            isDragging = true;
+        }
+    }
+
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            if (e.type === 'touchmove') {
+                currentX = e.touches[0].clientX - initialX;
+                currentY = e.touches[0].clientY - initialY;
+            } else {
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+            }
+
+            xOffset = currentX;
+            yOffset = currentY;
+
+            setTranslate(currentX, currentY, legend);
+        }
+    }
+
+    function setTranslate(xPos, yPos, el) {
+        el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+    }
+
+    function dragEnd(e) {
+        initialX = currentX;
+        initialY = currentY;
+        isDragging = false;
+    }
+}
+// Init immediately if ready
+if (document.readyState !== 'loading') initHeatmapLegend();
+else document.addEventListener('DOMContentLoaded', initHeatmapLegend);
+
+
+function updateHeatmapLegend(filterKey) {
+    const legend = document.getElementById('heatmap-legend');
+    const title = document.getElementById('legend-title');
+    const bar = document.getElementById('legend-gradient-bar');
+
+    if (!legend || !isHeatmapActive) {
+        if (legend) legend.style.display = 'none';
+        return;
+    }
+
+    legend.style.display = 'flex';
+
+    // Set Title
+    if (filterKey === 'ALL') {
+        title.textContent = "All Elements";
+        // Rainbow Gradient (Bottom-to-Top to match specific heatmap structure if vertical)
+        // Actually CSS linear-gradient(to top, ...) maps 0% at bottom to 100% at top.
+        // Heatmap: 0.0 (Transparent) -> 0.20 (Blue) -> 0.45 (Green) -> 0.75 (Yellow) -> 0.95 (Red) -> 1.0 (Deep Red)
+        // We skip transparent for the legend to show the full visible spectrum
+        bar.style.background = `linear-gradient(to top, 
+            #2196f3 0%, 
+            #4caf50 30%, 
+            #ffeb3b 60%, 
+            #f44336 90%, 
+            #b71c1c 100%)`;
+    } else {
+        const baseColor = getElementColor(filterKey);
+        // Clean up title (remove emoji if possible or just show code)
+        title.textContent = `${filterKey} Density`; // e.g. "MN Density"
+
+        // Monochromatic Gradient
+        // 0.15 Base -> ... -> 1.0 Core
+        // We can simulate this
+        const c1 = shadeColor(baseColor, -0.2);
+        const c2 = shadeColor(baseColor, -0.6);
+        const c3 = shadeColor(baseColor, -0.98);
+
+        bar.style.background = `linear-gradient(to top, 
+            ${baseColor} 0%, 
+            ${c1} 40%, 
+            ${c2} 75%, 
+            ${c3} 100%)`;
+    }
 }
 
 // v439: Robust Headlight Rotation
@@ -403,6 +519,8 @@ function toggleHeatmap() {
                     if (btn) btn.classList.remove('active');
                     panel.style.display = 'none';
                     localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
+                    const legend = document.getElementById('heatmap-legend');
+                    if (legend) legend.style.display = 'none';
                     document.removeEventListener('click', closeHandler);
                 }
             };
@@ -412,6 +530,8 @@ function toggleHeatmap() {
         isHeatmapActive = false;
         if (btn) btn.classList.remove('active');
         panel.style.display = 'none';
+        const legend = document.getElementById('heatmap-legend');
+        if (legend) legend.style.display = 'none';
         localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
         if (heatmapLayer) {
             map.removeLayer(heatmapLayer);
