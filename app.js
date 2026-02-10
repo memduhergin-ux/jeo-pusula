@@ -1,6 +1,6 @@
 ﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v720
-const CACHE_NAME = 'jeo-cache-v720';
-const JEO_VERSION = 'v720';
+const CACHE_NAME = 'jeo-cache-v724';
+const JEO_VERSION = 'v724';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -2073,6 +2073,11 @@ function makeDraggable(element, storageKey) {
         if (typeof map !== 'undefined' && map && map.dragging) {
             map.dragging.disable();
         }
+
+        // v721: Capture current position before switching styles to prevent "jumping"
+        const rect = element.getBoundingClientRect();
+        element.style.top = rect.top + "px";
+        element.style.left = rect.left + "px";
 
         // get the mouse cursor position at startup:
         if (e.type === 'touchstart') {
