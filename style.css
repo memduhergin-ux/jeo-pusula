@@ -2398,14 +2398,14 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     color: #70757a;
 }
 
-/* v701: Heatmap Legend */
+/* v701/v702: Heatmap Legend (Horizontal) */
 .heatmap-legend {
     position: absolute;
     top: 80px;
     /* Below FABs */
     left: 10px;
-    width: 140px;
-    /* Compact width */
+    width: 200px;
+    /* Wider for horizontal */
     background: rgba(30, 30, 30, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -2419,7 +2419,6 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     overflow: hidden;
     transition: opacity 0.3s;
     display: flex;
-    /* Ensure flex layout */
     flex-direction: column;
 }
 
@@ -2440,36 +2439,51 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     background: rgba(255, 255, 255, 0.2);
 }
 
+.legend-close-btn {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #aaa;
+    transition: color 0.2s;
+    padding: 2px 4px;
+}
+
+.legend-close-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
 .drag-handle {
     color: #888;
     font-size: 0.7rem;
     letter-spacing: 1px;
+    transform: rotate(90deg);
+    /* Horizontal handle look */
 }
 
 .legend-body {
     padding: 10px;
     display: flex;
-    flex-direction: row;
-    /* Side-by-side: Labels | Bar */
-    align-items: stretch;
-    gap: 8px;
-    height: 120px;
-    /* Fixed height for the bar */
+    flex-direction: column;
+    /* Stack: Bar then Labels */
+    gap: 6px;
 }
 
 .legend-labels {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    /* Horizontal labels */
     justify-content: space-between;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #ccc;
-    text-align: right;
-    flex: 1;
+    font-weight: 600;
 }
 
 .legend-gradient-bar {
-    width: 18px;
-    border-radius: 4px;
+    width: 100%;
+    height: 12px;
+    /* Slim horizontal bar */
+    border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.3);
     /* Background set dynamically via JS */
 }

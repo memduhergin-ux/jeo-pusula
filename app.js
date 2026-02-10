@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v701
-const CACHE_NAME = 'jeocompass-v701';
-const JEO_VERSION = 'v701';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v704
+const CACHE_NAME = 'jeocompass-v704';
+const JEO_VERSION = 'v704';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -354,6 +354,19 @@ function initHeatmapLegend() {
         initialY = currentY;
         isDragging = false;
     }
+
+    // v703: Manual Close Button
+    const closeBtn = document.getElementById('legend-close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent drag start or map click from interfering
+            legend.style.display = 'none';
+            // Note: Layer remains active as per user request ("biz istediğimizde lejantı kapatalım")
+        });
+        // Also prevent drag on the close button
+        closeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+        closeBtn.addEventListener('touchstart', (e) => e.stopPropagation());
+    }
 }
 // Init immediately if ready
 if (document.readyState !== 'loading') initHeatmapLegend();
@@ -378,8 +391,8 @@ function updateHeatmapLegend(filterKey) {
         // Rainbow Gradient (Bottom-to-Top to match specific heatmap structure if vertical)
         // Actually CSS linear-gradient(to top, ...) maps 0% at bottom to 100% at top.
         // Heatmap: 0.0 (Transparent) -> 0.20 (Blue) -> 0.45 (Green) -> 0.75 (Yellow) -> 0.95 (Red) -> 1.0 (Deep Red)
-        // We skip transparent for the legend to show the full visible spectrum
-        bar.style.background = `linear-gradient(to top, 
+        // v702: Horizontal Gradient (Left to Right)
+        bar.style.background = `linear-gradient(to right, 
             #2196f3 0%, 
             #4caf50 30%, 
             #ffeb3b 60%, 
@@ -387,17 +400,17 @@ function updateHeatmapLegend(filterKey) {
             #b71c1c 100%)`;
     } else {
         const baseColor = getElementColor(filterKey);
-        // Clean up title (remove emoji if possible or just show code)
-        title.textContent = `${filterKey} Density`; // e.g. "MN Density"
 
-        // Monochromatic Gradient
-        // 0.15 Base -> ... -> 1.0 Core
-        // We can simulate this
+        // v702: Title Case for Element Name (e.g. "MN" -> "Mn")
+        const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
+        title.textContent = `${niceName} Density`;
+
         const c1 = shadeColor(baseColor, -0.2);
         const c2 = shadeColor(baseColor, -0.6);
         const c3 = shadeColor(baseColor, -0.98);
 
-        bar.style.background = `linear-gradient(to top, 
+        // v702: Horizontal Gradient (Left to Right)
+        bar.style.background = `linear-gradient(to right, 
             ${baseColor} 0%, 
             ${c1} 40%, 
             ${c2} 75%, 
@@ -503,29 +516,30 @@ function toggleHeatmap() {
         updateHeatmapFilterOptions();
         updateHeatmap();
 
-        // Add one-time click listener for auto-close (v413 - Improved)
-        // We use capture phase or a slight delay to avoid immediate closure if the toggle itself was clicked
+        // v703: Improved Close Logic - Clicking map hides PANEL but keeps LAYER/LEGEND active
         setTimeout(() => {
             const closeHandler = (e) => {
-                // If click is outside panel and outside the toggle button
                 const isOutsidePanel = !panel.contains(e.target);
                 const isOutsideToggle = e.target.id !== 'btn-heatmap-toggle' && !e.target.closest('#btn-heatmap-toggle');
 
                 if (isOutsidePanel && isOutsideToggle) {
-                    // v562 Check: Don't close if browser focused a select or option (common on mobile)
+                    // Check for common inputs
                     if (document.activeElement && (document.activeElement.id === 'heatmap-element-filter' || document.activeElement.tagName === 'SELECT')) return;
 
-                    isHeatmapActive = false;
-                    if (btn) btn.classList.remove('active');
+                    // v703: ONLY Hide the panel (filtering UI)
+                    // Do NOT set isHeatmapActive = false
+                    // Do NOT remove the layer
+                    // Do NOT hide the legend
                     panel.style.display = 'none';
-                    localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
-                    const legend = document.getElementById('heatmap-legend');
-                    if (legend) legend.style.display = 'none';
+                    if (btn) btn.classList.remove('active'); // Optional: maybe keep it active to show mode? 
+                    // Let's keep the button active if the layer is still on! 
+                    if (btn) btn.classList.add('active');
+
                     document.removeEventListener('click', closeHandler);
                 }
             };
             document.addEventListener('click', closeHandler);
-        }, 300); // Increased delay for stability
+        }, 300);
     } else {
         isHeatmapActive = false;
         if (btn) btn.classList.remove('active');
@@ -1424,145 +1438,157 @@ function startGeolocationWatch() {
             currentCoords.alt = p.coords.altitude;
 
             // v521: Save last known location to localStorage
-            if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
-                localStorage.setItem('jeoLastLat', currentCoords.lat);
-                localStorage.setItem('jeoLastLon', currentCoords.lon);
+            localStorage.setItem('jeoLastLat', currentCoords.lat);
+            localStorage.setItem('jeoLastLon', currentCoords.lon);
+
+            // v704: Accurate Elevation (Z) Retrieval
+            // Open-Meteo API provides Topographic Elevation (MSL) which is better than phone GPS (Ellipsoid)
+            const now = Date.now();
+            if (now - lastFetches.me > 10000) { // Throttle: 10 seconds
+                lastFetches.me = now;
+                fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
+                    if (alt !== null) {
+                        onlineMyAlt = alt;
+                        updateScaleValues(); // Update UI immediately
+                    }
+                });
             }
+        }
 
             // v464: Prevent (0,0) jump from entering smoothedPos
             if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
-                if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
-                    smoothedPos.lat = currentCoords.lat;
-                    smoothedPos.lon = currentCoords.lon;
+            if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
+                smoothedPos.lat = currentCoords.lat;
+                smoothedPos.lon = currentCoords.lon;
 
-                    // v515: Auto-focus map on very first GPS success
-                    if (isFirstLocationFix && map) {
-                        map.setView([currentCoords.lat, currentCoords.lon], 17);
-                        isFirstLocationFix = false;
-                        console.log("v515: Initial GPS Focus Triggered");
-                    }
-                } else {
-                    smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
-                    smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
+                // v515: Auto-focus map on very first GPS success
+                if (isFirstLocationFix && map) {
+                    map.setView([currentCoords.lat, currentCoords.lon], 17);
+                    isFirstLocationFix = false;
+                    console.log("v515: Initial GPS Focus Triggered");
                 }
+            } else {
+                smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
+                smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
             }
-
-            // Update GPS Dashboard (v461)
-            const gpsAccVal = document.getElementById('gps-acc-val');
-            const gpsStatusVal = document.getElementById('gps-status-val');
-            const trackPointsVal = document.getElementById('track-points-val');
-
-            if (gpsAccVal) gpsAccVal.textContent = `${Math.round(currentCoords.acc)}m`;
-            if (gpsStatusVal) {
-                gpsStatusVal.textContent = currentCoords.acc <= 100 ? "GOOD" : "POOR";
-                gpsStatusVal.style.color = currentCoords.acc <= 100 ? "#4caf50" : "#ff9800";
-            }
-            if (trackPointsVal) trackPointsVal.textContent = trackPath.length;
-
-            // Update Live Marker
-            if (map && currentCoords.lat) {
-                const livePos = [smoothedPos.lat, smoothedPos.lon];
-                if (!liveMarker) {
-                    const liveIcon = L.divIcon({
-                        className: 'heartbeat-container',
-                        html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16]
-                    });
-                    liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
-                } else {
-                    liveMarker.setLatLng(livePos);
-                }
-
-                if (followMe) map.panTo(livePos);
-
-                // v549: TRAVEL-ONLY HEADLIGHT
-                // The user specifically wants the headlight to ONLY follow the direction of progress.
-                // We prioritize GPS Kurs (heading), then fallback to manual calculation if available.
-                // We NEVER use the compass sensor (displayedHeading) here anymore.
-                const gpsHeading = p.coords.heading;
-                const speed = p.coords.speed || 0;
-                let targetRot = window.lastMarkerRotation || 0;
-
-                if (gpsHeading !== null && gpsHeading !== undefined && speed > 0.5) {
-                    targetRot = gpsHeading;
-                } else if (lastPos && speed > 0.5) {
-                    // Manual bearing calculation (Backup for devices with null heading)
-                    const dLat = smoothedPos.lat - lastPos.lat;
-                    const dLon = smoothedPos.lon - lastPos.lon;
-                    if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
-                        targetRot = (Math.atan2(dLon, dLat) * 180) / Math.PI;
-                        if (targetRot < 0) targetRot += 360;
-                    }
-                }
-                // If stationary (speed <= 0.5), targetRot remains lastMarkerRotation.
-
-                // Simple smoothing (v525)
-                if (typeof lastMarkerRotation === 'undefined') window.lastMarkerRotation = targetRot;
-                let diff = targetRot - lastMarkerRotation;
-                while (diff < -180) diff += 360;
-                while (diff > 180) diff -= 360;
-                lastMarkerRotation += diff * 0.3; // 30% lerp factor
-
-                const markerEl = liveMarker.getElement();
-                if (markerEl) {
-                    const cone = markerEl.querySelector('.heading-cone');
-                    if (cone) {
-                        cone.style.transform = `translate(-50%, 0) rotate(${lastMarkerRotation}deg)`;
-                    }
-                }
-
-                // v462: Ensure track line always connects to live marker center
-                if (showLiveTrack && trackPolyline && map.hasLayer(trackPolyline)) {
-                    trackPolyline.setLatLngs([...trackPath, livePos]);
-                }
-            }
-
-            // --- TRACKING LOGIC ---
-            if (isTracking) {
-                const acc = p.coords.accuracy;
-                if (acc <= 100 && (smoothedPos.lat !== 0 || smoothedPos.lon !== 0)) {
-                    const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
-                    const currentPoint = L.latLng(smoothedPos.lat, smoothedPos.lon);
-                    const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
-
-                    if (dist >= 1) {
-                        updateTrack(smoothedPos.lat, smoothedPos.lon);
-                    }
-
-                    // v465: Periodic "Real Z" fetching for current position (every 15-20 seconds)
-                    const now = Date.now();
-                    if (now - lastFetches.me > 15000) {
-                        lastFetches.me = now;
-                        fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
-                            if (alt !== null) {
-                                onlineMyAlt = alt;
-                                updateScaleValues(); // Update Map Z display
-                            }
-                        });
-                    }
-                } else {
-                    if (acc > 100) {
-                        console.log("GPS Accuracy Poor:", acc);
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("WatchPosition internal error:", e);
         }
-    }, (err) => {
-        console.warn("Location error:", err);
+
+        // Update GPS Dashboard (v461)
+        const gpsAccVal = document.getElementById('gps-acc-val');
         const gpsStatusVal = document.getElementById('gps-status-val');
+        const trackPointsVal = document.getElementById('track-points-val');
+
+        if (gpsAccVal) gpsAccVal.textContent = `${Math.round(currentCoords.acc)}m`;
         if (gpsStatusVal) {
-            gpsStatusVal.textContent = "ERROR: " + err.code;
-            gpsStatusVal.style.color = "#f44336";
+            gpsStatusVal.textContent = currentCoords.acc <= 100 ? "GOOD" : "POOR";
+            gpsStatusVal.style.color = currentCoords.acc <= 100 ? "#4caf50" : "#ff9800";
         }
-        // v461: Restart on timeout or lost signal
-        if (err.code === 3) { // TIMEOUT
-            console.log("Restarting Geolocation due to timeout...");
-            startGeolocationWatch();
+        if (trackPointsVal) trackPointsVal.textContent = trackPath.length;
+
+        // Update Live Marker
+        if (map && currentCoords.lat) {
+            const livePos = [smoothedPos.lat, smoothedPos.lon];
+            if (!liveMarker) {
+                const liveIcon = L.divIcon({
+                    className: 'heartbeat-container',
+                    html: '<div class="heading-cone"></div><div class="heartbeat-pulse"></div><div class="heartbeat-triangle"></div>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+                liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
+            } else {
+                liveMarker.setLatLng(livePos);
+            }
+
+            if (followMe) map.panTo(livePos);
+
+            // v549: TRAVEL-ONLY HEADLIGHT
+            // The user specifically wants the headlight to ONLY follow the direction of progress.
+            // We prioritize GPS Kurs (heading), then fallback to manual calculation if available.
+            // We NEVER use the compass sensor (displayedHeading) here anymore.
+            const gpsHeading = p.coords.heading;
+            const speed = p.coords.speed || 0;
+            let targetRot = window.lastMarkerRotation || 0;
+
+            if (gpsHeading !== null && gpsHeading !== undefined && speed > 0.5) {
+                targetRot = gpsHeading;
+            } else if (lastPos && speed > 0.5) {
+                // Manual bearing calculation (Backup for devices with null heading)
+                const dLat = smoothedPos.lat - lastPos.lat;
+                const dLon = smoothedPos.lon - lastPos.lon;
+                if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
+                    targetRot = (Math.atan2(dLon, dLat) * 180) / Math.PI;
+                    if (targetRot < 0) targetRot += 360;
+                }
+            }
+            // If stationary (speed <= 0.5), targetRot remains lastMarkerRotation.
+
+            // Simple smoothing (v525)
+            if (typeof lastMarkerRotation === 'undefined') window.lastMarkerRotation = targetRot;
+            let diff = targetRot - lastMarkerRotation;
+            while (diff < -180) diff += 360;
+            while (diff > 180) diff -= 360;
+            lastMarkerRotation += diff * 0.3; // 30% lerp factor
+
+            const markerEl = liveMarker.getElement();
+            if (markerEl) {
+                const cone = markerEl.querySelector('.heading-cone');
+                if (cone) {
+                    cone.style.transform = `translate(-50%, 0) rotate(${lastMarkerRotation}deg)`;
+                }
+            }
+
+            // v462: Ensure track line always connects to live marker center
+            if (showLiveTrack && trackPolyline && map.hasLayer(trackPolyline)) {
+                trackPolyline.setLatLngs([...trackPath, livePos]);
+            }
         }
-    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+
+        // --- TRACKING LOGIC ---
+        if (isTracking) {
+            const acc = p.coords.accuracy;
+            if (acc <= 100 && (smoothedPos.lat !== 0 || smoothedPos.lon !== 0)) {
+                const lastPoint = trackPath.length > 0 ? L.latLng(trackPath[trackPath.length - 1]) : null;
+                const currentPoint = L.latLng(smoothedPos.lat, smoothedPos.lon);
+                const dist = lastPoint ? lastPoint.distanceTo(currentPoint) : 999;
+
+                if (dist >= 1) {
+                    updateTrack(smoothedPos.lat, smoothedPos.lon);
+                }
+
+                // v465: Periodic "Real Z" fetching for current position (every 15-20 seconds)
+                const now = Date.now();
+                if (now - lastFetches.me > 15000) {
+                    lastFetches.me = now;
+                    fetchElevation(currentCoords.lat, currentCoords.lon, (alt) => {
+                        if (alt !== null) {
+                            onlineMyAlt = alt;
+                            updateScaleValues(); // Update Map Z display
+                        }
+                    });
+                }
+            } else {
+                if (acc > 100) {
+                    console.log("GPS Accuracy Poor:", acc);
+                }
+            }
+        }
+    } catch (e) {
+        console.error("WatchPosition internal error:", e);
+    }
+}, (err) => {
+    console.warn("Location error:", err);
+    const gpsStatusVal = document.getElementById('gps-status-val');
+    if (gpsStatusVal) {
+        gpsStatusVal.textContent = "ERROR: " + err.code;
+        gpsStatusVal.style.color = "#f44336";
+    }
+    // v461: Restart on timeout or lost signal
+    if (err.code === 3) { // TIMEOUT
+        console.log("Restarting Geolocation due to timeout...");
+        startGeolocationWatch();
+    }
+}, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
 }
 startGeolocationWatch();
 
@@ -2081,8 +2107,8 @@ function updateScaleValues() {
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
                 // v534: Remove "Real" label to save space, just "Z:" in orange
                 utmEl.innerHTML = `
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
-                    <span style="font-size:0.75em; color:#ddd; margin-right:1px;">X:</span><span style="margin-right:2mm;">${northPart}</span>
+                    <span style="font-size:0.75em; color:#ffeb3b; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
+                    <span style="font-size:0.75em; color:#ffeb3b; margin-right:1px;">X:</span><span style="margin-right:2mm;">${northPart}</span>
                     <span style="font-size:0.75em; color:#ffeb3b; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:2mm; color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                     <span style="font-size:1.1em; vertical-align: middle; margin-left: 0mm;">${modeLabel}</span>
                 `;

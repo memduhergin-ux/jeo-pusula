@@ -8,13 +8,13 @@
     <!-- v690: Content Security Policy to allow OSRM/GraphHopper connections -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de;">
-    <title>Jeoloji Pusulası v701</title>
-    <!-- Jeoloji Pusulası v701 -->
-    <meta name="version" content="v701">
-    <meta name="jeo-version" content="v701">
+    <title>Jeoloji Pusulası v704</title>
+    <!-- Jeoloji Pusulası v704 -->
+    <meta name="version" content="v704">
+    <meta name="jeo-version" content="v704">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=701">
+    <link rel="stylesheet" href="style.css?v=704">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -52,7 +52,7 @@
             <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
         </div>
         <div class="splash-version"
-            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v701</div>
+            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v704</div>
     </div>
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
@@ -175,185 +175,190 @@
             <div id="heatmap-legend" class="heatmap-legend" style="display: none;">
                 <div id="legend-header" class="legend-header">
                     <span id="legend-title">Legend</span>
-                    <span class="drag-handle">::::</span>
+                    <!-- v703: Close Button & Drag Handle -->
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="drag-handle">::::</span>
+                        <span id="legend-close-btn" class="legend-close-btn">✕</span>
+                    </div>
                 </div>
                 <div class="legend-body">
-                    <div class="legend-labels">
-                        <span>High</span>
-                        <span>Medium</span>
-                        <span>Low</span>
-                        <span>None</span>
-                    </div>
+                    <!-- v702: Reordered for Horizontal (Left=None -> Right=High) -->
                     <div id="legend-gradient-bar" class="legend-gradient-bar"></div>
+                    <div class="legend-labels">
+                        <span>None</span>
+                        <span>Low</span>
+                        <span>Med</span>
+                        <span>High</span>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="map-fab-container">
-            <div class="map-fab-scroll-area">
-                <!-- v593: Common scroll area for all FABs -->
-                <button id="btn-layers" class="map-fab" title="Layers">
-                    <span class="fab-icon">📂</span>
-                </button>
-                <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale">
-                    <span class="fab-icon" style="display: flex; align-items: center; justify-content: center;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Segmented Block Scale Design -->
-                            <rect x="3" y="11" width="6" height="4" fill="currentColor" />
-                            <rect x="9" y="11" width="6" height="4" stroke="currentColor" stroke-width="1.5" />
-                            <rect x="15" y="11" width="6" height="4" fill="currentColor" />
-                            <path d="M3 9V11M9 9V11M15 9V11M21 9V11" stroke="currentColor" stroke-width="1.5"
-                                stroke-linecap="round" />
-                        </svg>
-                    </span>
-                </button>
-                <button id="btn-grid-toggle" class="map-fab" title="Inner Polygon Grid">
-                    <span class="fab-icon">🌐</span>
-                </button>
-                <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
-                    <span class="fab-icon">📍+</span>
-                </button>
-                <button id="btn-add-point" class="map-fab" title="Add Point (Map Target)">
-                    <span class="fab-icon">🎯</span>
-                </button>
-                <button id="btn-measure" class="map-fab" title="Measure Distance">
-                    <span class="fab-icon">📏</span>
-                </button>
-                <button id="id-btn-polygon" class="map-fab" title="Measure Area (Polygon)">
-                    <span class="fab-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L4.5 9L7 21H17L19.5 9L12 2Z" stroke="currentColor" stroke-width="2"
-                                fill="none" />
-                            <circle cx="12" cy="2" r="2" fill="currentColor" />
-                            <circle cx="4.5" cy="9" r="2" fill="currentColor" />
-                            <circle cx="7" cy="21" r="2" fill="currentColor" />
-                            <circle cx="17" cy="21" r="2" fill="currentColor" />
-                            <circle cx="19.5" cy="9" r="2" fill="currentColor" />
-                        </svg>
-                    </span>
-                </button>
-                <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
-                    <span class="fab-icon"
-                        style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
-                        <span style="font-size: 1.25rem; line-height: 1;">👁️</span>
-                        <span
-                            style="position: absolute; font-size: 0.65rem; top: 50%; left: 50%; transform: translate(-50%, -50%); margin-top: -1px; pointer-events: none;">📍</span>
-                    </span>
-                </button>
-                <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
-                    <span class="fab-icon">🌈</span>
-                </button>
-                <button id="btn-follow-me" class="map-fab" title="Follow Me">
-                    <div class="crosshair-wrapper">
-                        <div class="crosshair-circle"></div>
-                        <div class="crosshair-line-v"></div>
-                        <div class="crosshair-line-h"></div>
-                    </div>
-                </button>
-            </div>
-        </div>
-        <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
-
-        <!-- Grid Interval Panel (v534: Fixed Pill Design) -->
-        <div id="grid-interval-panel"
-            style="display: none; position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: rgba(15, 15, 15, 0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 6px 16px; border-radius: 50px; z-index: 2000; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: auto; max-width: 95vw; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; white-space: nowrap; -webkit-overflow-scrolling: touch;">
-
-            <style>
-                #grid-interval-panel::-webkit-scrollbar {
-                    display: none;
-                }
-
-                .grid-pill-content {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    min-width: max-content;
-                    height: 36px;
-                }
-            </style>
-
-            <div class="grid-pill-content">
-                <div style="font-size: 0.75rem; color: #00ffcc; font-weight: bold; opacity: 0.9; padding-right: 4px;">
-                    GRID</div>
-
-                <div id="grid-intervals" style="display: flex; gap: 4px; align-items: center;">
-                    <button class="grid-opt-btn" data-interval="50"
-                        style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">50m</button>
-                    <button class="grid-opt-btn active" data-interval="100"
-                        style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">100m</button>
-                    <button class="grid-opt-btn" data-interval="250"
-                        style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">250m</button>
-                    <button class="grid-opt-btn" data-interval="500"
-                        style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">500m</button>
-                    <button class="grid-opt-btn" data-interval="1000"
-                        style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">1km</button>
-                </div>
-
-                <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
-
-                <div id="grid-color-selectors" style="display: flex; gap: 8px; align-items: center;">
-                    <div class="grid-color-opt active" data-color="#00ffcc"
-                        style="width: 22px; height: 22px; border-radius: 50%; background: #00ffcc; border: 2px solid #fff; cursor: pointer;">
-                    </div>
-                    <div class="grid-color-opt" data-color="#ffeb3b"
-                        style="width: 22px; height: 22px; border-radius: 50%; background: #ffeb3b; border: 2px solid transparent; cursor: pointer;">
-                    </div>
-                    <div class="grid-color-opt" data-color="#ffffff"
-                        style="width: 22px; height: 22px; border-radius: 50%; background: #ffffff; border: 2px solid transparent; cursor: pointer;">
-                    </div>
-                    <div class="grid-color-opt" data-color="#f44336"
-                        style="width: 22px; height: 22px; border-radius: 50%; background: #f44336; border: 2px solid transparent; cursor: pointer;">
-                    </div>
-                    <div class="grid-color-opt" data-color="#000000"
-                        style="width: 22px; height: 22px; border-radius: 50%; background: #000000; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;">
-                    </div>
-                </div>
-
-                <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
-
-                <div id="btn-grid-clear"
-                    style="cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,82,82,0.1);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                        </path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
+    </div>
+    <div class="map-fab-container">
+        <div class="map-fab-scroll-area">
+            <!-- v593: Common scroll area for all FABs -->
+            <button id="btn-layers" class="map-fab" title="Layers">
+                <span class="fab-icon">📂</span>
+            </button>
+            <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale">
+                <span class="fab-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Segmented Block Scale Design -->
+                        <rect x="3" y="11" width="6" height="4" fill="currentColor" />
+                        <rect x="9" y="11" width="6" height="4" stroke="currentColor" stroke-width="1.5" />
+                        <rect x="15" y="11" width="6" height="4" fill="currentColor" />
+                        <path d="M3 9V11M9 9V11M15 9V11M21 9V11" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" />
                     </svg>
+                </span>
+            </button>
+            <button id="btn-grid-toggle" class="map-fab" title="Inner Polygon Grid">
+                <span class="fab-icon">🌐</span>
+            </button>
+            <button id="btn-add-gps" class="map-fab" title="Add to GPS Location">
+                <span class="fab-icon">📍+</span>
+            </button>
+            <button id="btn-add-point" class="map-fab" title="Add Point (Map Target)">
+                <span class="fab-icon">🎯</span>
+            </button>
+            <button id="btn-measure" class="map-fab" title="Measure Distance">
+                <span class="fab-icon">📏</span>
+            </button>
+            <button id="id-btn-polygon" class="map-fab" title="Measure Area (Polygon)">
+                <span class="fab-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L4.5 9L7 21H17L19.5 9L12 2Z" stroke="currentColor" stroke-width="2" fill="none" />
+                        <circle cx="12" cy="2" r="2" fill="currentColor" />
+                        <circle cx="4.5" cy="9" r="2" fill="currentColor" />
+                        <circle cx="7" cy="21" r="2" fill="currentColor" />
+                        <circle cx="17" cy="21" r="2" fill="currentColor" />
+                        <circle cx="19.5" cy="9" r="2" fill="currentColor" />
+                    </svg>
+                </span>
+            </button>
+            <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
+                <span class="fab-icon"
+                    style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                    <span style="font-size: 1.25rem; line-height: 1;">👁️</span>
+                    <span
+                        style="position: absolute; font-size: 0.65rem; top: 50%; left: 50%; transform: translate(-50%, -50%); margin-top: -1px; pointer-events: none;">📍</span>
+                </span>
+            </button>
+            <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
+                <span class="fab-icon">🌈</span>
+            </button>
+            <button id="btn-follow-me" class="map-fab" title="Follow Me">
+                <div class="crosshair-wrapper">
+                    <div class="crosshair-circle"></div>
+                    <div class="crosshair-line-v"></div>
+                    <div class="crosshair-line-h"></div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Heatmap Radius Control (v401) -->
-        <div id="heatmap-radius-panel"
-            style="display: none; position: absolute; bottom: 80px; right: 10px; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; border: 1px solid #444; z-index: 2000; color: white; width: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-            <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
-                Heatmap Radius (Meters)</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
-                <button class="radius-opt" data-radius="0"
-                    style="grid-column: span 2; background: rgba(0, 255, 204, 0.2); border-color: rgba(0, 255, 204, 0.4); color: #00ffcc; font-weight: bold;">OTO
-                    (Smart Radius)</button>
-                <button class="radius-opt" data-radius="25">25m</button>
-                <button class="radius-opt" data-radius="50">50m</button>
-                <button class="radius-opt" data-radius="100">100m</button>
-                <button class="radius-opt" data-radius="200">200m</button>
-                <button class="radius-opt" data-radius="300">300m</button>
-                <button class="radius-opt" data-radius="500">500m</button>
-            </div>
-
-            <div
-                style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold; border-top: 1px solid #444; padding-top: 8px;">
-                Filter by Element</div>
-            <select id="heatmap-element-filter"
-                style="width: 100%; background: #333; color: #fff; border: 1px solid #666; border-radius: 8px; padding: 10px; font-size: 0.9rem; outline: none; margin-bottom: 15px; appearance: auto; -webkit-appearance: auto;">
-                <option value="ALL">🌈 All Points (General)</option>
-            </select>
-
-            <button id="btn-heatmap-off"
-                style="width: 100%; background: #f44336; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: transform 0.2s;">
-                Heatmap On/Off
             </button>
         </div>
+    </div>
+    <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
+
+    <!-- Grid Interval Panel (v534: Fixed Pill Design) -->
+    <div id="grid-interval-panel"
+        style="display: none; position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: rgba(15, 15, 15, 0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 6px 16px; border-radius: 50px; z-index: 2000; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: auto; max-width: 95vw; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; white-space: nowrap; -webkit-overflow-scrolling: touch;">
+
+        <style>
+            #grid-interval-panel::-webkit-scrollbar {
+                display: none;
+            }
+
+            .grid-pill-content {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: max-content;
+                height: 36px;
+            }
+        </style>
+
+        <div class="grid-pill-content">
+            <div style="font-size: 0.75rem; color: #00ffcc; font-weight: bold; opacity: 0.9; padding-right: 4px;">
+                GRID</div>
+
+            <div id="grid-intervals" style="display: flex; gap: 4px; align-items: center;">
+                <button class="grid-opt-btn" data-interval="50"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">50m</button>
+                <button class="grid-opt-btn active" data-interval="100"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">100m</button>
+                <button class="grid-opt-btn" data-interval="250"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">250m</button>
+                <button class="grid-opt-btn" data-interval="500"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">500m</button>
+                <button class="grid-opt-btn" data-interval="1000"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">1km</button>
+            </div>
+
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
+
+            <div id="grid-color-selectors" style="display: flex; gap: 8px; align-items: center;">
+                <div class="grid-color-opt active" data-color="#00ffcc"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #00ffcc; border: 2px solid #fff; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#ffeb3b"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #ffeb3b; border: 2px solid transparent; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#ffffff"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #ffffff; border: 2px solid transparent; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#f44336"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #f44336; border: 2px solid transparent; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#000000"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #000000; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;">
+                </div>
+            </div>
+
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
+
+            <div id="btn-grid-clear"
+                style="cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,82,82,0.1);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                    </path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Heatmap Radius Control (v401) -->
+    <div id="heatmap-radius-panel"
+        style="display: none; position: absolute; bottom: 80px; right: 10px; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; border: 1px solid #444; z-index: 2000; color: white; width: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
+            Heatmap Radius (Meters)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+            <button class="radius-opt" data-radius="0"
+                style="grid-column: span 2; background: rgba(0, 255, 204, 0.2); border-color: rgba(0, 255, 204, 0.4); color: #00ffcc; font-weight: bold;">OTO
+                (Smart Radius)</button>
+            <button class="radius-opt" data-radius="25">25m</button>
+            <button class="radius-opt" data-radius="50">50m</button>
+            <button class="radius-opt" data-radius="100">100m</button>
+            <button class="radius-opt" data-radius="200">200m</button>
+            <button class="radius-opt" data-radius="300">300m</button>
+            <button class="radius-opt" data-radius="500">500m</button>
+        </div>
+
+        <div
+            style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold; border-top: 1px solid #444; padding-top: 8px;">
+            Filter by Element</div>
+        <select id="heatmap-element-filter"
+            style="width: 100%; background: #333; color: #fff; border: 1px solid #666; border-radius: 8px; padding: 10px; font-size: 0.9rem; outline: none; margin-bottom: 15px; appearance: auto; -webkit-appearance: auto;">
+            <option value="ALL">🌈 All Points (General)</option>
+        </select>
+
+        <button id="btn-heatmap-off"
+            style="width: 100%; background: #f44336; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: transform 0.2s;">
+            Heatmap On/Off
+        </button>
+    </div>
     </div>
 
     <!-- View 3: Records (Kayıtlar) -->
@@ -472,7 +477,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v701</p>
+                        JeoCompass - Version v704</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -485,7 +490,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v701</div>
+                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v704</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -580,7 +585,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v701
+                    JeoCompass v704
                 </div>
             </div>
         </div>
@@ -721,13 +726,13 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=701"></script>
+    <script src="app.js?v=704"></script>
     <script>
-        console.log("App Version: v701");
+        console.log("App Version: v704");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=701`)
+                navigator.serviceWorker.register(`sw.js?v=704`)
                     .then(reg => {
                         console.log('Service Worker registered');
                         reg.update().catch(() => { });
