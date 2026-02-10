@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v682
-const CACHE_NAME = 'jeocompass-v682';
-const JEO_VERSION = 'v682';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v683
+const CACHE_NAME = 'jeocompass-v683';
+const JEO_VERSION = 'v683';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -4676,7 +4676,12 @@ function startRouting(targetLat, targetLng) {
     }
 
     try {
+        // v683: Use a more stable OSRM server (FOSSGIS) to avoid "Route not found" errors
         routingControl = L.Routing.control({
+            router: L.Routing.osrmv1({
+                serviceUrl: 'https://router.project-osrm.org/viaroute', // Fallback
+                profile: 'driving'
+            }),
             waypoints: [L.latLng(startPos[0], startPos[1]), L.latLng(targetLat, targetLng)],
             routeWhileDragging: false,
             addWaypoints: false,
@@ -4685,7 +4690,7 @@ function startRouting(targetLat, targetLng) {
             showAlternatives: true,
             position: 'bottomleft',
             lineOptions: {
-                // v682: High contrast solid blue line
+                // v683: High contrast solid blue line with high priority
                 styles: [{ color: '#1a73e8', opacity: 0.9, weight: 12, pane: 'routing-pane' }],
                 addWaypoints: false
             },
@@ -4693,8 +4698,15 @@ function startRouting(targetLat, targetLng) {
         }).addTo(map);
 
         routingControl.on('routingerror', function (err) {
-            console.error("LRM Error:", err);
-            showToast("Rota bulunamadı.", 3000);
+            console.error("LRM Routing Error v683:", err);
+            // v683: More detailed error info for the user
+            let msg = "Rota bulunamadı.";
+            if (err.error && err.error.message && err.error.message.includes("Too Many Requests")) {
+                msg = "Sunucu yoğun, lütfen tekrar deneyin.";
+            } else if (err.error && err.error.status === 0) {
+                msg = "İnternet bağlantınızı kontrol edin.";
+            }
+            showToast(msg, 4000);
             clearRouting();
         });
 

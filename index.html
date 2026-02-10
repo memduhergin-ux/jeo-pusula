@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1a1a1a">
-    <title>Jeoloji Pusulası v682</title>
-    <!-- Jeoloji Pusulası v682 -->
-    <meta name="version" content="v682">
-    <meta name="jeo-version" content="v682">
+    <title>Jeoloji Pusulası v683</title>
+    <!-- Jeoloji Pusulası v683 -->
+    <meta name="version" content="v683">
+    <meta name="jeo-version" content="v683">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=682">
+    <link rel="stylesheet" href="style.css?v=683">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -46,7 +46,7 @@
             <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
         </div>
         <div class="splash-version"
-            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v680</div>
+            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v683</div>
     </div>
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
@@ -449,7 +449,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v680</p>
+                        JeoCompass - Version v683</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -462,7 +462,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v680</div>
+                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v683</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -557,7 +557,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v680
+                    JeoCompass v683
                 </div>
             </div>
         </div>
@@ -698,14 +698,13 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=680"></script>
+    <script src="app.js?v=683"></script>
     <script>
-        const JEO_VERSION = '680';
-        console.log("App Version: v" + JEO_VERSION);
+        console.log("App Version: v683");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=${JEO_VERSION}`)
+                navigator.serviceWorker.register(`sw.js?v=683`)
                     .then(reg => {
                         console.log('Service Worker registered');
                         reg.update().catch(() => { });
