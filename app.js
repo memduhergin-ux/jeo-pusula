@@ -1,6 +1,5 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v720
-const CACHE_NAME = 'jeo-cache-v724';
-const JEO_VERSION = 'v724';
+﻿const CACHE_NAME = 'jeo-cache-v728';
+const JEO_VERSION = 'v728';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -2074,24 +2073,28 @@ function makeDraggable(element, storageKey) {
             map.dragging.disable();
         }
 
-        // v721: Capture current position before switching styles to prevent "jumping"
+        // v727: Capture current viewport Grab Offset (Direct Anchor)
         const rect = element.getBoundingClientRect();
-        element.style.top = rect.top + "px";
-        element.style.left = rect.left + "px";
-
-        // get the mouse cursor position at startup:
+        let clientX, clientY;
         if (e.type === 'touchstart') {
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
         } else {
-            pos3 = e.clientX;
-            pos4 = e.clientY;
+            clientX = e.clientX;
+            clientY = e.clientY;
         }
+
+        // Calculate where inside the element we grabbed it (Viewport space)
+        element.grabOffsetX = clientX - rect.left;
+        element.grabOffsetY = clientY - rect.top;
 
         // v715: Force fixed positioning to break out of Leaflet containers
         element.style.setProperty('position', 'fixed', 'important');
         element.style.setProperty('bottom', 'auto', 'important');
         element.style.setProperty('right', 'auto', 'important');
+
+        // v727: Kill transitions during drag for absolute smoothness
+        element.style.setProperty('transition', 'none', 'important');
 
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
@@ -2115,15 +2118,9 @@ function makeDraggable(element, storageKey) {
             clientY = e.clientY;
         }
 
-        // calculate the new cursor position:
-        pos1 = pos3 - clientX;
-        pos2 = pos4 - clientY;
-        pos3 = clientX;
-        pos4 = clientY;
-
-        // set the element's new position:
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+        // v727: Direct viewport anchor positioning (No calculation drift possible)
+        element.style.setProperty('top', (clientY - element.grabOffsetY) + "px", 'important');
+        element.style.setProperty('left', (clientX - element.grabOffsetX) + "px", 'important');
     }
 
     function closeDragElement() {
@@ -2132,6 +2129,9 @@ function makeDraggable(element, storageKey) {
         document.onmousemove = null;
         document.ontouchend = null;
         document.ontouchmove = null;
+
+        // v727: Restore transitions
+        element.style.removeProperty('transition');
 
         // v720: Re-enable map dragging
         if (typeof map !== 'undefined' && map && map.dragging) {
