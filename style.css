@@ -1607,15 +1607,21 @@ textarea.form-input {
     /* v611: Moved coordinates closer to the scale line */
     position: absolute;
     bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw;
-    padding: 2px 15px 2px 15px;
-    /* v611: Tighter padding */
-    background: transparent;
-    pointer-events: none;
+    left: 10px !important;
+    /* v713: Changed from 100vw to auto for dragging */
+    width: auto;
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.2);
+    /* v713: Subtle background for touch target */
+    border-radius: 8px;
+    pointer-events: auto;
+    /* v713: Enable interaction */
     z-index: 1000 !important;
     box-sizing: border-box;
+    cursor: move;
+    /* v713: Indicate draggable */
+    touch-action: none;
+    /* v713: Prevent map panning while dragging */
 }
 
 .custom-scale-control {
@@ -1700,8 +1706,8 @@ textarea.form-input {
     display: flex;
     align-items: center;
     padding-right: 5px;
-    padding-bottom: 2px;
-    /* v610: Perfect alignment with scale line baseline */
+    padding-bottom: 0px;
+    /* v713: Lowered to align with scale line */
 }
 
 

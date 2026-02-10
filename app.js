@@ -1,6 +1,6 @@
-﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v712
-const CACHE_NAME = 'jeo-cache-v712';
-const JEO_VERSION = 'v712';
+﻿// IndexedDB Configuration for Large KML// Jeoloji Pusulası - v713
+const CACHE_NAME = 'jeo-cache-v713';
+const JEO_VERSION = 'v713';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -2010,6 +2010,22 @@ function initMapControls() {
     });
 
     new MapControls().addTo(map);
+
+    // v713: Draggable Scale Bar Logic
+    const scaleWrapper = document.querySelector('.custom-scale-wrapper');
+    if (scaleWrapper) {
+        makeDraggable(scaleWrapper, 'jeoScalePos');
+
+        // Restore Position
+        const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
+        if (savedPos) {
+            scaleWrapper.style.left = savedPos.left;
+            scaleWrapper.style.top = savedPos.top;
+            scaleWrapper.style.bottom = 'auto'; // Override default bottom
+            scaleWrapper.style.right = 'auto';
+        }
+    }
+
     map.on('zoomend moveend', updateScaleValues); // v561: Removed frequent 'move' event to fix flickering
     map.on('zoomend', () => {
         if (isHeatmapActive) updateHeatmap();
@@ -2023,6 +2039,74 @@ function initMapControls() {
         }
     });
     updateScaleValues();
+}
+
+// v713: Generic Drag Helper
+function makeDraggable(element, storageKey) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    element.onmousedown = dragMouseDown;
+    element.ontouchstart = dragMouseDown; // Mobile support
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        // e.preventDefault(); // Don't prevent default, might block clicks if we had buttons
+        // get the mouse cursor position at startup:
+        if (e.type === 'touchstart') {
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+        } else {
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+        }
+
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement;
+        document.ontouchmove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        // e.preventDefault(); // Stop scrolling on touch
+
+        let clientX, clientY;
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        // calculate the new cursor position:
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
+
+        // set the element's new position:
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+        element.style.bottom = 'auto'; // Important to override CSS
+    }
+
+    function closeDragElement() {
+        // stop moving when mouse button is released:
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+
+        // Save position
+        if (storageKey) {
+            const pos = {
+                left: element.style.left,
+                top: element.style.top
+            };
+            localStorage.setItem(storageKey, JSON.stringify(pos));
+        }
+    }
 }
 
 // v465: Ensure fresh track per session on startup
