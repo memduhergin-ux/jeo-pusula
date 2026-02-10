@@ -8,13 +8,13 @@
     <!-- v690: Content Security Policy to allow OSRM/GraphHopper connections -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de;">
-    <title>Jeoloji Pusulası v692</title>
-    <!-- Jeoloji Pusulası v692 -->
-    <meta name="version" content="v692">
-    <meta name="jeo-version" content="v692">
+    <title>Jeoloji Pusulası v693</title>
+    <!-- Jeoloji Pusulası v693 -->
+    <meta name="version" content="v693">
+    <meta name="jeo-version" content="v693">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=692">
+    <link rel="stylesheet" href="style.css?v=693">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -52,7 +52,7 @@
             <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
         </div>
         <div class="splash-version"
-            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v692</div>
+            style="color: #666; font-size: 0.75rem; margin-bottom: 20px; width: 100%; text-align: center;">v693</div>
     </div>
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
@@ -455,7 +455,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v692</p>
+                        JeoCompass - Version v693</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -468,7 +468,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v692</div>
+                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v693</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -563,7 +563,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v692
+                    JeoCompass v693
                 </div>
             </div>
         </div>
@@ -704,13 +704,13 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=692"></script>
+    <script src="app.js?v=693"></script>
     <script>
-        console.log("App Version: v692");
+        console.log("App Version: v693");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=692`)
+                navigator.serviceWorker.register(`sw.js?v=693`)
                     .then(reg => {
                         console.log('Service Worker registered');
                         reg.update().catch(() => { });
