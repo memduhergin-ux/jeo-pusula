@@ -1986,11 +1986,11 @@ function initMap() {
         const elFilter = document.getElementById('heatmap-element-filter');
         if (elFilter) elFilter.value = heatmapFilter;
 
-        document.querySelectorAll('.radius-opt').forEach(btn => {
-            if (parseInt(btn.getAttribute('data-radius')) === heatmapRadius) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
+        // Update active state in panel buttons
+        document.querySelectorAll('.radius-opt').forEach(opt => {
+            opt.classList.remove('active');
+            if (parseInt(opt.dataset.radius) === heatmapRadius) {
+                opt.classList.add('active');
             }
         });
 
@@ -2130,13 +2130,14 @@ function makeDraggable(element, storageKey) {
 
     function dragMouseDown(e) {
         e = e || window.event;
-        const tagName = e.target.tagName.toLowerCase();
-        const isControl = tagName === 'button' || tagName === 'input' || tagName === 'select' || e.target.closest('button');
+        // v1453-1: Identify if we're clicking a control (button/select/input)
+        const target = e.target;
+        const isControl = target.tagName === 'BUTTON' || target.tagName === 'SELECT' || target.tagName === 'INPUT' || target.classList.contains('radius-opt') || target.closest('button');
 
-        // v1453-1: If it's a control, don't start dragging! Let the button work.
+        // v1453-1: If it's a control, allow the click/tap and don't start dragging
         if (isControl) return;
 
-        // v1453-1: Critical PreventDefault on mobile for NON-CONTROLS to stop page-bounce
+        // v1453-1: Prevent default on mobile for non-controls to stop "page-pull" but allow UI drag
         if (e.type === 'touchstart') e.preventDefault();
 
         if (e.stopPropagation) e.stopPropagation();
@@ -2148,7 +2149,7 @@ function makeDraggable(element, storageKey) {
         }
 
         // v727: Capture current viewport Grab Offset (Direct Anchor)
-        // v1453-1: Force position fixed and lock current top/left to stop "jump"
+        // v1453-1: Force position fixed and lock current top/left IMMEDIATELY to stop "jump"
         const rect = element.getBoundingClientRect();
         element.style.setProperty('position', 'fixed', 'important');
         element.style.setProperty('top', rect.top + 'px', 'important');
@@ -2265,44 +2266,44 @@ function fetchElevation(lat, lon, callback) {
         .catch(() => callback(null));
 }
 
+// v703: Update scale and UTM values logic
 function updateScaleValues() {
-    if (!map) return;
-    const scaleContainer = document.querySelector('.scale-bars');
-    if (!scaleContainer) return;
+    const scaleWrapper = document.querySelector('.custom-scale-wrapper');
+    if (!scaleWrapper || scaleWrapper.style.display === 'none') return;
 
-    const width = scaleContainer.getBoundingClientRect().width; // Measure actual pixel width of 2cm
-    const centerLatLng = map.getCenter();
-    const pCenter = map.latLngToContainerPoint(centerLatLng);
-    const pEnd = L.point(pCenter.x + width, pCenter.y);
-    const latLngEnd = map.containerPointToLatLng(pEnd);
-    const distance = map.distance(centerLatLng, latLngEnd);
+    if (typeof map !== 'undefined' && map) {
+        const center = map.getCenter();
+        const y = center.lat;
+        const x = center.lng;
 
-    let endVal = distance;
+        // Scale Logic
+        const containerWidth = 220; // Fixed width for symmetry
+        const targetWidthCm = 1.42;
+        const pxPerCm = 96 / 2.54;
+        const targetWidthPx = targetWidthCm * pxPerCm;
 
-    const endEl = document.getElementById('scale-end');
-    const unitEl = document.getElementById('scale-unit');
-    const utmEl = document.getElementById('map-utm-coords');
+        const point1 = map.containerPointToLatLng([0, 0]);
+        const point2 = map.containerPointToLatLng([targetWidthPx, 0]);
+        const distMeters = point1.distanceTo(point2);
 
-    const formattedEnd = formatScaleDistParts(endVal);
+        let displayDist = Math.round(distMeters);
+        let unit = "m";
+        if (displayDist > 1000) {
+            displayDist = (distMeters / 1000).toFixed(1);
+            unit = "km";
+        }
 
-    if (endEl) endEl.textContent = formattedEnd.val;
-    if (unitEl) unitEl.textContent = formattedEnd.unit;
-
-    // Update UTM display (Current or Target?)
-    if (utmEl) {
-        let displayLat = currentCoords.lat;
-        let displayLon = currentCoords.lon;
-        let displayAlt = getBestAltitude();
-
-        if (isAddingPoint && map) {
-            const center = map.getCenter();
-            displayLat = center.lat;
-            displayLon = center.lng;
-            // v532: Prioritize Online Elevation in Map UTM bar
+        // UTM Logic
+        let displayLat = y, displayLon = x, displayAlt = 0;
+        if (typeof activePoint !== 'undefined' && activePoint) {
+            displayLat = activePoint.lat;
+            displayLon = activePoint.lng;
+            displayAlt = activePoint.alt || 0;
+        } else if (typeof onlineMyLat !== 'undefined' && onlineMyLat !== null) {
+            displayLat = onlineMyLat;
+            displayLon = onlineMyLon;
+            // v1453-1: Center Alt logic
             displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
-        } else {
-            // v532: Use onlineMyAlt for mobile tracking state Real Z
-            displayAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : displayAlt;
         }
 
         if (displayLat) {
@@ -2313,21 +2314,38 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
-                utmEl.innerHTML = `
-                    <div class="utm-rows-container">
-                        <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                        <div class="utm-row-line">
-                            <span class="utm-lbl" style="margin-right:2px;">X:</span><span class="utm-val">${northPart}</span>
-                            <span class="utm-lbl" style="margin-left:8px; margin-right:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                            <span class="utm-mode-icon" style="margin-left:4px; transform:translateY(1px);">${modeLabel}</span>
+
+                // v1453-1: Nihai Entegre Yapılanma
+                // Satır 1: Ölçek Sayıları + Y Koordinatı
+                // Satır 2: Ölçek Çizgisi + X/Z Koordinatları
+                scaleWrapper.innerHTML = `
+                    <div class="scale-integrated-container">
+                        <div class="scale-integrated-row">
+                            <div class="scale-labels">
+                                <span class="label-zero">0</span>
+                                <span class="label-dist">${displayDist}${unit}</span>
+                            </div>
+                            <div class="utm-integrated-y"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                        </div>
+                        <div class="scale-integrated-row">
+                            <div class="scale-line">
+                                <div class="scale-notch notch-left"></div>
+                                <div class="scale-bar"></div>
+                                <div class="scale-notch notch-right"></div>
+                            </div>
+                            <div class="utm-integrated-xz">
+                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                                <span class="utm-lbl" style="margin-left:8px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                                <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>
+                            </div>
                         </div>
                     </div>
                 `;
             } catch (e) {
-                utmEl.textContent = "UTM Error";
+                scaleWrapper.innerHTML = "UTM Error";
             }
         } else {
-            utmEl.textContent = "Waiting for location...";
+            scaleWrapper.innerHTML = "Waiting for location...";
         }
     }
 }
