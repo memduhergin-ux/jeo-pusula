@@ -1,5 +1,5 @@
-﻿const CACHE_NAME = 'jeo-cache-v731';
-const JEO_VERSION = 'v731';
+﻿const CACHE_NAME = 'jeo-cache-v734';
+const JEO_VERSION = 'v734';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -291,78 +291,64 @@ function updateHeatmap() {
     updateHeatmapLegend(filterKey);
 }
 
-// v701: Heatmap Legend Logic
+// v737: Robust Draggable Heatmap Panels
+function initHeatmapPanelDraggable() {
+    const radiusPanel = document.getElementById('heatmap-radius-panel');
+    if (!radiusPanel) return;
+
+    // v737: Heatmap radius/filter panel now draggable too
+    makeDraggable(radiusPanel, 'jeoHeatmapPanelPos');
+
+    // Restore position from localStorage
+    const savedPanelPos = localStorage.getItem('jeoHeatmapPanelPos');
+    if (savedPanelPos) {
+        try {
+            const pos = JSON.parse(savedPanelPos);
+            radiusPanel.style.setProperty('position', 'fixed', 'important');
+            radiusPanel.style.setProperty('left', pos.left, 'important');
+            radiusPanel.style.setProperty('top', pos.top, 'important');
+            radiusPanel.style.setProperty('bottom', 'auto', 'important');
+            radiusPanel.style.setProperty('right', 'auto', 'important');
+        } catch (e) {
+            console.warn("Could not restore Heatmap Panel position", e);
+        }
+    }
+}
+// Init on load
+if (document.readyState !== 'loading') initHeatmapPanelDraggable();
+else document.addEventListener('DOMContentLoaded', initHeatmapPanelDraggable);
+
+// v734: Robust Draggable Heatmap Legend
 function initHeatmapLegend() {
     const legend = document.getElementById('heatmap-legend');
-    const header = document.getElementById('legend-header');
-    if (!legend || !header) return;
+    if (!legend) return;
 
-    let isDragging = false;
-    let initialX, initialY;
-    let currentX, currentY;
-    let xOffset = 0;
-    let yOffset = 0;
+    // v734: Use the unified makeDraggable utility for consistency and persistence
+    makeDraggable(legend, 'jeoHeatmapLegendPos');
 
-    header.addEventListener('mousedown', dragStart);
-    header.addEventListener('touchstart', dragStart, { passive: false });
-
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('touchmove', drag, { passive: false });
-
-    document.addEventListener('mouseup', dragEnd);
-    document.addEventListener('touchend', dragEnd);
-
-    function dragStart(e) {
-        if (e.type === 'touchstart') {
-            initialX = e.touches[0].clientX - xOffset;
-            initialY = e.touches[0].clientY - yOffset;
-        } else {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
+    // Restore position from localStorage
+    const savedPos = localStorage.getItem('jeoHeatmapLegendPos');
+    if (savedPos) {
+        try {
+            const pos = JSON.parse(savedPos);
+            legend.style.setProperty('position', 'fixed', 'important');
+            legend.style.setProperty('left', pos.left, 'important');
+            legend.style.setProperty('top', pos.top, 'important');
+            legend.style.setProperty('bottom', 'auto', 'important');
+            legend.style.setProperty('right', 'auto', 'important');
+        } catch (e) {
+            console.warn("Could not restore Legend position", e);
         }
-
-        if (e.target === header || e.target.parentNode === header) {
-            isDragging = true;
-        }
-    }
-
-    function drag(e) {
-        if (isDragging) {
-            e.preventDefault();
-            if (e.type === 'touchmove') {
-                currentX = e.touches[0].clientX - initialX;
-                currentY = e.touches[0].clientY - initialY;
-            } else {
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-            }
-
-            xOffset = currentX;
-            yOffset = currentY;
-
-            setTranslate(currentX, currentY, legend);
-        }
-    }
-
-    function setTranslate(xPos, yPos, el) {
-        el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
-    }
-
-    function dragEnd(e) {
-        initialX = currentX;
-        initialY = currentY;
-        isDragging = false;
     }
 
     // v703: Manual Close Button
     const closeBtn = document.getElementById('legend-close-btn');
     if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent drag start or map click from interfering
+            e.stopPropagation();
             legend.style.display = 'none';
-            // Note: Layer remains active as per user request ("biz istediğimizde lejantı kapatalım")
         });
-        // Also prevent drag on the close button
+        // Prevent drag on close button
         closeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
         closeBtn.addEventListener('touchstart', (e) => e.stopPropagation());
     }
@@ -1746,6 +1732,8 @@ function initMap() {
     map = L.map('map-container', {
         maxZoom: 25,
         minZoom: 1,
+        zoomSnap: 0.1, // v734: Free zoom support
+        zoomDelta: 0.1, // v734: Smoother zoom increments
         preferCanvas: true // v543: Essential for handling large KML datasets (10x faster rendering)
     }).setView([initialLat, initialLon], currentCoords.lat ? 17 : 15);
 
@@ -1922,7 +1910,7 @@ function initMap() {
 
 
     updateMapMarkers(true);
-    loadExternalLayers(true); // v731: Silent load on startup
+    loadExternalLayers(true); // v734: Silent load on startup
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
 
@@ -2243,9 +2231,12 @@ function updateScaleValues() {
 function formatScaleDistParts(d) {
     let val, unit;
     if (d < 1000) {
-        val = Math.round(d);
+        // v734: Round to nearest multiple of 5
+        val = Math.round(d / 5) * 5;
+        if (val === 0 && d > 0) val = 5; // Prevent 0m display for small distances
         unit = "m";
     } else {
+        // v734: For km, standard rounding is usually fine but can be adapted if needed
         val = Math.round(d / 1000);
         unit = "km";
     }
@@ -3875,7 +3866,7 @@ if (btnAddPoint) {
                 if (map) map.getContainer().style.cursor = '';
             }
 
-            // v731: Center on current GPS position first
+            // v734: Center on current GPS position first
             if (map && typeof liveMarker !== 'undefined' && liveMarker) {
                 map.setView(liveMarker.getLatLng(), map.getZoom());
             } else if (map && currentCoords && currentCoords.lat !== 0) {
@@ -4295,7 +4286,7 @@ function exportData(type, scope = 'selected') {
     // 1. JSON BACKUP (Full Database)
     if (type === 'json') {
         const backupData = {
-            version: '515',
+            version: JEO_VERSION, // v737: Use dynamic version
             timestamp: timestamp,
             records: records,
             nextId: nextId,
@@ -4315,7 +4306,7 @@ function exportData(type, scope = 'selected') {
     const finalFileName = dataToExport.length === 1 ? `${dataToExport[0].label || dataToExport[0].id}_${timestamp}.${type}` : `${scope === 'all' ? 'Records' : 'Selected'}_${timestamp}.${type}`;
 
     if (type === 'csv') {
-        const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
+        const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Date", "Note"]; // v737: Added Date column
         const csvRows = [header.join(',')];
         dataToExport.forEach(r => {
             const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
@@ -4331,9 +4322,9 @@ function exportData(type, scope = 'selected') {
             kml += `
     <Placemark>
       <name>${r.label || r.id}</name>
-      <description>Strike: ${r.strike}\nDip: ${r.dip}\nNote: ${r.note}</description>
+      <description>Strike: ${formatStrike(r.strike)}\nDip: ${r.dip}\nNote: ${r.note || ''}</description>
       <Point>
-        <coordinates>${r.lon},${r.lat},${r.z}</coordinates>
+        <coordinates>${r.lon || 0},${r.lat || 0},${r.z || 0}</coordinates>
       </Point>
     </Placemark>`;
         });
@@ -4363,7 +4354,7 @@ if (document.getElementById('btn-backup-json')) {
     document.getElementById('btn-backup-json').addEventListener('click', async () => {
         // FULL BACKUP
         const backupData = {
-            version: '502',
+            version: JEO_VERSION, // v737: Use dynamic version
             timestamp: new Date().toISOString(),
             records: records, // Points
             tracks: jeoTracks, // Tracks
@@ -4521,7 +4512,7 @@ window.exportSingleRecordKML = function (id) {
     if (!r) return;
 
     const kmlContent = generateKML([r], r.label || `Record ${r.id}`);
-    const fileName = `${r.label || r.id}_${new Date().getTime()}.kml`;
+    const fileName = `${(r.label || r.id).replace(/\s+/g, '_')}_${new Date().getTime()}.kml`;
     downloadFile(kmlContent, fileName, 'application/vnd.google-earth.kml+xml');
 
     // Close menu
@@ -4577,14 +4568,14 @@ async function socialShare(appTarget = null) {
 
         } else {
             // Points CSV
-            const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Note"];
+            const header = ["Label", "Y", "X", "Z", "Strike", "Dip", "Date", "Note"]; // v737: Added Date column
             const csvRows = [header.join(',')];
             dataToShare.forEach(r => {
                 const row = [r.label || r.id, r.y, r.x, r.z, formatStrike(r.strike), r.dip, r.time || '', r.note];
                 csvRows.push(row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
             });
             const csvContent = csvRows.join('\n');
-            fileName = dataToShare.length === 1 ? `${dataToShare[0].label || dataToShare[0].id}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
+            fileName = dataToShare.length === 1 ? `${(dataToShare[0].label || dataToShare[0].id).replace(/\s+/g, '_')}_${timestamp}.csv` : `Selected_${timestamp}.csv`;
             fileType = 'text/csv';
             fileToShare = new File([csvContent], fileName, { type: fileType });
         }
@@ -4642,6 +4633,42 @@ async function socialShare(appTarget = null) {
         URL.revokeObjectURL(url);
     }
 
+    // v737: Helper: Generate Multi-Track KML String
+    function generateMultiTrackKML(tracksToExport, docName = "JeoCompass Export") {
+        let kml = `<?xml version="1" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${docName}</name>`;
+
+        tracksToExport.forEach(t => {
+            kml += `
+    <Style id="style-${t.id}">
+      <LineStyle>
+        <color>ff${t.color.substring(5, 7)}${t.color.substring(3, 5)}${t.color.substring(1, 3)}</color>
+        <width>4</width>
+      </LineStyle>
+    </Style>
+    <Placemark>
+      <name>${t.name}</name>
+      <styleUrl>#style-${t.id}</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>
+`;
+            t.path.forEach(pt => {
+                kml += `${pt[1]},${pt[0]},0 `;
+            });
+            kml += `
+        </coordinates>
+      </LineString>
+    </Placemark>`;
+        });
+
+        kml += `
+  </Document>
+</kml>`;
+        return kml;
+    }
     shareModal.classList.remove('active');
     setTimeout(resetShareModal, 300);
 }
@@ -4665,7 +4692,7 @@ if (document.getElementById('btn-options-cancel')) {
     document.getElementById('btn-options-cancel').addEventListener('click', () => optionsModal.classList.remove('active'));
 }
 
-// v731: About Modal Controls
+// v734: About Modal Controls
 function initAboutModal() {
     const aboutMod = document.getElementById('about-modal');
     const showBtn = document.getElementById('btn-show-about');

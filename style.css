@@ -1253,18 +1253,15 @@ textarea.form-input {
 /* Map FAB Container */
 .map-fab-container {
     position: absolute;
-    /* v596: Moved to top-right to be UNDER the Leaflet Layer Control box */
-    top: calc(55px + env(safe-area-inset-top, 0px)) !important;
+    /* v732: Moved to BOTTOM-right for better ergonomics after point button merge */
+    top: auto !important;
     right: calc(10px + env(safe-area-inset-right, 0px)) !important;
-    bottom: auto !important;
-    /* v596: Unset bottom */
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
     display: flex;
     flex-direction: column;
     gap: 12px;
     z-index: 2000;
-    /* v596: Higher z-index for visibility */
-    max-height: calc(100vh - 120px);
-    /* v596: Prevent overflow into bottom nav */
+    max-height: calc(100vh - 140px);
     pointer-events: none;
 }
 
@@ -1294,10 +1291,10 @@ textarea.form-input {
 
 @media screen and (orientation: landscape) {
     .map-fab-container {
-        /* v729: Remove fixed bottom to allow max-height to handle layout reliably */
-        top: calc(55px + env(safe-area-inset-top, 0px)) !important;
+        /* v732: Positioned lower in landscape as well */
+        top: auto !important;
         right: calc(5px + env(safe-area-inset-right, 0px)) !important;
-        bottom: auto !important;
+        bottom: calc(50px + env(safe-area-inset-bottom, 0px)) !important;
         max-height: calc(100vh - 100px) !important;
     }
 
