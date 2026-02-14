@@ -175,25 +175,20 @@
 
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;">
             <!-- v701: Draggable Heatmap Legend -->
+            <!-- v1453-1: Compact Horizontal Legend -->
             <div id="heatmap-legend" class="heatmap-legend" style="display: none;">
                 <div id="legend-header" class="legend-header">
-                    <span id="legend-title">Legend</span>
-                    <!-- v703: Close Button & Drag Handle -->
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="drag-handle">::::</span>
-                        <span id="legend-close-btn" class="legend-close-btn">✕</span>
-                    </div>
+                    <span class="drag-handle">::::</span>
+                    <span id="legend-title" style="white-space: nowrap;">Density</span>
                 </div>
                 <div class="legend-body">
-                    <!-- v702: Reordered for Horizontal (Left=None -> Right=High) -->
                     <div id="legend-gradient-bar" class="legend-gradient-bar"></div>
                     <div class="legend-labels">
-                        <span>None</span>
                         <span>Low</span>
-                        <span>Med</span>
                         <span>High</span>
                     </div>
                 </div>
+                <span id="legend-close-btn" class="legend-close-btn" style="margin-left: auto;">✕</span>
             </div>
         </div>
     </div>
@@ -331,7 +326,7 @@
 
     <!-- Heatmap Radius Control (v401) -->
     <div id="heatmap-radius-panel"
-        style="display: none; position: absolute; bottom: 80px; right: 10px; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; border: 1px solid #444; z-index: 2000; color: white; width: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        style="display: none; position: absolute; bottom: 85px; left: 10px; right: auto; background: rgba(0,0,0,0.85); padding: 10px; border-radius: 12px; border: 1px solid #444; z-index: 2000; color: white; width: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
         <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
             Heatmap Radius (Meters)</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
@@ -358,7 +353,6 @@
             style="width: 100%; background: #f44336; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: transform 0.2s;">
             Heatmap On/Off
         </button>
-    </div>
     </div>
 
     <!-- View 3: Records (Kayıtlar) -->

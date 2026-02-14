@@ -357,8 +357,18 @@ function initHeatmapLegend() {
 
             // If out of bounds, we reset to top-left default (80px, 10px)
             if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 100 || topNum < 0 || topNum > window.innerHeight - 100) {
-                legend.style.setProperty('left', '10px', 'important');
-                legend.style.setProperty('top', '80px', 'important');
+                // v1453-1: Default to Portrait Side-by-Side (Next to Scale at left: 170px)
+                // Positioned 45px above nav bar (total 85px from bottom)
+                const viewW = window.innerWidth;
+                const viewH = window.innerHeight;
+                if (viewW > viewH) {
+                    // Landscape Fallback: Bottom Right Area
+                    legend.style.setProperty('left', (viewW - 160) + 'px', 'important');
+                    legend.style.setProperty('top', (viewH - 50) + 'px', 'important');
+                } else {
+                    legend.style.setProperty('left', '170px', 'important');
+                    legend.style.setProperty('top', (viewH - 85) + 'px', 'important');
+                }
             } else {
                 legend.style.setProperty('left', pos.left, 'important');
                 legend.style.setProperty('top', pos.top, 'important');
@@ -2056,9 +2066,9 @@ function initMapControls() {
             const topNum = parseInt(savedPos.top);
 
             if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 60 || topNum < 0 || topNum > window.innerHeight - 60) {
-                // Reset to safe default (bottom left area)
+                // v1453-1: Default to Bottom-Left for scale (above nav bar)
                 scaleWrapper.style.setProperty('left', '10px', 'important');
-                scaleWrapper.style.setProperty('top', (window.innerHeight - 100) + 'px', 'important');
+                scaleWrapper.style.setProperty('top', (window.innerHeight - 85) + 'px', 'important');
             } else {
                 scaleWrapper.style.setProperty('left', savedPos.left, 'important');
                 scaleWrapper.style.setProperty('top', savedPos.top, 'important');
@@ -3186,8 +3196,9 @@ if (fileImportInput) {
         }
 
         showLoading(`${file.name} processing...`);
-        // v561: Removed artificial delay, handled by requestAnimationFrame or immediate execution
-        // await new Promise(r => setTimeout(r, 100));
+        // v1453-1: Crucial 200ms delay to allow the 'Lütfen Bekleyin' overlay to physically paint 
+        // to the screen before the heavy file parsing blocks the main thread (JS Engine).
+        await new Promise(r => setTimeout(r, 200));
 
         try {
             let fileName = file.name;
