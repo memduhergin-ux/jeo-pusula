@@ -2130,7 +2130,13 @@ function makeDraggable(element, storageKey) {
 
     function dragMouseDown(e) {
         e = e || window.event;
-        // v1453-1: Critical PreventDefault on mobile to stop page-bounce during UI drag
+        const tagName = e.target.tagName.toLowerCase();
+        const isControl = tagName === 'button' || tagName === 'input' || tagName === 'select' || e.target.closest('button');
+
+        // v1453-1: If it's a control, don't start dragging! Let the button work.
+        if (isControl) return;
+
+        // v1453-1: Critical PreventDefault on mobile for NON-CONTROLS to stop page-bounce
         if (e.type === 'touchstart') e.preventDefault();
 
         if (e.stopPropagation) e.stopPropagation();
@@ -2142,7 +2148,7 @@ function makeDraggable(element, storageKey) {
         }
 
         // v727: Capture current viewport Grab Offset (Direct Anchor)
-        // v1453-1: Apply position fixed AND current top/left IMMEDIATELY to prevent "jump"
+        // v1453-1: Force position fixed and lock current top/left to stop "jump"
         const rect = element.getBoundingClientRect();
         element.style.setProperty('position', 'fixed', 'important');
         element.style.setProperty('top', rect.top + 'px', 'important');

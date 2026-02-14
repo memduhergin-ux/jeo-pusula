@@ -1681,10 +1681,10 @@ textarea.form-input {
 .scale-row {
     display: flex;
     align-items: flex-end;
-    /* v1453-1: Bottom alignment for X/Z parity with scale line */
-    gap: 8px;
+    /* v1453-1: Align coordinates (X/Z) with scale line */
+    gap: 12px;
+    /* v1453-1: Clear gap between vertical scale and coordinates */
     margin-bottom: 2px;
-    /* v1453-1: Prevents touching bottom border */
 }
 
 /* v1453-1: 3-Row Vertical Coordinate Stack */
@@ -1732,9 +1732,10 @@ textarea.form-input {
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
-    height: 12px;
-    /* v1453-1: Tighter vertical space to notches */
-    margin-bottom: 0mm;
+    height: 10px;
+    /* v1453-1: Reduced from 12px to bring numbers closer to notches */
+    margin-bottom: 2px;
+    /* v1453-1: Micro-gap to prevent actual overlap */
     width: 1.42cm;
     position: relative;
     padding: 0;
