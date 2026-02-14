@@ -2327,7 +2327,7 @@ function updateScaleValues() {
                                 <span class="label-zero">0</span>
                                 <span class="label-dist">${displayDist}${unit}</span>
                             </div>
-                            <div class="utm-integrated-y"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                            <div class="utm-integrated-y" style="margin-left: 20px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         </div>
                         <div class="scale-integrated-row" style="margin-top: 2px;">
                             <div class="scale-line">
@@ -2335,7 +2335,7 @@ function updateScaleValues() {
                                 <div class="scale-bar"></div>
                                 <div class="scale-notch notch-right"></div>
                             </div>
-                            <div class="utm-integrated-xz">
+                            <div class="utm-integrated-xz" style="margin-left: 20px;">
                                 <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
                                 <span class="utm-lbl" style="margin-left:8px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                                 <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>
