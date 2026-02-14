@@ -1642,19 +1642,21 @@ textarea.form-input {
 
 .custom-scale-wrapper {
     display: none;
-    align-items: center;
+    align-items: flex-end;
+    /* v1453-1: Parity with coordinate bottom row (X/Z) */
     justify-content: flex-start;
     gap: 8px;
-    /* v1453-1: Compact internal stack gap */
+    /* v1453-1: Compact stack */
     position: fixed;
     bottom: calc(45px + env(safe-area-inset-bottom, 0px));
     left: 10px !important;
-    /* v1453-1: Hard-locked to avoid any shift */
+    /* v1453-1: Locked start hiza */
     height: 40px;
-    width: 220px;
+    width: 220px !important;
+    /* v1453-1: Locked end hiza */
     right: auto;
     padding: 0 10px !important;
-    /* v1453-1: Unified padding with legend */
+    /* v1453-1: Unified padding for perfect start alignment */
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -1678,9 +1680,11 @@ textarea.form-input {
 
 .scale-row {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    /* v1453-1: Restored compact row gap */
+    align-items: flex-end;
+    /* v1453-1: Bottom alignment for X/Z parity with scale line */
+    gap: 8px;
+    margin-bottom: 2px;
+    /* v1453-1: Prevents touching bottom border */
 }
 
 /* v1453-1: 3-Row Vertical Coordinate Stack */
@@ -2482,10 +2486,10 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     position: fixed;
     bottom: calc(95px + env(safe-area-inset-bottom, 0px));
     /* v1453-1: 10px gap above scale (45+40=85) to ensure NO overlap */
-    left: 10px;
-    /* v1453-1: Locked left alignment with scale */
-    width: 220px;
-    /* v1453-1: Symmetric with scale */
+    left: 10px !important;
+    /* v1453-1: Locked start hiza */
+    width: 220px !important;
+    /* v1453-1: Locked end hiza */
     height: 40px;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -2500,7 +2504,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     flex-direction: row;
     align-items: center;
     padding: 0 10px !important;
-    /* v1453-1: Matched with scale bar padding for perfect vertical alignment */
+    /* v1453-1: Unified padding for perfect start alignment */
     gap: 8px;
 }
 

@@ -2142,9 +2142,15 @@ function makeDraggable(element, storageKey) {
         }
 
         // v727: Capture current viewport Grab Offset (Direct Anchor)
-        // Ensure element has forced position fixed for correct rect calculation
-        element.style.setProperty('transition', 'none', 'important');
+        // v1453-1: Apply position fixed AND current top/left IMMEDIATELY to prevent "jump"
         const rect = element.getBoundingClientRect();
+        element.style.setProperty('position', 'fixed', 'important');
+        element.style.setProperty('top', rect.top + 'px', 'important');
+        element.style.setProperty('left', rect.left + 'px', 'important');
+        element.style.setProperty('bottom', 'auto', 'important');
+        element.style.setProperty('right', 'auto', 'important');
+        element.style.setProperty('transition', 'none', 'important');
+
         let clientX, clientY;
         if (e.type === 'touchstart') {
             clientX = e.touches[0].clientX;
@@ -2157,14 +2163,6 @@ function makeDraggable(element, storageKey) {
         // Calculate where inside the element we grabbed it (Viewport space)
         element.grabOffsetX = clientX - rect.left;
         element.grabOffsetY = clientY - rect.top;
-
-        // v715: Force fixed positioning to break out of Leaflet containers
-        element.style.setProperty('position', 'fixed', 'important');
-        element.style.setProperty('bottom', 'auto', 'important');
-        element.style.setProperty('right', 'auto', 'important');
-
-        // v727: Kill transitions during drag for absolute smoothness
-        element.style.setProperty('transition', 'none', 'important');
 
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
