@@ -763,7 +763,9 @@ let trackPolyline = null;
 // Heatmap State (v401/v563: Persisted)
 let heatmapLayer = null;
 let isHeatmapActive = localStorage.getItem('jeoHeatmapActive') === 'true';
-let heatmapRadius = parseInt(localStorage.getItem('jeoHeatmapRadius')) || 50; // default meters (v409)
+// v1453-1: Proper check to maintain '0' (OTO) without falling back to 50
+const savedRadius = localStorage.getItem('jeoHeatmapRadius');
+let heatmapRadius = savedRadius !== null ? parseInt(savedRadius) : 50;
 let heatmapFilter = localStorage.getItem('jeoHeatmapFilter') || 'ALL'; // v403
 
 // Smoothing state (v400)
@@ -2316,7 +2318,7 @@ function updateScaleValues() {
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
 
                 // v1453-1: Nihai Entegre Yapılanma
-                // Satır 1: Ölçek Sayıları + Y Koordinatı
+                // Satır 1: Ölçek Sayıları + Y Koordinatı (BASELINE ALIGNED)
                 // Satır 2: Ölçek Çizgisi + X/Z Koordinatları
                 scaleWrapper.innerHTML = `
                     <div class="scale-integrated-container">
@@ -2327,7 +2329,7 @@ function updateScaleValues() {
                             </div>
                             <div class="utm-integrated-y"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         </div>
-                        <div class="scale-integrated-row">
+                        <div class="scale-integrated-row" style="margin-top: 2px;">
                             <div class="scale-line">
                                 <div class="scale-notch notch-left"></div>
                                 <div class="scale-bar"></div>
