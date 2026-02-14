@@ -1,5 +1,5 @@
-﻿const CACHE_NAME = 'jeo-cache-v738';
-const JEO_VERSION = 'v738';
+﻿const CACHE_NAME = 'jeo-cache-v739';
+const JEO_VERSION = 'v739';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -80,7 +80,16 @@ function hideLoading() {
 
 // App Initialization & Splash Screen
 function initApp() {
-    // 1. Request Wake Lock (Screen On)
+    // 1. Remove Splash Screen
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.classList.add('hidden');
+            setTimeout(() => splash.remove(), 1000);
+        }
+    }, 1500);
+
+    // 2. Request Wake Lock (Screen On)
     try {
         requestWakeLock();
     } catch (e) {
@@ -4368,7 +4377,7 @@ if (document.getElementById('btn-backup-json')) {
 
         const jsonStr = JSON.stringify(backupData, null, 2);
         const dateStr = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
-        const fileName = `JeoCompass_Yedek_${dateStr}.json`;
+        const fileName = `JeoCompass_Backup_${dateStr}.json`;
 
         try {
             // Modern File System Access API (Save As)
