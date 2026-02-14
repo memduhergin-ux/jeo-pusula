@@ -1605,16 +1605,17 @@ textarea.form-input {
     display: none;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 6px;
+    /* v1453-1: Compact gap */
     position: fixed;
     bottom: calc(45px + env(safe-area-inset-bottom, 0px));
     left: 10px;
     height: 40px;
-    width: fit-content;
+    width: 210px;
+    /* v1453-1: Symmetric with legend */
     right: auto;
-    padding: 0 10px;
+    padding: 0 8px;
     background: rgba(0, 0, 0, 0.4);
-    /* v1453-1: Classic transparent */
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     pointer-events: auto;
@@ -1622,7 +1623,6 @@ textarea.form-input {
     box-sizing: border-box;
     cursor: move;
     touch-action: none;
-    /* v1453-1: Removed all blur/filter per user request */
 }
 
 .custom-scale-control {
@@ -1639,13 +1639,59 @@ textarea.form-input {
 .scale-row {
     display: flex;
     align-items: center;
-    /* v1453-1: Vertically centered */
-    gap: 12px;
+    gap: 8px;
+    /* v1453-1: Compact gap */
 }
 
-.utm-control-container {
-    display: none;
-    /* v614: Moved inside scale-row */
+/* v1453-1: New Coordinate Grid Styles */
+.utm-rows-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    line-height: 1.1;
+}
+
+.utm-row-line {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+}
+
+.utm-lbl {
+    font-size: 0.8em;
+    color: #ffeb3b;
+    font-weight: bold;
+}
+
+.utm-val {
+    color: #fff;
+    font-family: monospace;
+}
+
+.utm-z-block {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 4px;
+}
+
+.utm-lbl-z {
+    font-size: 0.8em;
+    color: #ffeb3b;
+    font-weight: 900;
+}
+
+.utm-val-z {
+    font-size: 11px;
+    color: #ffeb3b;
+    font-weight: 900;
+}
+
+.utm-mode-icon {
+    font-size: 14px;
+    margin-left: 2px;
 }
 
 .scale-labels {
@@ -1752,9 +1798,11 @@ textarea.form-input {
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper {
         bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
-        /* v1453-1: Bottom-Left Corner */
         left: 10px !important;
         height: 40px !important;
+        width: 180px !important;
+        /* v1453-1: Shrink in landscape to avoid center nav */
+        padding: 0 6px !important;
     }
 
     .map-fab-container {
@@ -2106,8 +2154,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     #heatmap-radius-panel {
         left: 10px !important;
         right: auto !important;
-        bottom: 95px !important;
-        /* v1453-1: Above bottom control area */
+        bottom: 135px !important;
+        /* v1453-1: Stacked above legend (85px) and scale (45px) */
         z-index: 2500;
     }
 }
@@ -2397,13 +2445,13 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 /* v701/v702/v1453-1: Heatmap Legend (Horizontal & Compact) */
 .heatmap-legend {
     position: fixed;
-    bottom: calc(45px + env(safe-area-inset-bottom, 0px));
-    left: 170px;
+    bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+    /* v1453-1: Stacked above scale (45px) */
+    left: 10px;
+    /* v1453-1: Aligned left with scale in portrait */
     width: 210px;
-    /* v1453-1: Increased to reach exit button */
     height: 40px;
     background: rgba(0, 0, 0, 0.4);
-    /* v1453-1: Reverted to transparent */
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
@@ -2481,8 +2529,9 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 .legend-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.55rem;
-    color: #888;
+    font-size: 0.6rem;
+    color: #fff;
+    /* v1453-1: Changed from #888 for better readability */
     line-height: 1;
 }
 

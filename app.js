@@ -378,8 +378,8 @@ function initHeatmapLegend() {
                     legend.style.setProperty('right', '10px', 'important');
                     legend.style.setProperty('top', (viewH - 50) + 'px', 'important');
                 } else {
-                    legend.style.setProperty('left', '170px', 'important');
-                    legend.style.setProperty('top', (viewH - 85) + 'px', 'important');
+                    legend.style.setProperty('left', '10px', 'important'); // v1453-1: Stacked mode (Portrait)
+                    legend.style.setProperty('top', (viewH - 125) + 'px', 'important');
                 }
             } else {
                 legend.style.setProperty('left', pos.left, 'important');
@@ -548,7 +548,24 @@ function toggleHeatmap() {
     const panel = document.getElementById('heatmap-radius-panel');
 
     if (btn) btn.classList.toggle('active', isHeatmapActive);
-    if (panel) panel.style.display = isHeatmapActive ? 'block' : 'none';
+    if (panel) {
+        panel.style.display = isHeatmapActive ? 'block' : 'none';
+        if (isHeatmapActive) {
+            // v1453-1: Reset inline styles to force fixed CSS positions on toggle
+            panel.style.top = '';
+            panel.style.left = '';
+            panel.style.right = '';
+            panel.style.bottom = '';
+
+            const legend = document.getElementById('heatmap-legend');
+            if (legend) {
+                legend.style.top = '';
+                legend.style.left = '';
+                legend.style.right = '';
+                legend.style.bottom = '';
+            }
+        }
+    }
 
     if (isHeatmapActive) {
         updateHeatmapFilterOptions();
@@ -2295,10 +2312,14 @@ function updateScaleValues() {
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
                 // v534: Remove "Real" label to save space, just "Z:" in orange
                 utmEl.innerHTML = `
-                    <span style="font-size:0.75em; color:#ffeb3b; margin-right:1px;">Y:</span><span style="margin-right:2mm;">${eastPart}</span>
-                    <span style="font-size:0.75em; color:#ffeb3b; margin-right:1px;">X:</span><span style="margin-right:2mm;">${northPart}</span>
-                    <span style="font-size:0.75em; color:#ffeb3b; font-weight:bold; margin-right:1px;">Z:</span><span style="margin-right:2mm; color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                    <span style="font-size:1.1em; vertical-align: middle; margin-left: 0mm;">${modeLabel}</span>
+                    <div class="utm-rows-container">
+                        <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                        <div class="utm-row-line"><span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span></div>
+                    </div>
+                    <div class="utm-z-block">
+                        <span class="utm-lbl-z">Z:</span><span class="utm-val-z">${displayAlt}m</span>
+                        <span class="utm-mode-icon">${modeLabel}</span>
+                    </div>
                 `;
             } catch (e) {
                 utmEl.textContent = "UTM Error";
