@@ -2296,16 +2296,33 @@ function updateScaleValues() {
         }
 
         // UTM Logic
-        let displayLat = y, displayLon = x, displayAlt = 0;
+        let displayLat, displayLon, displayAlt = "---";
+
         if (typeof activePoint !== 'undefined' && activePoint) {
             displayLat = activePoint.lat;
             displayLon = activePoint.lng;
-            displayAlt = activePoint.alt || 0;
+            displayAlt = (activePoint.alt !== undefined && activePoint.alt !== null) ? Math.round(activePoint.alt) : "---";
+        } else if (isAddingPoint) {
+            // v1453-1: Map Center Mode (Crosshair)
+            displayLat = y;
+            displayLon = x;
+            displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
         } else if (typeof onlineMyLat !== 'undefined' && onlineMyLat !== null) {
+            // v1453-1: Real User Position Mode (Follow Me)
             displayLat = onlineMyLat;
             displayLon = onlineMyLon;
-            // v1453-1: Center Alt logic
-            displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
+
+            // v1453-1: Priority: Online Elevation (MSL) > GPS Sensor (Ellipsoid)
+            if (onlineMyAlt !== null) {
+                displayAlt = Math.round(onlineMyAlt);
+            } else if (typeof currentCoords !== 'undefined' && currentCoords.alt !== null && currentCoords.alt !== undefined) {
+                // Ham GPS verisi (m)
+                displayAlt = Math.round(currentCoords.alt);
+            }
+        } else {
+            // Fallback to center if no GPS fix yet
+            displayLat = y;
+            displayLon = x;
         }
 
         if (displayLat) {
