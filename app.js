@@ -1922,7 +1922,7 @@ function initMap() {
 
 
     updateMapMarkers(true);
-    loadExternalLayers();
+    loadExternalLayers(true); // v729: Silent load on startup
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
 
@@ -3806,9 +3806,9 @@ async function saveExternalLayers() {
     if (isHeatmapActive) updateHeatmapFilterOptions();
 }
 
-async function loadExternalLayers() {
+async function loadExternalLayers(silent = false) {
     // v650: Restored blocking loading screen as per user request
-    showLoading("Loading saved layers...");
+    if (!silent) showLoading("Loading saved layers...");
     try {
         let data = await dbLoadLayers();
 
@@ -3875,6 +3875,11 @@ if (btnAddPoint) {
                 if (map) map.getContainer().style.cursor = '';
             }
 
+            // v729: Go to current GPS position first
+            if (map && currentCoords && currentCoords.lat !== 0) {
+                map.setView([currentCoords.lat, currentCoords.lon], map.getZoom());
+            }
+
             btnAddPoint.classList.add('active-add-point');
             // Show Crosshair and Confirm Button (Reverted v622)
             if (crosshair) crosshair.style.display = 'block';
@@ -3891,7 +3896,6 @@ if (btnAddPoint) {
 
 const btnConfirmPoint = document.getElementById('btn-confirm-point');
 const crosshair = document.getElementById('map-center-crosshair');
-const btnAddGps = document.getElementById('btn-add-gps');
 
 if (btnConfirmPoint) {
     btnConfirmPoint.addEventListener('click', () => {
@@ -3909,17 +3913,6 @@ if (btnConfirmPoint) {
     });
 }
 
-if (btnAddGps) {
-    btnAddGps.addEventListener('click', () => {
-        if (currentCoords.lat !== 0) {
-            const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
-            const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
-            openRecordModalWithCoords(currentCoords.lat, currentCoords.lon, "GPS Position", bestAlt);
-        } else {
-            alert("Waiting for location data...");
-        }
-    });
-}
 
 function openRecordModalWithCoords(lat, lon, note, alt = null, strike = null, dip = null) {
     // Save pending coords for modal save
@@ -4668,6 +4661,24 @@ if (btnMoreOptions) {
 
 if (document.getElementById('btn-options-cancel')) {
     document.getElementById('btn-options-cancel').addEventListener('click', () => optionsModal.classList.remove('active'));
+}
+
+// v729: About Modal Logic
+const aboutModal = document.getElementById('about-modal');
+const btnShowAbout = document.getElementById('btn-show-about');
+const btnAboutClose = document.getElementById('btn-about-close');
+
+if (btnShowAbout) {
+    btnShowAbout.addEventListener('click', () => {
+        if (optionsModal) optionsModal.classList.remove('active');
+        if (aboutModal) aboutModal.classList.add('active');
+    });
+}
+
+if (btnAboutClose) {
+    btnAboutClose.addEventListener('click', () => {
+        if (aboutModal) aboutModal.classList.remove('active');
+    });
 }
 
 // Updated Delete Logic Location (Now inside Options Modal)
