@@ -1,5 +1,5 @@
-﻿const CACHE_NAME = 'jeo-cache-v739';
-const JEO_VERSION = 'v739';
+﻿const CACHE_NAME = 'jeo-cache-v740';
+const JEO_VERSION = 'v740';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
