@@ -1644,17 +1644,17 @@ textarea.form-input {
     display: none;
     align-items: center;
     justify-content: flex-start;
-    gap: 15px;
-    /* v1453-1: Increased gap to prevent INTERNAL overlap */
+    gap: 10px;
+    /* v1453-1: Restored compact gap */
     position: fixed;
     bottom: calc(45px + env(safe-area-inset-bottom, 0px));
     left: 10px;
+    /* v1453-1: Locked left alignment */
     height: 40px;
     width: 220px;
-    /* v1453-1: Symmetric with legend and safe for 3 rows */
     right: auto;
-    padding: 0 12px;
-    /* v1453-1: Increased padding */
+    padding: 0 10px;
+    /* v1453-1: Restored padding */
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -1679,8 +1679,8 @@ textarea.form-input {
 .scale-row {
     display: flex;
     align-items: center;
-    gap: 15px;
-    /* v1453-1: Prevents 665m label from overlapping with Y: coordinate */
+    gap: 10px;
+    /* v1453-1: Restored compact row gap */
 }
 
 /* v1453-1: 3-Row Vertical Coordinate Stack */
@@ -2173,16 +2173,14 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 /* Heatmap & Precision Panels */
 #heatmap-radius-panel {
     transition: all 0.3s ease;
-    background: rgba(30, 30, 30, 0.9) !important;
-    /* v1453-1: Premium dark glass */
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: #1a1a1a !important;
+    /* v1453-1: Reverted to solid dark style */
+    border: 1px solid #444 !important;
     width: 220px !important;
-    /* v1453-1: Standardized width */
-    border-radius: 20px !important;
-    /* v1453-1: Kibar corners */
-    padding: 15px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 12px !important;
+    /* v1453-1: Reverted to 12px corners */
+    padding: 12px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
     box-sizing: border-box !important;
 }
 
@@ -2485,7 +2483,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     bottom: calc(95px + env(safe-area-inset-bottom, 0px));
     /* v1453-1: 10px gap above scale (45+40=85) to ensure NO overlap */
     left: 10px;
-    /* v1453-1: Aligned left with scale in portrait */
+    /* v1453-1: Locked left alignment with scale */
     width: 220px;
     /* v1453-1: Symmetric with scale */
     height: 40px;
