@@ -1728,7 +1728,8 @@ textarea.form-input {
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
-    height: 15px;
+    height: 12px;
+    /* v1453-1: Tighter vertical space to notches */
     margin-bottom: 0mm;
     width: 1.42cm;
     position: relative;
@@ -2172,16 +2173,15 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 /* Heatmap & Precision Panels */
 #heatmap-radius-panel {
-    transition: all 0.3s ease;
     background: #1a1a1a !important;
-    /* v1453-1: Reverted to solid dark style */
+    /* v1453-1: Stable solid dark kibar style */
     border: 1px solid #444 !important;
     width: 220px !important;
     border-radius: 12px !important;
-    /* v1453-1: Reverted to 12px corners */
     padding: 12px !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
     box-sizing: border-box !important;
+    z-index: 2500;
 }
 
 /* v1453-1: Orientation-specific positioning for panels to avoid collisions */

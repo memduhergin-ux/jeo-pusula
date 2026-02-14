@@ -571,18 +571,20 @@ function toggleHeatmap() {
         updateHeatmapFilterOptions();
         updateHeatmap();
 
-        // v703: Improved Close Logic - Clicking map hides PANEL but keeps LAYER/LEGEND active
+        // v1453-1: Defensive Close Logic - Prevents closing when touching the panel
+        panel.addEventListener('click', (e) => e.stopPropagation());
+
         setTimeout(() => {
             const closeHandler = (e) => {
                 const isOutsidePanel = !panel.contains(e.target);
                 const isOutsideToggle = e.target.id !== 'btn-heatmap-toggle' && !e.target.closest('#btn-heatmap-toggle');
 
                 if (isOutsidePanel && isOutsideToggle) {
-                    // v1453-1: Only hide if NOT clicking on the panel itself or the toggle
+                    // v1453-1: Ensure we don't close if focusing filter inputs
                     if (document.activeElement && (document.activeElement.id === 'heatmap-element-filter' || document.activeElement.tagName === 'SELECT')) return;
 
                     panel.style.display = 'none';
-                    if (btn) btn.classList.add('active'); // Keep active since layer is still on
+                    if (btn) btn.classList.add('active');
                     document.removeEventListener('click', closeHandler);
                 }
             };
@@ -2308,8 +2310,8 @@ function updateScaleValues() {
                         <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         <div class="utm-row-line">
                             <span class="utm-lbl" style="margin-right:2px;">X:</span><span class="utm-val">${northPart}</span>
-                            <span class="utm-lbl" style="margin-left:10px; margin-right:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                            <span class="utm-mode-icon" style="margin-left:auto; padding-left:8px;">${modeLabel}</span>
+                            <span class="utm-lbl" style="margin-left:8px; margin-right:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                            <span class="utm-mode-icon" style="margin-left:4px; transform:translateY(1px);">${modeLabel}</span>
                         </div>
                     </div>
                 `;
