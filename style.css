@@ -1652,7 +1652,7 @@ textarea.form-input {
     display: flex;
     flex-direction: row;
     align-items: baseline;
-    /* v1453-1: Perfect text baseline parity */
+    /* v1453-1: Enforce perfect baseline alignment */
     width: 100%;
     gap: 12px;
 }
@@ -1745,13 +1745,12 @@ textarea.form-input {
     font-size: 11px;
     font-weight: 900;
     color: #ffeb3b;
-    height: 12px;
-    /* Unaligned height to avoid flex-baseline drift */
     width: 1.42cm;
     position: relative;
     padding: 0;
     box-sizing: border-box;
-    line-height: 1.0;
+    line-height: normal;
+    /* v1453-1: Allow natural font baseline */
 }
 
 .scale-line {
@@ -1767,7 +1766,8 @@ textarea.form-input {
 
 .scale-bar {
     width: 100%;
-    height: 1px;
+    height: 1.5px;
+    /* v1453-1: Thickened for visibility */
     background: #ffeb3b;
     /* v1453-1: Yellow line for high visibility */
     position: absolute;
@@ -1775,8 +1775,10 @@ textarea.form-input {
 }
 
 .scale-notch {
-    width: 1px;
-    height: 6px;
+    width: 1.5px;
+    /* v1453-1: Thickened */
+    height: 8px;
+    /* v1453-1: Taller notches */
     background: #ffeb3b;
     position: absolute;
     bottom: 0;
@@ -1795,10 +1797,12 @@ textarea.form-input {
     font-size: 10px;
     font-family: monospace;
     white-space: nowrap;
+    line-height: normal;
+    /* v1453-1: Universal baseline */
 }
 
 .utm-integrated-y {
-    line-height: 1.0;
+    /* No manual nudging, rely on flex baseline */
 }
 
 .utm-integrated-xz {
