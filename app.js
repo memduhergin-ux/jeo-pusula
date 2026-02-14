@@ -1,5 +1,5 @@
-﻿const CACHE_NAME = 'jeo-cache-v729';
-const JEO_VERSION = 'v729';
+﻿const CACHE_NAME = 'jeo-cache-v731';
+const JEO_VERSION = 'v731';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -1922,7 +1922,7 @@ function initMap() {
 
 
     updateMapMarkers(true);
-    loadExternalLayers(true); // v729: Silent load on startup
+    loadExternalLayers(true); // v731: Silent load on startup
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
 
@@ -3875,8 +3875,10 @@ if (btnAddPoint) {
                 if (map) map.getContainer().style.cursor = '';
             }
 
-            // v729: Go to current GPS position first
-            if (map && currentCoords && currentCoords.lat !== 0) {
+            // v731: Center on current GPS position first
+            if (map && typeof liveMarker !== 'undefined' && liveMarker) {
+                map.setView(liveMarker.getLatLng(), map.getZoom());
+            } else if (map && currentCoords && currentCoords.lat !== 0) {
                 map.setView([currentCoords.lat, currentCoords.lon], map.getZoom());
             }
 
@@ -4663,23 +4665,29 @@ if (document.getElementById('btn-options-cancel')) {
     document.getElementById('btn-options-cancel').addEventListener('click', () => optionsModal.classList.remove('active'));
 }
 
-// v729: About Modal Logic
-const aboutModal = document.getElementById('about-modal');
-const btnShowAbout = document.getElementById('btn-show-about');
-const btnAboutClose = document.getElementById('btn-about-close');
+// v731: About Modal Controls
+function initAboutModal() {
+    const aboutMod = document.getElementById('about-modal');
+    const showBtn = document.getElementById('btn-show-about');
+    const closeBtn = document.getElementById('btn-about-close');
 
-if (btnShowAbout) {
-    btnShowAbout.addEventListener('click', () => {
-        if (optionsModal) optionsModal.classList.remove('active');
-        if (aboutModal) aboutModal.classList.add('active');
-    });
-}
+    if (showBtn && aboutMod) {
+        showBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof optionsModal !== 'undefined' && optionsModal) {
+                optionsModal.classList.remove('active');
+            }
+            aboutMod.classList.add('active');
+        });
+    }
 
-if (btnAboutClose) {
-    btnAboutClose.addEventListener('click', () => {
-        if (aboutModal) aboutModal.classList.remove('active');
-    });
+    if (closeBtn && aboutMod) {
+        closeBtn.addEventListener('click', () => {
+            aboutMod.classList.remove('active');
+        });
+    }
 }
+initAboutModal();
 
 // Updated Delete Logic Location (Now inside Options Modal)
 if (btnDeleteSelected) {
