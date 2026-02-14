@@ -351,21 +351,17 @@ function initHeatmapLegend() {
     if (savedPos) {
         try {
             const pos = JSON.parse(savedPos);
-            // v1453-1: Validate if saved position still fits within current view (Portrait -> Landscape safety)
-            const leftNum = parseInt(pos.left);
-            const topNum = parseInt(pos.top);
-
-            // If out of bounds, we reset to top-left default (80px, 10px)
             if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 100 || topNum < 0 || topNum > window.innerHeight - 100) {
                 // v1453-1: Default to Portrait Side-by-Side (Next to Scale at left: 170px)
-                // Positioned 45px above nav bar (total 85px from bottom)
                 const viewW = window.innerWidth;
                 const viewH = window.innerHeight;
                 if (viewW > viewH) {
-                    // Landscape Fallback: Bottom Right Area
-                    legend.style.setProperty('left', (viewW - 160) + 'px', 'important');
+                    // Landscape Fallback: Bottom-Right Corner (next to nav area)
+                    legend.style.setProperty('left', 'auto', 'important');
+                    legend.style.setProperty('right', '10px', 'important');
                     legend.style.setProperty('top', (viewH - 50) + 'px', 'important');
                 } else {
+                    // Portrait Fallback: Next to scale bar
                     legend.style.setProperty('left', '170px', 'important');
                     legend.style.setProperty('top', (viewH - 85) + 'px', 'important');
                 }
@@ -2066,9 +2062,11 @@ function initMapControls() {
             const topNum = parseInt(savedPos.top);
 
             if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 60 || topNum < 0 || topNum > window.innerHeight - 60) {
-                // v1453-1: Default to Bottom-Left for scale (above nav bar)
+                const viewW = window.innerWidth;
+                const viewH = window.innerHeight;
+                // v1453-1: Default to Bottom-Left for scale
                 scaleWrapper.style.setProperty('left', '10px', 'important');
-                scaleWrapper.style.setProperty('top', (window.innerHeight - 85) + 'px', 'important');
+                scaleWrapper.style.setProperty('top', (viewH - 85) + 'px', 'important');
             } else {
                 scaleWrapper.style.setProperty('left', savedPos.left, 'important');
                 scaleWrapper.style.setProperty('top', savedPos.top, 'important');
