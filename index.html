@@ -8,10 +8,10 @@
     <!-- v690: Content Security Policy to allow OSRM/GraphHopper connections -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
-    <title>Jeoloji Pusulası v737</title>
-    <!-- Jeoloji Pusulası v737 -->
-    <meta name="version" content="v737">
-    <meta name="jeo-version" content="v737">
+    <title>Jeoloji Pusulası v738</title>
+    <!-- Jeoloji Pusulası v738 -->
+    <meta name="version" content="v738">
+    <meta name="jeo-version" content="v738">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css?v=729">
@@ -37,23 +37,7 @@
         <div style="color: #aaa; margin-top: 10px; font-size: 0.8rem;">Wait time may vary depending on file size.</div>
     </div>
 
-    <!-- Splash Screen -->
-    <div id="splash-screen"
-        style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: #1a1a1a;">
-        <div class="splash-content"
-            style="text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <div
-                style="width: 120px; font-size: 1.1rem; font-weight: bold; color: #4caf50; margin-bottom: 10px; text-align: center; word-wrap: break-word; line-height: 1.2;">
-                JEOCOMPASS</div>
-            <img src="icon-512.png" alt="JeoCompass Logo" class="splash-logo"
-                style="width: 120px; margin-bottom: 20px;">
-            <div class="splash-credit" style="margin-bottom: 5px; color: #aaa; font-size: 0.9rem;">Designed by <span
-                    class="splash-role" style="color: #4caf50; font-weight: bold;">Geologist</span></div>
-            <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
-            <div class="splash-version"
-                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">v737</div>
-        </div>
-    </div>
+
     <!-- View 1: Compass (Pusula) -->
     <div id="view-compass" class="view-section active">
         <div class="compass-container">
@@ -474,7 +458,7 @@
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
                         Status:</label>
                     <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
-                        JeoCompass - Version v727</p>
+                        JeoCompass - Version v738</p>
                 </div>
 
                 <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
@@ -487,7 +471,7 @@
                     </div>
                     <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
                         You can manually correct the difference from True North here.</p>
-                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.10-v727</div>
+                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.14-v738</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -586,13 +570,13 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v737
+                    JeoCompass v738
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- About Modal (v737) -->
+    <!-- About Modal (v738) -->
     <div id="about-modal" class="modal-overlay">
         <div class="modal-content"
             style="max-width: 320px; border-radius: 24px; overflow: hidden; background: #121212; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
@@ -606,7 +590,7 @@
                 </h2>
                 <div style="color: #4caf50; font-weight: bold; font-size: 0.85rem; margin-top: 5px; opacity: 0.9;">
                     Professional Geological Compass</div>
-                <div style="color: #666; font-size: 0.8rem; margin-top: 10px;">Version v737</div>
+                <div style="color: #666; font-size: 0.8rem; margin-top: 10px;">Version v738</div>
 
                 <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #222;">
                     <div
@@ -775,13 +759,13 @@
     </script>
     <script src="app.js?v=729"></script>
     <script>
-        console.log("App Version: v737");
+        console.log("App Version: v738");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
                 navigator.serviceWorker.register(`sw.js?v=729`)
                     .then(reg => {
-                        console.log('Service Worker registered v737');
+                        console.log('Service Worker registered v738');
                         reg.update().catch(() => { });
                         setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
                     })

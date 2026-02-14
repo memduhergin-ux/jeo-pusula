@@ -1,5 +1,5 @@
-﻿const CACHE_NAME = 'jeo-cache-v734';
-const JEO_VERSION = 'v734';
+﻿const CACHE_NAME = 'jeo-cache-v738';
+const JEO_VERSION = 'v738';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
@@ -80,16 +80,7 @@ function hideLoading() {
 
 // App Initialization & Splash Screen
 function initApp() {
-    // 1. Remove Splash Screen
-    setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
-        if (splash) {
-            splash.classList.add('hidden');
-            setTimeout(() => splash.remove(), 1000);
-        }
-    }, 1500);
-
-    // 2. Request Wake Lock (Screen On)
+    // 1. Request Wake Lock (Screen On)
     try {
         requestWakeLock();
     } catch (e) {
