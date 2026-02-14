@@ -1644,17 +1644,17 @@ textarea.form-input {
     display: none;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
-    /* v1453-1: Restored compact gap */
+    gap: 8px;
+    /* v1453-1: Compact internal stack gap */
     position: fixed;
     bottom: calc(45px + env(safe-area-inset-bottom, 0px));
-    left: 10px;
-    /* v1453-1: Locked left alignment */
+    left: 10px !important;
+    /* v1453-1: Hard-locked to avoid any shift */
     height: 40px;
     width: 220px;
     right: auto;
-    padding: 0 10px;
-    /* v1453-1: Restored padding */
+    padding: 0 10px !important;
+    /* v1453-1: Unified padding with legend */
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -2499,7 +2499,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: 0 8px;
+    padding: 0 10px !important;
+    /* v1453-1: Matched with scale bar padding for perfect vertical alignment */
     gap: 8px;
 }
 

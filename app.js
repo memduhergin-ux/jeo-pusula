@@ -2130,7 +2130,9 @@ function makeDraggable(element, storageKey) {
 
     function dragMouseDown(e) {
         e = e || window.event;
-        // v720: Stop event from reaching the map
+        // v1453-1: Critical PreventDefault on mobile to stop page-bounce during UI drag
+        if (e.type === 'touchstart') e.preventDefault();
+
         if (e.stopPropagation) e.stopPropagation();
         if (typeof L !== 'undefined' && L.DomEvent) L.DomEvent.stopPropagation(e);
 
@@ -2140,6 +2142,8 @@ function makeDraggable(element, storageKey) {
         }
 
         // v727: Capture current viewport Grab Offset (Direct Anchor)
+        // Ensure element has forced position fixed for correct rect calculation
+        element.style.setProperty('transition', 'none', 'important');
         const rect = element.getBoundingClientRect();
         let clientX, clientY;
         if (e.type === 'touchstart') {
