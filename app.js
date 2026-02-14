@@ -321,14 +321,29 @@ function initHeatmapPanelDraggable() {
 
     // Restore position from localStorage
     const savedPanelPos = localStorage.getItem('jeoHeatmapPanelPos');
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+
     if (savedPanelPos) {
         try {
             const pos = JSON.parse(savedPanelPos);
-            radiusPanel.style.setProperty('position', 'fixed', 'important');
-            radiusPanel.style.setProperty('left', pos.left, 'important');
-            radiusPanel.style.setProperty('top', pos.top, 'important');
-            radiusPanel.style.setProperty('bottom', 'auto', 'important');
-            radiusPanel.style.setProperty('right', 'auto', 'important');
+            const leftNum = parseInt(pos.left);
+            const topNum = parseInt(pos.top);
+
+            // v1453-1: Boundary validation to prevent panel from getting lost (invisibility fix)
+            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > viewW - 100 || topNum < 0 || topNum > viewH - 100) {
+                // Fallback to CSS defaults
+                radiusPanel.style.removeProperty('top');
+                radiusPanel.style.removeProperty('left');
+                radiusPanel.style.setProperty('position', 'absolute', 'important');
+                radiusPanel.style.setProperty('bottom', viewW > viewH ? '110px' : '95px', 'important');
+            } else {
+                radiusPanel.style.setProperty('position', 'fixed', 'important');
+                radiusPanel.style.setProperty('left', pos.left, 'important');
+                radiusPanel.style.setProperty('top', pos.top, 'important');
+                radiusPanel.style.setProperty('bottom', 'auto', 'important');
+                radiusPanel.style.setProperty('right', 'auto', 'important');
+            }
         } catch (e) {
             console.warn("Could not restore Heatmap Panel position", e);
         }
@@ -351,17 +366,18 @@ function initHeatmapLegend() {
     if (savedPos) {
         try {
             const pos = JSON.parse(savedPos);
-            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 100 || topNum < 0 || topNum > window.innerHeight - 100) {
-                // v1453-1: Default to Portrait Side-by-Side (Next to Scale at left: 170px)
-                const viewW = window.innerWidth;
-                const viewH = window.innerHeight;
+            const leftNum = parseInt(pos.left);
+            const topNum = parseInt(pos.top);
+            const viewW = window.innerWidth;
+            const viewH = window.innerHeight;
+
+            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > viewW - 100 || topNum < 0 || topNum > viewH - 100) {
+                // v1453-1: Default to Portrait Side-by-Side OR Landscape Bottom-Right
                 if (viewW > viewH) {
-                    // Landscape Fallback: Bottom-Right Corner (next to nav area)
                     legend.style.setProperty('left', 'auto', 'important');
                     legend.style.setProperty('right', '10px', 'important');
                     legend.style.setProperty('top', (viewH - 50) + 'px', 'important');
                 } else {
-                    // Portrait Fallback: Next to scale bar
                     legend.style.setProperty('left', '170px', 'important');
                     legend.style.setProperty('top', (viewH - 85) + 'px', 'important');
                 }

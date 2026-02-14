@@ -1638,10 +1638,9 @@ textarea.form-input {
 
 .scale-row {
     display: flex;
-    align-items: flex-end;
-    /* v714: Strictly align bottoms of text and line */
-    gap: 4px;
-    /* "az boşluk" after unit */
+    align-items: center;
+    /* v1453-1: Vertically centered */
+    gap: 12px;
 }
 
 .utm-control-container {
@@ -1707,10 +1706,8 @@ textarea.form-input {
     display: flex;
     align-items: center;
     padding-right: 5px;
-    padding-bottom: 0px;
-    line-height: 40px;
-    /* v1453-1: Center in the 40px container */
-    height: 40px;
+    margin-top: 2px;
+    /* v1453-1: Visual alignment with scale bar */
 }
 
 
@@ -2109,8 +2106,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     #heatmap-radius-panel {
         left: 10px !important;
         right: auto !important;
-        bottom: 90px !important;
-        /* v1453-1: Reliably above the side-by-side bar */
+        bottom: 95px !important;
+        /* v1453-1: Above bottom control area */
         z-index: 2500;
     }
 }
@@ -2402,7 +2399,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     position: fixed;
     bottom: calc(45px + env(safe-area-inset-bottom, 0px));
     left: 170px;
-    width: 150px;
+    width: 210px;
+    /* v1453-1: Increased to reach exit button */
     height: 40px;
     background: rgba(0, 0, 0, 0.4);
     /* v1453-1: Reverted to transparent */
