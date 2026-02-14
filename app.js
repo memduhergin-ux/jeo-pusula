@@ -2310,15 +2310,14 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
-                // v534: Remove "Real" label to save space, just "Z:" in orange
                 utmEl.innerHTML = `
                     <div class="utm-rows-container">
                         <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         <div class="utm-row-line"><span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span></div>
-                    </div>
-                    <div class="utm-z-block">
-                        <span class="utm-lbl-z">Z:</span><span class="utm-val-z">${displayAlt}m</span>
-                        <span class="utm-mode-icon">${modeLabel}</span>
+                        <div class="utm-row-line">
+                            <span class="utm-lbl">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                            <span class="utm-mode-icon">${modeLabel}</span>
+                        </div>
                     </div>
                 `;
             } catch (e) {
