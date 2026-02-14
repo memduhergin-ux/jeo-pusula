@@ -1,8 +1,28 @@
-﻿const CACHE_NAME = 'jeo-cache-v740';
-const JEO_VERSION = 'v740';
+﻿const CACHE_NAME = 'jeo-cache-v1453-1';
+const JEO_VERSION = 'v1453-1';
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'externalLayers';
+
+// v750: Global Security & Stability Kalkanı
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    console.error(`GLOBAL ERROR: ${msg} [${url}:${lineNo}:${columnNo}]`, error);
+    showToast("An unexpected error occurred. The app is still running safely.", 3000);
+    return false; // Let browser process it too
+};
+
+window.onunhandledrejection = function (event) {
+    console.error('UNHANDLED PROMISE REJECTION:', event.reason);
+    showToast("Background process failed. Data is safe.", 3000);
+};
+
+// v750: Simple HTML Escape to prevent XSS attacks
+function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
 function openJeoDB() {
     return new Promise((resolve, reject) => {
@@ -331,9 +351,20 @@ function initHeatmapLegend() {
     if (savedPos) {
         try {
             const pos = JSON.parse(savedPos);
+            // v1453-1: Validate if saved position still fits within current view (Portrait -> Landscape safety)
+            const leftNum = parseInt(pos.left);
+            const topNum = parseInt(pos.top);
+
+            // If out of bounds, we reset to top-left default (80px, 10px)
+            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 100 || topNum < 0 || topNum > window.innerHeight - 100) {
+                legend.style.setProperty('left', '10px', 'important');
+                legend.style.setProperty('top', '80px', 'important');
+            } else {
+                legend.style.setProperty('left', pos.left, 'important');
+                legend.style.setProperty('top', pos.top, 'important');
+            }
+
             legend.style.setProperty('position', 'fixed', 'important');
-            legend.style.setProperty('left', pos.left, 'important');
-            legend.style.setProperty('top', pos.top, 'important');
             legend.style.setProperty('bottom', 'auto', 'important');
             legend.style.setProperty('right', 'auto', 'important');
         } catch (e) {
@@ -1691,14 +1722,14 @@ function renderRecords(filter = '') {
     tableBody.innerHTML = displayRecords.map(r => `
         <tr data-id="${r.id}">
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}"><input type="checkbox" class="record-select" data-id="${r.id}"></td>
-            <td>${r.label || r.id}</td>
+            <td>${escapeHTML(r.label) || r.id}</td>
             <td>${r.y}</td>
             <td>${r.x}</td>
             <td>${r.z}</td>
             <td>${r.strike}</td>
             <td>${r.dip}</td>
-            <td style="font-size:0.75rem; color:#aaa;">${r.time || ''}</td>
-            <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.note}</td>
+            <td style="font-size:0.75rem; color:#aaa;">${escapeHTML(r.time) || ''}</td>
+            <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(r.note)}</td>
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}">
                 <div class="action-menu">
                     <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">⋮</button>
@@ -2020,8 +2051,19 @@ function initMapControls() {
         // Restore Position
         const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
         if (savedPos) {
-            scaleWrapper.style.setProperty('left', savedPos.left, 'important');
-            scaleWrapper.style.setProperty('top', savedPos.top, 'important');
+            // v1453-1: Boundary Validation during restore
+            const leftNum = parseInt(savedPos.left);
+            const topNum = parseInt(savedPos.top);
+
+            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 60 || topNum < 0 || topNum > window.innerHeight - 60) {
+                // Reset to safe default (bottom left area)
+                scaleWrapper.style.setProperty('left', '10px', 'important');
+                scaleWrapper.style.setProperty('top', (window.innerHeight - 100) + 'px', 'important');
+            } else {
+                scaleWrapper.style.setProperty('left', savedPos.left, 'important');
+                scaleWrapper.style.setProperty('top', savedPos.top, 'important');
+            }
+
             scaleWrapper.style.setProperty('bottom', 'auto', 'important');
             scaleWrapper.style.setProperty('right', 'auto', 'important');
             scaleWrapper.style.setProperty('position', 'fixed', 'important');
@@ -2107,8 +2149,23 @@ function makeDraggable(element, storageKey) {
         }
 
         // v727: Direct viewport anchor positioning (No calculation drift possible)
-        element.style.setProperty('top', (clientY - element.grabOffsetY) + "px", 'important');
-        element.style.setProperty('left', (clientX - element.grabOffsetX) + "px", 'important');
+        let finalTop = clientY - element.grabOffsetY;
+        let finalLeft = clientX - element.grabOffsetX;
+
+        // v1453-1: Viewport Boundary Enforcement
+        const rect = element.getBoundingClientRect();
+        const minTop = 0;
+        const maxTop = window.innerHeight - rect.height;
+        const minLeft = 0;
+        const maxLeft = window.innerWidth - rect.width;
+
+        if (finalTop < minTop) finalTop = minTop;
+        if (finalTop > maxTop) finalTop = maxTop;
+        if (finalLeft < minLeft) finalLeft = minLeft;
+        if (finalLeft > maxLeft) finalLeft = maxLeft;
+
+        element.style.setProperty('top', finalTop + "px", 'important');
+        element.style.setProperty('left', finalLeft + "px", 'important');
     }
 
     function closeDragElement() {
@@ -2395,16 +2452,15 @@ function updateMapMarkers(shouldFitBounds = false) {
                                 }),
                                 interactive: false
                             }).addTo(map);
-                            markerGroup.addLayer(segmentLabel);
                         }
                     }
                 }
 
-                let popupContent = `
+                const popupContent = `
                     <div class="map-popup-container">
-                        <b style="font-size: 1.1rem;">Measurement: ${labelText}</b>
+                        <b style="font-size: 1.1rem;">Measurement: ${escapeHTML(labelText)}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${r.note || 'No note'}</div>
+                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${escapeHTML(r.note) || 'No note'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
                             ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
@@ -2559,11 +2615,11 @@ function renderTracks(filter = '') {
     html += sortedTracks.map(t => `
         <tr data-id="${t.id}">
             <td class="${isTracksLocked ? 'locked-hidden' : ''}"><input type="checkbox" class="track-select" data-id="${t.id}"></td>
-            <td onclick="focusTrack(${t.id})">${t.name}</td>
+            <td onclick="focusTrack(${t.id})">${escapeHTML(t.name)}</td>
             <td style="font-family:monospace;">${Math.round(t.length || 0)}m</td>
             <td><input type="color" value="${t.color || '#ff5722'}" onchange="updateTrackColor(${t.id}, this.value)" class="track-color-dot"></td>
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
-            <td style="font-size:0.7rem; color:#aaa;">${t.time}</td>
+            <td style="font-size:0.7rem; color:#aaa;">${escapeHTML(t.time)}</td>
         </tr>
     `).join('');
 
@@ -3603,6 +3659,7 @@ function renderLayerList() {
     externalLayers.forEach(l => {
         const item = document.createElement('div');
         item.className = 'layer-item';
+        item.dataset.id = l.id;
         item.style.background = '#333';
         item.style.padding = '10px';
         item.style.borderRadius = '8px';
