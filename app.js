@@ -1490,6 +1490,10 @@ function startGeolocationWatch() {
             currentCoords.acc = p.coords.accuracy;
             currentCoords.alt = p.coords.altitude;
 
+            // v738: Fill online coordinates for altitude logic
+            onlineMyLat = p.coords.latitude;
+            onlineMyLon = p.coords.longitude;
+
             // v1453-1: Immediate UI update for GPS altitude baseline
             updateScaleValues();
 
@@ -2253,6 +2257,8 @@ if (typeof trackPath !== 'undefined' && trackPath.length > 0) {
 
 /** Hybrid Elevation Logic **/
 let onlineMyAlt = null;
+let onlineMyLat = null;
+let onlineMyLon = null;
 let onlineCenterAlt = null;
 let lastFetches = { me: 0, center: 0 };
 
@@ -2311,16 +2317,15 @@ function updateScaleValues() {
             displayLat = y;
             displayLon = x;
             displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
-        } else if (typeof onlineMyLat !== 'undefined' && onlineMyLat !== null) {
-            // v1453-1: Real User Position Mode (Follow Me)
-            displayLat = onlineMyLat;
-            displayLon = onlineMyLon;
+        } else if (typeof currentCoords !== 'undefined' && currentCoords.lat !== null) {
+            // v738: Real User Position Mode
+            displayLat = currentCoords.lat;
+            displayLon = currentCoords.lon;
 
-            // v1453-1: Priority: Online Elevation (MSL) > GPS Sensor (Ellipsoid)
+            // Priority: Online Elevation (MSL) > GPS Sensor (Ellipsoid)
             if (onlineMyAlt !== null) {
                 displayAlt = Math.round(onlineMyAlt);
-            } else if (typeof currentCoords !== 'undefined' && currentCoords.alt !== null && currentCoords.alt !== undefined) {
-                // Ham GPS verisi (m)
+            } else if (currentCoords.alt !== null) {
                 displayAlt = Math.round(currentCoords.alt);
             }
         } else {
@@ -2338,9 +2343,9 @@ function updateScaleValues() {
                 const northPart = Math.round(northing);
                 const modeLabel = isAddingPoint ? "📍" : "🎯";
 
-                // v1453-1: Nihai Entegre Yapılanma
-                // Satır 1: Ölçek Sayıları + Y Koordinatı (BASELINE ALIGNED)
-                // Satır 2: Ölçek Çizgisi + X/Z Koordinatları
+                // v738: Adjusted margins for overlap prevention
+                // Row 1: Y shifted right
+                // Row 2: X shifted right, Z gap narrowed to keep Z fixed
                 scaleWrapper.innerHTML = `
                     <div class="scale-integrated-container">
                         <div class="scale-integrated-row">
@@ -2348,17 +2353,17 @@ function updateScaleValues() {
                                 <span class="label-zero">0</span>
                                 <span class="label-dist">${displayDist}${unit}</span>
                             </div>
-                            <div class="utm-integrated-y" style="margin-left: 4px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                            <div class="utm-integrated-y" style="margin-left: 10px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         </div>
-                        <div class="scale-integrated-row" style="margin-top: 2px;">
+                        <div class="scale-integrated-row" style="margin-top: 5px;">
                             <div class="scale-line">
                                 <div class="scale-notch notch-left"></div>
                                 <div class="scale-bar"></div>
                                 <div class="scale-notch notch-right"></div>
                             </div>
-                            <div class="utm-integrated-xz" style="margin-left: 4px;">
+                            <div class="utm-integrated-xz" style="margin-left: 10px;">
                                 <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:8px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                                <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                                 <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>
                             </div>
                         </div>
