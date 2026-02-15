@@ -2062,21 +2062,19 @@ function initMapControls() {
         onAdd: function (map) {
             const wrapper = L.DomUtil.create('div', 'custom-scale-wrapper');
             wrapper.innerHTML = `
-                <div class="custom-scale-control" style="display: flex; align-items: center; width: 100%; height: 100%; gap: 8px;">
-                    <div class="scale-header-track">
-                        <span class="drag-handle">::::</span>
-                        <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap;">Scale</span>
+                <div class="scale-header-track">
+                    <span class="drag-handle">::::</span>
+                    <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap;">Scale</span>
+                </div>
+                <div class="scale-body">
+                    <div class="scale-labels">
+                        <span>0</span>
+                        <span id="scale-end">...</span>
                     </div>
-                    <div class="scale-body">
-                        <div class="scale-labels">
-                            <span>0</span>
-                            <span id="scale-end">...</span>
-                        </div>
-                        <div class="scale-line">
-                            <div class="scale-notch notch-left"></div>
-                            <div class="scale-bar"></div>
-                            <div class="scale-notch notch-right"></div>
-                        </div>
+                    <div class="scale-line">
+                        <div class="scale-notch notch-left"></div>
+                        <div class="scale-bar"></div>
+                        <div class="scale-notch notch-right"></div>
                     </div>
                 </div>
             `;
@@ -2360,11 +2358,11 @@ function updateScaleValues() {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
-                // v1453-1: Clean & Rigid 3-Column Grid Layout (Mirroring Parity)
+                // v1453-1: Saat gibi tıkır tıkır nizamlı 3-Part Layout
                 scaleWrapper.innerHTML = `
                     <div class="scale-header-track">
                         <span class="drag-handle">::::</span>
-                        <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap; visibility: hidden;">Density</span>
+                        <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; opacity: 0.7; visibility: hidden;">Density</span>
                     </div>
                     <div class="scale-body">
                         <div class="scale-labels">
@@ -2377,11 +2375,11 @@ function updateScaleValues() {
                             <div class="scale-notch notch-right"></div>
                         </div>
                     </div>
-                    <div class="utm-integrated-stack" style="display: flex; flex-direction: column; justify-content: center; line-height: 1.1; font-size: 9px; margin-left: auto;">
-                        <div class="utm-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                        <div class="utm-line">
+                    <div class="utm-rows-container" style="margin-left: auto;">
+                        <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                        <div class="utm-row-line">
                             <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                            <span class="utm-lbl" style="margin-left:3px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                            <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                         </div>
                     </div>
                 `;

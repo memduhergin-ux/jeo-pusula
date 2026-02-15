@@ -1659,9 +1659,8 @@ textarea.form-input {
 
 .custom-scale-wrapper,
 .heatmap-legend {
-    display: none;
-    grid-template-columns: 80px 1.42cm auto;
-    align-items: center;
+    display: flex !important;
+    align-items: center !important;
     position: fixed;
     height: 40px !important;
     width: 220px !important;
@@ -1672,13 +1671,12 @@ textarea.form-input {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     box-sizing: border-box !important;
     z-index: 3000 !important;
-    gap: 8px;
+    gap: 10px !important;
+    /* Unified gap */
     overflow: hidden;
     touch-action: none;
     color: white;
     font-family: 'Inter', sans-serif;
-    display: grid;
-    /* v1453-1: Enforced Grid */
 }
 
 .custom-scale-wrapper {
@@ -1761,12 +1759,13 @@ textarea.form-input {
     line-height: 1;
 }
 
-/* v1453-1: Grid-aware columns (Header | Body | Stack) */
+/* v1453-1: Structural Twins - Unified Header Width (70px) */
 .scale-header-track,
 .legend-header {
+    width: 70px !important;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     flex-shrink: 0;
     overflow: hidden;
     white-space: nowrap;
@@ -1777,8 +1776,19 @@ textarea.form-input {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 1px;
+    gap: 3px;
+    /* v1453-1: Spaced for clarity */
     flex-shrink: 0;
+}
+
+.legend-body {
+    width: 90px !important;
+    /* v1453-1: Increased to prevent LowHigh overlap */
+}
+
+.scale-body {
+    width: 1.42cm;
+    /* Keep precise scale line width */
 }
 
 .scale-line {
@@ -2648,17 +2658,15 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 .legend-header {
-    background: none;
-    padding: 0;
+    background: none !important;
+    padding: 0 !important;
     font-size: 0.7rem;
     font-weight: bold;
-    display: flex;
-    display: grid;
-    grid-template-columns: 80px 1.42cm auto;
+    display: flex !important;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     cursor: grab;
-    border-bottom: none;
+    border-bottom: none !important;
     flex-shrink: 0;
 }
 
