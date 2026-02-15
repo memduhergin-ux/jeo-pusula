@@ -2104,18 +2104,17 @@ function initMapControls() {
         // Restore Position
         const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
         if (savedPos) {
+            // v1453-1: Force left alignment to 10px to match Legend panel exactly
+            scaleWrapper.style.setProperty('left', '10px', 'important');
+
             // v1453-1: Boundary Validation during restore
-            const leftNum = parseInt(savedPos.left);
             const topNum = parseInt(savedPos.top);
 
-            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > window.innerWidth - 60 || topNum < 0 || topNum > window.innerHeight - 60) {
-                const viewW = window.innerWidth;
+            if (isNaN(topNum) || topNum < 0 || topNum > window.innerHeight - 60) {
                 const viewH = window.innerHeight;
                 // v1453-1: Default to Bottom-Left for scale
-                scaleWrapper.style.setProperty('left', '10px', 'important');
                 scaleWrapper.style.setProperty('top', (viewH - 85) + 'px', 'important');
             } else {
-                scaleWrapper.style.setProperty('left', savedPos.left, 'important');
                 scaleWrapper.style.setProperty('top', savedPos.top, 'important');
             }
 
@@ -2362,15 +2361,15 @@ function updateScaleValues() {
                                 <span class="label-zero">0</span>
                                 <span class="label-dist">${displayDist}${unit}</span>
                             </div>
-                            <div class="utm-integrated-y" style="margin-left: 10px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                            <div class="utm-integrated-y" style="margin-left: 15px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         </div>
-                        <div class="scale-integrated-row" style="margin-top: 2px;">
+                        <div class="scale-integrated-row" style="margin-top: 1px;">
                             <div class="scale-line">
                                 <div class="scale-notch notch-left"></div>
                                 <div class="scale-bar"></div>
                                 <div class="scale-notch notch-right"></div>
                             </div>
-                            <div class="utm-integrated-xz" style="margin-left: 10px;">
+                            <div class="utm-integrated-xz" style="margin-left: 15px;">
                                 <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
                                 <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                                 <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>

@@ -1755,8 +1755,8 @@ textarea.form-input {
 
 .scale-line {
     width: 1.42cm;
-    height: 8px;
-    /* Slightly taller for notches */
+    height: 6px;
+    /* v1453-1: Optimized height for 40px panel */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1766,18 +1766,17 @@ textarea.form-input {
 
 .scale-bar {
     width: 100%;
-    height: 1.5px;
-    /* v1453-1: Thickened for visibility */
+    height: 2px;
+    /* v1453-1: Bold 2px lines */
     background: #ffeb3b;
-    /* v1453-1: Yellow line for high visibility */
     position: absolute;
     bottom: 0;
 }
 
 .scale-notch {
-    width: 1.5px;
-    /* v1453-1: Thickened */
-    height: 8px;
+    width: 2px;
+    /* v1453-1: Bold 2px lines */
+    height: 6px;
     /* v1453-1: Taller notches */
     background: #ffeb3b;
     position: absolute;
@@ -1800,8 +1799,6 @@ textarea.form-input {
     line-height: normal;
     /* v1453-1: Universal baseline */
 }
-
-
 
 .utm-integrated-xz {
     line-height: 1.0;
@@ -1904,12 +1901,13 @@ textarea.form-input {
 
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper {
-        bottom: calc(11px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: 10px !important;
+        /* v1453-1: Perfectly synced with bottom */
         left: 10px !important;
         height: 40px !important;
-        width: 180px !important;
-        /* v1453-1: Shrink in landscape for better center clearance */
-        padding: 0 8px !important;
+        width: 220px !important;
+        /* v1453-1: Standardized width across orientations */
+        padding: 0 10px !important;
     }
 
     .map-fab-container {
@@ -2281,6 +2279,16 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         /* v1453-1: Above FABs in landscape */
         z-index: 2500;
     }
+
+    .heatmap-legend {
+        left: 10px !important;
+        /* v1453-1: Standardized to left for consistency */
+        right: auto !important;
+        bottom: 55px !important;
+        /* v1453-1: Stacked above scale in landscape too */
+        width: 220px !important;
+        height: 40px !important;
+    }
 }
 
 .radius-opt {
@@ -2605,18 +2613,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     gap: 8px;
 }
 
-/* v1453-1: Legend visibility and position in Landscape */
-@media screen and (orientation: landscape) {
-    .heatmap-legend {
-        bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
-        left: auto !important;
-        right: 10px !important;
-        width: 180px !important;
-        /* v1453-1: Match scale width in landscape */
-        height: 40px !important;
-        display: flex !important;
-    }
-}
+/* Landscape rules consolidated above */
 
 /* v1453-1: Heatmap Optimized Base Map Filter (Muted greenery) */
 .osm-heatmap-filter {
