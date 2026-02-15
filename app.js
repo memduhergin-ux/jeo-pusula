@@ -2364,7 +2364,7 @@ function updateScaleValues() {
                             </div>
                             <div class="utm-integrated-y" style="margin-left: 10px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         </div>
-                        <div class="scale-integrated-row" style="margin-top: 5px;">
+                        <div class="scale-integrated-row" style="margin-top: 2px;">
                             <div class="scale-line">
                                 <div class="scale-notch notch-left"></div>
                                 <div class="scale-bar"></div>

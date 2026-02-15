@@ -1662,11 +1662,9 @@ textarea.form-input {
     align-items: center;
     justify-content: flex-start;
     position: fixed;
-    bottom: calc(45px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(50px + env(safe-area-inset-bottom, 0px));
     left: 10px !important;
-    height: auto;
-    /* v738: Increased flexibility for 2 rows */
-    min-height: 48px;
+    height: 40px !important;
     width: 220px !important;
     right: auto;
     padding: 0 10px !important;
