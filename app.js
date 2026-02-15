@@ -2063,16 +2063,10 @@ function initMapControls() {
             const wrapper = L.DomUtil.create('div', 'custom-scale-wrapper');
             wrapper.innerHTML = `
                 <div class="custom-scale-control">
+                    <div class="drag-handle" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%) rotate(90deg); opacity: 0.6;">::::</div>
                     <div class="scale-labels">
                         <span class="label-zero">0</span>
                         <span id="scale-end" class="label-end"></span>
-                    </div>
-                    <div class="scale-row">
-                        <div class="scale-bars">
-                            <div class="scale-segment"></div>
-                        </div>
-                        <span id="scale-unit" class="scale-unit"></span>
-                        <div id="map-utm-coords" class="map-utm-coords-new">Location pending...</div>
                     </div>
                 </div>
             `;
@@ -2104,24 +2098,25 @@ function initMapControls() {
         // Restore Position
         const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
         if (savedPos) {
-            // v1453-1: Force left alignment to 10px to match Legend panel exactly
+            // v1453-1: Force laser-perfect alignment to 10px (cloned from Legend)
             scaleWrapper.style.setProperty('left', '10px', 'important');
 
-            // v1453-1: Boundary Validation during restore
             const topNum = parseInt(savedPos.top);
-
             if (isNaN(topNum) || topNum < 0 || topNum > window.innerHeight - 60) {
                 const viewH = window.innerHeight;
-                // v1453-1: Default to Bottom-Left for scale
                 scaleWrapper.style.setProperty('top', (viewH - 85) + 'px', 'important');
             } else {
                 scaleWrapper.style.setProperty('top', savedPos.top, 'important');
             }
-
-            scaleWrapper.style.setProperty('bottom', 'auto', 'important');
-            scaleWrapper.style.setProperty('right', 'auto', 'important');
-            scaleWrapper.style.setProperty('position', 'fixed', 'important');
+        } else {
+            // v1453-1: Default position is also forced to 10px
+            scaleWrapper.style.setProperty('left', '10px', 'important');
+            scaleWrapper.style.setProperty('bottom', '50px', 'important');
         }
+
+        scaleWrapper.style.setProperty('right', 'auto', 'important');
+        scaleWrapper.style.setProperty('position', 'fixed', 'important');
+        scaleWrapper.style.setProperty('bottom', 'auto', 'important');
     }
 
     map.on('zoomend moveend', updateScaleValues); // v561: Removed frequent 'move' event to fix flickering
@@ -2355,24 +2350,27 @@ function updateScaleValues() {
                 // Row 1: Y shifted right
                 // Row 2: X shifted right, Z gap narrowed to keep Z fixed
                 scaleWrapper.innerHTML = `
-                    <div class="scale-integrated-container">
-                        <div class="scale-integrated-row">
-                            <div class="scale-labels">
-                                <span class="label-zero">0</span>
-                                <span class="label-dist">${displayDist}${unit}</span>
+                    <div class="scale-integrated-container" style="display: flex; align-items: center; width: 100%; height: 100%; gap: 8px;">
+                        <div class="drag-handle" style="flex-shrink: 0; opacity: 0.8;">::::</div>
+                        <div class="scale-content-stack" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 1px;">
+                            <div class="scale-integrated-row" style="display: flex; align-items: baseline;">
+                                <div class="scale-labels" style="width: 1.42cm; position: relative; height: 12px;">
+                                    <span class="label-zero" style="position: absolute; left: 0; top: 0;">0</span>
+                                    <span class="label-dist" style="position: absolute; right: 0; top: 0;">${displayDist}${unit}</span>
+                                </div>
+                                <div class="utm-integrated-y" style="margin-left: 15px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                             </div>
-                            <div class="utm-integrated-y" style="margin-left: 15px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                        </div>
-                        <div class="scale-integrated-row" style="margin-top: 1px;">
-                            <div class="scale-line">
-                                <div class="scale-notch notch-left"></div>
-                                <div class="scale-bar"></div>
-                                <div class="scale-notch notch-right"></div>
-                            </div>
-                            <div class="utm-integrated-xz" style="margin-left: 15px;">
-                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                                <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>
+                            <div class="scale-integrated-row" style="margin-top: 1px; display: flex; align-items: baseline;">
+                                <div class="scale-line">
+                                    <div class="scale-notch notch-left"></div>
+                                    <div class="scale-bar"></div>
+                                    <div class="scale-notch notch-right"></div>
+                                </div>
+                                <div class="utm-integrated-xz" style="margin-left: 15px;">
+                                    <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                                    <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                                    <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

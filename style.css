@@ -1660,9 +1660,9 @@ textarea.form-input {
 .custom-scale-wrapper {
     display: none;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     position: fixed;
-    bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(55px + env(safe-area-inset-bottom, 0px));
     left: 10px !important;
     height: 40px !important;
     width: 220px !important;
@@ -1679,6 +1679,11 @@ textarea.form-input {
     touch-action: none;
 }
 
+/* v1453-1: Essential for smooth dragging - don't let children block the drag handle */
+.custom-scale-wrapper * {
+    pointer-events: none !important;
+}
+
 .custom-scale-control {
     position: relative;
     background: none;
@@ -1690,13 +1695,7 @@ textarea.form-input {
     align-items: flex-start;
 }
 
-.scale-row {
-    display: flex;
-    align-items: flex-end;
-    /* v1453-1: Parity with coordinate bottom line (X/Z) */
-    gap: 12px;
-    margin-bottom: 3px;
-}
+/* Legacy scale-row removed - v1453-1 uses flex-stack */
 
 
 
@@ -1748,15 +1747,15 @@ textarea.form-input {
     width: 1.42cm;
     position: relative;
     padding: 0;
-    box-sizing: border-box;
+    margin-bottom: -1px;
+    /* v1453-1: Pull labels closer to but NOT on top of notches */
     line-height: normal;
-    /* v1453-1: Allow natural font baseline */
 }
 
 .scale-line {
     width: 1.42cm;
-    height: 6px;
-    /* v1453-1: Optimized height for 40px panel */
+    height: 5px;
+    /* v1453-1: Tighter 5px height for 40px panel */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1775,9 +1774,8 @@ textarea.form-input {
 
 .scale-notch {
     width: 2px;
-    /* v1453-1: Bold 2px lines */
-    height: 6px;
-    /* v1453-1: Taller notches */
+    height: 5px;
+    /* v1453-1: Sync with scale-line height */
     background: #ffeb3b;
     position: absolute;
     bottom: 0;
@@ -1809,14 +1807,12 @@ textarea.form-input {
     position: absolute;
     left: 0;
     top: 0;
-    transform: translateX(-50%);
 }
 
 .label-dist {
     position: absolute;
     right: 0;
     top: 0;
-    transform: translateX(50%);
 }
 
 .label-mid {
