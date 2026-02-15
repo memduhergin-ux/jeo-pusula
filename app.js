@@ -417,11 +417,11 @@ function updateHeatmapLegend(filterKey) {
     const bar = document.getElementById('legend-gradient-bar');
 
     if (!legend || !isHeatmapActive) {
-        if (legend) legend.style.display = 'none';
+        if (legend) legend.classList.remove('visible');
         return;
     }
 
-    legend.style.display = 'flex';
+    legend.classList.add('visible');
 
     // Set Title
     if (filterKey === 'ALL') {
@@ -595,7 +595,7 @@ function toggleHeatmap() {
         if (btn) btn.classList.remove('active');
         panel.style.display = 'none';
         const legend = document.getElementById('heatmap-legend');
-        if (legend) legend.style.display = 'none';
+        if (legend) legend.classList.remove('visible');
         localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
         if (heatmapLayer) {
             map.removeLayer(heatmapLayer);
@@ -2064,7 +2064,7 @@ function initMapControls() {
             wrapper.innerHTML = `
                 <div class="scale-header-track">
                     <span class="drag-handle">::::</span>
-                    <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap;">Scale</span>
+                    <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold;">Scale</span>
                 </div>
                 <div class="scale-body">
                     <div class="scale-labels">
@@ -2358,7 +2358,7 @@ function updateScaleValues() {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
-                // v1453-1: Saat gibi tıkır tıkır nizamlı 3-Part Layout
+                // v1453-2: Kilitli Mizanpaj (Mirroring Parity)
                 scaleWrapper.innerHTML = `
                     <div class="scale-header-track">
                         <span class="drag-handle">::::</span>
@@ -2375,7 +2375,7 @@ function updateScaleValues() {
                             <div class="scale-notch notch-right"></div>
                         </div>
                     </div>
-                    <div class="utm-rows-container" style="margin-left: auto;">
+                    <div class="utm-rows-container">
                         <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
                         <div class="utm-row-line">
                             <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
