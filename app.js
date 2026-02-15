@@ -1818,6 +1818,14 @@ function initMap() {
         attribution: '© OpenStreetMap'
     });
 
+    // v1453-1: Heatmap-optimized layer (Muted greenery)
+    const osmHeatmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 25,
+        maxNativeZoom: 19,
+        attribution: '© OpenStreetMap',
+        className: 'osm-heatmap-filter'
+    });
+
     const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 20,
@@ -1841,6 +1849,7 @@ function initMap() {
 
     const baseMaps = {
         "Street (OSM)": osm,
+        "Street (HeatMap)": osmHeatmap,
         "Terrain (Google)": googleTerrain,
         "Satellite (Google)": googleSat,
         "Topographic (OpenTopo)": openTopo

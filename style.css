@@ -1662,7 +1662,7 @@ textarea.form-input {
     align-items: center;
     justify-content: flex-start;
     position: fixed;
-    bottom: calc(55px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(45px + env(safe-area-inset-bottom, 0px));
     left: 10px !important;
     height: auto;
     /* v738: Increased flexibility for 2 rows */
@@ -2618,6 +2618,11 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         height: 40px !important;
         display: flex !important;
     }
+}
+
+/* v1453-1: Heatmap Optimized Base Map Filter (Muted greenery) */
+.osm-heatmap-filter {
+    filter: grayscale(0.8) brightness(1.15) contrast(0.9) !important;
 }
 
 .legend-header {
