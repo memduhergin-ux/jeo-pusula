@@ -2062,11 +2062,21 @@ function initMapControls() {
         onAdd: function (map) {
             const wrapper = L.DomUtil.create('div', 'custom-scale-wrapper');
             wrapper.innerHTML = `
-                <div class="custom-scale-control">
-                    <div class="drag-handle" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%) rotate(90deg); opacity: 0.6;">::::</div>
-                    <div class="scale-labels">
-                        <span class="label-zero">0</span>
-                        <span id="scale-end" class="label-end"></span>
+                <div class="custom-scale-control" style="display: flex; align-items: center; width: 100%; height: 100%; gap: 8px;">
+                    <div class="scale-header-track">
+                        <span class="drag-handle">::::</span>
+                        <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap;">Scale</span>
+                    </div>
+                    <div class="scale-body">
+                        <div class="scale-labels">
+                            <span>0</span>
+                            <span id="scale-end">...</span>
+                        </div>
+                        <div class="scale-line">
+                            <div class="scale-notch notch-left"></div>
+                            <div class="scale-bar"></div>
+                            <div class="scale-notch notch-right"></div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2094,6 +2104,12 @@ function initMapControls() {
         }
 
         makeDraggable(scaleWrapper, 'jeoScalePos');
+
+        // v1453-1: Essential for smooth dragging - prevent click/drag propagation to map
+        L.DomEvent.on(scaleWrapper, 'mousedown touchstart', L.DomEvent.stopPropagation);
+        L.DomEvent.on(scaleWrapper, 'click', L.DomEvent.stopPropagation);
+        L.DomEvent.disableScrollPropagation(scaleWrapper);
+        L.DomEvent.disableClickPropagation(scaleWrapper);
 
         // Restore Position
         const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
@@ -2344,33 +2360,29 @@ function updateScaleValues() {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
-                const modeLabel = isAddingPoint ? "📍" : "🎯";
-
-                // v738: Adjusted margins for overlap prevention
-                // Row 1: Y shifted right
-                // Row 2: X shifted right, Z gap narrowed to keep Z fixed
+                // Mirroring Structural Parity (3 Columns like Legend)
                 scaleWrapper.innerHTML = `
-                    <div class="scale-integrated-container" style="display: flex; align-items: center; width: 100%; height: 100%; gap: 8px;">
-                        <div class="drag-handle" style="flex-shrink: 0; opacity: 0.8;">::::</div>
-                        <div class="scale-content-stack" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 1px;">
-                            <div class="scale-integrated-row" style="display: flex; align-items: baseline;">
-                                <div class="scale-labels" style="width: 1.42cm; position: relative; height: 12px;">
-                                    <span class="label-zero" style="position: absolute; left: 0; top: 0;">0</span>
-                                    <span class="label-dist" style="position: absolute; right: 0; top: 0;">${displayDist}${unit}</span>
-                                </div>
-                                <div class="utm-integrated-y" style="margin-left: 15px;"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                    <div class="custom-scale-control" style="display: flex; align-items: center; width: 100%; height: 100%; gap: 8px;">
+                        <div class="scale-header-track">
+                            <span class="drag-handle">::::</span>
+                            <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap; visibility: hidden;">Density</span>
+                        </div>
+                        <div class="scale-body">
+                            <div class="scale-labels">
+                                <span>0</span>
+                                <span>${displayDist}${unit}</span>
                             </div>
-                            <div class="scale-integrated-row" style="margin-top: 1px; display: flex; align-items: baseline;">
-                                <div class="scale-line">
-                                    <div class="scale-notch notch-left"></div>
-                                    <div class="scale-bar"></div>
-                                    <div class="scale-notch notch-right"></div>
-                                </div>
-                                <div class="utm-integrated-xz" style="margin-left: 15px;">
-                                    <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                    <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                                    <span class="utm-mode-icon" style="margin-left:4px;">${modeLabel}</span>
-                                </div>
+                            <div class="scale-line">
+                                <div class="scale-notch notch-left"></div>
+                                <div class="scale-bar"></div>
+                                <div class="scale-notch notch-right"></div>
+                            </div>
+                        </div>
+                        <div class="utm-integrated-stack" style="margin-left: auto; display: flex; flex-direction: column; justify-content: center; gap: 0; line-height: 1.0; font-size: 9px; min-width: 60px;">
+                            <div class="utm-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                            <div class="utm-line">
+                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                                <span class="utm-lbl" style="margin-left:3px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                             </div>
                         </div>
                     </div>
