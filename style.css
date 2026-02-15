@@ -1671,9 +1671,10 @@ textarea.form-input {
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     pointer-events: auto;
     z-index: 1000 !important;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
     cursor: move;
     touch-action: none;
 }
@@ -1800,9 +1801,7 @@ textarea.form-input {
     /* v1453-1: Universal baseline */
 }
 
-.utm-integrated-y {
-    /* No manual nudging, rely on flex baseline */
-}
+
 
 .utm-integrated-xz {
     line-height: 1.0;
@@ -2593,6 +2592,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     z-index: 3000;
+    box-sizing: border-box !important;
     color: white;
     font-family: 'Inter', sans-serif;
     overflow: hidden;
