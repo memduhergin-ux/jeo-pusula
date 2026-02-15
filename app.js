@@ -2360,30 +2360,28 @@ function updateScaleValues() {
                 const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
-                // Mirroring Structural Parity (3 Columns like Legend)
+                // v1453-1: Clean & Rigid 3-Column Grid Layout (Mirroring Parity)
                 scaleWrapper.innerHTML = `
-                    <div class="custom-scale-control" style="display: flex; align-items: center; width: 100%; height: 100%; gap: 8px;">
-                        <div class="scale-header-track">
-                            <span class="drag-handle">::::</span>
-                            <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap; visibility: hidden;">Density</span>
+                    <div class="scale-header-track">
+                        <span class="drag-handle">::::</span>
+                        <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; white-space: nowrap; visibility: hidden;">Density</span>
+                    </div>
+                    <div class="scale-body">
+                        <div class="scale-labels">
+                            <span>0</span>
+                            <span>${displayDist}${unit}</span>
                         </div>
-                        <div class="scale-body">
-                            <div class="scale-labels">
-                                <span>0</span>
-                                <span>${displayDist}${unit}</span>
-                            </div>
-                            <div class="scale-line">
-                                <div class="scale-notch notch-left"></div>
-                                <div class="scale-bar"></div>
-                                <div class="scale-notch notch-right"></div>
-                            </div>
+                        <div class="scale-line">
+                            <div class="scale-notch notch-left"></div>
+                            <div class="scale-bar"></div>
+                            <div class="scale-notch notch-right"></div>
                         </div>
-                        <div class="utm-integrated-stack" style="margin-left: auto; display: flex; flex-direction: column; justify-content: center; gap: 0; line-height: 1.0; font-size: 9px; min-width: 60px;">
-                            <div class="utm-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                            <div class="utm-line">
-                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:3px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                            </div>
+                    </div>
+                    <div class="utm-integrated-stack" style="display: flex; flex-direction: column; justify-content: center; line-height: 1.1; font-size: 9px; margin-left: auto;">
+                        <div class="utm-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                        <div class="utm-line">
+                            <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                            <span class="utm-lbl" style="margin-left:3px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                         </div>
                     </div>
                 `;

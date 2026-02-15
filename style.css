@@ -1660,6 +1660,7 @@ textarea.form-input {
 .custom-scale-wrapper,
 .heatmap-legend {
     display: none;
+    grid-template-columns: 80px 1.42cm auto;
     align-items: center;
     position: fixed;
     height: 40px !important;
@@ -1676,6 +1677,8 @@ textarea.form-input {
     touch-action: none;
     color: white;
     font-family: 'Inter', sans-serif;
+    display: grid;
+    /* v1453-1: Enforced Grid */
 }
 
 .custom-scale-wrapper {
@@ -1685,13 +1688,19 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper *,
-.heatmap-legend .drag-handle {
+.heatmap-legend * {
     pointer-events: none !important;
+}
+
+.custom-scale-wrapper button,
+.heatmap-legend button,
+.custom-scale-wrapper select,
+.heatmap-legend select {
+    pointer-events: auto !important;
 }
 
 .custom-scale-control {
     display: contents;
-    /* Let children participate in wrapper flex */
 }
 
 /* Legacy scale-row removed - v1453-1 uses flex-stack */
@@ -1752,25 +1761,24 @@ textarea.form-input {
     line-height: 1;
 }
 
-.scale-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0px;
-    /* v1453-1: Controlled by margins now */
-    flex-shrink: 0;
-}
-
-/* v1453-1: Force header column parity with Legend */
+/* v1453-1: Grid-aware columns (Header | Body | Stack) */
 .scale-header-track,
 .legend-header {
-    width: 65px !important;
     display: flex;
     align-items: center;
     gap: 5px;
     flex-shrink: 0;
     overflow: hidden;
-    /* Prevent long names from breaking alignment */
+    white-space: nowrap;
+}
+
+.scale-body,
+.legend-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    flex-shrink: 0;
 }
 
 .scale-line {
@@ -2645,13 +2653,13 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     font-size: 0.7rem;
     font-weight: bold;
     display: flex;
+    display: grid;
+    grid-template-columns: 80px 1.42cm auto;
     align-items: center;
     gap: 5px;
     cursor: grab;
     border-bottom: none;
     flex-shrink: 0;
-    width: 65px;
-    /* v1453-1: Forced shared width for laser alignment */
 }
 
 .legend-header:active {
