@@ -2468,22 +2468,51 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         box-shadow: none !important;
     }
 
-    /* v746: Dock to Navigation Bar (Right Side) */
+    /* v746: Dock to Navigation Bar (Right Side) - UPDATED v1453-04F */
     .heatmap-legend {
         left: 50% !important;
         right: auto !important;
-        margin-left: 185px !important;
-        /* v748: Increased to 185px for safety */
-        bottom: 0px !important;
+        margin-left: 220px !important;
+        /* Safety margin for 400px wide Nav (200px half + 20px gap) */
+        bottom: 20px !important;
+        /* Lift up from bottom */
         top: auto !important;
         width: 220px !important;
-        height: 40px !important;
-        border-bottom-left-radius: 0 !important;
-        border-bottom: none !important;
-        background: #1a1a1a !important;
-        /* Match Nav */
-        border: 1px solid #333 !important;
-        box-shadow: none !important;
+        height: auto !important;
+        /* Allow expansion */
+        max-height: calc(100vh - 40px) !important;
+        border-radius: 12px !important;
+        border-bottom: 1px solid #333 !important;
+        background: rgba(26, 26, 26, 0.95) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+
+        /* Smooth Scrolling */
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: thin;
+    }
+
+    #heatmap-radius-panel {
+        /* Optimize for Landscape Scrolling */
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* v1453-11: Fix Grid Panel Visibility in Landscape (Above Scale Panel) */
+    #grid-interval-panel {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        bottom: 110px !important;
+        /* Stacked ABOVE the Scale Panel (55px + ~40px height + gap) */
+        left: 10px !important;
+        /* Aligned with Scale Panel */
+        top: auto !important;
+        right: auto !important;
+        z-index: 3500 !important;
+        transform: none !important;
+        /* Reset any JS transform */
     }
 }
 

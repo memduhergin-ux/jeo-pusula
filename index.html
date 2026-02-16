@@ -8,13 +8,13 @@
     <!-- v690: Content Security Policy to allow OSRM/GraphHopper connections -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
-    <title>Jeoloji Pusulası v1453-03F</title>
-    <!-- Jeoloji Pusulası v1453-03F -->
-    <meta name="version" content="v1453-03F">
-    <meta name="jeo-version" content="v1453-03F">
+    <title>Jeoloji Pusulası <span class="app-version-display"></span></title>
+    <!-- Jeoloji Pusulası Version Managed by JS -->
+    <meta name="version" content="v1453-04F">
+    <meta name="jeo-version" content="v1453-04F">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=FORCE_03F">
+    <link rel="stylesheet" href="style.css?v=FORCE_04F">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -51,8 +51,8 @@
             <div class="splash-credit" style="margin-bottom: 5px; color: #aaa; font-size: 0.9rem;">Designed by <span
                     class="splash-role" style="color: #4caf50; font-weight: bold;">Geologist</span></div>
             <div class="splash-name" style="font-size: 1.2rem; font-weight: bold; color: white;">M. E. TAŞPINAR</div>
-            <div class="splash-version"
-                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">v1453-03F
+            <div class="splash-version app-version-display"
+                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">...
             </div>
         </div>
     </div>
@@ -582,7 +582,7 @@
                     Close
                 </button>
                 <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
-                    JeoCompass v1453-1
+                    JeoCompass <span class="app-version-display">...</span>
                 </div>
             </div>
         </div>
@@ -602,7 +602,8 @@
                 </h2>
                 <div style="color: #4caf50; font-weight: bold; font-size: 0.85rem; margin-top: 5px; opacity: 0.9;">
                     Professional Geological Compass</div>
-                <div style="color: #666; font-size: 0.8rem; margin-top: 10px;">Version v1453-1</div>
+                <div style="color: #666; font-size: 0.8rem; margin-top: 10px;">Version <span
+                        class="app-version-display">...</span></div>
 
                 <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #222;">
                     <div
@@ -769,15 +770,17 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=1453-03F"></script>
+    <script src="app.js?v=FORCE_04F"></script>
     <script>
-        console.log("App Version: v1453-03F");
+        console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=1453-03F`)
+                // Use APP_VERSION if available (defined in app.js which is loaded before)
+                const v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F';
+                navigator.serviceWorker.register(`sw.js?v=${v}`)
                     .then(reg => {
-                        console.log('Service Worker registered v1453-03F');
+                        console.log('Service Worker registered', v);
                         reg.update().catch(() => { });
                         setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
                     })
