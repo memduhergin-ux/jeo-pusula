@@ -1,4 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-03F';
+const CACHE_NAME = 'jeo-cache-v1453-03F-rev2';
+// Force Update Trigger: 2026-02-16 13:55
 const ASSETS = [
     './',
     'index.html',
@@ -19,19 +20,33 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((names) => {
+        caches.keys().then((cacheNames) => {
             return Promise.all(
-                names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+                cacheNames.map((cache) => {
+                    if (cache !== CACHE_NAME) {
+                        return caches.delete(cache);
+                    }
+                })
             );
         }).then(() => {
-            return self.clients.claim();
-        }).then(() => {
-            // Send message to all clients to reload
-            return self.clients.matchAll().then(clients => {
-                clients.forEach(client => client.postMessage('sw-updated'));
-            });
+            return self.clients.claim(); // Immediately control all clients
         })
     );
+});
+event.waitUntil(
+    caches.keys().then((names) => {
+        return Promise.all(
+            names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+        );
+    }).then(() => {
+        return self.clients.claim();
+    }).then(() => {
+        // Send message to all clients to reload
+        return self.clients.matchAll().then(clients => {
+            clients.forEach(client => client.postMessage('sw-updated'));
+        });
+    })
+);
 });
 
 self.addEventListener('fetch', (event) => {
