@@ -2432,18 +2432,27 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 @media screen and (orientation: landscape) {
     #heatmap-radius-panel {
         left: auto !important;
-        right: 10px !important;
-        bottom: 110px !important;
-        /* v1453-1: Above FABs in landscape */
+        /* v748: Moved to right: 70px to sit BESIDE the FABs (44px + 10px gap + breathing room) */
+        right: 70px !important;
+        /* v748: Vertically centered to ensure full visibility */
+        top: 50% !important;
+        bottom: auto !important;
+        transform: translateY(-50%) !important;
         z-index: 2500;
+        /* v748: Prevent overflow on small screens */
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        /* Scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: #444 #222;
     }
 
     /* v746: Dock to Navigation Bar (Left Side) */
     .custom-scale-wrapper {
         right: 50% !important;
         left: auto !important;
-        margin-right: 165px !important;
-        /* ~160px half-nav + 5px gap */
+        margin-right: 185px !important;
+        /* v748: Increased to 185px for safety */
         bottom: 0px !important;
         /* Align with nav bottom/border */
         top: auto !important;
@@ -2463,8 +2472,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     .heatmap-legend {
         left: 50% !important;
         right: auto !important;
-        margin-left: 165px !important;
-        /* ~160px half-nav + 5px gap */
+        margin-left: 185px !important;
+        /* v748: Increased to 185px for safety */
         bottom: 0px !important;
         top: auto !important;
         width: 220px !important;
