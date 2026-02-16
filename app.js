@@ -1,5 +1,5 @@
-﻿const CACHE_NAME = 'jeo-cache-v1453-04F';
-const APP_VERSION = 'v1453-04F'; // Tek Gerçek Kaynak (SSOT)
+﻿const CACHE_NAME = 'jeo-cache-v1453-05F';
+const APP_VERSION = 'v1453-05F'; // Tek Gerçek Kaynak (SSOT)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -344,6 +344,22 @@ function updateHeatmap() {
         }
     });
 
+    // v1453-1: Smart Radius Conversion (Meters to Pixels) - Fix for "Heatmap not working"
+    let radiusPixels = 20; // Default
+    let blurPixels = 15;   // Default
+
+    if (heatmapRadius > 0) {
+        // Calculate pixels from meters at current zoom
+        const center = map.getCenter();
+        const mapRes = 40075016.686 * Math.abs(Math.cos(center.lat * Math.PI / 180)) / Math.pow(2, map.getZoom() + 8);
+        radiusPixels = Math.max(5, Math.round(heatmapRadius / mapRes));
+        blurPixels = Math.round(radiusPixels * 0.75);
+    } else {
+        // v1453-05F: OTO Mode (Dynamic based on point density)
+        radiusPixels = Math.max(15, 40 - (map.getZoom() * 1.5));
+        blurPixels = Math.round(radiusPixels * 0.8);
+    }
+
     try {
         heatmapLayer = L.heatLayer(points, {
             radius: radiusPixels,
@@ -425,8 +441,8 @@ function initHeatmapLegend() {
                 // v1453-1: Default to Portrait Side-by-Side OR Landscape Bottom-Right
                 if (viewW > viewH) {
                     legend.style.setProperty('left', 'auto', 'important');
-                    legend.style.setProperty('right', '10px', 'important');
-                    legend.style.setProperty('top', (viewH - 50) + 'px', 'important');
+                    legend.style.setProperty('right', '1px', 'important');
+                    legend.style.setProperty('top', (viewH - 41 - parseInt(env('safe-area-inset-bottom') || 0)) + 'px', 'important');
                 } else {
                     legend.style.setProperty('left', '10px', 'important'); // v1453-1: Stacked mode (Portrait)
                     legend.style.setProperty('top', (viewH - 125) + 'px', 'important');
@@ -952,16 +968,17 @@ function optimizeMapPoints() {
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
                 // Check 8 directions (Center anchor baseline)
-                const pad = 1; // v675: Minimal pad for "dip dibe" look
+                // v1453-05F: Increased padding for better visibility
+                const pad = 3;
                 const directions = [
-                    { x: -width / 2, y: -height / 2 - pad - 4 }, // N
-                    { x: pad + 4, y: -height / 2 - pad - 4 },    // NE
-                    { x: pad + 6, y: -height / 2 },              // E
-                    { x: pad + 4, y: height / 2 + pad },         // SE
-                    { x: -width / 2, y: height / 2 + pad },      // S
-                    { x: -width - pad - 2, y: height / 2 + pad }, // SW
-                    { x: -width - pad - 4, y: -height / 2 },     // W
-                    { x: -width - pad - 2, y: -height / 2 - pad - 4 } // NW
+                    { x: -width / 2, y: -height / 2 - pad - 6 }, // N
+                    { x: pad + 6, y: -height / 2 - pad - 6 },    // NE
+                    { x: pad + 8, y: -height / 2 },              // E
+                    { x: pad + 6, y: height / 2 + pad + 2 },     // SE
+                    { x: -width / 2, y: height / 2 + pad + 2 },      // S
+                    { x: -width - pad - 4, y: height / 2 + pad + 2 }, // SW
+                    { x: -width - pad - 8, y: -height / 2 },     // W
+                    { x: -width - pad - 4, y: -height / 2 - pad - 6 } // NW
                 ];
 
                 let bestPos = null;
@@ -2394,33 +2411,26 @@ function updateScaleValues() {
                 const northPart = Math.round(northing);
                 // v1453-2: Kilitli Mizanpaj (Mirroring Parity)
                 scaleWrapper.innerHTML = `
-                    <div class="scale-header-track">
-                        <span class="drag-handle">::::</span>
+                    <div class="utm-rows-container">
+                        <div class="utm-row-line">
+                            <span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span>
+                        </div>
+                        <div class="utm-row-line">
+                            <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                            <span class="utm-lbl" style="margin-left:8px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                        </div>
                     </div>
-                    <div class="info-flex-row">
-                        <div class="scale-body">
-                            <div class="scale-row-wrapper">
-                                <div class="scale-group-left">
-                                    <div class="scale-labels">
-                                        <span class="scale-lbl-0">0</span>
-                                        <span class="scale-lbl-val">${displayDist}</span>
-                                    </div>
-                                    <div class="scale-line">
-                                        <div class="scale-notch notch-left"></div>
-                                        <div class="scale-bar"></div>
-                                        <div class="scale-notch notch-right"></div>
-                                    </div>
-                                </div>
-                                <span class="scale-unit-text">${unit}</span>
-                            </div>
+                    <div class="scale-body">
+                        <div class="scale-labels">
+                            <span class="scale-lbl-0">0</span>
+                            <span class="scale-lbl-val">${displayDist}</span>
                         </div>
-                        <div class="utm-rows-container">
-                            <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                            <div class="utm-row-line">
-                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                            </div>
+                        <div class="scale-line">
+                            <div class="scale-notch notch-left"></div>
+                            <div class="scale-bar"></div>
+                            <div class="scale-notch notch-right"></div>
                         </div>
+                        <div style="font-size: 8px; font-weight: 900; color: #ffeb3b; text-align: center; margin-top: -2px;">${unit}</div>
                     </div>
                 `;
             } catch (e) {
@@ -3668,33 +3678,27 @@ if (btnGridToggle) {
     });
 }
 
+// v1453-05F: Global Grid Clear Function for HTML onclick
+window.clearGridLayer = function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (currentGridLayer) {
+        map.removeLayer(currentGridLayer);
+        currentGridLayer = null;
+    }
+    document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
+    activeGridInterval = null;
+    showToast("Grid Cleared / Izgara Temizlendi", 1500);
+};
+
 if (btnGridClear) {
-    // v1453-12: Robust Listener for Div Button
-    btnGridClear.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent bubbling
-        if (currentGridLayer) {
-            map.removeLayer(currentGridLayer);
-            currentGridLayer = null;
-        }
-        document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
-        activeGridInterval = null;
-        showToast("Grid Cleared / Izgara Temizlendi", 1500);
-    });
+    // Attach listener via JS as well for redundancy
+    btnGridClear.addEventListener('click', window.clearGridLayer);
 } else {
     // Fallback if not found regularly
     document.addEventListener('DOMContentLoaded', () => {
         const lateBtn = document.getElementById('btn-grid-clear');
         if (lateBtn) {
-            lateBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (currentGridLayer) {
-                    map.removeLayer(currentGridLayer);
-                    currentGridLayer = null;
-                }
-                document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
-                activeGridInterval = null;
-                showToast("Grid Cleared / Izgara Temizlendi", 1500);
-            });
+            lateBtn.addEventListener('click', window.clearGridLayer);
         }
     });
 }
