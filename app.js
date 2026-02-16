@@ -502,10 +502,10 @@ function updateHeatmapFilterOptions() {
         'FE': '🟤', 'AU': '🟡', 'AG': '⚪', 'ZN': '💎', 'PB': '⚫'
     };
 
-    let html = '<option value="ALL">🌈 All Points (General)</option>';
+    let html = '<option value="ALL">🌈 All Points</option>';
     Array.from(foundElements).sort().forEach(el => {
         const emoji = emojiMap[el] || '⛏️';
-        html += `<option value="${el}">${emoji} ${el} Highlights</option>`;
+        html += `<option value="${el}">${emoji} ${el}</option>`;
     });
 
     select.innerHTML = html;
@@ -3536,6 +3536,52 @@ function createAreaGrid(polygon, interval, color = '#00ffcc') {
     }
 }
 
+// v743: Draggable Grid Panel
+function initGridPanelDraggable() {
+    const gridPanel = document.getElementById('grid-interval-panel');
+    if (!gridPanel) return;
+
+    makeDraggable(gridPanel, 'jeoGridPanelPos');
+
+    const savedPos = localStorage.getItem('jeoGridPanelPos');
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+
+    if (savedPos) {
+        try {
+            const pos = JSON.parse(savedPos);
+            const leftNum = parseInt(pos.left);
+            const topNum = parseInt(pos.top);
+
+            if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > viewW - 50 || topNum < 0 || topNum > viewH - 50) {
+                // Fallback to center bottom if saved pos is invalid
+                gridPanel.style.left = '';
+                gridPanel.style.top = '';
+                gridPanel.style.bottom = '85px';
+                gridPanel.style.transform = ''; // Reset
+                gridPanel.style.margin = '0 auto'; // Center via margin
+            } else {
+                gridPanel.style.position = 'fixed';
+                gridPanel.style.left = pos.left;
+                gridPanel.style.top = pos.top;
+                gridPanel.style.bottom = 'auto'; // Disable bottom
+                gridPanel.style.transform = 'none'; // Disable transform to prevent conflict
+                gridPanel.style.margin = '0'; // Disable margin centering
+            }
+        } catch (e) {
+            console.warn("Error restoring grid panel pos", e);
+        }
+    } else {
+        // Default: Centered Bottom (Handled by CSS margin: 0 auto currently)
+        // No explicit JS needed for default, as CSS handles it.
+        // However, if dragged, makeDraggable will set left/top and we need to clear margin/bottom then.
+        // makeDraggable implementation (assumed) usually sets left/top style directly.
+    }
+}
+// Init immediately
+if (document.readyState !== 'loading') initGridPanelDraggable();
+else document.addEventListener('DOMContentLoaded', initGridPanelDraggable);
+
 // Grid UI Listeners
 const btnGridToggle = document.getElementById('btn-grid-toggle');
 const gridPanel = document.getElementById('grid-interval-panel');
@@ -3548,7 +3594,19 @@ if (btnGridToggle) {
         gridPanel.style.display = isGridMode ? 'flex' : 'none';
         localStorage.setItem('jeoGridMode', isGridMode); // v563: Persist toggle
 
+        // v743: If opening and we have a saved position, ensure it's applied (in case CSS reset it)
         if (isGridMode) {
+            const savedPos = localStorage.getItem('jeoGridPanelPos');
+            if (savedPos) {
+                try {
+                    const pos = JSON.parse(savedPos);
+                    gridPanel.style.position = 'fixed';
+                    gridPanel.style.left = pos.left;
+                    gridPanel.style.top = pos.top;
+                    gridPanel.style.bottom = 'auto';
+                    gridPanel.style.margin = '0';
+                } catch (e) { }
+            }
             showToast("Grid Mode: ON - Select interval and click on a polygon", 3000);
         } else {
             document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));

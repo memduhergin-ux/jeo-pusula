@@ -1272,8 +1272,8 @@ textarea.form-input {
 /* Map FAB Buttons (Updated) */
 .map-fab {
     position: relative;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: rgba(40, 40, 40, 0.6);
     color: rgba(255, 255, 255, 0.9);
@@ -1298,7 +1298,7 @@ textarea.form-input {
     bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 1px;
     z-index: 2000;
     max-height: calc(100vh - 140px);
     pointer-events: none;
@@ -1363,7 +1363,7 @@ textarea.form-input {
     }
 
     .map-fab-scroll-area {
-        gap: 8px;
+        gap: 0.5px;
         /* v729: Significant padding to clear the bottom navigation bar */
         padding-bottom: 60px !important;
     }
@@ -2395,7 +2395,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     background: #1a1a1a !important;
     /* v1453-1: Stable solid dark kibar style */
     border: 1px solid #444 !important;
-    width: 220px !important;
+    width: 170px !important;
     border-radius: 12px !important;
     padding: 12px !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
