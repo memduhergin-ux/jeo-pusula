@@ -161,6 +161,7 @@ const ELEMENT_ALIASES = {
     // TR
     'ALTIN': 'AU', 'GÜMÜŞ': 'AG', 'BAKIR': 'CU', 'DEMİR': 'FE', 'KURŞUN': 'PB', 'ÇİNKO': 'ZN',
     'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'NİKEL': 'NI', 'KOBALT': 'CO',
+    'MNO': 'MN', 'MNO2': 'MN', // v1453-17: Manganese Oxides
     'ALÜMİNYUM': 'AL', 'ARSENİK': 'AS', 'ANTİMON': 'SB', 'KALAY': 'SN', 'TİTANYUM': 'TI',
     'URANYUM': 'U', 'PLATİN': 'PT', 'PALADYUM': 'PD', 'OSMİYUM': 'OS', 'İRİDYUM': 'IR',
     'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMİYUM': 'CD', 'BİZMUT': 'BI', 'MOLİBDEN': 'MO',
@@ -170,6 +171,16 @@ const ELEMENT_ALIASES = {
     'BARYUM': 'BA', 'STRONSİYUM': 'SR', 'ZİRKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
     'OKSİJEN': 'O', 'HİDROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
     'NEODİM': 'ND', 'HAFNİYUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
+    // Common Minerals (TR)
+    'PİROLUSİT': 'MN', 'RODOKROSİT': 'MN', 'PSİLOMELAN': 'MN', 'BRAUNİT': 'MN', 'MANGANİT': 'MN',
+    'KALKOPİRİT': 'CU', 'MALAHİT': 'CU', 'AZURİT': 'CU', 'KOVELLİN': 'CU', 'BORNİT': 'CU', 'KUPRİT': 'CU',
+    'GALEN': 'PB', 'SERÜZİT': 'PB', 'ANGLEZİT': 'PB',
+    'SFALERİT': 'ZN', 'SMİTSONİT': 'ZN', 'HEMİMORFİT': 'ZN',
+    'HEMATİT': 'FE', 'MANYETİT': 'FE', 'LİMONİT': 'FE', 'SİDERİT': 'FE', 'PİRİT': 'FE', 'GÖTİT': 'FE',
+    'KROMİT': 'CR', 'BOKSİT': 'AL', 'KORUND': 'AL',
+    'SİNOBAR': 'HG', 'STİBNİT': 'SB', 'ARSENOPİRİT': 'AS', 'KASSİTERİT': 'SN',
+    'SCHEELİT': 'W', 'VOLFRAMİT': 'W', 'MOLİBDENİT': 'MO',
+
     // EN (Common ones that differ from symbol)
     'GOLD': 'AU', 'SILVER': 'AG', 'COPPER': 'CU', 'IRON': 'FE', 'LEAD': 'PB', 'ZINC': 'ZN',
     'MERCURY': 'HG', 'CHROME': 'CR', 'MANGANESE': 'MN', 'NICKEL': 'NI', 'COBALT': 'CO',
@@ -179,7 +190,16 @@ const ELEMENT_ALIASES = {
     'SILICON': 'SI', 'CALCIUM': 'CA', 'MAGNESIUM': 'MG', 'SODIUM': 'NA', 'POTASSIUM': 'K',
     'BARIUM': 'BA', 'STRONTIUM': 'SR', 'ZIRCONIUM': 'ZR', 'CHLORINE': 'CL', 'CARBON': 'C',
     'OXYGEN': 'O', 'HYDROGEN': 'H', 'NITROGEN': 'N', 'LANTHANUM': 'LA', 'CERIUM': 'CE',
-    'NEODYMIUM': 'ND', 'HAFNIUM': 'HF', 'TANTALUM': 'TA', 'RHENIUM': 'RE'
+    'NEODYMIUM': 'ND', 'HAFNIUM': 'HF', 'TANTALUM': 'TA', 'RHENIUM': 'RE',
+    // Common Minerals (EN)
+    'PYROLUSITE': 'MN', 'RHODOCHROSITE': 'MN', 'PSILOMELANE': 'MN', 'BRAUNITE': 'MN', 'MANGANITE': 'MN',
+    'CHALCOPYRITE': 'CU', 'MALACHITE': 'CU', 'AZURITE': 'CU', 'COVELLITE': 'CU', 'BORNITE': 'CU', 'CUPRITE': 'CU',
+    'GALENA': 'PB', 'CERUSSITE': 'PB', 'ANGLESITE': 'PB',
+    'SPHALERITE': 'ZN', 'SMITHSONITE': 'ZN', 'HEMIMORPHITE': 'ZN',
+    'HEMATITE': 'FE', 'MAGNETITE': 'FE', 'LIMONITE': 'FE', 'SIDERITE': 'FE', 'PYRITE': 'FE', 'GOETHITE': 'FE',
+    'CHROMITE': 'CR', 'BAUXITE': 'AL', 'CORUNDUM': 'AL',
+    'CINNABAR': 'HG', 'STIBNITE': 'SB', 'ARSENOPYRITE': 'AS', 'CASSITERITE': 'SN',
+    'SCHEELITE': 'W', 'WOLFRAMITE': 'W', 'MOLYBDENITE': 'MO'
 };
 
 /**
@@ -275,7 +295,54 @@ function updateHeatmap() {
     // 1. Gather points from standard records
     const recordPoints = records.filter(r => r.lat && r.lon);
 
-    // ... (Existing point gathering logic remains unchanged) ...
+    // v1453-16: Consolidated Logic for Records & KMLs using 'extractElements'
+
+    // A. Records
+    recordPoints.forEach(r => {
+        if (filterKey === 'ALL') {
+            points.push([r.lat, r.lon, 1.0]); // Uniform weight
+        } else {
+            // Check if record label contains the element (using robust extractor)
+            const elements = extractElements(r.label);
+            if (elements.has(filterKey)) {
+                points.push([r.lat, r.lon, 1.0]);
+            }
+        }
+    });
+
+    // B. External KML Markers (v513)
+    allKmlMarkers.forEach(marker => {
+        const latlng = marker.getLatLng();
+
+        if (filterKey === 'ALL') {
+            points.push([latlng.lat, latlng.lng, 1.0]);
+        } else {
+            // v1453-16: Check layer's pre-scanned elements OR the marker's own text
+            let match = false;
+
+            // 1. Check parent layer properties (if marker belongs to a layer)
+            if (marker.jeoLayerId) {
+                const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
+                if (parentLayer && parentLayer._jeoElements && parentLayer._jeoElements.has(filterKey)) {
+                    match = true;
+                }
+            }
+
+            // 2. Fallback: Check marker tooltip (if any) using robust extractor
+            if (!match) {
+                const tooltip = marker.getTooltip();
+                if (tooltip) {
+                    const txt = tooltip.getContent();
+                    const elems = extractElements(txt);
+                    if (elems.has(filterKey)) match = true;
+                }
+            }
+
+            if (match) {
+                points.push([latlng.lat, latlng.lng, 1.0]);
+            }
+        }
+    });
 
     try {
         heatmapLayer = L.heatLayer(points, {
@@ -3602,7 +3669,9 @@ if (btnGridToggle) {
 }
 
 if (btnGridClear) {
-    btnGridClear.addEventListener('click', () => {
+    // v1453-12: Robust Listener for Div Button
+    btnGridClear.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent bubbling
         if (currentGridLayer) {
             map.removeLayer(currentGridLayer);
             currentGridLayer = null;
@@ -3610,6 +3679,23 @@ if (btnGridClear) {
         document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
         activeGridInterval = null;
         showToast("Grid Cleared / Izgara Temizlendi", 1500);
+    });
+} else {
+    // Fallback if not found regularly
+    document.addEventListener('DOMContentLoaded', () => {
+        const lateBtn = document.getElementById('btn-grid-clear');
+        if (lateBtn) {
+            lateBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentGridLayer) {
+                    map.removeLayer(currentGridLayer);
+                    currentGridLayer = null;
+                }
+                document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
+                activeGridInterval = null;
+                showToast("Grid Cleared / Izgara Temizlendi", 1500);
+            });
+        }
     });
 }
 
@@ -3680,11 +3766,23 @@ function addExternalLayer(name, geojson) {
             onEachFeature: (feature, layer) => {
                 const featureName = getFeatureName(feature.properties);
 
-                // v1453-15: Scan for Elements (e.g. "Au 123", "Cu-Zn")
+                // v1453-17: Smart Scanning (Pure Data Aggregation)
+                // We scan everything: Name, Description, Properties
+                // BUT we do NOT change the visual 'featureName' or labels.
+
+                // 1. Scan Name
                 if (featureName) {
-                    // v1453-16: Use Robust Parsing (Mangan -> MN)
                     const extracted = extractElements(featureName);
                     extracted.forEach(e => layerElements.add(e));
+                }
+
+                // 2. Scan Description/Notes (if available)
+                if (feature.properties) {
+                    const desc = feature.properties.description || feature.properties.desc || feature.properties.note;
+                    if (desc) {
+                        const extracted = extractElements(desc);
+                        extracted.forEach(e => layerElements.add(e));
+                    }
                 }
 
                 // v382: Only show labels for Points to prevent clutter on lines/polygons
