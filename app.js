@@ -2410,27 +2410,35 @@ function updateScaleValues() {
                 const eastPart = Math.round(easting);
                 const northPart = Math.round(northing);
                 // v1453-2: Kilitli Mizanpaj (Mirroring Parity)
+                // v1453-05F: Reverted to "Old Appearance" (Side-by-Side Flex)
                 scaleWrapper.innerHTML = `
-                    <div class="utm-rows-container">
-                        <div class="utm-row-line">
-                            <span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span>
-                        </div>
-                        <div class="utm-row-line">
-                            <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                            <span class="utm-lbl" style="margin-left:8px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
-                        </div>
+                    <div class="scale-header-track">
+                        <span class="drag-handle">::::</span>
                     </div>
-                    <div class="scale-body">
-                        <div class="scale-labels">
-                            <span class="scale-lbl-0">0</span>
-                            <span class="scale-lbl-val">${displayDist}</span>
+                    <div class="info-flex-row">
+                        <div class="scale-body">
+                            <div class="scale-row-wrapper">
+                                <div class="scale-group-left">
+                                    <div class="scale-labels">
+                                        <span class="scale-lbl-0">0</span>
+                                        <span class="scale-lbl-val">${displayDist}</span>
+                                    </div>
+                                    <div class="scale-line">
+                                        <div class="scale-notch notch-left"></div>
+                                        <div class="scale-bar"></div>
+                                        <div class="scale-notch notch-right"></div>
+                                    </div>
+                                </div>
+                                <span class="scale-unit-text">${unit}</span>
+                            </div>
                         </div>
-                        <div class="scale-line">
-                            <div class="scale-notch notch-left"></div>
-                            <div class="scale-bar"></div>
-                            <div class="scale-notch notch-right"></div>
+                        <div class="utm-rows-container">
+                            <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                            <div class="utm-row-line">
+                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                            </div>
                         </div>
-                        <div style="font-size: 8px; font-weight: 900; color: #ffeb3b; text-align: center; margin-top: -2px;">${unit}</div>
                     </div>
                 `;
             } catch (e) {
