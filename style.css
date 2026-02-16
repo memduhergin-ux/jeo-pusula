@@ -2119,6 +2119,23 @@ textarea.form-input {
         border-radius: 8px;
         max-height: calc(100vh - 65px) !important;
     }
+
+    /* v1453-12 Fix: Grid Panel Landscape Positioning */
+    #grid-interval-panel {
+        display: none;
+        /* Controlled by JS, but ensure default rules apply */
+        bottom: 70px !important;
+        /* Just above nav bar */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: auto !important;
+        max-width: 80% !important;
+        right: auto !important;
+    }
+
+    #grid-interval-panel.grid-active {
+        display: flex !important;
+    }
 }
 
 /* v740: Closed landscape media query here to keep following styles global */
