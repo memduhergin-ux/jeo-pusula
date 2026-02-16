@@ -2499,15 +2499,25 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         -webkit-overflow-scrolling: touch !important;
     }
 
-    /* v1453-11: Fix Grid Panel Visibility in Landscape (Above Scale Panel) */
-    #grid-interval-panel {
+    /* v1453-14: Fix Legend Position in Landscape (Right of Nav Bar) */
+    .heatmap-legend {
+        bottom: 20px !important;
+        left: calc(50% + 170px) !important;
+        /* Positioned to the RIGHT of the centered Nav Bar */
+        right: auto !important;
+        top: auto !important;
+        z-index: 4000 !important;
+    }
+
+    /* v1453-13: Fix Grid Panel Visibility (Only when active) */
+    /* We add .grid-active check so JS can hide it by removing the class */
+    #grid-interval-panel.grid-active {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
         bottom: 110px !important;
-        /* Stacked ABOVE the Scale Panel (55px + ~40px height + gap) */
+        /* Stacked ABOVE the Scale Panel */
         left: 10px !important;
-        /* Aligned with Scale Panel */
         top: auto !important;
         right: auto !important;
         z-index: 3500 !important;

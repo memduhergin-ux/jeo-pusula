@@ -422,11 +422,12 @@ function updateHeatmapFilterOptions() {
     select.value = foundElements.has(currentVal) ? currentVal : "ALL";
 }
 
-// v583: Element Filter Loading Feedback
+// v583: Element Filter Loading Feedback (Fixed for click reliability)
 function initHeatmapFilterListener() {
     const elFilter = document.getElementById('heatmap-element-filter');
     if (elFilter) {
-        elFilter.addEventListener('mousedown', (e) => {
+        // v1453-14: Changed from 'mousedown' to 'click' for better mobile compatibility
+        elFilter.addEventListener('click', (e) => {
             // Only trigger if we aren't already populating
             if (elFilter.dataset.populating === "true") return;
             elFilter.dataset.populating = "true";
@@ -3458,6 +3459,20 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 }
 
 // v743: Draggable Grid Panel
+function toggleGridPanel() {
+    isGridPanelOpen = !isGridPanelOpen;
+    const panel = document.getElementById('grid-interval-panel');
+    if (panel) {
+        panel.style.display = isGridPanelOpen ? 'block' : 'none';
+
+        // v1453-14: Manage .grid-active class for CSS visibility control in Landscape
+        if (isGridPanelOpen) {
+            panel.classList.add('grid-active');
+        } else {
+            panel.classList.remove('grid-active');
+        }
+    }
+}
 function initGridPanelDraggable() {
     const gridPanel = document.getElementById('grid-interval-panel');
     if (!gridPanel) return;
@@ -3561,16 +3576,6 @@ document.querySelectorAll('.grid-color-opt').forEach(btn => {
         showToast("Grid Color Updated", 1000);
     });
 });
-
-if (btnGridClear) {
-    btnGridClear.addEventListener('click', () => {
-        if (currentGridLayer) {
-            map.removeLayer(currentGridLayer);
-            currentGridLayer = null;
-            showToast("Grid Cleared", 1500);
-        }
-    });
-}
 
 function addExternalLayer(name, geojson) {
     if (!map) return;
