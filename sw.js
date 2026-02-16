@@ -1,5 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-03F-rev2';
-// Force Update Trigger: 2026-02-16 13:55
+const CACHE_NAME = 'jeo-cache-v1453-03F-FORCE';
+// Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',
     'index.html',
@@ -33,21 +33,7 @@ self.addEventListener('activate', (event) => {
         })
     );
 });
-event.waitUntil(
-    caches.keys().then((names) => {
-        return Promise.all(
-            names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
-        );
-    }).then(() => {
-        return self.clients.claim();
-    }).then(() => {
-        // Send message to all clients to reload
-        return self.clients.matchAll().then(clients => {
-            clients.forEach(client => client.postMessage('sw-updated'));
-        });
-    })
-);
-});
+
 
 self.addEventListener('fetch', (event) => {
     // Network-First strategy for the main page (navigation requests)
