@@ -2155,27 +2155,13 @@ function initMapControls() {
         L.DomEvent.disableScrollPropagation(scaleWrapper);
         L.DomEvent.disableClickPropagation(scaleWrapper);
 
-        // Restore Position
-        const savedPos = JSON.parse(localStorage.getItem('jeoScalePos_v3'));
-        if (savedPos) {
-            // v1453-1: Force laser-perfect alignment to 10px (cloned from Legend)
-            scaleWrapper.style.setProperty('left', '10px', 'important');
-
-            const topNum = parseInt(savedPos.top);
-            if (isNaN(topNum) || topNum < 0 || topNum > window.innerHeight - 60) {
-                const viewH = window.innerHeight;
-                scaleWrapper.style.setProperty('top', (viewH - 85) + 'px', 'important');
-            } else {
-                scaleWrapper.style.setProperty('top', savedPos.top, 'important');
-            }
-        } else {
-            // v1453-04F: Force Bottom-Left Start if no save exists
-            // Fixes "middle of screen" issue by explicitly setting safe defaults
-            scaleWrapper.style.setProperty('left', '10px', 'important');
-            scaleWrapper.style.setProperty('bottom', '55px', 'important'); // Clear Nav Bar
-            scaleWrapper.style.setProperty('top', 'auto', 'important');
-            scaleWrapper.style.setProperty('right', 'auto', 'important');
-        }
+        // v1453-05F: Restart-Reset Logic (Always start at defaults on fresh launch)
+        // Position is NOT restored from localStorage on startup anymore.
+        scaleWrapper.style.setProperty('left', '10px', 'important');
+        scaleWrapper.style.setProperty('bottom', '55px', 'important'); // Above Nav Bar
+        scaleWrapper.style.setProperty('top', 'auto', 'important');
+        scaleWrapper.style.setProperty('right', 'auto', 'important');
+        scaleWrapper.style.setProperty('position', 'fixed', 'important');
 
         scaleWrapper.style.setProperty('position', 'fixed', 'important');
         // Ensure standard css doesn't override
@@ -2432,11 +2418,13 @@ function updateScaleValues() {
                                 <span class="scale-unit-text">${unit}</span>
                             </div>
                         </div>
-                        <div class="utm-rows-container">
-                            <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                            <div class="utm-row-line">
+                        <div class="utm-rows-container" style="display:flex; flex-direction:row; align-items:baseline; gap:8px;">
+                            <div class="utm-row-line" style="display:flex; align-items:baseline; gap:3px;">
+                                <span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span>
+                            </div>
+                            <div class="utm-row-line" style="display:flex; align-items:baseline; gap:3px;">
                                 <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                                <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                             </div>
                         </div>
                     </div>
@@ -3299,13 +3287,14 @@ if (btnScaleToggle) {
             // v718: Persist visibility state
             localStorage.setItem('jeoScaleVisible', JSON.stringify(isVisible));
 
-            // v719: Reset to default position when toggled ON
+            // v1453-05F: MANDATORY RESET on toggle ON
+            // Every time the panel is shown, it snaps to orientation-specific CSS defaults
             if (isVisible) {
                 wrapper.style.removeProperty('top');
                 wrapper.style.removeProperty('left');
                 wrapper.style.removeProperty('bottom');
                 wrapper.style.removeProperty('right');
-                localStorage.removeItem('jeoScalePos');
+                localStorage.removeItem('jeoScalePos_v3');
             }
 
             // v718: Remove inline display to prevent conflicts with class

@@ -1696,10 +1696,10 @@ textarea.form-input {
     min-width: 180px;
     padding: 0 10px !important;
     /* Minimal padding */
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     box-sizing: border-box !important;
     z-index: 3000 !important;
     gap: 8px !important;
@@ -1716,9 +1716,21 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper {
-    bottom: calc(55px + env(safe-area-inset-bottom, 0px));
     left: 10px !important;
+    bottom: calc(55px + env(safe-area-inset-bottom, 0px)) !important;
+    top: auto !important;
+    right: auto !important;
     cursor: move;
+}
+
+@media screen and (orientation: landscape) {
+    .custom-scale-wrapper.visible {
+        left: auto !important;
+        right: calc(50% + 170px) !important;
+        /* Adjacent to centered nav bar (330px width / 2 + 5px gap) */
+        bottom: calc(1px + env(safe-area-inset-bottom, 0px)) !important;
+        top: auto !important;
+    }
 }
 
 @media screen and (orientation: landscape) {
@@ -1781,6 +1793,7 @@ textarea.form-input {
     color: #ffeb3b;
     font-weight: bold;
     min-width: 10px;
+    text-shadow: 1px 1px 0px #000;
 }
 
 .utm-val {
@@ -1910,12 +1923,13 @@ textarea.form-input {
 .scale-line {
     width: 1.42cm;
     height: 5px;
-    /* v1453-1: Tighter 5px height for 40px panel */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
     position: relative;
+    margin-bottom: 2px;
+    /* v1453-05F: Align with text baseline */
 }
 
 .scale-bar {
@@ -2447,12 +2461,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         z-index: 3000 !important;
     }
 
-    .custom-scale-wrapper {
-        bottom: calc(47px + env(safe-area-inset-bottom, 0px)) !important;
-        /* Stays Below */
-        left: -6px !important;
-        z-index: 2900 !important;
-    }
+
 }
 
 
@@ -2474,23 +2483,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         scrollbar-color: #444 #222;
     }
 
-    /* v746: Dock to Navigation Bar (Left Side) - MOVED TO BOTTOM LEFT (User Request) */
-    .custom-scale-wrapper {
-        left: 10px !important;
-        right: auto !important;
-        margin-right: 0 !important;
-        bottom: 35px !important;
-        /* Above potential bottom bars */
-        top: auto !important;
-        height: 40px !important;
-        width: 220px !important;
-        padding: 0 10px !important;
-        border-bottom-right-radius: 0 !important;
-        border-bottom: none !important;
-        background: #1a1a1a !important;
-        border: 1px solid #333 !important;
-        box-shadow: none !important;
-    }
+
 
     /* v746: Dock to Navigation Bar (Right Side) - UPDATED v1453-04F */
     /* v1453-14: Fix Legend Position in Landscape (Bottom Right) */
