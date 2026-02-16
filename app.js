@@ -426,21 +426,10 @@ function updateHeatmapFilterOptions() {
 function initHeatmapFilterListener() {
     const elFilter = document.getElementById('heatmap-element-filter');
     if (elFilter) {
+        // v1453-15: Initialize immediately (No "Preparing" delay)
+        updateHeatmapFilterOptions();
+
         // v1453-14: Changed from 'mousedown' to 'click' for better mobile compatibility
-        elFilter.addEventListener('click', (e) => {
-            // Only trigger if we aren't already populating
-            if (elFilter.dataset.populating === "true") return;
-            elFilter.dataset.populating = "true";
-
-            showToast("Preparing element list...", 800);
-
-            // Slight delay to allow toast to render before heavy scanning
-            setTimeout(() => {
-                updateHeatmapFilterOptions();
-                elFilter.dataset.populating = "false";
-            }, 100);
-        });
-
         elFilter.addEventListener('change', (e) => {
             heatmapFilter = e.target.value;
             localStorage.setItem('jeoHeatmapFilter', heatmapFilter);
@@ -3548,6 +3537,18 @@ if (btnGridToggle) {
             document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
             activeGridInterval = null;
         }
+    });
+}
+
+if (btnGridClear) {
+    btnGridClear.addEventListener('click', () => {
+        if (currentGridLayer) {
+            map.removeLayer(currentGridLayer);
+            currentGridLayer = null;
+        }
+        document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
+        activeGridInterval = null;
+        showToast("Grid Cleared / Izgara Temizlendi", 1500);
     });
 }
 

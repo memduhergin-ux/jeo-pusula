@@ -2447,46 +2447,40 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         scrollbar-color: #444 #222;
     }
 
-    /* v746: Dock to Navigation Bar (Left Side) */
+    /* v746: Dock to Navigation Bar (Left Side) - MOVED TO BOTTOM LEFT (User Request) */
     .custom-scale-wrapper {
-        right: 50% !important;
-        left: auto !important;
-        margin-right: 185px !important;
-        /* v748: Increased to 185px for safety */
-        bottom: 0px !important;
-        /* Align with nav bottom/border */
+        left: 10px !important;
+        right: auto !important;
+        margin-right: 0 !important;
+        bottom: 35px !important;
+        /* Above potential bottom bars */
         top: auto !important;
         height: 40px !important;
         width: 220px !important;
         padding: 0 10px !important;
         border-bottom-right-radius: 0 !important;
-        /* Merge look */
         border-bottom: none !important;
         background: #1a1a1a !important;
-        /* Match Nav */
         border: 1px solid #333 !important;
         box-shadow: none !important;
     }
 
     /* v746: Dock to Navigation Bar (Right Side) - UPDATED v1453-04F */
+    /* v1453-14: Fix Legend Position in Landscape (Bottom Right) */
     .heatmap-legend {
-        left: 50% !important;
-        right: auto !important;
-        margin-left: 220px !important;
-        /* Safety margin for 400px wide Nav (200px half + 20px gap) */
-        bottom: 20px !important;
-        /* Lift up from bottom */
+        bottom: 35px !important;
+        left: auto !important;
+        right: 80px !important;
+        /* Inside FABs */
         top: auto !important;
+        z-index: 4000 !important;
         width: 220px !important;
         height: auto !important;
-        /* Allow expansion */
         max-height: calc(100vh - 40px) !important;
         border-radius: 12px !important;
         border-bottom: 1px solid #333 !important;
         background: rgba(26, 26, 26, 0.95) !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
-
-        /* Smooth Scrolling */
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         scrollbar-width: thin;
@@ -2497,16 +2491,6 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         max-height: 80vh !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
-    }
-
-    /* v1453-14: Fix Legend Position in Landscape (Right of Nav Bar) */
-    .heatmap-legend {
-        bottom: 20px !important;
-        left: calc(50% + 170px) !important;
-        /* Positioned to the RIGHT of the centered Nav Bar */
-        right: auto !important;
-        top: auto !important;
-        z-index: 4000 !important;
     }
 
     /* v1453-13: Fix Grid Panel Visibility (Only when active) */
