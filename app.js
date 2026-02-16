@@ -2401,13 +2401,13 @@ function updateScaleValues() {
                     <div class="scale-header-track">
                         <span class="drag-handle">::::</span>
                     </div>
-                    <div class="info-flex-row">
+                    <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:12px;">
                         <div class="scale-body">
-                            <div class="scale-row-wrapper">
+                            <div class="scale-row-wrapper" style="display:flex; align-items:baseline; gap:4px;">
                                 <div class="scale-group-left">
-                                    <div class="scale-labels">
-                                        <span class="scale-lbl-0">0</span>
-                                        <span class="scale-lbl-val">${displayDist}</span>
+                                    <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px;">
+                                        <span class="scale-lbl-0" style="position:absolute; left:0;">0</span>
+                                        <span class="scale-lbl-val" style="position:absolute; right:0;">${displayDist}</span>
                                     </div>
                                     <div class="scale-line">
                                         <div class="scale-notch notch-left"></div>
@@ -2415,16 +2415,16 @@ function updateScaleValues() {
                                         <div class="scale-notch notch-right"></div>
                                     </div>
                                 </div>
-                                <span class="scale-unit-text">${unit}</span>
+                                <span class="scale-unit-text" style="font-size:10px; font-weight:bold; color:#ffeb3b;">${unit}</span>
                             </div>
                         </div>
-                        <div class="utm-rows-container" style="display:flex; flex-direction:row; align-items:baseline; gap:8px;">
-                            <div class="utm-row-line" style="display:flex; align-items:baseline; gap:3px;">
+                        <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.1;">
+                            <div class="utm-row-line">
                                 <span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span>
                             </div>
-                            <div class="utm-row-line" style="display:flex; align-items:baseline; gap:3px;">
+                            <div class="utm-row-line">
                                 <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:2px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                             </div>
                         </div>
                     </div>

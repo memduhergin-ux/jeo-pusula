@@ -1692,17 +1692,16 @@ textarea.form-input {
     position: fixed;
     height: 40px !important;
     width: auto !important;
-    /* v1453-05F: Flexible width */
     min-width: 180px;
-    padding: 0 10px !important;
-    /* Minimal padding */
+    padding: 0 12px !important;
     background: rgba(0, 0, 0, 0.45) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
     box-sizing: border-box !important;
     z-index: 3000 !important;
-    gap: 8px !important;
+    gap: 12px !important;
     overflow: hidden;
     touch-action: none;
     color: white;
@@ -1761,31 +1760,24 @@ textarea.form-input {
 
 
 
-/* v1453-1: 3-Row Vertical Coordinate Stack */
+/* v1453-1: 2-Row Vertical Coordinate Stack */
 .utm-rows-container {
     width: auto;
-    /* Allow shrink */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /* margin-left: auto; REMOVED for centering */
     align-items: flex-start;
-    /* LEFT ALIGN text inside the block */
     font-size: 9px;
     padding-right: 0;
-    /* REMOVED padding */
+    line-height: 1.1;
 }
 
 .utm-row-line {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: flex-start;
-    /* LEFT ALIGN content */
     gap: 3px;
-    font-size: 9px;
-    /* v1453-7: Flexible height for multi-line Z */
-    min-height: 11px;
-    line-height: normal;
+    white-space: nowrap;
 }
 
 .utm-lbl {
@@ -1798,8 +1790,9 @@ textarea.form-input {
 
 .utm-val {
     color: #fff;
-    font-family: monospace;
+    font-family: 'Roboto Mono', monospace;
     font-weight: 500;
+    letter-spacing: -0.2px;
 }
 
 .utm-mode-icon {
@@ -1837,15 +1830,11 @@ textarea.form-input {
     text-align: center;
 }
 
-/* New wrapper for Line+Labels (Left) and Unit (Right) */
 .scale-row-wrapper {
     display: flex;
-    align-items: flex-end;
-    /* Align unit with bottom */
+    align-items: center;
     justify-content: center;
-    /* Center the whole group in scale-body */
     gap: 4px;
-    /* User requested 4px gap */
 }
 
 .scale-group-left {
@@ -1901,11 +1890,9 @@ textarea.form-input {
 .info-flex-row {
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
-    /* Align bottom of Scale Line with bottom of X/Z */
+    align-items: center;
     justify-content: center;
-    gap: 8px;
-    /* User requested 8px gap between groups */
+    gap: 12px;
 }
 
 .scale-body {
