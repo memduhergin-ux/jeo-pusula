@@ -1685,15 +1685,13 @@ textarea.form-input {
 .custom-scale-wrapper,
 .heatmap-legend {
     display: none !important;
-    /* Default hidden */
     align-items: center !important;
     justify-content: center !important;
-    /* CENTER CONTENT */
     position: fixed;
     height: 40px !important;
     width: auto !important;
-    min-width: 180px;
-    padding: 0 12px !important;
+    min-width: 200px;
+    padding: 0 15px !important;
     background: rgba(0, 0, 0, 0.45) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1701,7 +1699,7 @@ textarea.form-input {
     border-radius: 20px;
     box-sizing: border-box !important;
     z-index: 3000 !important;
-    gap: 12px !important;
+    gap: 15px !important;
     overflow: hidden;
     touch-action: none;
     color: white;
@@ -1715,8 +1713,8 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper {
-    left: 10px !important;
-    bottom: calc(55px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 20px !important;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     right: auto !important;
     cursor: move;
@@ -1725,10 +1723,12 @@ textarea.form-input {
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper.visible {
         left: auto !important;
-        right: calc(50% + 170px) !important;
-        /* Adjacent to centered nav bar (330px width / 2 + 5px gap) */
-        bottom: calc(1px + env(safe-area-inset-bottom, 0px)) !important;
+        /* Magnetic Snap to Nav Bar Left Edge: calc(50% + (320px / 2)) = 50% + 160px */
+        right: calc(50% + 160px) !important;
+        bottom: env(safe-area-inset-bottom, 0px) !important;
         top: auto !important;
+        border-radius: 20px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 }
 
@@ -1760,16 +1760,14 @@ textarea.form-input {
 
 
 
-/* v1453-1: 2-Row Vertical Coordinate Stack */
 .utm-rows-container {
     width: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    font-size: 9px;
-    padding-right: 0;
-    line-height: 1.1;
+    font-size: 10px;
+    line-height: 1.2;
 }
 
 .utm-row-line {
@@ -1804,10 +1802,10 @@ textarea.form-input {
 .scale-labels {
     position: relative;
     width: 1.42cm;
-    /* Match scale line width */
     height: 12px;
-    margin-bottom: 0;
-    font-size: 11px;
+    margin-bottom: -2px;
+    /* Pull line closer to labels */
+    font-size: 10px;
     font-weight: 800;
     color: #ffeb3b;
 }
@@ -1845,12 +1843,11 @@ textarea.form-input {
 }
 
 .scale-unit-text {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 900;
     color: #ffeb3b;
-    line-height: 1;
-    margin-bottom: 0;
-    text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+    line-height: normal;
+    text-shadow: 1px 1px 0px #000;
 }
 
 /* v1453-9: Classic Flex Layout (Revert Locked Columns) */

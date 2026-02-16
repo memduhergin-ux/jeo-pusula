@@ -2157,8 +2157,8 @@ function initMapControls() {
 
         // v1453-05F: Restart-Reset Logic (Always start at defaults on fresh launch)
         // Position is NOT restored from localStorage on startup anymore.
-        scaleWrapper.style.setProperty('left', '10px', 'important');
-        scaleWrapper.style.setProperty('bottom', '55px', 'important'); // Above Nav Bar
+        scaleWrapper.style.setProperty('left', '20px', 'important');
+        scaleWrapper.style.setProperty('bottom', '60px', 'important'); // 20px above 40px Nav Bar
         scaleWrapper.style.setProperty('top', 'auto', 'important');
         scaleWrapper.style.setProperty('right', 'auto', 'important');
         scaleWrapper.style.setProperty('position', 'fixed', 'important');
@@ -2398,32 +2398,30 @@ function updateScaleValues() {
                 // v1453-2: Kilitli Mizanpaj (Mirroring Parity)
                 // v1453-05F: Reverted to "Old Appearance" (Side-by-Side Flex)
                 scaleWrapper.innerHTML = `
-                    <div class="scale-header-track">
-                        <span class="drag-handle">::::</span>
-                    </div>
-                    <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:12px;">
-                        <div class="scale-body">
-                            <div class="scale-row-wrapper" style="display:flex; align-items:baseline; gap:4px;">
-                                <div class="scale-group-left">
-                                    <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px;">
-                                        <span class="scale-lbl-0" style="position:absolute; left:0;">0</span>
-                                        <span class="scale-lbl-val" style="position:absolute; right:0;">${displayDist}</span>
+                    <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
+                    <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
+                        <div class="scale-body" style="display:flex; align-items:center; justify-content:center;">
+                            <div class="scale-row-wrapper" style="display:flex; align-items:center; gap:5px;">
+                                <div class="scale-group-left" style="display:flex; flex-direction:column; align-items:center;">
+                                    <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
+                                        <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#ffeb3b;">0</span>
+                                        <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
                                     </div>
-                                    <div class="scale-line">
-                                        <div class="scale-notch notch-left"></div>
-                                        <div class="scale-bar"></div>
-                                        <div class="scale-notch notch-right"></div>
+                                    <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
+                                        <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
+                                        <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
+                                        <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
                                     </div>
                                 </div>
-                                <span class="scale-unit-text" style="font-size:10px; font-weight:bold; color:#ffeb3b;">${unit}</span>
+                                <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:8px;">${unit}</span>
                             </div>
                         </div>
-                        <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.1;">
+                        <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.2;">
                             <div class="utm-row-line">
-                                <span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span>
+                                <span class="utm-lbl">Y:</span><span class="utm-val" style="color:#fff;">${eastPart}</span>
                             </div>
                             <div class="utm-row-line">
-                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                                <span class="utm-lbl">X:</span><span class="utm-val" style="color:#fff;">${northPart}</span>
                                 <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
                             </div>
                         </div>
