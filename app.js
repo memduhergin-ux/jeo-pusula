@@ -2101,7 +2101,8 @@ function initMapControls() {
             btnScale.style.backgroundColor = isScaleVisible ? 'rgba(76, 175, 80, 0.8)' : 'rgba(0,0,0,0.7)';
         }
 
-        makeDraggable(scaleWrapper, 'jeoScalePos');
+        // v1453-1: Reset position key to force alignment update
+        makeDraggable(scaleWrapper, 'jeoScalePos_v3');
 
         // v1453-1: Essential for smooth dragging - prevent click/drag propagation to map
         L.DomEvent.on(scaleWrapper, 'mousedown touchstart', L.DomEvent.stopPropagation);
@@ -2110,7 +2111,7 @@ function initMapControls() {
         L.DomEvent.disableClickPropagation(scaleWrapper);
 
         // Restore Position
-        const savedPos = JSON.parse(localStorage.getItem('jeoScalePos'));
+        const savedPos = JSON.parse(localStorage.getItem('jeoScalePos_v3'));
         if (savedPos) {
             // v1453-1: Force laser-perfect alignment to 10px (cloned from Legend)
             scaleWrapper.style.setProperty('left', '10px', 'important');
@@ -2123,9 +2124,9 @@ function initMapControls() {
                 scaleWrapper.style.setProperty('top', savedPos.top, 'important');
             }
         } else {
-            // v1453-1: Default position is also forced to 10px
-            scaleWrapper.style.setProperty('left', '10px', 'important');
-            scaleWrapper.style.setProperty('bottom', '50px', 'important');
+            // v1453-1: Default position is also forced to -6px
+            scaleWrapper.style.setProperty('left', '-6px', 'important');
+            scaleWrapper.style.setProperty('bottom', '47px', 'important'); // Sync with CSS
         }
 
         scaleWrapper.style.setProperty('right', 'auto', 'important');
@@ -2362,24 +2363,30 @@ function updateScaleValues() {
                 scaleWrapper.innerHTML = `
                     <div class="scale-header-track">
                         <span class="drag-handle">::::</span>
-                        <span class="scale-header-placeholder" style="font-size: 0.7rem; font-weight: bold; opacity: 0.7; visibility: hidden;">Density</span>
                     </div>
-                    <div class="scale-body">
-                        <div class="scale-labels">
-                            <span>0</span>
-                            <span>${displayDist}${unit}</span>
+                    <div class="info-flex-row">
+                        <div class="scale-body">
+                            <div class="scale-row-wrapper">
+                                <div class="scale-group-left">
+                                    <div class="scale-labels">
+                                        <span class="scale-lbl-0">0</span>
+                                        <span class="scale-lbl-val">${displayDist}</span>
+                                    </div>
+                                    <div class="scale-line">
+                                        <div class="scale-notch notch-left"></div>
+                                        <div class="scale-bar"></div>
+                                        <div class="scale-notch notch-right"></div>
+                                    </div>
+                                </div>
+                                <span class="scale-unit-text">${unit}</span>
+                            </div>
                         </div>
-                        <div class="scale-line">
-                            <div class="scale-notch notch-left"></div>
-                            <div class="scale-bar"></div>
-                            <div class="scale-notch notch-right"></div>
-                        </div>
-                    </div>
-                    <div class="utm-rows-container">
-                        <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
-                        <div class="utm-row-line">
-                            <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
-                            <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                        <div class="utm-rows-container">
+                            <div class="utm-row-line"><span class="utm-lbl">Y:</span><span class="utm-val">${eastPart}</span></div>
+                            <div class="utm-row-line">
+                                <span class="utm-lbl">X:</span><span class="utm-val">${northPart}</span>
+                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                            </div>
                         </div>
                     </div>
                 `;

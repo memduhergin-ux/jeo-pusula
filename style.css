@@ -1687,10 +1687,13 @@ textarea.form-input {
     display: none !important;
     /* Default hidden */
     align-items: center !important;
+    justify-content: center !important;
+    /* CENTER CONTENT */
     position: fixed;
     height: 40px !important;
     width: 220px !important;
-    padding: 0 10px !important;
+    padding: 0 2px !important;
+    /* Minimal padding */
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -1738,18 +1741,24 @@ textarea.form-input {
 
 /* v1453-1: 3-Row Vertical Coordinate Stack */
 .utm-rows-container {
-    flex-grow: 1;
+    width: auto;
+    /* Allow shrink */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin-left: auto;
+    /* margin-left: auto; REMOVED for centering */
+    align-items: flex-start;
+    /* LEFT ALIGN text inside the block */
     font-size: 9px;
-    padding-right: 2px;
+    padding-right: 0;
+    /* REMOVED padding */
 }
 
 .utm-row-line {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    /* LEFT ALIGN content */
     gap: 3px;
     font-size: 9px;
     /* v1453-7: Flexible height for multi-line Z */
@@ -1777,35 +1786,76 @@ textarea.form-input {
 }
 
 .scale-labels {
-    display: flex;
-    justify-content: space-between;
-    /* v1453-6: Visibility Boost - Bold, 11px, Tight Tracking */
+    position: relative;
+    width: 1.42cm;
+    /* Match scale line width */
+    height: 12px;
+    margin-bottom: 0;
     font-size: 11px;
     font-weight: 800;
     color: #ffeb3b;
-    /* Keep Yellow */
+}
+
+.scale-lbl-0 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    /* Center on the 0-tick */
+    text-align: center;
+}
+
+.scale-lbl-val {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    transform: translateX(50%);
+    /* Center on the end-tick */
+    text-align: center;
+}
+
+/* New wrapper for Line+Labels (Left) and Unit (Right) */
+.scale-row-wrapper {
+    display: flex;
+    align-items: flex-end;
+    /* Align unit with bottom */
+    justify-content: center;
+    /* Center the whole group in scale-body */
+    gap: 4px;
+    /* User requested 4px gap */
+}
+
+.scale-group-left {
+    display: flex;
+    flex-direction: column;
     width: 1.42cm;
-    position: relative;
-    height: 14px;
-    margin-bottom: 0px;
-    line-height: 1.1;
-    top: -1px;
-    /* Slight lift */
+    /* Fixed width to keep alignment */
+}
+
+.scale-unit-text {
+    font-size: 9px;
+    font-weight: 900;
+    color: #ffeb3b;
+    line-height: 1;
+    margin-bottom: 0;
+    text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
 }
 
 /* v1453-9: Classic Flex Layout (Revert Locked Columns) */
 .scale-header-track,
 .legend-header {
     width: auto !important;
-    /* Flexible */
     display: flex;
     align-items: center;
     gap: 5px;
     flex-shrink: 0;
     overflow: hidden;
     white-space: nowrap;
-    margin-right: 5px;
-    /* Spacing */
+}
+
+.scale-header-placeholder {
+    display: none !important;
+    /* Fix: Remove ghost space */
 }
 
 .scale-body,
@@ -1817,17 +1867,34 @@ textarea.form-input {
     justify-content: center;
     gap: 2px;
     flex-shrink: 0;
-    margin-right: 5px;
-    /* Spacing */
+    /* margin-right: 5px; REMOVED for centering */
 }
 
 .legend-body {
     width: auto !important;
 }
 
+/* New wrapper for Side-by-Side Scale and Coordinates */
+.info-flex-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    /* Align bottom of Scale Line with bottom of X/Z */
+    justify-content: center;
+    gap: 8px;
+    /* User requested 8px gap between groups */
+}
+
 .scale-body {
-    width: 1.42cm;
-    /* Keep precise scale line width */
+    width: auto !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    /* No bottom margin needed in side-by-side layout */
 }
 
 .scale-line {
@@ -2361,9 +2428,9 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     }
 
     .custom-scale-wrapper {
-        bottom: calc(55px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: calc(47px + env(safe-area-inset-bottom, 0px)) !important;
         /* Stays Below */
-        left: 10px !important;
+        left: -6px !important;
         z-index: 2900 !important;
     }
 }
