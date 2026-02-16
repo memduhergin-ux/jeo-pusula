@@ -769,15 +769,15 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=747"></script>
+    <script src="app.js?v=1453-03F"></script>
     <script>
-        console.log("App Version: v1453-03F (Build 747)");
+        console.log("App Version: v1453-03F");
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register with version query to bypass browser cache of sw.js
-                navigator.serviceWorker.register(`sw.js?v=747`)
+                navigator.serviceWorker.register(`sw.js?v=1453-03F`)
                     .then(reg => {
-                        console.log('Service Worker registered v747');
+                        console.log('Service Worker registered v1453-03F');
                         reg.update().catch(() => { });
                         setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
                     })
