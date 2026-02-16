@@ -143,6 +143,80 @@ if (document.readyState === 'loading') {
     initApp();
 }
 
+// v560: Optimized discovery pattern and periodic table set (Moved to Global for performance)
+const ELEMENT_DISCOVERY_PATTERN = /\b[A-Z]{1,3}\b/g;
+const PERIODIC_TABLE_SYMBOLS = new Set([
+    'H', 'HE', 'LI', 'BE', 'B', 'C', 'N', 'O', 'F', 'NE', 'NA', 'MG', 'AL', 'SI', 'P', 'S', 'CL', 'AR',
+    'K', 'CA', 'SC', 'TI', 'V', 'CR', 'MN', 'FE', 'CO', 'NI', 'CU', 'ZN', 'GA', 'GE', 'AS', 'SE', 'BR', 'KR',
+    'RB', 'SR', 'Y', 'ZR', 'NB', 'MO', 'TC', 'RU', 'RH', 'PD', 'AG', 'CD', 'IN', 'SN', 'SB', 'TE', 'I', 'XE',
+    'CS', 'BA', 'LA', 'CE', 'PR', 'ND', 'PM', 'SM', 'EU', 'GD', 'TB', 'DY', 'HO', 'ER', 'TM', 'YB', 'LU',
+    'HF', 'TA', 'W', 'RE', 'OS', 'IR', 'PT', 'AU', 'HG', 'TL', 'PB', 'BI', 'PO', 'AT', 'RN',
+    'FR', 'RA', 'AC', 'TH', 'PA', 'U', 'NP', 'PU', 'AM', 'CM', 'BK', 'CF', 'ES', 'FM', 'MD', 'NO', 'LR',
+    'RF', 'DB', 'SG', 'BH', 'HS', 'MT', 'DS', 'RG', 'CN', 'NH', 'FL', 'MC', 'LV', 'TS', 'OG',
+    'REE', 'PGE'
+]);
+
+// v1453-16: Element Aliases (Common Turkish/English Names -> Symbol)
+const ELEMENT_ALIASES = {
+    // TR
+    'ALTIN': 'AU', 'GÜMÜŞ': 'AG', 'BAKIR': 'CU', 'DEMİR': 'FE', 'KURŞUN': 'PB', 'ÇİNKO': 'ZN',
+    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'NİKEL': 'NI', 'KOBALT': 'CO',
+    'ALÜMİNYUM': 'AL', 'ARSENİK': 'AS', 'ANTİMON': 'SB', 'KALAY': 'SN', 'TİTANYUM': 'TI',
+    'URANYUM': 'U', 'PLATİN': 'PT', 'PALADYUM': 'PD', 'OSMİYUM': 'OS', 'İRİDYUM': 'IR',
+    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMİYUM': 'CD', 'BİZMUT': 'BI', 'MOLİBDEN': 'MO',
+    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'LİTYUM': 'LI', 'BERİLYUM': 'BE',
+    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'KÜKÜRT': 'S', 'SİLİSYUM': 'SI',
+    'KALSİYUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
+    'BARYUM': 'BA', 'STRONSİYUM': 'SR', 'ZİRKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
+    'OKSİJEN': 'O', 'HİDROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
+    'NEODİM': 'ND', 'HAFNİYUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
+    // EN (Common ones that differ from symbol)
+    'GOLD': 'AU', 'SILVER': 'AG', 'COPPER': 'CU', 'IRON': 'FE', 'LEAD': 'PB', 'ZINC': 'ZN',
+    'MERCURY': 'HG', 'CHROME': 'CR', 'MANGANESE': 'MN', 'NICKEL': 'NI', 'COBALT': 'CO',
+    'ALUMINUM': 'AL', 'ARSENIC': 'AS', 'ANTIMONY': 'SB', 'TIN': 'SN', 'TITANIUM': 'TI',
+    'URANIUM': 'U', 'PLATINUM': 'PT', 'PALLADIUM': 'PD', 'TUNGSTEN': 'W', 'LITHIUM': 'LI',
+    'BERYLLIUM': 'BE', 'BORON': 'B', 'FLUORINE': 'F', 'PHOSPHORUS': 'P', 'SULFUR': 'S',
+    'SILICON': 'SI', 'CALCIUM': 'CA', 'MAGNESIUM': 'MG', 'SODIUM': 'NA', 'POTASSIUM': 'K',
+    'BARIUM': 'BA', 'STRONTIUM': 'SR', 'ZIRCONIUM': 'ZR', 'CHLORINE': 'CL', 'CARBON': 'C',
+    'OXYGEN': 'O', 'HYDROGEN': 'H', 'NITROGEN': 'N', 'LANTHANUM': 'LA', 'CERIUM': 'CE',
+    'NEODYMIUM': 'ND', 'HAFNIUM': 'HF', 'TANTALUM': 'TA', 'RHENIUM': 'RE'
+};
+
+/**
+ * v1453-16: Robust Element Extraction from Text
+ * Handles: "Au", "Altın", "Bakır-Çinko", "Fe, Mn", "Cu 1.2%"
+ */
+function extractElements(text) {
+    if (!text) return new Set();
+    const found = new Set();
+
+    // Normalize: Upper case, replace standard separators with spaces
+    // We treat comma, dash, slash, parens as separators
+    const normalized = String(text).toUpperCase()
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ") // Punctuation to space
+        .replace(/\s{2,}/g, " "); // Collapse spaces
+
+    const words = normalized.split(" ");
+
+    words.forEach(w => {
+        if (!w) return;
+
+        // 1. Direct Symbol Match
+        if (PERIODIC_TABLE_SYMBOLS.has(w)) {
+            found.add(w);
+            return;
+        }
+
+        // 2. Alias Match
+        if (ELEMENT_ALIASES[w]) {
+            found.add(ELEMENT_ALIASES[w]);
+            return;
+        }
+    });
+
+    return found;
+}
+
 /** Heatmap Logic (v401) **/
 // Helper to darken colors for heatmap core (v423)
 function shadeColor(color, percent) {
@@ -392,12 +466,9 @@ function updateHeatmapFilterOptions() {
 
     // 1. Scan records (usually small set, scan on the fly is safe)
     records.forEach(r => {
-        const matches = (r.label || '').toUpperCase().match(ELEMENT_DISCOVERY_PATTERN);
-        if (matches) {
-            matches.forEach(m => {
-                if (PERIODIC_TABLE_SYMBOLS.has(m)) foundElements.add(m);
-            });
-        }
+        // v1453-16: Use Robust Extraction
+        const extracted = extractElements(r.label);
+        extracted.forEach(e => foundElements.add(e));
     });
 
     // 2. Aggregate from pre-scanned KML layers
@@ -719,17 +790,7 @@ const ELEMENT_COLORS = {
 };
 
 // v560: Optimized discovery pattern and periodic table set (Moved to Global for performance)
-const ELEMENT_DISCOVERY_PATTERN = /\b[A-Z]{1,3}\b/g;
-const PERIODIC_TABLE_SYMBOLS = new Set([
-    'H', 'HE', 'LI', 'BE', 'B', 'C', 'N', 'O', 'F', 'NE', 'NA', 'MG', 'AL', 'SI', 'P', 'S', 'CL', 'AR',
-    'K', 'CA', 'SC', 'TI', 'V', 'CR', 'MN', 'FE', 'CO', 'NI', 'CU', 'ZN', 'GA', 'GE', 'AS', 'SE', 'BR', 'KR',
-    'RB', 'SR', 'Y', 'ZR', 'NB', 'MO', 'TC', 'RU', 'RH', 'PD', 'AG', 'CD', 'IN', 'SN', 'SB', 'TE', 'I', 'XE',
-    'CS', 'BA', 'LA', 'CE', 'PR', 'ND', 'PM', 'SM', 'EU', 'GD', 'TB', 'DY', 'HO', 'ER', 'TM', 'YB', 'LU',
-    'HF', 'TA', 'W', 'RE', 'OS', 'IR', 'PT', 'AU', 'HG', 'TL', 'PB', 'BI', 'PO', 'AT', 'RN',
-    'FR', 'RA', 'AC', 'TH', 'PA', 'U', 'NP', 'PU', 'AM', 'CM', 'BK', 'CF', 'ES', 'FM', 'MD', 'NO', 'LR',
-    'RF', 'DB', 'SG', 'BH', 'HS', 'MT', 'DS', 'RG', 'CN', 'NH', 'FL', 'MC', 'LV', 'TS', 'OG',
-    'REE', 'PGE'
-]);
+
 
 // v556: Smart Color Generator for Dynamic Elements
 function getElementColor(symbol) {
@@ -3594,6 +3655,8 @@ function addExternalLayer(name, geojson) {
         fillOpacity: 0.4 // Default Filled
     };
 
+    const layerElements = new Set(); // v1453-15: Collect elements during parsing
+
     try {
         const layer = L.geoJSON(geojson, {
             style: style,
@@ -3616,6 +3679,14 @@ function addExternalLayer(name, geojson) {
             },
             onEachFeature: (feature, layer) => {
                 const featureName = getFeatureName(feature.properties);
+
+                // v1453-15: Scan for Elements (e.g. "Au 123", "Cu-Zn")
+                if (featureName) {
+                    // v1453-16: Use Robust Parsing (Mangan -> MN)
+                    const extracted = extractElements(featureName);
+                    extracted.forEach(e => layerElements.add(e));
+                }
+
                 // v382: Only show labels for Points to prevent clutter on lines/polygons
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
@@ -3726,7 +3797,8 @@ function addExternalLayer(name, geojson) {
             visible: true,
             pointsVisible: true,
             areasVisible: true,
-            labelsVisible: true
+            labelsVisible: true,
+            _jeoElements: layerElements // v1453-15: Store discovered elements
         };
         externalLayers.push(layerObj);
 
@@ -3994,6 +4066,7 @@ async function loadExternalLayers(silent = false) {
         showToast("Error loading layers", 3000);
     } finally {
         hideLoading(); // v650: Correctly hide the overlay
+        updateHeatmapFilterOptions(); // v1453-15: Ensure list is populated after load
     }
 }
 

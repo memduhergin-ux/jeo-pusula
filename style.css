@@ -2468,22 +2468,12 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     /* v746: Dock to Navigation Bar (Right Side) - UPDATED v1453-04F */
     /* v1453-14: Fix Legend Position in Landscape (Bottom Right) */
     .heatmap-legend {
-        bottom: 35px !important;
+        bottom: 20px !important;
         left: auto !important;
         right: 80px !important;
-        /* Inside FABs */
         top: auto !important;
         z-index: 4000 !important;
-        width: 220px !important;
-        height: auto !important;
-        max-height: calc(100vh - 40px) !important;
-        border-radius: 12px !important;
-        border-bottom: 1px solid #333 !important;
-        background: rgba(26, 26, 26, 0.95) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        scrollbar-width: thin;
+        /* Reverted dimensions to base/previous state */
     }
 
     #heatmap-radius-panel {
