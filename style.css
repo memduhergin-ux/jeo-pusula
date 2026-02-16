@@ -2043,15 +2043,8 @@ textarea.form-input {
 
 
 @media screen and (orientation: landscape) {
-    .custom-scale-wrapper {
-        bottom: 10px !important;
-        /* v1453-1: Perfectly synced with bottom */
-        left: 10px !important;
-        height: 40px !important;
-        width: 220px !important;
-        /* v1453-1: Standardized width across orientations */
-        padding: 0 10px !important;
-    }
+    /* .custom-scale-wrapper moved to Docking Logic section (v746) */
+    /* Kept structure for FAB container */
 
     .map-fab-container {
         top: calc(55px + env(safe-area-inset-top, 0px)) !important;
@@ -2445,14 +2438,43 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         z-index: 2500;
     }
 
+    /* v746: Dock to Navigation Bar (Left Side) */
+    .custom-scale-wrapper {
+        right: 50% !important;
+        left: auto !important;
+        margin-right: 165px !important;
+        /* ~160px half-nav + 5px gap */
+        bottom: 0px !important;
+        /* Align with nav bottom/border */
+        top: auto !important;
+        height: 40px !important;
+        width: 220px !important;
+        padding: 0 10px !important;
+        border-bottom-right-radius: 0 !important;
+        /* Merge look */
+        border-bottom: none !important;
+        background: #1a1a1a !important;
+        /* Match Nav */
+        border: 1px solid #333 !important;
+        box-shadow: none !important;
+    }
+
+    /* v746: Dock to Navigation Bar (Right Side) */
     .heatmap-legend {
-        left: 10px !important;
-        /* v1453-1: Standardized to left for consistency */
+        left: 50% !important;
         right: auto !important;
-        bottom: 55px !important;
-        /* v1453-1: Stacked above scale in landscape too */
+        margin-left: 165px !important;
+        /* ~160px half-nav + 5px gap */
+        bottom: 0px !important;
+        top: auto !important;
         width: 220px !important;
         height: 40px !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom: none !important;
+        background: #1a1a1a !important;
+        /* Match Nav */
+        border: 1px solid #333 !important;
+        box-shadow: none !important;
     }
 }
 
