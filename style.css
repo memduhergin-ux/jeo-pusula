@@ -1713,8 +1713,8 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper {
-    left: 20px !important;
-    bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 10px !important;
+    bottom: calc(50px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     right: auto !important;
     cursor: move;

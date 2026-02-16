@@ -2157,8 +2157,8 @@ function initMapControls() {
 
         // v1453-05F: Restart-Reset Logic (Always start at defaults on fresh launch)
         // Position is NOT restored from localStorage on startup anymore.
-        scaleWrapper.style.setProperty('left', '20px', 'important');
-        scaleWrapper.style.setProperty('bottom', '60px', 'important'); // 20px above 40px Nav Bar
+        scaleWrapper.style.setProperty('left', '10px', 'important');
+        scaleWrapper.style.setProperty('bottom', '50px', 'important'); // 10px above 40px Nav Bar
         scaleWrapper.style.setProperty('top', 'auto', 'important');
         scaleWrapper.style.setProperty('right', 'auto', 'important');
         scaleWrapper.style.setProperty('position', 'fixed', 'important');
