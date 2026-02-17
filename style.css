@@ -2225,8 +2225,8 @@ textarea.form-input {
     #grid-interval-panel {
         display: none;
         /* Controlled by JS, but ensure default rules apply */
-        bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
-        /* v1453: 2px above scale/nav bar (40px) */
+        bottom: calc(44px + env(safe-area-inset-bottom, 0px)) !important;
+        /* v1453: 4px above nav bar (40px) */
         left: 4px !important;
         /* v1453: 4px from left */
         transform: none !important;
@@ -2605,18 +2605,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 /* Landscape Docking Logic consolidated above v1453-13F */
 
-/* v1453-13: Fix Grid Panel Visibility (Only when active) */
-#grid-interval-panel.grid-active {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    bottom: 110px !important;
-    left: 10px !important;
-    top: auto !important;
-    right: auto !important;
-    z-index: 3500 !important;
-    transform: none !important;
-}
+
 
 .radius-opt {
     background: #2a2a2a;

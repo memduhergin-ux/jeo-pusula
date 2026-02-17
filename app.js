@@ -2107,7 +2107,9 @@ function initMap() {
                 btn.style.border = "1px solid rgba(255,255,255,0.4)";
             }
         });
-    }, 500); // v563: Slight delay to ensure DOM is ready and IDB layers finished loading
+
+        // v1453: Consolidated Grid UI initialization
+    }, 500);
 }
 
 /** Combined Map Controls (Scale + UTM) **/
@@ -3564,14 +3566,10 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
     const startLat = Math.floor(sw.lat / latInterval) * latInterval;
     const startLon = Math.floor(sw.lng / lonInterval) * lonInterval;
 
-    if (currentGridLayer) map.removeLayer(currentGridLayer);
-    currentGridLayer = L.layerGroup();
-    const gridLines = [];
+    const gridGroup = L.layerGroup();
+    gridGroup.isJeoGrid = true; // v1453: Tag for robust clearing
 
-    // Sampling for polyline clipping (checks points along the line)
-    // We need enough density to detect if a line enters/exits complex polygons
-    // For straight lat/lon lines, 2 points are enough IF we cut them properly,
-    // but basic "isPointInPolygon" check requires sampling.
+    const gridLines = [];
     const steps = 100;
 
     // Vertical Lines (Meridians) - CONSTANT LONGITUDE
@@ -3606,15 +3604,20 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
         if (currentSegment.length > 0) gridLines.push(currentSegment);
     }
 
-    L.polyline(gridLines, {
+    const gridPoly = L.polyline(gridLines, {
         color: color,
-        weight: 1.5, // Check visibility
-        opacity: 0.8,
-        dashArray: '5, 5',
+        weight: 2.5, // v1453: Increased for visibility
+        opacity: 0.9,
+        dashArray: '5, 8',
         interactive: false
-    }).addTo(currentGridLayer);
+    });
+    gridPoly.isJeoGrid = true;
+    gridPoly.addTo(gridGroup);
 
+    if (currentGridLayer) map.removeLayer(currentGridLayer);
+    currentGridLayer = gridGroup;
     currentGridLayer.addTo(map);
+
     showToast(`True North Grid: ${interval}m`, 2000);
 }
 
@@ -3678,108 +3681,94 @@ function initGridPanelDraggable() {
 if (document.readyState !== 'loading') initGridPanelDraggable();
 else document.addEventListener('DOMContentLoaded', initGridPanelDraggable);
 
-// Grid UI Listeners
-const btnGridToggle = document.getElementById('btn-grid-toggle');
-const gridPanel = document.getElementById('grid-interval-panel');
-const btnGridClear = document.getElementById('btn-grid-clear');
-
-if (btnGridToggle) {
-    btnGridToggle.addEventListener('click', () => {
-        isGridMode = !isGridMode;
-        btnGridToggle.classList.toggle('active', isGridMode);
-        gridPanel.style.display = isGridMode ? 'flex' : 'none';
-
-        // v1453: Synchronize class for landscape positioning
-        if (isGridMode) {
-            gridPanel.classList.add('grid-active');
-        } else {
-            gridPanel.classList.remove('grid-active');
-        }
-
-        if (isGridMode) {
-            // v1453-05F: Reset inline styles to force CSS defaults on toggle
-            gridPanel.style.top = '';
-            gridPanel.style.left = '';
-            gridPanel.style.bottom = '';
-            gridPanel.style.right = '';
-        }
-        localStorage.setItem('jeoGridMode', isGridMode); // v563: Persist toggle
-
-        // v743: If opening and we have a saved position, ensure it's applied (in case CSS reset it)
-        if (isGridMode) {
-            const savedPos = localStorage.getItem('jeoGridPanelPos');
-            if (savedPos) {
-                try {
-                    const pos = JSON.parse(savedPos);
-                    gridPanel.style.position = 'fixed';
-                    gridPanel.style.left = pos.left;
-                    gridPanel.style.top = pos.top;
-                    gridPanel.style.bottom = 'auto';
-                    gridPanel.style.margin = '0';
-                } catch (e) { }
-            }
-            showToast("Grid Mode: ON - Select interval and click on a polygon", 3000);
-        } else {
-            document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
-            activeGridInterval = null;
-        }
-    });
-}
-
-// v1453-05F: Global Grid Clear Function for HTML onclick
+// v1453-05F: Global Grid Clear Function - SCANS MAP LAYERS for robustness
 window.clearGridLayer = function (e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    if (currentGridLayer) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+
+    // 1. Remove via global variable
+    if (currentGridLayer && map) {
         map.removeLayer(currentGridLayer);
         currentGridLayer = null;
     }
+
+    // 2. Aggressive scanning for any tagged grids (Safety net)
+    if (map) {
+        map.eachLayer(layer => {
+            if (layer.isJeoGrid || (layer.options && layer.options.isJeoGrid)) {
+                map.removeLayer(layer);
+            }
+        });
+    }
+
+    // 3. Reset UI states
     document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
     activeGridInterval = null;
     showToast("Grid Cleared / Izgara Temizlendi", 1500);
-}
+};
 
-if (btnGridClear) {
-    // Attach listener via JS as well for redundancy
-    btnGridClear.addEventListener('click', window.clearGridLayer);
-} else {
-    // Fallback if not found regularly
-    document.addEventListener('DOMContentLoaded', () => {
-        const lateBtn = document.getElementById('btn-grid-clear');
-        if (lateBtn) {
-            lateBtn.addEventListener('click', window.clearGridLayer);
-        }
-    });
-}
+function initGridListeners() {
+    const btnGridToggle = document.getElementById('btn-grid-toggle');
+    const gridPanel = document.getElementById('grid-interval-panel');
+    const btnGridClear = document.getElementById('btn-grid-clear');
 
-document.querySelectorAll('.grid-opt-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const target = e.currentTarget;
-        activeGridInterval = parseInt(target.getAttribute('data-interval'));
-        localStorage.setItem('jeoGridInterval', activeGridInterval); // v563: Persist interval
-        document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
-        target.classList.add('active');
-        showToast(`Interval set: ${activeGridInterval}m. Click an area!`, 2000);
-    });
-});
+    if (btnGridToggle) {
+        // v1453: Use cloneNode to wipe old listeners and start fresh
+        const newToggle = btnGridToggle.cloneNode(true);
+        btnGridToggle.parentNode.replaceChild(newToggle, btnGridToggle);
 
-// v534: Grid Color Listeners (Updated class name)
-document.querySelectorAll('.grid-color-opt').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const target = e.currentTarget;
-        activeGridColor = target.getAttribute('data-color');
-        localStorage.setItem('jeoGridColor', activeGridColor); // v563: Persist color
-        document.querySelectorAll('.grid-color-opt').forEach(b => {
-            b.classList.remove('active');
-            b.style.border = "1px solid rgba(255,255,255,0.4)"; // Default border
+        newToggle.addEventListener('click', () => {
+            isGridMode = !isGridMode;
+            newToggle.classList.toggle('active', isGridMode);
+            gridPanel.style.display = isGridMode ? 'flex' : 'none';
+
+            if (isGridMode) {
+                gridPanel.classList.add('grid-active');
+                gridPanel.style.top = ''; gridPanel.style.left = ''; gridPanel.style.bottom = ''; gridPanel.style.right = '';
+            } else {
+                gridPanel.classList.remove('grid-active');
+            }
+            localStorage.setItem('jeoGridMode', isGridMode);
+            if (isGridMode) showToast("Grid Mode: ON - Select interval and click on a polygon", 3000);
         });
-        e.currentTarget.classList.add('active'); // v1453 Fix: Add active class
-        e.currentTarget.style.border = "2px solid #fff"; // Active highlight
-        showToast("Grid Color Updated", 1000);
+    }
+
+    if (btnGridClear) {
+        const newClear = btnGridClear.cloneNode(true);
+        btnGridClear.parentNode.replaceChild(newClear, btnGridClear);
+        newClear.addEventListener('click', (e) => window.clearGridLayer(e));
+    }
+
+    document.querySelectorAll('.grid-opt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const target = e.currentTarget;
+            activeGridInterval = parseInt(target.getAttribute('data-interval'));
+            localStorage.setItem('jeoGridInterval', activeGridInterval);
+            document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
+            target.classList.add('active');
+            showToast(`Interval: ${activeGridInterval}m`, 1500);
+        });
     });
-});
+
+    document.querySelectorAll('.grid-color-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const target = e.currentTarget;
+            activeGridColor = target.getAttribute('data-color');
+            localStorage.setItem('jeoGridColor', activeGridColor);
+            document.querySelectorAll('.grid-color-opt').forEach(b => {
+                b.classList.remove('active');
+                b.style.border = "1px solid rgba(255,255,255,0.4)";
+            });
+            target.classList.add('active');
+            target.style.border = "2px solid #fff";
+            showToast(`Color: ${activeGridColor}`, 1000);
+        });
+    });
+}
+
+// Ensure listeners are set up
+if (document.readyState !== 'loading') initGridListeners();
+else document.addEventListener('DOMContentLoaded', initGridListeners);
 
 function addExternalLayer(name, geojson) {
     if (!map) return;
