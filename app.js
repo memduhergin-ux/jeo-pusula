@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-08F'; // Landscape Legend Docking Fix
+﻿const APP_VERSION = 'v1453-11F'; // Legend Minimal Design Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -466,19 +466,6 @@ function initHeatmapLegend() {
         } catch (e) {
             console.warn("Could not restore Legend position", e);
         }
-    }
-
-    // v703: Manual Close Button
-    const closeBtn = document.getElementById('legend-close-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            legend.style.display = 'none';
-            legend.classList.remove('visible'); // v1453: Sync with visible class
-        });
-        // v1453-06F: Essential to stop drag interference
-        L.DomEvent.on(closeBtn, 'mousedown touchstart click', L.DomEvent.stopPropagation);
     }
 }
 // Init immediately if ready
