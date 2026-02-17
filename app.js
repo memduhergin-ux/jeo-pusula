@@ -252,6 +252,12 @@ function shadeColor(color, percent) {
 function updateHeatmap() {
     if (!map || !isHeatmapActive) return;
 
+    // v1453-05F: Fix for "not rendering" - Clear existing layer before adding new one
+    if (heatmapLayer) {
+        map.removeLayer(heatmapLayer);
+        heatmapLayer = null;
+    }
+
     let points = [];
     let activeGradient = {};
 
@@ -356,9 +362,12 @@ function updateHeatmap() {
         blurPixels = Math.round(radiusPixels * 0.75);
     } else {
         // v1453-05F: OTO Mode (Dynamic based on point density)
-        radiusPixels = Math.max(15, 40 - (map.getZoom() * 1.5));
+        // Adjust values to be more visible at different zoom levels
+        radiusPixels = Math.max(15, 45 - (map.getZoom() * 1.5));
         blurPixels = Math.round(radiusPixels * 0.8);
     }
+
+    if (points.length === 0) return; // v1453-05F: Don't bother if no points
 
     try {
         heatmapLayer = L.heatLayer(points, {
@@ -442,7 +451,7 @@ function initHeatmapLegend() {
                 if (viewW > viewH) {
                     legend.style.setProperty('left', 'auto', 'important');
                     legend.style.setProperty('right', '1px', 'important');
-                    legend.style.setProperty('top', (viewH - 41 - parseInt(env('safe-area-inset-bottom') || 0)) + 'px', 'important');
+                    legend.style.setProperty('top', (viewH - 41) + 'px', 'important'); // Safe area handled by CSS usually
                 } else {
                     legend.style.setProperty('left', '10px', 'important'); // v1453-1: Stacked mode (Portrait)
                     legend.style.setProperty('top', (viewH - 125) + 'px', 'important');
@@ -2157,10 +2166,11 @@ function initMapControls() {
 
         // v1453-05F: Restart-Reset Logic (Always start at defaults on fresh launch)
         // Position is NOT restored from localStorage on startup anymore.
-        scaleWrapper.style.setProperty('left', '10px', 'important');
-        scaleWrapper.style.setProperty('bottom', '50px', 'important'); // 10px above 40px Nav Bar
-        scaleWrapper.style.setProperty('top', 'auto', 'important');
-        scaleWrapper.style.setProperty('right', 'auto', 'important');
+        // We remove all inline offsets so that orientation-specific CSS takes over immediately.
+        scaleWrapper.style.removeProperty('top');
+        scaleWrapper.style.removeProperty('left');
+        scaleWrapper.style.removeProperty('bottom');
+        scaleWrapper.style.removeProperty('right');
         scaleWrapper.style.setProperty('position', 'fixed', 'important');
 
         scaleWrapper.style.setProperty('position', 'fixed', 'important');
@@ -2170,7 +2180,9 @@ function initMapControls() {
         }
     }
 
-    map.on('zoomend moveend', updateScaleValues); // v561: Removed frequent 'move' event to fix flickering
+    map.on('zoom move zoomend moveend', updateScaleValues);
+    // Refresh it on window resize too
+    window.addEventListener('resize', updateScaleValues);
     map.on('zoomend', () => {
         if (isHeatmapActive) updateHeatmap();
     });
@@ -2404,7 +2416,7 @@ function updateScaleValues() {
                             <div class="scale-row-wrapper" style="display:flex; align-items:center; gap:5px;">
                                 <div class="scale-group-left" style="display:flex; flex-direction:column; align-items:center;">
                                     <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
-                                        <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#ffeb3b;">0</span>
+                                        <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
                                         <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
                                     </div>
                                     <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
@@ -2422,7 +2434,7 @@ function updateScaleValues() {
                             </div>
                             <div class="utm-row-line">
                                 <span class="utm-lbl">X:</span><span class="utm-val" style="color:#fff;">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#ffeb3b; font-weight:bold;">${displayAlt}m</span>
+                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#fff; font-weight:bold;">${displayAlt}m</span>
                             </div>
                         </div>
                     </div>
@@ -3650,6 +3662,14 @@ if (btnGridToggle) {
         isGridMode = !isGridMode;
         btnGridToggle.classList.toggle('active', isGridMode);
         gridPanel.style.display = isGridMode ? 'flex' : 'none';
+
+        if (isGridMode) {
+            // v1453-05F: Reset inline styles to force CSS defaults on toggle
+            gridPanel.style.top = '';
+            gridPanel.style.left = '';
+            gridPanel.style.bottom = '';
+            gridPanel.style.right = '';
+        }
         localStorage.setItem('jeoGridMode', isGridMode); // v563: Persist toggle
 
         // v743: If opening and we have a saved position, ensure it's applied (in case CSS reset it)

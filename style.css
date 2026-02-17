@@ -1713,8 +1713,8 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper {
-    left: 10px !important;
-    bottom: calc(50px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 2px !important;
+    bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     right: auto !important;
     cursor: move;
@@ -1723,12 +1723,10 @@ textarea.form-input {
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper.visible {
         left: auto !important;
-        /* Magnetic Snap to Nav Bar Left Edge: calc(50% + (320px / 2)) = 50% + 160px */
+        /* Magnetic Snap to Nav Bar Left Edge */
         right: calc(50% + 160px) !important;
         bottom: env(safe-area-inset-bottom, 0px) !important;
         top: auto !important;
-        border-radius: 20px !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 }
 
