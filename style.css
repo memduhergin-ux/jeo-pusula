@@ -1682,32 +1682,7 @@ textarea.form-input {
     gap: 12px;
 }
 
-.custom-scale-wrapper {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    height: auto !important;
-    /* Original auto height */
-    width: 220px !important;
-    padding: 2px 6px !important;
-    /* Original padding */
-    background: rgba(0, 0, 0, 0.6) !important;
-    /* Original background */
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px !important;
-    /* Original rectangular look */
-    box-sizing: border-box !important;
-    z-index: 3000 !important;
-    gap: 2px !important;
-    /* Original gap */
-    overflow: hidden;
-    touch-action: none;
-    color: white;
-    font-family: 'Inter', sans-serif;
-    font-size: 11px;
-}
-
+.custom-scale-wrapper,
 .heatmap-legend {
     display: none !important;
     align-items: center !important;
@@ -1720,7 +1695,8 @@ textarea.form-input {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    border-radius: 20px !important;
+    /* Twin Panels - v1453-14F */
     box-sizing: border-box !important;
     z-index: 3000 !important;
     gap: 10px !important;
@@ -1728,6 +1704,7 @@ textarea.form-input {
     touch-action: none;
     color: white;
     font-family: 'Inter', sans-serif;
+    font-size: 11px;
 }
 
 .custom-scale-wrapper.visible {
@@ -1740,8 +1717,8 @@ textarea.form-input {
 
 .custom-scale-wrapper {
     left: 2px !important;
-    bottom: 2px !important;
-    /* User specified 2px alttan */
+    /* v1453-14: Exactly 2px above Navigation Bar (40px + safe area) */
+    bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     right: auto !important;
     cursor: move;
@@ -1749,8 +1726,8 @@ textarea.form-input {
 
 .heatmap-legend {
     left: 2px !important;
-    bottom: 42px !important;
-    /* Stays above scale */
+    /* v1453-14: Stacks on top of Scale (42px + 40px height + 2px gap) */
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     right: auto !important;
     cursor: move;
