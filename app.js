@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-41F'; // Smart Direction Popup (v1453-41F)
+﻿const APP_VERSION = 'v1453-42F'; // Sticky Add Point Mode (v1453-42F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -4298,11 +4298,14 @@ if (btnConfirmPoint) {
         const bestAlt = onlineCenterAlt !== null ? onlineCenterAlt : (onlineMyAlt !== null ? onlineMyAlt : gpsAlt);
         openRecordModalWithCoords(center.lat, center.lng, "Selected from Map", bestAlt);
 
-        // Reset Mode
+        // v1453-42F: Sticky Mode - Do NOT reset automatically
+        // User must exit mode manually by clicking the Add Point button again
+        /*
         isAddingPoint = false;
         btnAddPoint.classList.remove('active-add-point');
         if (crosshair) crosshair.style.display = 'none';
         if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+        */
     });
 }
 
