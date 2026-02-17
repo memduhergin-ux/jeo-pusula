@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-29F'; // Heatmap Panel Smooth Animation (Oily Slide)
+﻿const APP_VERSION = 'v1453-31F'; // Heatmap Ghost Orange & Visibility Standard Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -635,7 +635,7 @@ function toggleHeatmap() {
         updateHeatmapFilterOptions();
         updateHeatmap();
 
-        // v1453-1: Defensive Close Logic - Prevents closing when touching the panel
+        // v1453-31F: Robust Close Logic - Only close if really outside
         panel.addEventListener('click', (e) => e.stopPropagation());
 
         setTimeout(() => {
@@ -647,8 +647,11 @@ function toggleHeatmap() {
                     // v1453-1: Ensure we don't close if focusing filter inputs
                     if (document.activeElement && (document.activeElement.id === 'heatmap-element-filter' || document.activeElement.tagName === 'SELECT')) return;
 
-                    panel.style.display = 'none';
-                    if (btn) btn.classList.add('active');
+                    // v1453-31F: Use Standard Smooth Visibility (Remove Class, No manual Display)
+                    isHeatmapActive = false; // State update
+                    if (btn) btn.classList.remove('active');
+                    if (panel) panel.classList.remove('panel-visible');
+
                     document.removeEventListener('click', closeHandler);
                 }
             };
@@ -657,7 +660,7 @@ function toggleHeatmap() {
     } else {
         isHeatmapActive = false;
         if (btn) btn.classList.remove('active');
-        panel.style.display = 'none';
+        if (panel) panel.classList.remove('panel-visible'); // v1453-31F: Use class
         const legend = document.getElementById('heatmap-legend');
         if (legend) legend.classList.remove('visible');
         localStorage.setItem('jeoHeatmapActive', 'false'); // v563: Persist toggle
@@ -2072,7 +2075,8 @@ function initMap() {
         const heatPanel = document.getElementById('heatmap-radius-panel');
         if (isHeatmapActive) {
             if (btnHeatmap) btnHeatmap.classList.add('active');
-            if (heatPanel) heatPanel.style.display = 'block';
+            // v1453-31F: Use standard smooth transition class on startup
+            if (heatPanel) heatPanel.classList.add('panel-visible');
             updateHeatmap();
         }
 

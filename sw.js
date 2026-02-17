@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-29F-SMOOTH';
+const CACHE_NAME = 'jeo-cache-v1453-31F-UI-FIX';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

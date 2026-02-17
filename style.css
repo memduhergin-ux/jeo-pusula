@@ -313,19 +313,6 @@ body {
     clip-path: polygon(0 0, 100% 0, 60% 100%, 40% 100%);
 }
 
-/* v1453-21F: Tighten Heatmap Panel Internal Spacing */
-#heatmap-radius-panel h4 {
-    margin: 4px 0 6px 0 !important;
-    /* Reduce specific section headers */
-    font-size: 0.75rem !important;
-}
-
-#heatmap-radius-panel .radius-options {
-    gap: 4px !important;
-    /* Tighter grid */
-    margin-bottom: 6px !important;
-}
-
 #heatmap-radius-panel {
     gap: 2px !important;
     /* Reduce flex gap between main sections */
@@ -333,19 +320,12 @@ body {
     /* Slightly tighter overall padding */
 }
 
-/* v1453-21F: Make .element-opt compact */
+/* v1453-21F: Make .element-opt compact (v1453-25F: 26px) */
 .element-opt {
-    height: 30px !important;
-    /* Compact height */
-    padding: 0 8px !important;
-    /* Reduce internal padding */
-    font-size: 0.8rem !important;
-    /* Smaller font size */
-    line-height: 30px !important;
-    /* Vertically center text */
-}
-
-.element-opt {
+    height: 26px !important;
+    padding: 0 6px !important;
+    font-size: 0.75rem !important;
+    line-height: 26px !important;
     min-width: 30px !important;
     /* Ensure it's not too narrow */
 }
@@ -1825,23 +1805,21 @@ textarea.form-input {
         border-radius: 20px 20px 20px 0 !important;
     }
 
-    /* v1453-13F: Heatmap Main Panel (Radius Control) docks on top of Legend */
+    /* Heatmap Main Panel (Radius Control) docks on top of Legend (v1453-13F) */
     #heatmap-radius-panel {
         left: calc(50% + 162px) !important;
         right: auto !important;
         bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
         top: auto !important;
-        transform: none !important;
         width: 220px !important;
         max-height: 80vh !important;
         overflow-y: auto !important;
-        display: none;
+        /* v1453-30F: Removed display: none (handled by opacity/pointer-events) */
     }
 }
 
-#heatmap-radius-panel.visible {
-    display: flex !important;
-}
+/* v1453-30F: Deprecated .visible class for panel - now handled by .panel-visible */
+/* #heatmap-radius-panel.visible removed */
 
 .custom-scale-wrapper *,
 .heatmap-legend * {
@@ -2525,6 +2503,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 /* Heatmap & Precision Panels */
 #heatmap-radius-panel {
+    position: fixed !important;
+    /* v1453-30F: Critical Fix for missing panel */
     background: #1a1a1a !important;
     /* v1453-1: Stable solid dark kibar style */
     border: 1px solid #444 !important;
