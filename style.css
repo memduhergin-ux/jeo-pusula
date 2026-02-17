@@ -1743,6 +1743,24 @@ textarea.form-input {
         bottom: 0 !important;
         top: auto !important;
         display: flex !important;
+        /* v1453-18F: Unified Look (Bottom-Right flat to meet Nav Bar) */
+        border-radius: 20px 20px 0 20px !important;
+
+        /* v1453-20F: KILL GHOST GAP */
+        line-height: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* v1453-20F: Strict Internal Reset */
+    .custom-scale-wrapper.visible .scale-header-track,
+    .custom-scale-wrapper.visible .scale-body,
+    .custom-scale-wrapper.visible .scale-labels,
+    .custom-scale-wrapper.visible .scale-line {
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        display: flex !important;
+        align-items: center !important;
     }
 
     .heatmap-legend.visible {
@@ -1753,6 +1771,8 @@ textarea.form-input {
         bottom: 0 !important;
         top: auto !important;
         display: flex !important;
+        /* v1453-18F: Unified Look (Bottom-Left flat to meet Nav Bar) */
+        border-radius: 20px 20px 20px 0 !important;
     }
 
     /* v1453-13F: Heatmap Main Panel (Radius Control) docks on top of Legend */
