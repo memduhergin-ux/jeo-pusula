@@ -1,5 +1,5 @@
 ﻿const CACHE_NAME = 'jeo-cache-v1453-05F';
-const APP_VERSION = 'v1453-05F'; // Tek Gerçek Kaynak (SSOT)
+const APP_VERSION = 'v1453-06F'; // Forced Refresh + Stability Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -25,9 +25,11 @@ function updateAppVersionDisplay() {
 
 // v750: Global Security & Stability Kalkanı
 window.onerror = function (msg, url, lineNo, columnNo, error) {
-    console.error(`GLOBAL ERROR: ${msg} [${url}:${lineNo}:${columnNo}]`, error);
-    showToast("An unexpected error occurred. The app is still running safely.", 3000);
-    return false; // Let browser process it too
+    const errorMsg = `Error: ${msg} at ${lineNo}:${columnNo}`;
+    console.error(`GLOBAL ERROR: ${errorMsg}`, error);
+    // v1453-05F: Temiz hata mesajı gösterimi (Hatanın kaynağını anlamak için)
+    showToast(errorMsg, 4000);
+    return false;
 };
 
 window.onunhandledrejection = function (event) {
@@ -2351,13 +2353,14 @@ function updateScaleValues() {
         if (!scaleWrapper || scaleWrapper.style.display === 'none') return;
 
         if (typeof map !== 'undefined' && map) {
-            // v1453-05F: Defensive check - if map is not ready, skip
-            if (!map.getCenter || !map.getZoom) return;
+            // v1453-06F: Defensive checks - ensure map has a valid size and view
+            if (!map.getCenter || !map._loaded) return;
 
             let center;
             try {
                 center = map.getCenter();
-            } catch (e) { return; } // Map might not have view yet
+                if (!center || isNaN(center.lat)) return;
+            } catch (e) { return; }
 
             const y = center.lat;
             const x = center.lng;
@@ -2369,13 +2372,13 @@ function updateScaleValues() {
 
             let distMeters = 0;
             try {
+                // v1453-06F: Use safer point conversion
                 const point1 = map.containerPointToLatLng([0, 0]);
                 const point2 = map.containerPointToLatLng([targetWidthPx, 0]);
-                distMeters = point1.distanceTo(point2);
-            } catch (e) {
-                // Background update failed (map likely not ready for point conversion)
-                return;
-            }
+                if (point1 && point2) {
+                    distMeters = point1.distanceTo(point2);
+                }
+            } catch (e) { return; }
 
             let displayDist = Math.round(distMeters);
             let unit = "m";
@@ -2385,7 +2388,7 @@ function updateScaleValues() {
             }
 
             // UTM Logic
-            let displayLat, displayLon, displayAlt = "---";
+            let displayLat = null, displayLon = null, displayAlt = "---";
 
             if (typeof activePoint !== 'undefined' && activePoint) {
                 displayLat = activePoint.lat;
@@ -2395,7 +2398,7 @@ function updateScaleValues() {
                 displayLat = y;
                 displayLon = x;
                 displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
-            } else if (typeof currentCoords !== 'undefined' && currentCoords.lat !== null) {
+            } else if (typeof currentCoords !== 'undefined' && currentCoords.lat !== 0) {
                 displayLat = currentCoords.lat;
                 displayLon = currentCoords.lon;
                 if (onlineMyAlt !== null) {
@@ -2408,13 +2411,19 @@ function updateScaleValues() {
                 displayLon = x;
             }
 
-            if (displayLat && displayLon) {
+            // v1453-06F: Specific coordinate validity check (Strict)
+            if (typeof displayLat === 'number' && typeof displayLon === 'number' && !isNaN(displayLat)) {
                 const zone = Math.floor((displayLon + 180) / 6) + 1;
+                // v1453-06F: Use explicit proj strings to avoid ReferenceErrors for aliases
+                const wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
                 const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
                 try {
-                    const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
-                    const eastPart = Math.round(easting);
-                    const northPart = Math.round(northing);
+                    if (typeof proj4 !== 'function') throw new Error("proj4 is not a function");
+
+                    const [easting, northing] = proj4(wgs84, utmZoneDef, [displayLon, displayLat]);
+                    const eastPart = isNaN(easting) ? 0 : Math.round(easting);
+                    const northPart = isNaN(northing) ? 0 : Math.round(northing);
+
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
                         <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
@@ -2446,10 +2455,11 @@ function updateScaleValues() {
                         </div>
                     `;
                 } catch (e) {
-                    scaleWrapper.innerHTML = "UTM Error";
+                    console.error("UTM Conversion Error:", e);
+                    scaleWrapper.innerHTML = `<span style="font-size:10px;">UTM Syncing...</span>`;
                 }
             } else {
-                scaleWrapper.innerHTML = "Waiting for location...";
+                scaleWrapper.innerHTML = `<span style="font-size:10px;">Waiting for location...</span>`;
             }
         }
     } catch (err) {
