@@ -350,9 +350,17 @@ body {
     /* Ensure it's not too narrow */
 }
 
+/* v1453-26F: Force Circular Shape (Fix Distortion) */
 #btn-heatmap-toggle {
-    min-width: 60px !important;
-    /* Ensure it's not too narrow */
+    width: 45px !important;
+    height: 45px !important;
+    min-width: 45px !important;
+    /* Override previous 60px error */
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .needle-center {
@@ -2152,8 +2160,8 @@ textarea.form-input {
 
     .map-fab-container {
         top: calc(55px + env(safe-area-inset-top, 0px)) !important;
-        /* v1453-23F: Push to far right edge (2px gap) */
-        right: calc(2px + env(safe-area-inset-right, 0px)) !important;
+        /* v1453-24F: Force to absolute right edge (No Safe Area) */
+        right: 2px !important;
         bottom: 60px !important;
         /* v1453-1: FABs stay ABOVE the legend in landscape */
         width: 34px !important;
@@ -2512,7 +2520,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     border: 1px solid #444 !important;
     width: 170px !important;
     border-radius: 12px !important;
-    padding: 12px !important;
+    /* v1453-25F: Ultra Compact Padding */
+    padding: 6px !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
     box-sizing: border-box !important;
     z-index: 2500;
@@ -2612,12 +2621,14 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
 }
 
-/* v1453-22F: Internal Panel Close/Off Button Compact */
+/* v1453-25F: Internal Panel Close/Off Button Ultra Compact */
 #btn-heatmap-off {
-    height: 32px !important;
-    padding: 0 8px !important;
-    font-size: 0.8rem !important;
-    line-height: 32px !important;
+    height: 26px !important;
+    padding: 0 4px !important;
+    /* Tighter padding */
+    font-size: 0.75rem !important;
+    /* Smaller font for 26px */
+    line-height: 26px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2637,13 +2648,14 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     background: #222;
     color: #eee;
     border: 1px solid #444;
-    /* v1453-21F: Compact Size */
-    padding: 0 10px;
+    /* v1453-25F: Ultra Compact Size */
+    padding: 0 6px;
     /* Zero vertical padding, flex handles center */
-    height: 32px;
+    height: 26px;
     /* Force Height Match */
     border-radius: 6px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    /* Smaller font */
     cursor: pointer;
     display: flex;
     align-items: center;
