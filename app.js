@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-26F'; // Heatmap FAB Distortion Fix (Circular Shape)
+﻿const APP_VERSION = 'v1453-28F'; // Landscape FAB Margin 4px
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;

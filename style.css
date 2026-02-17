@@ -2160,13 +2160,23 @@ textarea.form-input {
 
     .map-fab-container {
         top: calc(55px + env(safe-area-inset-top, 0px)) !important;
-        /* v1453-24F: Force to absolute right edge (No Safe Area) */
-        right: 2px !important;
+        /* v1453-28F: Increase gap to 4px */
+        right: 4px !important;
         bottom: 60px !important;
         /* v1453-1: FABs stay ABOVE the legend in landscape */
         width: 34px !important;
         align-items: center !important;
         max-height: calc(100vh - 120px) !important;
+    }
+
+    /* v1453-27F: Match Heatmap FAB size to others in landscape (34px) */
+    #btn-heatmap-toggle {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+        font-size: 0.9rem !important;
+        /* Smaller icon for 34px */
+        line-height: 34px !important;
     }
 
 
