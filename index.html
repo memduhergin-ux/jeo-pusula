@@ -10,11 +10,11 @@
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
     <title>Jeoloji Pusulası <span class="app-version-display"></span></title>
     <!-- Jeoloji Pusulası Version Managed by JS -->
-    <meta name="version" content="v1453-32F">
-    <meta name="jeo-version" content="v1453-32F">
+    <meta name="version" content="v1453-33F">
+    <meta name="jeo-version" content="v1453-33F">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=FORCE_32F">
+    <link rel="stylesheet" href="style.css?v=FORCE_33F">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -325,8 +325,7 @@
 
     <!-- Heatmap Radius Control (v401) -->
     <div id="heatmap-radius-panel" class="heatmap-panel">
-        <div style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold;">
-            Heatmap Radius (Meters)</div>
+        <div class="panel-section-header">Heatmap Radius</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
             <button class="radius-opt" data-radius="0" style="grid-column: span 2; font-weight: bold;">Oto.
                 Radius</button>
@@ -338,18 +337,12 @@
             <button class="radius-opt" data-radius="500">500m</button>
         </div>
 
-        <div
-            style="font-size: 0.75rem; color: #aaa; margin-bottom: 8px; text-align: center; font-weight: bold; border-top: 1px solid #444; padding-top: 8px;">
-            Filter by Element</div>
-        <select id="heatmap-element-filter"
-            style="width: 100%; background: #333; color: #fff; border: 1px solid #666; border-radius: 8px; padding: 10px; font-size: 0.9rem; outline: none; margin-bottom: 15px; appearance: auto; -webkit-appearance: auto;">
+        <div class="panel-section-header separator">Filter by Element</div>
+        <select id="heatmap-element-filter" class="panel-dropdown">
             <option value="ALL">🌈 All Points</option>
         </select>
 
-        <button id="btn-heatmap-off"
-            style="width: 100%; background: #f44336; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: transform 0.2s;">
-            Heatmap On/Off
-        </button>
+        <button id="btn-heatmap-off">Heatmap On/Off</button>
     </div>
 
     <!-- View 3: Records (Kayıtlar) -->
@@ -768,7 +761,7 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=FORCE_32F"></script>
+    <script src="app.js?v=FORCE_33F"></script>
     <script>
         console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
         if ('serviceWorker' in navigator) {

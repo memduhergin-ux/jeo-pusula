@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-32F-PANEL-FIX';
+const CACHE_NAME = 'jeo-cache-v1453-33F-DESIGN-FIX';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

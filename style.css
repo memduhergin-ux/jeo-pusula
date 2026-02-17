@@ -2504,14 +2504,13 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 /* Heatmap & Precision Panels */
 #heatmap-radius-panel {
     position: fixed !important;
-    /* v1453-30F: Critical Fix for missing panel */
     background: #1a1a1a !important;
-    /* v1453-1: Stable solid dark kibar style */
     border: 1px solid #444 !important;
-    width: 170px !important;
+    width: 200px !important;
+    /* v1453-33F: Adjusted width to fit 'Filter by Element' text nicely */
     border-radius: 12px !important;
-    /* v1453-25F: Ultra Compact Padding */
-    padding: 6px !important;
+    padding: 10px !important;
+    /* v1453-33F: slightly more breathing room */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
     box-sizing: border-box !important;
     z-index: 2500;
@@ -2530,6 +2529,38 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     transform: translateY(10px) scale(0.98);
     /* Start slightly down and smaller */
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* v1453-33F: Standard Panel Header Styling */
+.panel-section-header {
+    font-size: 0.75rem !important;
+    color: #aaa !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    width: 100% !important;
+}
+
+.panel-section-header.separator {
+    border-top: 1px solid #444 !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+}
+
+/* v1453-33F: Standard Dropdown & Common Button Matching */
+.panel-dropdown {
+    width: 100% !important;
+    background: #333 !important;
+    color: #fff !important;
+    border: 1px solid #666 !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    font-size: 0.9rem !important;
+    outline: none !important;
+    margin-bottom: 8px !important;
+    /* Sync gap with header-to-btn */
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
 }
 
 /* v1453-29F: Active State Class for Smooth Toggle */
@@ -2631,25 +2662,23 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 /* v1453-25F: Internal Panel Close/Off Button Ultra Compact */
 #btn-heatmap-off {
-    height: 26px !important;
-    padding: 0 4px !important;
-    /* Tighter padding */
-    font-size: 0.75rem !important;
-    /* Smaller font for 26px */
-    line-height: 26px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin-top: 4px !important;
-    /* Slight visual separation */
-    background: #f44336;
-    /* Distinct Red for Off/Close */
-    color: white;
-    border: none;
-    border-radius: 6px;
-    width: 100%;
-    /* Full width */
-    cursor: pointer;
+    width: 100% !important;
+    background: #f44336 !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    font-size: 0.8rem !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+    transition: transform 0.2s !important;
+    margin-top: 0 !important;
+    /* Spacing handled by separator margin */
+}
+
+#btn-heatmap-off:active {
+    transform: scale(0.95) !important;
 }
 
 .element-opt {
