@@ -1690,7 +1690,8 @@ textarea.form-input {
     position: fixed;
     height: 40px !important;
     width: 220px !important;
-    padding: 0 !important;
+    padding: 0 10px !important;
+    /* v1453-15F: Equal padding for twin look */
     background: rgba(0, 0, 0, 0.45) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1736,16 +1737,16 @@ textarea.form-input {
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper.visible {
         left: auto !important;
-        /* Magnetic Snap to Nav Bar Left Edge */
-        right: calc(50% + 160px) !important;
+        /* Magnetic Snap to Nav Bar Left Edge (140px half-width + 2px gap) */
+        right: calc(50% + 142px) !important;
         bottom: env(safe-area-inset-bottom, 0px) !important;
         top: auto !important;
         display: flex !important;
     }
 
     .heatmap-legend.visible {
-        /* Magnetic Snap to Nav Bar Right Edge */
-        left: calc(50% + 160px) !important;
+        /* Magnetic Snap to Nav Bar Right Edge (140px half-width + 2px gap) */
+        left: calc(50% + 142px) !important;
         right: auto !important;
         bottom: env(safe-area-inset-bottom, 0px) !important;
         top: auto !important;
@@ -1754,22 +1755,20 @@ textarea.form-input {
 
     /* v1453-13F: Heatmap Main Panel (Radius Control) docks on top of Legend */
     #heatmap-radius-panel {
-        left: calc(50% + 160px) !important;
+        left: calc(50% + 142px) !important;
         right: auto !important;
         bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
         top: auto !important;
         transform: none !important;
         width: 220px !important;
-        /* Unified Width */
         max-height: 80vh !important;
         overflow-y: auto !important;
         display: none;
-        /* Controlled by visible class or style.display */
     }
+}
 
-    #heatmap-radius-panel.visible {
-        display: flex !important;
-    }
+#heatmap-radius-panel.visible {
+    display: flex !important;
 }
 
 .custom-scale-wrapper *,
@@ -2793,35 +2792,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     color: #70757a;
 }
 
-/* v701/v702/v1453-1: Heatmap Legend (Horizontal & Compact) */
-.heatmap-legend {
-    position: fixed;
-    bottom: calc(95px + env(safe-area-inset-bottom, 0px));
-    /* v1453-1: 10px gap above scale (45+40=85) */
-    bottom: 95px;
-    /* Default portrait */
-    left: 10px !important;
-    /* v1453-1: Locked start hiza */
-    width: 220px !important;
-    /* v1453-1: Locked end hiza */
-    height: 40px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    z-index: 3000;
-    box-sizing: border-box !important;
-    color: white;
-    font-family: 'Inter', sans-serif;
-    overflow: hidden;
-    transition: opacity 0.3s;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 0 10px !important;
-    /* v1453-1: Unified padding for perfect start alignment */
-    gap: 8px;
-}
+
 
 /* Landscape rules consolidated above */
 

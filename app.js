@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-14F'; // Unified Twin Panels & Portrait Positioning Fix
+﻿const APP_VERSION = 'v1453-15F'; // Precision Layout & Twin Panel Sync Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
