@@ -1764,6 +1764,15 @@ textarea.form-input {
     cursor: move;
 }
 
+/* v1453-37F: Grid Panel Default (Portrait) Positioning */
+#grid-interval-panel {
+    top: 80px !important;
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    position: fixed !important;
+}
+
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper.visible {
         left: auto !important;
@@ -2229,6 +2238,7 @@ textarea.form-input {
         /* v1453: 4px above nav bar (40px) */
         left: 4px !important;
         /* v1453: 4px from left */
+        top: auto !important;
         transform: none !important;
         width: auto !important;
         max-width: fit-content !important;
