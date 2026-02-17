@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-42F'; // Sticky Add Point Mode (v1453-42F)
+﻿const APP_VERSION = 'v1453-44F'; // Splash English Quote Only (v1453-44F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
