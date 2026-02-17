@@ -3727,7 +3727,7 @@ if (btnGridToggle) {
 }
 
 // v1453-05F: Global Grid Clear Function for HTML onclick
-function clearGridLayer(e) {
+window.clearGridLayer = function (e) {
     if (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -3775,6 +3775,7 @@ document.querySelectorAll('.grid-color-opt').forEach(btn => {
             b.classList.remove('active');
             b.style.border = "1px solid rgba(255,255,255,0.4)"; // Default border
         });
+        e.currentTarget.classList.add('active'); // v1453 Fix: Add active class
         e.currentTarget.style.border = "2px solid #fff"; // Active highlight
         showToast("Grid Color Updated", 1000);
     });
