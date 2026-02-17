@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-33F'; // Heatmap Design Refinement & Spacing Fix
+﻿const APP_VERSION = 'v1453-34F'; // Heatmap Panel Tight Width Adjustment
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
