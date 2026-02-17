@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-31F'; // Heatmap Ghost Orange & Visibility Standard Fix
+﻿const APP_VERSION = 'v1453-32F'; // Heatmap Invisibility & CSS Override Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -626,6 +626,8 @@ function toggleHeatmap() {
         } else {
             // Remove visible class to trigger fade out/slide down
             panel.classList.remove('panel-visible');
+            // v1453-32F: Reset inline display to allow CSS opacity/transform to work
+            panel.style.display = '';
             // We do NOT set display: none immediately to allow transition to finish
             // CSS pointer-events: none handles interactions
         }

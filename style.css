@@ -2534,6 +2534,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 /* v1453-29F: Active State Class for Smooth Toggle */
 #heatmap-radius-panel.panel-visible {
+    display: flex !important;
+    /* v1453-32F: Ensure it overrides inline display: none */
     opacity: 1 !important;
     pointer-events: auto !important;
     transform: translateY(0) scale(1) !important;
