@@ -313,6 +313,49 @@ body {
     clip-path: polygon(0 0, 100% 0, 60% 100%, 40% 100%);
 }
 
+/* v1453-21F: Tighten Heatmap Panel Internal Spacing */
+#heatmap-radius-panel h4 {
+    margin: 4px 0 6px 0 !important;
+    /* Reduce specific section headers */
+    font-size: 0.75rem !important;
+}
+
+#heatmap-radius-panel .radius-options {
+    gap: 4px !important;
+    /* Tighter grid */
+    margin-bottom: 6px !important;
+}
+
+#heatmap-radius-panel {
+    gap: 2px !important;
+    /* Reduce flex gap between main sections */
+    padding: 8px !important;
+    /* Slightly tighter overall padding */
+}
+
+/* v1453-21F: Make .element-opt and #btn-heatmap-toggle compact and equal height */
+.element-opt,
+#btn-heatmap-toggle {
+    height: 30px !important;
+    /* Compact height */
+    padding: 0 8px !important;
+    /* Reduce internal padding */
+    font-size: 0.8rem !important;
+    /* Smaller font size */
+    line-height: 30px !important;
+    /* Vertically center text */
+}
+
+.element-opt {
+    min-width: 30px !important;
+    /* Ensure it's not too narrow */
+}
+
+#btn-heatmap-toggle {
+    min-width: 60px !important;
+    /* Ensure it's not too narrow */
+}
+
 .needle-center {
     position: absolute;
     top: 50%;
@@ -2569,11 +2612,27 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
 }
 
+/* v1453-21F: Compact, Equal Height Button Override */
+#btn-heatmap-toggle {
+    padding: 6px 0 !important;
+    /* Compact vertical */
+    height: 32px !important;
+    /* Force Height Match with Element Filter */
+    font-size: 0.8rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
 .element-opt {
     background: #222;
     color: #eee;
     border: 1px solid #444;
-    padding: 6px 10px;
+    /* v1453-21F: Compact Size */
+    padding: 0 10px;
+    /* Zero vertical padding, flex handles center */
+    height: 32px;
+    /* Force Height Match */
     border-radius: 6px;
     font-size: 0.8rem;
     cursor: pointer;

@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-20F'; // Landscape Internal CSS Reset (Zero Line Height)
+﻿const APP_VERSION = 'v1453-21F'; // Heatmap Panel Height Reduction (Compact UI)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
