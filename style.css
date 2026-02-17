@@ -2225,12 +2225,13 @@ textarea.form-input {
     #grid-interval-panel {
         display: none;
         /* Controlled by JS, but ensure default rules apply */
-        bottom: 70px !important;
-        /* Just above nav bar */
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
+        /* v1453: 2px above scale/nav bar (40px) */
+        left: 4px !important;
+        /* v1453: 4px from left */
+        transform: none !important;
         width: auto !important;
-        max-width: 80% !important;
+        max-width: fit-content !important;
         right: auto !important;
     }
 
@@ -2515,6 +2516,11 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
     box-sizing: border-box !important;
     z-index: 2500;
+    /* v1453-35F: Optimize for GPU accelerated dragging ("Oily Move") */
+    will-change: transform, opacity !important;
+    backface-visibility: hidden !important;
+    transform-style: preserve-3d !important;
+    contain: layout style !important;
     /* v1453-6: Center All Content - "Sağdan soldan alttan üstten" */
     display: flex;
     flex-direction: column;

@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-34F'; // Heatmap Panel Tight Width Adjustment
+﻿const APP_VERSION = 'v1453-35F'; // Performance Optimization & Smooth Drag Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2250,6 +2250,10 @@ function makeDraggable(element, storageKey) {
             clientY = e.clientY;
         }
 
+        // v1453-35F: Cache dimensions IMMEDIATELY to avoid lookups in the loop
+        element.cachedWidth = rect.width;
+        element.cachedHeight = rect.height;
+
         // Calculate where inside the element we grabbed it (Viewport space)
         element.grabOffsetX = clientX - rect.left;
         element.grabOffsetY = clientY - rect.top;
@@ -2280,16 +2284,13 @@ function makeDraggable(element, storageKey) {
         let finalTop = clientY - element.grabOffsetY;
         let finalLeft = clientX - element.grabOffsetX;
 
-        // v1453-1: Viewport Boundary Enforcement
-        const rect = element.getBoundingClientRect();
-        const minTop = 0;
-        const maxTop = window.innerHeight - rect.height;
-        const minLeft = 0;
-        const maxLeft = window.innerWidth - rect.width;
+        // v1453-35F: Performance Optimization - Use cached rect dimensions to avoid layout thrashing
+        const maxTop = window.innerHeight - (element.cachedHeight || 0);
+        const maxLeft = window.innerWidth - (element.cachedWidth || 0);
 
-        if (finalTop < minTop) finalTop = minTop;
+        if (finalTop < 0) finalTop = 0;
         if (finalTop > maxTop) finalTop = maxTop;
-        if (finalLeft < minLeft) finalLeft = minLeft;
+        if (finalLeft < 0) finalLeft = 0;
         if (finalLeft > maxLeft) finalLeft = maxLeft;
 
         element.style.setProperty('top', finalTop + "px", 'important');
@@ -3619,13 +3620,13 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
 // v743: Draggable Grid Panel
 function toggleGridPanel() {
-    isGridPanelOpen = !isGridPanelOpen;
+    isGridMode = !isGridMode; // Sync with isGridMode
     const panel = document.getElementById('grid-interval-panel');
     if (panel) {
-        panel.style.display = isGridPanelOpen ? 'block' : 'none';
+        panel.style.display = isGridMode ? 'flex' : 'none';
 
         // v1453-14: Manage .grid-active class for CSS visibility control in Landscape
-        if (isGridPanelOpen) {
+        if (isGridMode) {
             panel.classList.add('grid-active');
         } else {
             panel.classList.remove('grid-active');
@@ -3688,6 +3689,13 @@ if (btnGridToggle) {
         btnGridToggle.classList.toggle('active', isGridMode);
         gridPanel.style.display = isGridMode ? 'flex' : 'none';
 
+        // v1453: Synchronize class for landscape positioning
+        if (isGridMode) {
+            gridPanel.classList.add('grid-active');
+        } else {
+            gridPanel.classList.remove('grid-active');
+        }
+
         if (isGridMode) {
             // v1453-05F: Reset inline styles to force CSS defaults on toggle
             gridPanel.style.top = '';
@@ -3719,8 +3727,11 @@ if (btnGridToggle) {
 }
 
 // v1453-05F: Global Grid Clear Function for HTML onclick
-window.clearGridLayer = function (e) {
-    if (e && e.stopPropagation) e.stopPropagation();
+function clearGridLayer(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     if (currentGridLayer) {
         map.removeLayer(currentGridLayer);
         currentGridLayer = null;
@@ -3728,7 +3739,7 @@ window.clearGridLayer = function (e) {
     document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
     activeGridInterval = null;
     showToast("Grid Cleared / Izgara Temizlendi", 1500);
-};
+}
 
 if (btnGridClear) {
     // Attach listener via JS as well for redundancy
