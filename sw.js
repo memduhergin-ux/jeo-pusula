@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-15F-PRECISION';
+const CACHE_NAME = 'jeo-cache-v1453-16F-162PX';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

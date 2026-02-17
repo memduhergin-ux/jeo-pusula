@@ -1737,16 +1737,16 @@ textarea.form-input {
 @media screen and (orientation: landscape) {
     .custom-scale-wrapper.visible {
         left: auto !important;
-        /* Magnetic Snap to Nav Bar Left Edge (140px half-width + 2px gap) */
-        right: calc(50% + 142px) !important;
+        /* Magnetic Snap: 160px half-width + 2px gap = 162px */
+        right: calc(50% + 162px) !important;
         bottom: env(safe-area-inset-bottom, 0px) !important;
         top: auto !important;
         display: flex !important;
     }
 
     .heatmap-legend.visible {
-        /* Magnetic Snap to Nav Bar Right Edge (140px half-width + 2px gap) */
-        left: calc(50% + 142px) !important;
+        /* Magnetic Snap: 160px half-width + 2px gap = 162px */
+        left: calc(50% + 162px) !important;
         right: auto !important;
         bottom: env(safe-area-inset-bottom, 0px) !important;
         top: auto !important;
@@ -1755,7 +1755,7 @@ textarea.form-input {
 
     /* v1453-13F: Heatmap Main Panel (Radius Control) docks on top of Legend */
     #heatmap-radius-panel {
-        left: calc(50% + 142px) !important;
+        left: calc(50% + 162px) !important;
         right: auto !important;
         bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
         top: auto !important;

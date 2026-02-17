@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-15F'; // Precision Layout & Twin Panel Sync Fix
+﻿const APP_VERSION = 'v1453-16F'; // 162px Precision Landscape Alignment
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
