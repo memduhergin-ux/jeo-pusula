@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-37F'; // Grid Panel Fixes
+﻿const APP_VERSION = 'v1453-38F'; // Grid Panel Fixes (v1453-38F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -3606,7 +3606,7 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
     const gridPoly = L.polyline(gridLines, {
         color: color,
-        weight: 1.5, // v1453: Reverted to 1.5 for better precision
+        weight: 1.0, // v1453: Reverted to 1.0 (Original Precision)
         opacity: 0.9,
         dashArray: '5, 8',
         interactive: false

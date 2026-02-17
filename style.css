@@ -1764,12 +1764,14 @@ textarea.form-input {
     cursor: move;
 }
 
-/* v1453-37F: Grid Panel Default (Portrait) Positioning */
+/* v1453-38F: Grid Panel Default (Portrait) Positioning (Fixed Jump Issue) */
 #grid-interval-panel {
     top: 80px !important;
     bottom: auto !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    width: fit-content !important;
     position: fixed !important;
 }
 
