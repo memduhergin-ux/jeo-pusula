@@ -2165,18 +2165,18 @@ function initMapControls() {
         L.DomEvent.disableClickPropagation(scaleWrapper);
 
         // v1453-05F: Restart-Reset Logic (Always start at defaults on fresh launch)
-        // Position is NOT restored from localStorage on startup anymore.
-        // We remove all inline offsets so that orientation-specific CSS takes over immediately.
+        // Position is NOT restored from localStorage on startup anymore to ensure CSS baseline.
+        const savedPos = localStorage.getItem('jeoScalePos_v3');
+
         scaleWrapper.style.removeProperty('top');
         scaleWrapper.style.removeProperty('left');
         scaleWrapper.style.removeProperty('bottom');
         scaleWrapper.style.removeProperty('right');
         scaleWrapper.style.setProperty('position', 'fixed', 'important');
 
-        scaleWrapper.style.setProperty('position', 'fixed', 'important');
-        // Ensure standard css doesn't override
+        // Ensure standard css doesn't override if no custom position is yet established
         if (!savedPos) {
-            scaleWrapper.style.removeProperty('top'); // Ensure bottom logic works
+            scaleWrapper.style.removeProperty('top'); // Double down on bottom bias
         }
     }
 
@@ -2346,105 +2346,114 @@ function fetchElevation(lat, lon, callback) {
 
 // v703: Update scale and UTM values logic
 function updateScaleValues() {
-    const scaleWrapper = document.querySelector('.custom-scale-wrapper');
-    if (!scaleWrapper || scaleWrapper.style.display === 'none') return;
+    try {
+        const scaleWrapper = document.querySelector('.custom-scale-wrapper');
+        if (!scaleWrapper || scaleWrapper.style.display === 'none') return;
 
-    if (typeof map !== 'undefined' && map) {
-        const center = map.getCenter();
-        const y = center.lat;
-        const x = center.lng;
+        if (typeof map !== 'undefined' && map) {
+            // v1453-05F: Defensive check - if map is not ready, skip
+            if (!map.getCenter || !map.getZoom) return;
 
-        // Scale Logic
-        const containerWidth = 220; // Fixed width for symmetry
-        const targetWidthCm = 1.42;
-        const pxPerCm = 96 / 2.54;
-        const targetWidthPx = targetWidthCm * pxPerCm;
-
-        const point1 = map.containerPointToLatLng([0, 0]);
-        const point2 = map.containerPointToLatLng([targetWidthPx, 0]);
-        const distMeters = point1.distanceTo(point2);
-
-        let displayDist = Math.round(distMeters);
-        let unit = "m";
-        if (displayDist > 1000) {
-            displayDist = (distMeters / 1000).toFixed(1);
-            unit = "km";
-        }
-
-        // UTM Logic
-        let displayLat, displayLon, displayAlt = "---";
-
-        if (typeof activePoint !== 'undefined' && activePoint) {
-            displayLat = activePoint.lat;
-            displayLon = activePoint.lng;
-            displayAlt = (activePoint.alt !== undefined && activePoint.alt !== null) ? Math.round(activePoint.alt) : "---";
-        } else if (isAddingPoint) {
-            // v1453-1: Map Center Mode (Crosshair)
-            displayLat = y;
-            displayLon = x;
-            displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
-        } else if (typeof currentCoords !== 'undefined' && currentCoords.lat !== null) {
-            // v738: Real User Position Mode
-            displayLat = currentCoords.lat;
-            displayLon = currentCoords.lon;
-
-            // Priority: Online Elevation (MSL) > GPS Sensor (Ellipsoid)
-            if (onlineMyAlt !== null) {
-                displayAlt = Math.round(onlineMyAlt);
-            } else if (currentCoords.alt !== null) {
-                displayAlt = Math.round(currentCoords.alt);
-            }
-        } else {
-            // Fallback to center if no GPS fix yet
-            displayLat = y;
-            displayLon = x;
-        }
-
-        if (displayLat) {
-            const zone = Math.floor((displayLon + 180) / 6) + 1;
-            const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+            let center;
             try {
-                const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
-                const eastPart = Math.round(easting);
-                const northPart = Math.round(northing);
-                // v1453-2: Kilitli Mizanpaj (Mirroring Parity)
-                // v1453-05F: Reverted to "Old Appearance" (Side-by-Side Flex)
-                scaleWrapper.innerHTML = `
-                    <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                    <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
-                        <div class="scale-body" style="display:flex; align-items:center; justify-content:center;">
-                            <div class="scale-row-wrapper" style="display:flex; align-items:center; gap:5px;">
-                                <div class="scale-group-left" style="display:flex; flex-direction:column; align-items:center;">
-                                    <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
-                                        <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
-                                        <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
-                                    </div>
-                                    <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
-                                        <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
-                                        <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
-                                        <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
-                                    </div>
-                                </div>
-                                <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:8px;">${unit}</span>
-                            </div>
-                        </div>
-                        <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.2;">
-                            <div class="utm-row-line">
-                                <span class="utm-lbl">Y:</span><span class="utm-val" style="color:#fff;">${eastPart}</span>
-                            </div>
-                            <div class="utm-row-line">
-                                <span class="utm-lbl">X:</span><span class="utm-val" style="color:#fff;">${northPart}</span>
-                                <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#fff; font-weight:bold;">${displayAlt}m</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                center = map.getCenter();
+            } catch (e) { return; } // Map might not have view yet
+
+            const y = center.lat;
+            const x = center.lng;
+
+            // Scale Logic
+            const targetWidthCm = 1.42;
+            const pxPerCm = 96 / 2.54;
+            const targetWidthPx = targetWidthCm * pxPerCm;
+
+            let distMeters = 0;
+            try {
+                const point1 = map.containerPointToLatLng([0, 0]);
+                const point2 = map.containerPointToLatLng([targetWidthPx, 0]);
+                distMeters = point1.distanceTo(point2);
             } catch (e) {
-                scaleWrapper.innerHTML = "UTM Error";
+                // Background update failed (map likely not ready for point conversion)
+                return;
             }
-        } else {
-            scaleWrapper.innerHTML = "Waiting for location...";
+
+            let displayDist = Math.round(distMeters);
+            let unit = "m";
+            if (displayDist > 1000) {
+                displayDist = (distMeters / 1000).toFixed(1);
+                unit = "km";
+            }
+
+            // UTM Logic
+            let displayLat, displayLon, displayAlt = "---";
+
+            if (typeof activePoint !== 'undefined' && activePoint) {
+                displayLat = activePoint.lat;
+                displayLon = activePoint.lng;
+                displayAlt = (activePoint.alt !== undefined && activePoint.alt !== null) ? Math.round(activePoint.alt) : "---";
+            } else if (isAddingPoint) {
+                displayLat = y;
+                displayLon = x;
+                displayAlt = onlineCenterAlt !== null ? Math.round(onlineCenterAlt) : "---";
+            } else if (typeof currentCoords !== 'undefined' && currentCoords.lat !== null) {
+                displayLat = currentCoords.lat;
+                displayLon = currentCoords.lon;
+                if (onlineMyAlt !== null) {
+                    displayAlt = Math.round(onlineMyAlt);
+                } else if (currentCoords.alt !== null) {
+                    displayAlt = Math.round(currentCoords.alt);
+                }
+            } else {
+                displayLat = y;
+                displayLon = x;
+            }
+
+            if (displayLat && displayLon) {
+                const zone = Math.floor((displayLon + 180) / 6) + 1;
+                const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+                try {
+                    const [easting, northing] = proj4('WGS84', utmZoneDef, [displayLon, displayLat]);
+                    const eastPart = Math.round(easting);
+                    const northPart = Math.round(northing);
+                    scaleWrapper.innerHTML = `
+                        <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
+                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
+                            <div class="scale-body" style="display:flex; align-items:center; justify-content:center;">
+                                <div class="scale-row-wrapper" style="display:flex; align-items:center; gap:5px;">
+                                    <div class="scale-group-left" style="display:flex; flex-direction:column; align-items:center;">
+                                        <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
+                                            <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
+                                            <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
+                                        </div>
+                                        <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
+                                            <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
+                                            <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
+                                            <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
+                                        </div>
+                                    </div>
+                                    <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:8px;">${unit}</span>
+                                </div>
+                            </div>
+                            <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.2;">
+                                <div class="utm-row-line">
+                                    <span class="utm-lbl">Y:</span><span class="utm-val" style="color:#fff;">${eastPart}</span>
+                                </div>
+                                <div class="utm-row-line">
+                                    <span class="utm-lbl">X:</span><span class="utm-val" style="color:#fff;">${northPart}</span>
+                                    <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#fff; font-weight:bold;">${displayAlt}m</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } catch (e) {
+                    scaleWrapper.innerHTML = "UTM Error";
+                }
+            } else {
+                scaleWrapper.innerHTML = "Waiting for location...";
+            }
         }
+    } catch (err) {
+        console.error("Critical Scale Panel Error:", err);
     }
 }
 
