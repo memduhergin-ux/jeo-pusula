@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-44F-QUOTE-FIX';
+const CACHE_NAME = 'jeo-cache-v1453-45F-SPLASH-TIME';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-44F'; // Splash English Quote Only (v1453-44F)
+﻿const APP_VERSION = 'v1453-45F'; // Splash Timeout 3s (v1453-45F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -126,7 +126,7 @@ function initApp() {
             splash.classList.add('hidden');
             setTimeout(() => splash.remove(), 1000);
         }
-    }, 1500);
+    }, 3000); // v1453-45F: Increased to 3s for readability
 
     // 2. Request Wake Lock (Screen On)
     try {
