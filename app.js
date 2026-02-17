@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-35F'; // Performance Optimization & Smooth Drag Fix
+﻿const APP_VERSION = 'v1453-36F'; // Grid Panel Position Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
