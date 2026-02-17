@@ -333,9 +333,8 @@ body {
     /* Slightly tighter overall padding */
 }
 
-/* v1453-21F: Make .element-opt and #btn-heatmap-toggle compact and equal height */
-.element-opt,
-#btn-heatmap-toggle {
+/* v1453-21F: Make .element-opt compact */
+.element-opt {
     height: 30px !important;
     /* Compact height */
     padding: 0 8px !important;
@@ -2153,7 +2152,8 @@ textarea.form-input {
 
     .map-fab-container {
         top: calc(55px + env(safe-area-inset-top, 0px)) !important;
-        right: calc(10px + env(safe-area-inset-right, 0px)) !important;
+        /* v1453-23F: Push to far right edge (2px gap) */
+        right: calc(2px + env(safe-area-inset-right, 0px)) !important;
         bottom: 60px !important;
         /* v1453-1: FABs stay ABOVE the legend in landscape */
         width: 34px !important;
@@ -2612,16 +2612,25 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
 }
 
-/* v1453-21F: Compact, Equal Height Button Override */
-#btn-heatmap-toggle {
-    padding: 6px 0 !important;
-    /* Compact vertical */
+/* v1453-22F: Internal Panel Close/Off Button Compact */
+#btn-heatmap-off {
     height: 32px !important;
-    /* Force Height Match with Element Filter */
+    padding: 0 8px !important;
     font-size: 0.8rem !important;
+    line-height: 32px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    margin-top: 4px !important;
+    /* Slight visual separation */
+    background: #f44336;
+    /* Distinct Red for Off/Close */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 100%;
+    /* Full width */
+    cursor: pointer;
 }
 
 .element-opt {
