@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-39F'; // Popup & UI Fixes (v1453-39F)
+﻿const APP_VERSION = 'v1453-40F'; // Fixed Popup AutoPan (v1453-40F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -3891,7 +3891,11 @@ function addExternalLayer(name, geojson) {
                         </div>`;
                 }
                 popupContent += `</div>`;
-                layer.bindPopup(popupContent);
+                layer.bindPopup(popupContent, {
+                    maxHeight: window.innerHeight / 4,
+                    autoPan: false,
+                    className: 'custom-query-popup'
+                });
 
                 // Pass clicks to map handler if in special modes
                 layer.on('click', (e) => {

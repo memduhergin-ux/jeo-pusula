@@ -2225,16 +2225,18 @@ textarea.form-input {
         padding: 4px 0;
     }
 
-    /* v1453-39F: Popup (Sorgu Ekranı) Size Constraints (1/4 of Viewport) */
-    .leaflet-popup-content-wrapper {
+    /* v1453-40F: Popup (Sorgu Ekranı) Size Constraints (1/4 of Viewport) */
+    .leaflet-popup-content-wrapper,
+    .custom-query-popup .leaflet-popup-content-wrapper {
         max-width: 240px;
         border-radius: 8px;
         max-height: 25vh !important;
-        /* v1453-39F: 1/4 of screen height */
+        /* v1453: 1/4 of screen height */
         overflow: hidden;
     }
 
-    .leaflet-popup-content {
+    .leaflet-popup-content,
+    .custom-query-popup .leaflet-popup-content {
         max-height: 22vh !important;
         overflow-y: auto !important;
         /* Enable internal scrolling */
@@ -2249,7 +2251,7 @@ textarea.form-input {
 
     #map-container {
         touch-action: pan-x pan-y !important;
-        /* v1453-39F: Prevent page pull while allowing map pan */
+        /* v1453: Prevent page pull while allowing map pan */
     }
 
     /* v1453-12 Fix: Grid Panel Landscape Positioning */
