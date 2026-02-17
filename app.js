@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-11F'; // Legend Minimal Design Fix
+﻿const APP_VERSION = 'v1453-13F'; // Landscape Multi-Panel Docking Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
