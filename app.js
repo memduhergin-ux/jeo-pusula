@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-40F'; // Fixed Popup AutoPan (v1453-40F)
+﻿const APP_VERSION = 'v1453-41F'; // Smart Direction Popup (v1453-41F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -3891,11 +3891,9 @@ function addExternalLayer(name, geojson) {
                         </div>`;
                 }
                 popupContent += `</div>`;
-                layer.bindPopup(popupContent, {
-                    maxHeight: window.innerHeight / 4,
-                    autoPan: false,
-                    className: 'custom-query-popup'
-                });
+                popupContent += `</div>`;
+                // v1453-41F: Remove static bindPopup to allow Smart Direction on Click
+                // layer.bindPopup(popupContent, { ... }); 
 
                 // Pass clicks to map handler if in special modes
                 layer.on('click', (e) => {
@@ -3905,6 +3903,24 @@ function addExternalLayer(name, geojson) {
                         map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
                         return;
                     }
+
+                    // v1453-41F: Smart Direction Logic
+                    // Calculate if click is in top half of screen
+                    const isTopHalf = e.containerPoint.y < (window.innerHeight / 2);
+
+                    // Determine direction and style
+                    // Top Half -> Open DOWN (Arrow points UP, Popup Box is BELOW point)
+                    // Bottom Half -> Open UP (Arrow points DOWN, Popup Box is ABOVE point - Default)
+
+                    const options = {
+                        maxHeight: window.innerHeight / 4,
+                        autoPan: false,
+                        className: isTopHalf ? 'custom-query-popup popup-open-down' : 'custom-query-popup',
+                        // Offset: [x, y]
+                        // Standard (Bottom Half): [0, -7] (Tooltip tip at bottom, moves box UP)
+                        // Inverted (Top Half): [0, 20] (Tooltip tip at top, moves box DOWN)
+                        offset: isTopHalf ? [0, 20] : [0, -7]
+                    };
 
                     const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
 
@@ -3930,13 +3946,13 @@ function addExternalLayer(name, geojson) {
                         updateMeasurement(e.latlng);
                     } else if (isAddingPoint) {
                         L.DomEvent.stopPropagation(e); // Stop popup
-                        // We need to trigger the same logic as map click.
-                        // Since the map click handler is anonymous, let's extract it or copy the logic.
-                        // Copying logic for stability (or we could fire a map click event?)
-                        // Simpler: Fire a synthetic click on the map?
-                        // map.fire('click', e); -> This might cause loop if not careful, but Leaflet usually handles it.
-                        // Let's just run the logic directly or fire map click.
                         map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    } else {
+                        // v1453-41F: Open Popup Manually with Smart Options
+                        L.popup(options)
+                            .setLatLng(e.latlng)
+                            .setContent(popupContent)
+                            .openOn(map);
                     }
                 });
             }

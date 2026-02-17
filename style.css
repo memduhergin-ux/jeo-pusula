@@ -2249,6 +2249,18 @@ textarea.form-input {
         overflow-y: auto;
     }
 
+    /* v1453-41F: Custom Downward Opening Popup Style */
+    .popup-open-down .leaflet-popup-tip-container {
+        top: -20px;
+        bottom: auto;
+        transform: rotate(180deg);
+    }
+
+    .popup-open-down .leaflet-popup-content-wrapper {
+        margin-top: 20px;
+        margin-bottom: 0;
+    }
+
     #map-container {
         touch-action: pan-x pan-y !important;
         /* v1453: Prevent page pull while allowing map pan */
