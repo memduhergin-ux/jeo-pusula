@@ -1689,9 +1689,9 @@ textarea.form-input {
     justify-content: center !important;
     position: fixed;
     height: 40px !important;
-    width: auto !important;
-    min-width: 200px;
-    padding: 0 15px !important;
+    width: 220px !important;
+    padding: 0 !important;
+    /* v1453-07F: No padding to allow perfect centering */
     background: rgba(0, 0, 0, 0.45) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1699,7 +1699,7 @@ textarea.form-input {
     border-radius: 20px;
     box-sizing: border-box !important;
     z-index: 3000 !important;
-    gap: 15px !important;
+    gap: 10px !important;
     overflow: hidden;
     touch-action: none;
     color: white;
@@ -1713,6 +1713,14 @@ textarea.form-input {
 }
 
 .custom-scale-wrapper {
+    left: 2px !important;
+    bottom: calc(2px + env(safe-area-inset-bottom, 0px)) !important;
+    top: auto !important;
+    right: auto !important;
+    cursor: move;
+}
+
+.heatmap-legend {
     left: 2px !important;
     bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
@@ -1732,9 +1740,10 @@ textarea.form-input {
 
 @media screen and (orientation: landscape) {
     .heatmap-legend.visible {
-        bottom: calc(1px + env(safe-area-inset-bottom, 0px)) !important;
-        right: 1px !important;
-        left: auto !important;
+        left: calc(50% + 160px) !important;
+        right: auto !important;
+        bottom: env(safe-area-inset-bottom, 0px) !important;
+        top: auto !important;
     }
 }
 
@@ -1746,7 +1755,9 @@ textarea.form-input {
 .custom-scale-wrapper button,
 .heatmap-legend button,
 .custom-scale-wrapper select,
-.heatmap-legend select {
+.heatmap-legend select,
+.legend-close-btn,
+.drag-handle {
     pointer-events: auto !important;
 }
 
@@ -2853,25 +2864,34 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 .legend-close-btn {
+    position: absolute !important;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     cursor: pointer;
-    font-size: 0.8rem;
-    color: #aaa;
-    transition: color 0.2s;
+    font-size: 0.9rem;
+    color: #ff5252;
+    /* Pro-look red for exit */
+    transition: all 0.2s;
     padding: 2px 4px;
+    z-index: 10;
 }
 
 .legend-close-btn:hover {
     color: #fff;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(244, 67, 54, 0.4);
     border-radius: 4px;
 }
 
 .drag-handle {
+    position: absolute !important;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
     color: #888;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     letter-spacing: 1px;
-    transform: rotate(90deg);
-    /* Horizontal handle look */
+    pointer-events: auto !important;
 }
 
 .legend-body {

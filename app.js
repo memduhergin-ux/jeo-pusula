@@ -1,5 +1,4 @@
-﻿const CACHE_NAME = 'jeo-cache-v1453-05F';
-const APP_VERSION = 'v1453-06F'; // Forced Refresh + Stability Fix
+﻿const APP_VERSION = 'v1453-08F'; // Landscape Legend Docking Fix
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -25,10 +24,9 @@ function updateAppVersionDisplay() {
 
 // v750: Global Security & Stability Kalkanı
 window.onerror = function (msg, url, lineNo, columnNo, error) {
-    const errorMsg = `Error: ${msg} at ${lineNo}:${columnNo}`;
-    console.error(`GLOBAL ERROR: ${errorMsg}`, error);
-    // v1453-05F: Temiz hata mesajı gösterimi (Hatanın kaynağını anlamak için)
-    showToast(errorMsg, 4000);
+    console.error(`GLOBAL ERROR: ${msg} at ${lineNo}:${columnNo}`, error);
+    // v1453-06F: Restored polite message after debugging success
+    showToast("An unexpected error occurred. The app is still running safely.", 3000);
     return false;
 };
 
@@ -449,14 +447,15 @@ function initHeatmapLegend() {
             const viewH = window.innerHeight;
 
             if (isNaN(leftNum) || isNaN(topNum) || leftNum < 0 || leftNum > viewW - 100 || topNum < 0 || topNum > viewH - 100) {
-                // v1453-1: Default to Portrait Side-by-Side OR Landscape Bottom-Right
+                // v1453-06F: Specific Magnetic Default (Portrait Stacked)
                 if (viewW > viewH) {
                     legend.style.setProperty('left', 'auto', 'important');
                     legend.style.setProperty('right', '1px', 'important');
-                    legend.style.setProperty('top', (viewH - 41) + 'px', 'important'); // Safe area handled by CSS usually
+                    legend.style.setProperty('bottom', '1px', 'important');
                 } else {
-                    legend.style.setProperty('left', '10px', 'important'); // v1453-1: Stacked mode (Portrait)
-                    legend.style.setProperty('top', (viewH - 125) + 'px', 'important');
+                    legend.style.setProperty('left', '2px', 'important');
+                    legend.style.setProperty('bottom', '42px', 'important');
+                    legend.style.setProperty('top', 'auto', 'important');
                 }
             } else {
                 legend.style.setProperty('left', pos.left, 'important');
@@ -464,8 +463,6 @@ function initHeatmapLegend() {
             }
 
             legend.style.setProperty('position', 'fixed', 'important');
-            legend.style.setProperty('bottom', 'auto', 'important');
-            legend.style.setProperty('right', 'auto', 'important');
         } catch (e) {
             console.warn("Could not restore Legend position", e);
         }
@@ -475,12 +472,13 @@ function initHeatmapLegend() {
     const closeBtn = document.getElementById('legend-close-btn');
     if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             legend.style.display = 'none';
+            legend.classList.remove('visible'); // v1453: Sync with visible class
         });
-        // Prevent drag on close button
-        closeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-        closeBtn.addEventListener('touchstart', (e) => e.stopPropagation());
+        // v1453-06F: Essential to stop drag interference
+        L.DomEvent.on(closeBtn, 'mousedown touchstart click', L.DomEvent.stopPropagation);
     }
 }
 // Init immediately if ready
