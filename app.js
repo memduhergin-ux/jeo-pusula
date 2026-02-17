@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-28F'; // Landscape FAB Margin 4px
+﻿const APP_VERSION = 'v1453-29F'; // Heatmap Panel Smooth Animation (Oily Slide)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -598,9 +598,16 @@ function toggleHeatmap() {
     const panel = document.getElementById('heatmap-radius-panel');
 
     if (btn) btn.classList.toggle('active', isHeatmapActive);
+
+    // v1453-29F: Smooth Animation Logic (Class Toggle)
     if (panel) {
-        panel.style.display = isHeatmapActive ? 'block' : 'none';
         if (isHeatmapActive) {
+            // Add visible class to trigger CSS transition
+            // Small timeout to Ensure DOM render if it was completely removed (though we use opacity now)
+            requestAnimationFrame(() => {
+                panel.classList.add('panel-visible');
+            });
+
             // v1453-1: Reset inline styles to force fixed CSS positions on toggle
             panel.style.top = '';
             panel.style.left = '';
@@ -609,11 +616,18 @@ function toggleHeatmap() {
 
             const legend = document.getElementById('heatmap-legend');
             if (legend) {
+                // Also reset legend styles if needed, or handle its own animation
+                legend.style.display = 'block'; // Ensure it's shown if logic requires
                 legend.style.top = '';
                 legend.style.left = '';
                 legend.style.right = '';
                 legend.style.bottom = '';
             }
+        } else {
+            // Remove visible class to trigger fade out/slide down
+            panel.classList.remove('panel-visible');
+            // We do NOT set display: none immediately to allow transition to finish
+            // CSS pointer-events: none handles interactions
         }
     }
 
@@ -3478,7 +3492,8 @@ if (btnHeatmapOff) {
         const btn = document.getElementById('btn-heatmap-toggle');
         const panel = document.getElementById('heatmap-radius-panel');
         if (btn) btn.classList.remove('active');
-        if (panel) panel.style.display = 'none';
+        // v1453-29F: Use smooth transition class removal
+        if (panel) panel.classList.remove('panel-visible');
         if (heatmapLayer) {
             map.removeLayer(heatmapLayer);
             heatmapLayer = null;
