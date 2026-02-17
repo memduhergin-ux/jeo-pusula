@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-38F'; // Grid Panel Fixes (v1453-38F)
+﻿const APP_VERSION = 'v1453-39F'; // Popup & UI Fixes (v1453-39F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2217,7 +2217,14 @@ function makeDraggable(element, storageKey) {
         e = e || window.event;
         // v1453-1: Identify if we're clicking a control (button/select/input)
         const target = e.target;
-        const isControl = target.tagName === 'BUTTON' || target.tagName === 'SELECT' || target.tagName === 'INPUT' || target.classList.contains('radius-opt') || target.closest('button');
+        const isControl = target.tagName === 'BUTTON' || target.tagName === 'SELECT' || target.tagName === 'INPUT' ||
+            target.classList.contains('radius-opt') || target.closest('button') ||
+            target.closest('.grid-color-opt') || target.closest('#btn-grid-clear');
+
+        // v1453-39F: Specifically handle SVGs and Paths inside buttons
+        if (target.tagName === 'svg' || target.tagName === 'path' || target.tagName === 'polyline') {
+            if (target.closest('button') || target.closest('#btn-grid-clear')) return;
+        }
 
         // v1453-1: If it's a control, allow the click/tap and don't start dragging
         if (isControl) return;

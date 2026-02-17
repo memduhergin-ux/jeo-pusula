@@ -2225,11 +2225,31 @@ textarea.form-input {
         padding: 4px 0;
     }
 
-    /* Ensure Leaflet popup wrapper is compact */
+    /* v1453-39F: Popup (Sorgu Ekranı) Size Constraints (1/4 of Viewport) */
     .leaflet-popup-content-wrapper {
         max-width: 240px;
         border-radius: 8px;
-        max-height: calc(100vh - 65px) !important;
+        max-height: 25vh !important;
+        /* v1453-39F: 1/4 of screen height */
+        overflow: hidden;
+    }
+
+    .leaflet-popup-content {
+        max-height: 22vh !important;
+        overflow-y: auto !important;
+        /* Enable internal scrolling */
+        margin: 8px 12px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .map-popup-container {
+        max-height: 22vh;
+        overflow-y: auto;
+    }
+
+    #map-container {
+        touch-action: pan-x pan-y !important;
+        /* v1453-39F: Prevent page pull while allowing map pan */
     }
 
     /* v1453-12 Fix: Grid Panel Landscape Positioning */
