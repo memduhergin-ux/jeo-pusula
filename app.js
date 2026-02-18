@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-48F'; // KML Perf. Opt. (v1453-48F)
+﻿const APP_VERSION = 'v1453-49F'; // Smart Radius (v1453-49F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -361,13 +361,31 @@ function updateHeatmap() {
         radiusPixels = Math.max(5, Math.round(heatmapRadius / mapRes));
         blurPixels = Math.round(radiusPixels * 0.75);
     } else {
-        // v1453-05F: OTO Mode (Dynamic based on point density)
-        // Adjust values to be more visible at different zoom levels
-        radiusPixels = Math.max(15, 45 - (map.getZoom() * 1.5));
-        blurPixels = Math.round(radiusPixels * 0.8);
+        // v1453-49F: Smart Adaptive Radius Calculation (AI-Lite Heuristic)
+        // Adjusts based on Zoom Level AND Data Density to prevent "blobbing"
+        const z = map.getZoom();
+
+        // 1. Zoom Base: Logarithmic growth
+        // Zoom 5 (Country) -> ~11px (Sharp)
+        // Zoom 15 (Site) -> ~35px (Smooth)
+        let baseRadius = 10 + Math.pow(Math.max(0, z - 4), 1.3);
+
+        // 2. Density Adjustment
+        // If >2000 points, shrink radius to separate clusters
+        // If <100 points, grow radius to show trends
+        const count = points.length;
+        if (count > 2000) baseRadius *= 0.75;
+        else if (count > 500) baseRadius *= 0.90;
+        else if (count < 100) baseRadius *= 1.2;
+
+        radiusPixels = Math.round(Math.max(8, Math.min(60, baseRadius)));
+        blurPixels = Math.round(radiusPixels * 0.65); // Sharper edges for better clarity
+
+        // Debug Smart Radius
+        // console.log(`Smart Radius: Z${z} | Pts${count} | R${radiusPixels}px`);
     }
 
-    if (points.length === 0) return; // v1453-05F: Don't bother if no points
+    if (points.length === 0) return;
 
     try {
         heatmapLayer = L.heatLayer(points, {
