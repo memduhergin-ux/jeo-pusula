@@ -1,8 +1,8 @@
-﻿const APP_VERSION = 'v1453-70F'; // KML & Objects Interactivity Fixture (v1453-70F)
+﻿const APP_VERSION = 'v1453-4-6F'; // KML & Objects Interactivity Fixture (v1453-70F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
-const JEO_STORE_NAME = 'externalLayers';
+const JEO_STORE_NAME = 'jeo-store-v1';
 
 // Sürümü UI üzerinde güncelleme fonksiyonu
 function updateAppVersionDisplay() {

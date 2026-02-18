@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-5-29F-WATERMARK-SIG';
+const CACHE_NAME = 'jeo-cache-v1453-4-6F';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',
