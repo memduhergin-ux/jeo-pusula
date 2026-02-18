@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-50F-SPECTRUM';
+const CACHE_NAME = 'jeo-cache-v1453-51F-SPECTRUM-FIX';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

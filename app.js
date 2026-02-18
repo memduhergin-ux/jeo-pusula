@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-50F'; // Spectrum Analysis (v1453-50F)
+﻿const APP_VERSION = 'v1453-51F'; // Spectrum Fix (v1453-51F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -242,12 +242,12 @@ function extractElements(text) {
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
 // Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
 const SPECTRUM_GRADIENT = {
-    0.0: 'blue',
-    0.2: 'cyan',
-    0.4: 'lime',
-    0.6: 'yellow',
-    0.8: 'red',
-    1.0: 'black' // Highest density
+    '0.0': 'blue',
+    '0.2': 'cyan',
+    '0.4': 'lime',
+    '0.6': 'yellow',
+    '0.8': 'red',
+    '1.0': 'black' // Highest density
 };
 
 function shadeColor(color, percent) {
@@ -281,42 +281,24 @@ function updateHeatmap() {
     }
 
     let points = [];
-    let activeGradient = {};
 
-    // Dynamic Monochromatic Gradient (v428 - High Contrast Topo Lines)
+    // v1453-50F: Spectrum Analysis Logic
     const filterKey = (heatmapFilter || 'ALL').toUpperCase();
 
-    if (filterKey !== 'ALL') {
-        const baseColor = getElementColor(filterKey);
-        const d1 = shadeColor(baseColor, -0.2); // Tier 2
-        const d2 = shadeColor(baseColor, -0.4); // Tier 3
-        const d3 = shadeColor(baseColor, -0.6); // Tier 4
-        const dCore = shadeColor(baseColor, -0.8); // Tier 5 (Core)
-        const line = shadeColor(baseColor, -0.95); // v435: Color-matched dark line
-        const ultraDark = shadeColor(baseColor, -0.98); // v436: Pure monochromatic core
+    // Get Gradient (Spectrum or Null/Default)
+    // Note: Leaflet.heat expects gradient keys as strings '0.4', not numbers 0.4
+    // We already defined SPECTRUM_GRADIENT with strings but let's be safe.
+    let activeGradient = getElementGradient(filterKey);
 
-        // v436: Themed Transparency (baseColor + 00 alpha) to prevent interpolation shifts
-        const transparentBase = baseColor + '00';
-
+    // If activeGradient is null (e.g. ALL elements), use a default rainbow
+    if (!activeGradient && filterKey === 'ALL') {
+        // Default Leaflet Linear Rainbow
         activeGradient = {
-            0.0: transparentBase,
-            0.15: baseColor,
-            0.40: d1,
-            0.70: d2,
-            0.90: d3,
-            1.0: dCore
-        };
-    } else {
-        // v567: High Contrast Professional Gradient (Vivid & Distinct)
-        const rainbowTransparent = '#0000AA00'; // Dark Blue transparency base
-        activeGradient = {
-            0.0: rainbowTransparent,
-            0.20: '#0000AA', // Deep Blue (Low)
-            0.40: '#00FFFF', // Cyan (Med-Low)
-            0.60: '#00FF00', // Lime Green (Medium)
-            0.80: '#FFFF00', // Yellow (Med-High)
-            0.95: '#FF0000', // Red (High)
-            1.00: '#800000'  // Dark Red (Extreme)
+            '0.4': 'blue',
+            '0.6': 'cyan',
+            '0.7': 'lime',
+            '0.8': 'yellow',
+            '1.0': 'red'
         };
     }
 
