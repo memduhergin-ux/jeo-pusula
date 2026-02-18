@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-53F'; // Value-Weighted Analysis (v1453-53F)
+﻿const APP_VERSION = 'v1453-54F'; // Heatmap Fix (v1453-54F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -351,24 +351,26 @@ function updateHeatmap() {
 
     // Consolidation Helper
     const processItem = (lat, lng, text) => {
-        if (filterKey === 'ALL') {
-            // ALL mode: Just count density
+        // v1453-53F: Mode Check
+        if (filterKey === 'ALL' || heatmapMode === 'COUNT') {
+            // ALL mode OR User selected Count Density
             collectedData.push({ lat, lng, val: 1.0 });
         } else {
-            // Specific Element: Try to get Value
+            // Specific Element AND Weighted Mode
             const vals = extractElementValues(text);
             if (vals[filterKey] !== undefined) {
                 // Found explicit value (e.g. Mn 1200)
                 collectedData.push({ lat, lng, val: vals[filterKey] });
             } else {
-                // Check if element exists but no value?
-                // Fallback to extraction check
+                // Element exists but no value?
+                // In Weighted Mode, we SKIP points with no value to avoid diluting the "Richness" map.
+                // Unless we want to show them as very low value?
+                // Let's check existence first
                 const elems = extractElements(text);
                 if (elems.has(filterKey)) {
-                    // Element exists but no number found.
-                    // Treat as "Presence" (Low value or skip?)
-                    // For Analysis, skipping might be safer, or assign a low baseline?
-                    // Let's exclude purely presence points in Value Mode to avoid dilution.
+                    // It exists but has no value (e.g. just "Mn")
+                    // Option: Give it a small baseline value? 
+                    // Or skip? Skipping is cleaner for "Ore Grade" analysis.
                 }
             }
         }
