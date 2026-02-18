@@ -10,11 +10,11 @@
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
     <title>Jeoloji Pusulası <span class="app-version-display"></span></title>
     <!-- Jeoloji Pusulası Version Managed by JS -->
-    <meta name="version" content="v1453-67F">
-    <meta name="jeo-version" content="v1453-67F">
+    <meta name="version" content="v1453-5-29F">
+    <meta name="jeo-version" content="v1453-5-29F">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=FORCE_67F">
+    <link rel="stylesheet" href="style.css?v=FORCE_5_29F">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -175,6 +175,10 @@
         </button>
 
         <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;">
+            <!-- v1453-68F: App Watermark (Signature) -->
+            <div id="app-watermark">
+                JeoCompass <span style="font-size: 0.7em; opacity: 0.8;">v1453-5-29F</span>
+            </div>
             <!-- v701: Draggable Heatmap Legend -->
             <!-- v1453-1: Compact Horizontal Legend -->
             <div id="heatmap-legend" class="heatmap-legend" style="display: none;">

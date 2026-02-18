@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-67F'; // Aggressive Red Gradient (v1453-67F)
+﻿const APP_VERSION = 'v1453-5-29F'; // Watermark Signature (v1453-5-29F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
