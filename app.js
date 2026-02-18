@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-51F'; // Spectrum Fix (v1453-51F)
+﻿const APP_VERSION = 'v1453-52F'; // Precision Analysis (v1453-52F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -242,12 +242,13 @@ function extractElements(text) {
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
 // Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
 const SPECTRUM_GRADIENT = {
-    '0.0': 'blue',
-    '0.2': 'cyan',
-    '0.4': 'lime',
-    '0.6': 'yellow',
-    '0.8': 'red',
-    '1.0': 'black' // Highest density
+    '0.05': 'navy',   // Trace amounts (Deep Blue)
+    '0.2': 'blue',    // Low Density (Blue) - Visible clearly
+    '0.4': 'cyan',    // Low-Mid
+    '0.6': 'lime',    // Mid Density (Green)
+    '0.8': 'yellow',  // High Density
+    '0.95': 'red',    // Very High
+    '1.0': 'black'    // Peak (Ore Center)
 };
 
 function shadeColor(color, percent) {
@@ -518,13 +519,14 @@ function updateHeatmapLegend(filterKey) {
         const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
         title.textContent = `${niceName} Analysis (Spectrum)`;
 
-        // Spectrum Gradient: Blue -> Cyan -> Lime -> Yellow -> Red -> Black
+        // Spectrum Gradient: Navy -> Blue -> Cyan -> Lime -> Yellow -> Red -> Black
         bar.style.background = `linear-gradient(to right, 
-            blue 0%, 
-            cyan 20%, 
-            lime 40%, 
-            yellow 60%, 
-            red 80%, 
+            navy 0%, 
+            blue 20%, 
+            cyan 40%, 
+            lime 60%, 
+            yellow 80%, 
+            red 95%, 
             black 100%)`;
     }
 }
