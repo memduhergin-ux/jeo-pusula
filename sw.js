@@ -1,5 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-4-6F-fix-readability';
-// Force Update Trigger: Readability Fix
+const CACHE_NAME = 'jeo-cache-v1453-4-6F-transparent-labels';
+// Force Update Trigger: Transparent Labels
 const ASSETS = [
     './',
     'index.html',
