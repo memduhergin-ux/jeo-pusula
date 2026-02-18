@@ -4831,12 +4831,17 @@ function updateMeasurement(latlng) {
     // Check Snapping (Close Polygon)
     if (measurePoints.length > 2) {
         const startPoint = measurePoints[0];
-        const dist = map.distance(latlng, startPoint);
+        // v1453-69F: Pixel-based Snapping Logic (Zoom Independent)
+        // Convert both points to screen pixels
+        const p1 = map.latLngToContainerPoint(latlng);
+        const p2 = map.latLngToContainerPoint(startPoint);
 
-        // Snapping Tolerance: 30 meters or significant pixel distance
-        // Depends on zoom, but 30m is usually good for outdoors.
-        // For polygon mode, we want it to be snappy.
-        if (dist < 30) {
+        // Calculate screen distance in pixels
+        const pixelDist = p1.distanceTo(p2);
+
+        // Snapping Tolerance: 40 pixels (Roughly finger touch size)
+        // This works at ANY zoom level.
+        if (pixelDist < 40) {
             if (confirm("Close polygon? (Area will be calculated)")) {
                 // Close the polygon
                 measurePoints.push(measurePoints[0]);
