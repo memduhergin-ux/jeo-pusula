@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-46F'; // Splash Timeout 5s (v1453-46F)
+﻿const APP_VERSION = 'v1453-48F'; // KML Perf. Opt. (v1453-48F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -1877,6 +1877,10 @@ function initMap() {
         maxNativeZoom: 19,
         attribution: '© OpenStreetMap'
     });
+
+    // v1453-48F: Global Shared Canvas Renderer for High Performance KML
+    // This allows thousands of markers/lines to be drawn on a single canvas efficiently
+    window.sharedCanvasRenderer = L.canvas({ padding: 0.5, tolerance: 10 });
 
     // v1453-1: Heatmap-optimized layer (Muted greenery)
     const osmHeatmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -3797,11 +3801,13 @@ function addExternalLayer(name, geojson) {
 
     try {
         const layer = L.geoJSON(geojson, {
+            renderer: window.sharedCanvasRenderer, // v1453-48F: Use Shared Renderer
             style: style,
             pointToLayer: (feature, latlng) => {
                 // v666: Revert to "Old Style" Simple CircleMarker
                 // User requested "Eski hali" (Old state) - usually implies simple vector circle
                 const marker = L.circleMarker(latlng, {
+                    renderer: window.sharedCanvasRenderer, // v1453-48F: Use Shared Renderer
                     radius: 4, // v677: Reverted to blue dot (radius 4 as requested)
                     fillColor: '#2196f3',
                     color: '#ffffff',

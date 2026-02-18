@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-46F-SPLASH-5S';
+const CACHE_NAME = 'jeo-cache-v1453-48F-KML-BOOST';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',
