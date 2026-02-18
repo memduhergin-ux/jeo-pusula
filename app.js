@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-5-29F'; // Watermark Signature (v1453-5-29F)
+﻿const APP_VERSION = 'v1453-70F'; // KML & Objects Interactivity Fixture (v1453-70F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2806,7 +2806,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                 let shape;
                 if (r.geomType === 'polygon') {
                     totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
-                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 });
+                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
 
                     // Labelling Polygon Edges
                     for (let i = 0; i < latlngs.length; i++) {
@@ -2829,7 +2829,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         markerGroup.addLayer(edgeLabel);
                     }
                 } else {
-                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4 });
+                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4, renderer: L.svg(), interactive: true });
 
                     // Labelling Total Length for Polyline (at the middle of the path)
                     // DRAW SEGMENT LABELS FOR POLYLINE
@@ -4132,22 +4132,15 @@ function addExternalLayer(name, geojson) {
 
                     const l = externalLayers.find(obj => obj.layer === e.target._eventParents[Object.keys(e.target._eventParents)[0]]);
 
-                    // If polygon and not filled, ignore clicks inside
+                    // v1453-70F: Removed complex SVG-based 'filled' checks.
+                    // Leaflet's 'on click' event is sufficient. If it fires, the user clicked it.
+                    // Canvas renderer handles hit detection internally.
+
+                    /* REMOVED: SVG-specific DOM attribute checks that fail on Canvas
                     if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                        const layerObj = externalLayers.find(lobj => lobj.layer.hasLayer(layer));
-                        if (layerObj && !layerObj.filled) {
-                            // Leaflet handles stroke-only clicks automatically if fill: false,
-                            // but since we might have generic handlers, we double check.
-                            if (e.originalEvent.target.classList.contains('leaflet-interactive') && !e.originalEvent.target.getAttribute('fill')) {
-                                // Border click? Continue.
-                            } else {
-                                // Interior click on a transparent polygon - pass to map
-                                L.DomEvent.stopPropagation(e);
-                                map.fire('click', e);
-                                return;
-                            }
-                        }
-                    }
+                        // ... old buggy logic ...
+                    } 
+                    */
 
                     if (isMeasuring) {
                         L.DomEvent.stopPropagation(e); // Stop popup
@@ -4683,10 +4676,10 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3 };
+        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3, renderer: L.svg(), interactive: true };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4 }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4, renderer: L.svg(), interactive: true }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
