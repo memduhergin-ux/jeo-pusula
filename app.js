@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-63F'; // Tuned Heatmap Analysis (v1453-63F)
+﻿const APP_VERSION = 'v1453-65F'; // Balanced Hybrid Heatmap (v1453-65F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -295,13 +295,14 @@ function extractElementValues(text) {
 // Helper to darken colors for heatmap core (v423)
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
 // Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
-// v1453-60F: Vivid Red Peak Gradient (Blue->Lime->Yellow->Orange->Red)
+// v1453-65F: Balanced Gradient (Blue->Green->Yellow->Orange->Red)
+// Goal: Show spread (Yellow) but highlight core (Red) distinctly.
 const SPECTRUM_GRADIENT = {
-    '0.25': 'blue',   // Low
-    '0.5': 'lime',    // Mid
-    '0.65': 'yellow', // High
-    '0.8': 'orange',  // Very High
-    '1.0': 'red'      // Peak (Explicit Red)
+    '0.2': 'blue',    // Low Base
+    '0.45': 'lime',   // Mid
+    '0.65': 'yellow', // High Spread
+    '0.85': 'orange', // Very High
+    '0.95': 'red'     // Peak Core (Starts earlier than 1.0)
 };
 
 function shadeColor(color, percent) {
@@ -447,21 +448,20 @@ function updateHeatmap() {
             let min = allVals[0];
             let max = allVals[allVals.length - 1];
 
-            // v1453-63F: Tuned Algorithmic Analysis (P98 + Power 2.5 Curve)
-            // Goal: Expand the "Red" peak area slightly, less aggressive suppression than Cubic.
+            // v1453-65F: Hybrid Model (P98 + Square Curve)
+            // Goal: "Uzanim (Low/Mid) gorulsun, Zirve (High) belli olsun."
 
-            // P98 Clamp (Exclude top 2% extreme outliers)
-            // v61 was P99, which was too strict (tiny red dots).
+            // P98 Clamp (Top 2% is Peak)
             const p98Index = Math.floor(allVals.length * 0.98);
             const p98 = allVals[p98Index];
 
-            // Use P98 as the cap to define "Max Intensity"
+            // Use P98 as the cap
             const cap = (p98 > min) ? p98 : max;
 
-            console.log(`Heatmap Stats (${filterKey}) [v63F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
+            console.log(`Heatmap Stats (${filterKey}) [v65F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
 
             collectedData.forEach(d => {
-                // 1. Linear Normalization: 0.0 to 1.0 based on P98 Cap
+                // 1. Linear Normalization
                 let intensity;
                 if (cap === min) {
                     intensity = 0.5;
@@ -469,23 +469,23 @@ function updateHeatmap() {
                     intensity = (d.val - min) / (cap - min);
                 }
 
-                // Clamp 0..1 (Handle values > P98)
+                // Clamp 0..1
                 intensity = Math.max(0, Math.min(1, intensity));
 
-                // 2. Algorithmic Curve (Power 2.5)
-                // v61 was Cubic (Power 3). Too strict.
-                // Power 2.5 is a balance between Aggressive (3) and Standard (1).
-                // Example: 0.8 input -> 0.57 output (Green/Yellowish) -> Better visibility than 0.51
-                intensity = Math.pow(intensity, 2.5);
+                // 2. Algorithmic Curve (Square Power - x^2)
+                // v61 was Cubic (x^3) -> Killed Yellow/Green.
+                // v65 is Square (x^2) -> Preserves Yellow/Green but suppresses Blue noise.
+                // Combined with new Gradient (Red starts at 0.95), this highlights the core.
+                intensity = Math.pow(intensity, 2);
 
                 points.push([d.lat, d.lng, intensity]);
             });
 
-            // v1453-63F: Update Legend Title with P98 info
+            // v1453-65F: Update Legend Title with P98 info
             const legendTitle = document.getElementById('legend-title');
             if (legendTitle && filterKey !== 'ALL') {
                 const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Tuned)`;
+                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Sq)`;
             }
         }
 
