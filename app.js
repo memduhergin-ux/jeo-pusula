@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-54F'; // Heatmap Fix (v1453-54F)
+﻿const APP_VERSION = 'v1453-57F'; // Auto-Density Switch (v1453-57F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -247,26 +247,42 @@ function extractElementValues(text) {
     const values = {};
 
     // Regex Logic:
-    // 1. Element Symbol (1-2 chars)
-    // 2. Separators (space, colon, etc.)
-    // 3. Number (integers or decimals with dot/comma)
-    // 4. Optional Unit (ppm, %, ppb, g/t)
-    // Example Matches: "Mn 1200", "Fe: %58", "Au: 0.45"
-    const regex = /([A-Za-z]{1,2})[\s:]*([<>]?\d+([.,]\d+)?)\s*(ppm|%|ppb|g\/t)?/gi;
+    // Matches: "Mn 1200", "Fe: %58", "Au: 0.45", "Cu 1.2%"
+    // Captures: 1=Symbol, 2=Value, 4=Unit (optional)
+    const regex = /([A-Za-z]{1,2})[\s:=-]*([<>]?\d+([.,]\d+)?)\s*(ppm|%|ppb|g\/t)?/gi;
 
     let match;
     while ((match = regex.exec(text)) !== null) {
         let symbol = match[1].toUpperCase();
 
-        // Resolve aliases (e.g. ALTIN -> AU)
+        // Resolve aliases
         if (ELEMENT_ALIASES[symbol]) symbol = ELEMENT_ALIASES[symbol];
 
-        // Validate symbol against periodic table or aliases to avoid false positives (like "No 5")
+        // Validate symbol
         if (!PERIODIC_TABLE_SYMBOLS.has(symbol) && !Object.values(ELEMENT_ALIASES).includes(symbol)) continue;
 
         // Parse Number
-        let numStr = match[2].replace(',', '.').replace(/[<>]/, ''); // Handle <10 or >500
+        let numStr = match[2].replace(',', '.').replace(/[<>]/, '');
         let val = parseFloat(numStr);
+        let unit = match[4] ? match[4].toLowerCase() : '';
+
+        // Explicit Unit Conversion to PPM (Standardization)
+        // Check if unit is % (percent sign might be captured in unit or before number)
+        // We need to check the original text around the number for a preceding '%' if unit is not explicitly '%'.
+        // The regex `[\s:=-]*` might swallow the %, so let's check original text index if needed or improve regex.
+        // For now, let's rely on captured unit OR check if '%' precedes the number in the original text.
+        const originalMatchStart = match.index;
+        const originalMatchEnd = regex.lastIndex;
+        const matchedSubstring = text.substring(originalMatchStart, originalMatchEnd);
+
+        // Check if '%' precedes the number in the matched substring, or if unit is '%'
+        if (unit === '%' || (matchedSubstring.includes('%') && !unit)) {
+            val = val * 10000; // 1% = 10,000 ppm
+        } else if (unit === 'ppb') {
+            val = val / 1000; // 1000 ppb = 1 ppm
+        } else if (unit === 'g/t') {
+            // 1 g/t = 1 ppm (no change needed)
+        }
 
         if (!isNaN(val)) {
             values[symbol] = val;
@@ -346,31 +362,28 @@ function updateHeatmap() {
 
     // v1453-53F: Check Analysis Mode (Weighted vs Count)
     // Default to Weighted if available, but let user toggle later.
-    // For now, let's auto-detect: If we can extract values, use Weighted.
     const collectedData = [];
+    let hasExplicitValues = false; // v1453-57F: Track if we found ANY real values
 
     // Consolidation Helper
     const processItem = (lat, lng, text) => {
         // v1453-53F: Mode Check
         if (filterKey === 'ALL' || heatmapMode === 'COUNT') {
             // ALL mode OR User selected Count Density
-            collectedData.push({ lat, lng, val: 1.0 });
+            collectedData.push({ lat, lng, val: 1.0, isExplicit: false });
         } else {
             // Specific Element AND Weighted Mode
             const vals = extractElementValues(text);
             if (vals[filterKey] !== undefined) {
                 // Found explicit value (e.g. Mn 1200)
-                collectedData.push({ lat, lng, val: vals[filterKey] });
+                hasExplicitValues = true;
+                collectedData.push({ lat, lng, val: vals[filterKey], isExplicit: true });
             } else {
                 // Element exists but no value?
-                // In Weighted Mode, we SKIP points with no value to avoid diluting the "Richness" map.
-                // Unless we want to show them as very low value?
-                // Let's check existence first
+                // v1453-56F: Fallback for "Presence Only" points
                 const elems = extractElements(text);
                 if (elems.has(filterKey)) {
-                    // It exists but has no value (e.g. just "Mn")
-                    // Option: Give it a small baseline value? 
-                    // Or skip? Skipping is cleaner for "Ore Grade" analysis.
+                    collectedData.push({ lat, lng, val: 1.0, isExplicit: false }); // Treat as Trace/Presence
                 }
             }
         }
@@ -388,42 +401,88 @@ function updateHeatmap() {
         processItem(latlng.lat, latlng.lng, text);
     });
 
+    // v1453-57F: Auto-Switch to Density if No Explicit Values Found in Weighted Mode
+    let effectiveMode = heatmapMode;
+    if (heatmapMode === 'WEIGHTED' && filterKey !== 'ALL' && !hasExplicitValues) {
+        console.log("No explicit analysis values found. Auto-switching to DENSITY mode.");
+        effectiveMode = 'COUNT'; // Override for rendering
+        // Update UI Label to show "Auto" or similar? Maybe just render silently as density.
+        const modeLabel = document.getElementById('analysis-mode-label');
+        if (modeLabel) {
+            modeLabel.innerText = "NO DATA -> DENSITY";
+            modeLabel.style.color = "#ff9800"; // Orange warning
+        }
+    } else {
+        // Reset Label if normal
+        const modeLabel = document.getElementById('analysis-mode-label');
+        if (modeLabel) {
+            if (heatmapMode === 'WEIGHTED') {
+                modeLabel.innerText = "WEIGHTED (Value)";
+                modeLabel.style.color = "#4caf50";
+            } else {
+                modeLabel.innerText = "DENSITY (Count)";
+                modeLabel.style.color = "#2196f3";
+            }
+        }
+    }
+
     // v1453-53F: Data Normalization (Min-Max-P95)
     // If we have values, calculate stats
     if (collectedData.length > 0) {
-        // Extract just numbers for stats
-        const allVals = collectedData.map(d => d.val).sort((a, b) => a - b);
-        let min = allVals[0];
-        let max = allVals[allVals.length - 1];
 
-        // P95 Clamp (Exclude top 5% outliers)
-        const p95Index = Math.floor(allVals.length * 0.95);
-        const p95 = allVals[p95Index];
+        // If effective mode is COUNT, we just want Density (accumulate 1.0s)
+        if (effectiveMode === 'COUNT') {
+            points = collectedData.map(d => [d.lat, d.lng, 1.0]); // No normalization, let Leaflet accumulate logic handle "hot spots"
 
-        // If P95 is valid and significantly different from max, use it as clamp cap
-        const cap = (p95 > min) ? p95 : max;
+            // Reset Legend Title for Count Mode
+            const legendTitle = document.getElementById('legend-title');
+            if (legendTitle && filterKey !== 'ALL') {
+                const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
+                legendTitle.textContent = `${niceName}: Density Map`;
+            }
 
-        console.log(`Heatmap Stats (${filterKey}): Min:${min}, Max:${max}, P95:${p95}, Count:${allVals.length}`);
+        } else {
+            // WEIGHTED MODE with valid values
+            // Extract just numbers for stats
+            const allVals = collectedData.map(d => d.val).sort((a, b) => a - b);
+            let min = allVals[0];
+            let max = allVals[allVals.length - 1];
 
-        collectedData.forEach(d => {
-            // Normalize: 0.0 to 1.0
-            // (val - min) / (cap - min)
-            let intensity = (d.val - min) / (cap - min);
+            // P95 Clamp (Exclude top 5% outliers)
+            const p95Index = Math.floor(allVals.length * 0.95);
+            const p95 = allVals[p95Index];
 
-            // Clamp 0..1
-            intensity = Math.max(0, Math.min(1, intensity));
+            // If P95 is valid and significantly different from max, use it as clamp cap
+            const cap = (p95 > min) ? p95 : max;
 
-            // Push to Leaflet Heat
-            // [lat, lng, intensity]
-            points.push([d.lat, d.lng, intensity]);
-        });
+            console.log(`Heatmap Stats (${filterKey}): Min:${min}, Max:${max}, P95:${p95}, Count:${allVals.length}`);
 
-        // v1453-53F: Dynamic Legend Update with Range
-        // Update Legend Title with Range: "Mn (100 - 5000 ppm)"
-        const legendTitle = document.getElementById('legend-title');
-        if (legendTitle && filterKey !== 'ALL') {
-            const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-            legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P95)`;
+            collectedData.forEach(d => {
+                // Normalize: 0.0 to 1.0
+                let intensity;
+                // v1453-56F: Prevent Division by Zero if all values are equal
+                if (cap === min) {
+                    // If all values are equal (e.g. all 500ppm), they are all technically "100%" of the range.
+                    // But showing them as max intensity (1.0) might be misleading ("Super Rich").
+                    // Showing them as 0.5?
+                    intensity = 0.5;
+                } else {
+                    intensity = (d.val - min) / (cap - min);
+                }
+
+                // Clamp 0..1
+                intensity = Math.max(0, Math.min(1, intensity));
+
+                // Push to Leaflet Heat
+                points.push([d.lat, d.lng, intensity]);
+            });
+
+            // v1453-53F: Dynamic Legend Update with Range
+            const legendTitle = document.getElementById('legend-title');
+            if (legendTitle && filterKey !== 'ALL') {
+                const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
+                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P95)`;
+            }
         }
 
     } else {
