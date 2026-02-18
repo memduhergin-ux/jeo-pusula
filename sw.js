@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-49F-SMART-HEAT';
+const CACHE_NAME = 'jeo-cache-v1453-50F-SPECTRUM';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

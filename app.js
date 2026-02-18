@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-49F'; // Smart Radius (v1453-49F)
+﻿const APP_VERSION = 'v1453-50F'; // Spectrum Analysis (v1453-50F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -239,6 +239,17 @@ function extractElements(text) {
 
 /** Heatmap Logic (v401) **/
 // Helper to darken colors for heatmap core (v423)
+// v1453-50F: Spectrum Analysis Gradient (Rainbow)
+// Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
+const SPECTRUM_GRADIENT = {
+    0.0: 'blue',
+    0.2: 'cyan',
+    0.4: 'lime',
+    0.6: 'yellow',
+    0.8: 'red',
+    1.0: 'black' // Highest density
+};
+
 function shadeColor(color, percent) {
     let f = parseInt(color.slice(1), 16),
         t = percent < 0 ? 0 : 255,
@@ -247,6 +258,17 @@ function shadeColor(color, percent) {
         G = f >> 8 & 0x00FF,
         B = f & 0x0000FF;
     return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 + (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
+}
+
+// v1453-50F: Get Gradient based on Element
+function getElementGradient(element) {
+    // For now, apply Spectrum to ALL specific element filters for better analysis
+    // User can request specific single-colors later if needed.
+    if (element === 'ALL') return null; // Default leaflet heat colors
+
+    // Check if we want to force Legacy (Single Color) mode?
+    // For v1453-50F, we force Spectrum for Analysis.
+    return SPECTRUM_GRADIENT;
 }
 
 function updateHeatmap() {
@@ -506,34 +528,22 @@ function updateHeatmapLegend(filterKey) {
     // Set Title
     if (filterKey === 'ALL') {
         title.textContent = "All Elements";
-        // Rainbow Gradient (Bottom-to-Top to match specific heatmap structure if vertical)
-        // Actually CSS linear-gradient(to top, ...) maps 0% at bottom to 100% at top.
-        // Heatmap: 0.0 (Transparent) -> 0.20 (Blue) -> 0.45 (Green) -> 0.75 (Yellow) -> 0.95 (Red) -> 1.0 (Deep Red)
-        // v1453-12: High Contrast Legend Gradient (Matches Heatmap)
-        bar.style.background = `linear-gradient(to right, 
-            #0000AA 0%, 
-            #00FFFF 40%, 
-            #00FF00 60%, 
-            #FFFF00 80%, 
-            #FF0000 95%, 
-            #800000 100%)`;
+        // Default Rainbow
+        bar.style.background = `linear-gradient(to right, blue, cyan, lime, yellow, red)`;
     } else {
-        const baseColor = getElementColor(filterKey);
-
+        // v1453-50F: Spectrum Analysis Legend
         // v702: Title Case for Element Name (e.g. "MN" -> "Mn")
         const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-        title.textContent = `${niceName} Density`;
+        title.textContent = `${niceName} Analysis (Spectrum)`;
 
-        const c1 = shadeColor(baseColor, -0.2);
-        const c2 = shadeColor(baseColor, -0.6);
-        const c3 = shadeColor(baseColor, -0.98);
-
-        // v702: Horizontal Gradient (Left to Right)
+        // Spectrum Gradient: Blue -> Cyan -> Lime -> Yellow -> Red -> Black
         bar.style.background = `linear-gradient(to right, 
-            ${baseColor} 0%, 
-            ${c1} 40%, 
-            ${c2} 75%, 
-            ${c3} 100%)`;
+            blue 0%, 
+            cyan 20%, 
+            lime 40%, 
+            yellow 60%, 
+            red 80%, 
+            black 100%)`;
     }
 }
 
