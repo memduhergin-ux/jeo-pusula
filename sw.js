@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-59F-TOPO-HEATMAP';
+const CACHE_NAME = 'jeo-cache-v1453-61F-ALGO-ANALYSIS';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

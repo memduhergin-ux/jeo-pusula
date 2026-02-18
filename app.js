@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-59F'; // Topo Heatmap Layer (v1453-59F)
+﻿const APP_VERSION = 'v1453-61F'; // Algorithmic Heatmap Analysis (v1453-61F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -295,14 +295,13 @@ function extractElementValues(text) {
 // Helper to darken colors for heatmap core (v423)
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
 // Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
+// v1453-60F: Vivid Red Peak Gradient (Blue->Lime->Yellow->Orange->Red)
 const SPECTRUM_GRADIENT = {
-    '0.05': 'navy',   // Trace amounts (Deep Blue)
-    '0.2': 'blue',    // Low Density (Blue) - Visible clearly
-    '0.4': 'cyan',    // Low-Mid
-    '0.6': 'lime',    // Mid Density (Green)
-    '0.8': 'yellow',  // High Density
-    '0.95': 'red',    // Very High
-    '1.0': 'black'    // Peak (Ore Center)
+    '0.25': 'blue',   // Low
+    '0.5': 'lime',    // Mid
+    '0.65': 'yellow', // High
+    '0.8': 'orange',  // Very High
+    '1.0': 'red'      // Peak (Explicit Red)
 };
 
 function shadeColor(color, percent) {
@@ -347,12 +346,12 @@ function updateHeatmap() {
 
     // If activeGradient is null (e.g. ALL elements), use a default rainbow
     if (!activeGradient && filterKey === 'ALL') {
-        // Default Leaflet Linear Rainbow
+        // Default Leaflet Linear Rainbow (Matched to Spectrum)
         activeGradient = {
-            '0.4': 'blue',
-            '0.6': 'cyan',
-            '0.7': 'lime',
-            '0.8': 'yellow',
+            '0.3': 'blue',
+            '0.5': 'lime',
+            '0.7': 'yellow',
+            '0.85': 'orange',
             '1.0': 'red'
         };
     }
@@ -448,40 +447,46 @@ function updateHeatmap() {
             let min = allVals[0];
             let max = allVals[allVals.length - 1];
 
-            // P95 Clamp (Exclude top 5% outliers)
-            const p95Index = Math.floor(allVals.length * 0.95);
-            const p95 = allVals[p95Index];
+            // v1453-61F: Algorithmic Analysis (P99 + Cubic Curve)
+            // Goal: "Az yoğun yer en fazladır, çok yoğun yer çok azdır" -> Pareto Distribution Visualization
 
-            // If P95 is valid and significantly different from max, use it as clamp cap
-            const cap = (p95 > min) ? p95 : max;
+            // P99 Clamp (Exclude top 1% extreme outliers only)
+            const p99Index = Math.floor(allVals.length * 0.99);
+            const p99 = allVals[p99Index];
 
-            console.log(`Heatmap Stats (${filterKey}): Min:${min}, Max:${max}, P95:${p95}, Count:${allVals.length}`);
+            // Use P99 as the cap to define "Max Intensity"
+            const cap = (p99 > min) ? p99 : max;
+
+            console.log(`Heatmap Stats (${filterKey}) [v61F]: Min:${min}, Max:${max}, P99:${p99}, Count:${allVals.length}`);
 
             collectedData.forEach(d => {
-                // Normalize: 0.0 to 1.0
+                // 1. Linear Normalization: 0.0 to 1.0 based on P99 Cap
                 let intensity;
-                // v1453-56F: Prevent Division by Zero if all values are equal
                 if (cap === min) {
-                    // If all values are equal (e.g. all 500ppm), they are all technically "100%" of the range.
-                    // But showing them as max intensity (1.0) might be misleading ("Super Rich").
-                    // Showing them as 0.5?
                     intensity = 0.5;
                 } else {
                     intensity = (d.val - min) / (cap - min);
                 }
 
-                // Clamp 0..1
+                // Clamp 0..1 (Handle values > P99)
                 intensity = Math.max(0, Math.min(1, intensity));
 
-                // Push to Leaflet Heat
+                // 2. Algorithmic Curve (Cubic Power)
+                // Pushes mid-range values DOWN to Blue/Green.
+                // Reserves Orange/Red ONLY for values near 1.0 (P99)
+                // Example: 0.5 input -> 0.125 output (Blue)
+                // Example: 0.8 input -> 0.51 output (Green)
+                // Example: 0.95 input -> 0.85 output (Orange)
+                intensity = Math.pow(intensity, 3);
+
                 points.push([d.lat, d.lng, intensity]);
             });
 
-            // v1453-53F: Dynamic Legend Update with Range
+            // v1453-61F: Update Legend Title with P99 info
             const legendTitle = document.getElementById('legend-title');
             if (legendTitle && filterKey !== 'ALL') {
                 const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P95)`;
+                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P99 Cubic)`;
             }
         }
 
