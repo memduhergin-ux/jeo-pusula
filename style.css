@@ -1353,6 +1353,12 @@ textarea.form-input {
     opacity: 0.8;
 }
 
+/* v1453-58F: Grayscale Filter for Topo Map */
+.grayscale-map-filter {
+    filter: grayscale(100%) contrast(1.1) brightness(1.1);
+    -webkit-filter: grayscale(100%) contrast(1.1) brightness(1.1);
+}
+
 .map-center-marker svg {
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
     width: 24px;

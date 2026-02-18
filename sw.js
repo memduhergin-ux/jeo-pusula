@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-57F-AUTO-DENSITY';
+const CACHE_NAME = 'jeo-cache-v1453-59F-TOPO-HEATMAP';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',

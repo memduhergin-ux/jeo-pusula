@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-57F'; // Auto-Density Switch (v1453-57F)
+﻿const APP_VERSION = 'v1453-59F'; // Topo Heatmap Layer (v1453-59F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2101,12 +2101,22 @@ function initMap() {
         attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
     });
 
+    // v1453-58F: Grayscale Topo Map for Heatmap Contrast
+    // User requested "Colorless" topo map better visibility of heatmap colors.
+    const openTopoGray = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 25,
+        maxNativeZoom: 17,
+        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)',
+        className: 'grayscale-map-filter'
+    });
+
     const baseMaps = {
         "Street (OSM)": osm,
         "Street (HeatMap)": osmHeatmap,
         "Terrain (Google)": googleTerrain,
         "Satellite (Google)": googleSat,
-        "Topographic (OpenTopo)": openTopo
+        "Topographic (OpenTopo)": openTopo,
+        "Topographic (Heatmap)": openTopoGray
     };
 
     // Load saved layer preference
