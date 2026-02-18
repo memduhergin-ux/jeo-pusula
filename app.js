@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-65F'; // Balanced Hybrid Heatmap (v1453-65F)
+﻿const APP_VERSION = 'v1453-66F'; // Red Core Boost (v1453-66F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -295,14 +295,14 @@ function extractElementValues(text) {
 // Helper to darken colors for heatmap core (v423)
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
 // Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
-// v1453-65F: Balanced Gradient (Blue->Green->Yellow->Orange->Red)
-// Goal: Show spread (Yellow) but highlight core (Red) distinctly.
+// v1453-66F: Red Core Boost Gradient
+// Goal: Very distinct Red core for values boosted above 0.85
 const SPECTRUM_GRADIENT = {
     '0.2': 'blue',    // Low Base
     '0.45': 'lime',   // Mid
     '0.65': 'yellow', // High Spread
-    '0.85': 'orange', // Very High
-    '0.95': 'red'     // Peak Core (Starts earlier than 1.0)
+    '0.8': 'orange',  // Jump Threshold
+    '0.9': 'red'      // Peak Core
 };
 
 function shadeColor(color, percent) {
@@ -481,11 +481,11 @@ function updateHeatmap() {
                 points.push([d.lat, d.lng, intensity]);
             });
 
-            // v1453-65F: Update Legend Title with P98 info
+            // v1453-66F: Update Legend Title with P98 info
             const legendTitle = document.getElementById('legend-title');
             if (legendTitle && filterKey !== 'ALL') {
                 const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Sq)`;
+                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Boost)`;
             }
         }
 

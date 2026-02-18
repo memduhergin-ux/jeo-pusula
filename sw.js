@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-65F-HYBRID-MODEL';
+const CACHE_NAME = 'jeo-cache-v1453-66F-RED-CORE-BOOST';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',
