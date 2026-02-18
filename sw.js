@@ -1,5 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-4-6F';
-// Force Update Trigger: FINAL FIX
+const CACHE_NAME = 'jeo-cache-v1453-4-6F-fix-readability';
+// Force Update Trigger: Readability Fix
 const ASSETS = [
     './',
     'index.html',
