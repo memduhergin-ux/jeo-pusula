@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-61F'; // Algorithmic Heatmap Analysis (v1453-61F)
+﻿const APP_VERSION = 'v1453-62F'; // Force Update & Cache Clear (v1453-62F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
