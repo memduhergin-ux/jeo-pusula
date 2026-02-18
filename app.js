@@ -448,8 +448,8 @@ function updateHeatmap() {
             let min = allVals[0];
             let max = allVals[allVals.length - 1];
 
-            // v1453-65F: Hybrid Model (P98 + Square Curve)
-            // Goal: "Uzanim (Low/Mid) gorulsun, Zirve (High) belli olsun."
+            // v1453-66F: Piecewise "Red Core Boost"
+            // Goal: "Yellow spread stays, but Core POPS to Red immediately."
 
             // P98 Clamp (Top 2% is Peak)
             const p98Index = Math.floor(allVals.length * 0.98);
@@ -458,7 +458,7 @@ function updateHeatmap() {
             // Use P98 as the cap
             const cap = (p98 > min) ? p98 : max;
 
-            console.log(`Heatmap Stats (${filterKey}) [v65F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
+            console.log(`Heatmap Stats (${filterKey}) [v66F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
 
             collectedData.forEach(d => {
                 // 1. Linear Normalization
@@ -472,11 +472,19 @@ function updateHeatmap() {
                 // Clamp 0..1
                 intensity = Math.max(0, Math.min(1, intensity));
 
-                // 2. Algorithmic Curve (Square Power - x^2)
-                // v61 was Cubic (x^3) -> Killed Yellow/Green.
-                // v65 is Square (x^2) -> Preserves Yellow/Green but suppresses Blue noise.
-                // Combined with new Gradient (Red starts at 0.95), this highlights the core.
-                intensity = Math.pow(intensity, 2);
+                // 2. Custom Piecewise Function (Step Jump)
+                // If value is High (>0.70), force it to "Very High" (0.85+)
+                // If value is Mid/Low, keep it linear (preserve spread)
+
+                if (intensity > 0.70) {
+                    // BOOST: Map [0.70 - 1.0] to [0.85 - 1.0]
+                    // This creates a visual "Edge" where Red starts.
+                    intensity = 0.85 + ((intensity - 0.70) / 0.30) * 0.15;
+                } else {
+                    // KEEP SPREAD: Slight suppression to clean up blue noise?
+                    // Let's use Square (x^2) for the bottom part to keep it clean.
+                    intensity = Math.pow(intensity, 2);
+                }
 
                 points.push([d.lat, d.lng, intensity]);
             });
