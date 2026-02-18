@@ -2168,6 +2168,17 @@ function initMap() {
     map.on('zoomend', () => {
         updateMapMarkers(false);
         if (isHeatmapActive) updateHeatmap(); // v413: Recalculate metric radius pixels on zoom
+
+        // v1453-97F: Hide Measurement Labels at Low Zoom (<14) to reduce clutter
+        const zoom = map.getZoom();
+        const mapContainer = document.getElementById('map-container');
+        if (mapContainer) {
+            if (zoom < 14) {
+                mapContainer.classList.add('low-zoom-labels');
+            } else {
+                mapContainer.classList.remove('low-zoom-labels');
+            }
+        }
     });
 
     // --- Tracking System MOVED TO GLOBAL SCOPE (v441) ---

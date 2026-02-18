@@ -1,5 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-4-6F-transparent-labels';
-// Force Update Trigger: Transparent Labels
+const CACHE_NAME = 'jeo-cache-v1453-4-6F-7px-labels';
+// Force Update Trigger: 7px Labels
 const ASSETS = [
     './',
     'index.html',
