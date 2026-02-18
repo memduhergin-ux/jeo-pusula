@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-66F'; // Red Core Boost (v1453-66F)
+﻿const APP_VERSION = 'v1453-67F'; // Aggressive Red Gradient (v1453-67F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -295,14 +295,14 @@ function extractElementValues(text) {
 // Helper to darken colors for heatmap core (v423)
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
 // Low (Blue) -> Mid (Green/Yellow) -> High (Red/Black)
-// v1453-66F: Red Core Boost Gradient
-// Goal: Very distinct Red core for values boosted above 0.85
+// v1453-67F: Aggressive Red Gradient (Lower Thresholds)
+// Goal: Make Red/Orange appear much easier, expanding the core.
 const SPECTRUM_GRADIENT = {
     '0.2': 'blue',    // Low Base
-    '0.45': 'lime',   // Mid
-    '0.65': 'yellow', // High Spread
-    '0.8': 'orange',  // Jump Threshold
-    '0.9': 'red'      // Peak Core
+    '0.4': 'lime',    // Mid (Starts earlier)
+    '0.55': 'yellow', // High Spread (Starts earlier)
+    '0.7': 'orange',  // Very High (Easier to reach)
+    '0.8': 'red'      // Peak Core (Aggressive - top 20% is Red)
 };
 
 function shadeColor(color, percent) {
@@ -448,8 +448,8 @@ function updateHeatmap() {
             let min = allVals[0];
             let max = allVals[allVals.length - 1];
 
-            // v1453-66F: Piecewise "Red Core Boost"
-            // Goal: "Yellow spread stays, but Core POPS to Red immediately."
+            // v1453-67F: Smooth Square Curve + Aggressive Gradient
+            // Goal: Natural spread (x^2) but colors shift to Red much earlier.
 
             // P98 Clamp (Top 2% is Peak)
             const p98Index = Math.floor(allVals.length * 0.98);
@@ -458,7 +458,7 @@ function updateHeatmap() {
             // Use P98 as the cap
             const cap = (p98 > min) ? p98 : max;
 
-            console.log(`Heatmap Stats (${filterKey}) [v66F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
+            console.log(`Heatmap Stats (${filterKey}) [v67F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
 
             collectedData.forEach(d => {
                 // 1. Linear Normalization
@@ -472,28 +472,18 @@ function updateHeatmap() {
                 // Clamp 0..1
                 intensity = Math.max(0, Math.min(1, intensity));
 
-                // 2. Custom Piecewise Function (Step Jump)
-                // If value is High (>0.70), force it to "Very High" (0.85+)
-                // If value is Mid/Low, keep it linear (preserve spread)
-
-                if (intensity > 0.70) {
-                    // BOOST: Map [0.70 - 1.0] to [0.85 - 1.0]
-                    // This creates a visual "Edge" where Red starts.
-                    intensity = 0.85 + ((intensity - 0.70) / 0.30) * 0.15;
-                } else {
-                    // KEEP SPREAD: Slight suppression to clean up blue noise?
-                    // Let's use Square (x^2) for the bottom part to keep it clean.
-                    intensity = Math.pow(intensity, 2);
-                }
+                // 2. Square Function (x^2)
+                // Natural distribution. We rely on the NEW GRADIENT (0.8=Red) to do the highlighting.
+                intensity = Math.pow(intensity, 2);
 
                 points.push([d.lat, d.lng, intensity]);
             });
 
-            // v1453-66F: Update Legend Title with P98 info
+            // v1453-67F: Update Legend Title with P98 info
             const legendTitle = document.getElementById('legend-title');
             if (legendTitle && filterKey !== 'ALL') {
                 const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Boost)`;
+                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Aggr)`;
             }
         }
 

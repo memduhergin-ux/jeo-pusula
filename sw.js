@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-66F-RED-CORE-BOOST';
+const CACHE_NAME = 'jeo-cache-v1453-67F-AGGRESSIVE-GRADIENT';
 // Force Update Trigger: FINAL FIX
 const ASSETS = [
     './',
