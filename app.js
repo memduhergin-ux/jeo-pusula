@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-52F'; // Precision Analysis (v1453-52F)
+﻿const APP_VERSION = 'v1453-53F'; // Value-Weighted Analysis (v1453-53F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -237,6 +237,44 @@ function extractElements(text) {
     return found;
 }
 
+/**
+ * v1453-53F: Extract Element Values (ppm, %, etc.) for Weighted Analysis
+ * Text: "Mn: 1200 ppm, Fe %58, Au 0.45 g/t"
+ * Returns: { MN: 1200, FE: 58, AU: 0.45 }
+ */
+function extractElementValues(text) {
+    if (!text) return {};
+    const values = {};
+
+    // Regex Logic:
+    // 1. Element Symbol (1-2 chars)
+    // 2. Separators (space, colon, etc.)
+    // 3. Number (integers or decimals with dot/comma)
+    // 4. Optional Unit (ppm, %, ppb, g/t)
+    // Example Matches: "Mn 1200", "Fe: %58", "Au: 0.45"
+    const regex = /([A-Za-z]{1,2})[\s:]*([<>]?\d+([.,]\d+)?)\s*(ppm|%|ppb|g\/t)?/gi;
+
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        let symbol = match[1].toUpperCase();
+
+        // Resolve aliases (e.g. ALTIN -> AU)
+        if (ELEMENT_ALIASES[symbol]) symbol = ELEMENT_ALIASES[symbol];
+
+        // Validate symbol against periodic table or aliases to avoid false positives (like "No 5")
+        if (!PERIODIC_TABLE_SYMBOLS.has(symbol) && !Object.values(ELEMENT_ALIASES).includes(symbol)) continue;
+
+        // Parse Number
+        let numStr = match[2].replace(',', '.').replace(/[<>]/, ''); // Handle <10 or >500
+        let val = parseFloat(numStr);
+
+        if (!isNaN(val)) {
+            values[symbol] = val;
+        }
+    }
+    return values;
+}
+
 /** Heatmap Logic (v401) **/
 // Helper to darken colors for heatmap core (v423)
 // v1453-50F: Spectrum Analysis Gradient (Rainbow)
@@ -306,59 +344,105 @@ function updateHeatmap() {
     // 1. Gather points from standard records
     const recordPoints = records.filter(r => r.lat && r.lon);
 
-    // v1453-16: Consolidated Logic for Records & KMLs using 'extractElements'
+    // v1453-53F: Check Analysis Mode (Weighted vs Count)
+    // Default to Weighted if available, but let user toggle later.
+    // For now, let's auto-detect: If we can extract values, use Weighted.
+    const collectedData = [];
 
-    // A. Records
-    recordPoints.forEach(r => {
+    // Consolidation Helper
+    const processItem = (lat, lng, text) => {
         if (filterKey === 'ALL') {
-            points.push([r.lat, r.lon, 1.0]); // Uniform weight
+            // ALL mode: Just count density
+            collectedData.push({ lat, lng, val: 1.0 });
         } else {
-            // Check if record label contains the element (using robust extractor)
-            const elements = extractElements(r.label);
-            if (elements.has(filterKey)) {
-                points.push([r.lat, r.lon, 1.0]);
+            // Specific Element: Try to get Value
+            const vals = extractElementValues(text);
+            if (vals[filterKey] !== undefined) {
+                // Found explicit value (e.g. Mn 1200)
+                collectedData.push({ lat, lng, val: vals[filterKey] });
+            } else {
+                // Check if element exists but no value?
+                // Fallback to extraction check
+                const elems = extractElements(text);
+                if (elems.has(filterKey)) {
+                    // Element exists but no number found.
+                    // Treat as "Presence" (Low value or skip?)
+                    // For Analysis, skipping might be safer, or assign a low baseline?
+                    // Let's exclude purely presence points in Value Mode to avoid dilution.
+                }
             }
         }
-    });
+    };
 
-    // B. External KML Markers (v513)
+    recordPoints.forEach(r => processItem(r.lat, r.lon, r.label));
+
     allKmlMarkers.forEach(marker => {
         const latlng = marker.getLatLng();
+        let text = "";
+        // Check Tooltip
+        if (marker.getTooltip()) text += marker.getTooltip().getContent() + " ";
+        // Check Layer Properties? (TODO: Deep kml property scan)
 
-        if (filterKey === 'ALL') {
-            points.push([latlng.lat, latlng.lng, 1.0]);
-        } else {
-            // v1453-16: Check layer's pre-scanned elements OR the marker's own text
-            let match = false;
-
-            // 1. Check parent layer properties (if marker belongs to a layer)
-            if (marker.jeoLayerId) {
-                const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
-                if (parentLayer && parentLayer._jeoElements && parentLayer._jeoElements.has(filterKey)) {
-                    match = true;
-                }
-            }
-
-            // 2. Fallback: Check marker tooltip (if any) using robust extractor
-            if (!match) {
-                const tooltip = marker.getTooltip();
-                if (tooltip) {
-                    const txt = tooltip.getContent();
-                    const elems = extractElements(txt);
-                    if (elems.has(filterKey)) match = true;
-                }
-            }
-
-            if (match) {
-                points.push([latlng.lat, latlng.lng, 1.0]);
-            }
-        }
+        processItem(latlng.lat, latlng.lng, text);
     });
 
-    // v1453-1: Smart Radius Conversion (Meters to Pixels) - Fix for "Heatmap not working"
-    let radiusPixels = 20; // Default
-    let blurPixels = 15;   // Default
+    // v1453-53F: Data Normalization (Min-Max-P95)
+    // If we have values, calculate stats
+    if (collectedData.length > 0) {
+        // Extract just numbers for stats
+        const allVals = collectedData.map(d => d.val).sort((a, b) => a - b);
+        let min = allVals[0];
+        let max = allVals[allVals.length - 1];
 
+        // P95 Clamp (Exclude top 5% outliers)
+        const p95Index = Math.floor(allVals.length * 0.95);
+        const p95 = allVals[p95Index];
+
+        // If P95 is valid and significantly different from max, use it as clamp cap
+        const cap = (p95 > min) ? p95 : max;
+
+        console.log(`Heatmap Stats (${filterKey}): Min:${min}, Max:${max}, P95:${p95}, Count:${allVals.length}`);
+
+        collectedData.forEach(d => {
+            // Normalize: 0.0 to 1.0
+            // (val - min) / (cap - min)
+            let intensity = (d.val - min) / (cap - min);
+
+            // Clamp 0..1
+            intensity = Math.max(0, Math.min(1, intensity));
+
+            // Push to Leaflet Heat
+            // [lat, lng, intensity]
+            points.push([d.lat, d.lng, intensity]);
+        });
+
+        // v1453-53F: Dynamic Legend Update with Range
+        // Update Legend Title with Range: "Mn (100 - 5000 ppm)"
+        const legendTitle = document.getElementById('legend-title');
+        if (legendTitle && filterKey !== 'ALL') {
+            const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
+            legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P95)`;
+        }
+
+    } else {
+        // Fallback or Empty
+        points = [];
+    }
+
+    // v1453-1: Smart Radius Conversion (Meters to Pixels) - Fix for "Heatmap not working"
+    // radiusPixels and blurPixels are already defined above if needed, but let's ensure scope is clean.
+    // Actually, we defined them as 'let' above but the block structure might be confusing.
+    // Let's just use the logic directly without redeclaring if they are already in scope.
+
+    // In this specific function structure, we might have pasted code that duplicates declarations.
+    // Let's remove the duplicate block if it exists, or fix the declaration.
+
+    // Since we already have the logic above (lines 359-391 in previous view), 
+    // we should NOT have another block here.
+    // I will REMOVE this duplicate block entirely as it resets the smart radius logic.
+
+
+    // v1453-1: Smart Radius Conversion (Meters to Pixels)
     if (heatmapRadius > 0) {
         // Calculate pixels from meters at current zoom
         const center = map.getCenter();
@@ -598,7 +682,40 @@ function initHeatmapFilterListener() {
             updateHeatmap();
         });
     }
+
+    // v1453-53F: Analysis Mode Toggle Listener
+    const modeToggle = document.getElementById('heatmap-mode-toggle');
+    const modeLabel = document.getElementById('analysis-mode-label');
+
+    if (modeToggle) {
+        // Restore state
+        const savedMode = localStorage.getItem('jeoHeatmapMode'); // 'WEIGHTED' or 'COUNT'
+        if (savedMode === 'COUNT') {
+            modeToggle.checked = false;
+            if (modeLabel) { modeLabel.textContent = "DENSITY (Count)"; modeLabel.style.color = "#2196f3"; }
+            heatmapMode = 'COUNT';
+        } else {
+            modeToggle.checked = true; // Default Weighted
+            if (modeLabel) { modeLabel.textContent = "WEIGHTED (Value)"; modeLabel.style.color = "#4caf50"; }
+            heatmapMode = 'WEIGHTED';
+        }
+
+        modeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                heatmapMode = 'WEIGHTED';
+                if (modeLabel) { modeLabel.textContent = "WEIGHTED (Value)"; modeLabel.style.color = "#4caf50"; }
+            } else {
+                heatmapMode = 'COUNT';
+                if (modeLabel) { modeLabel.textContent = "DENSITY (Count)"; modeLabel.style.color = "#2196f3"; }
+            }
+            localStorage.setItem('jeoHeatmapMode', heatmapMode);
+            updateHeatmap();
+        });
+    }
 }
+
+// Global Mode Variable (Default Weighted)
+let heatmapMode = 'WEIGHTED';
 // Initialize after DOM load
 document.addEventListener('DOMContentLoaded', initHeatmapFilterListener);
 // Also ensure it works if panel is opened later
