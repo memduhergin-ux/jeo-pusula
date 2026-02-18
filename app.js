@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-62F'; // Force Update & Cache Clear (v1453-62F)
+﻿const APP_VERSION = 'v1453-63F'; // Tuned Heatmap Analysis (v1453-63F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -447,20 +447,21 @@ function updateHeatmap() {
             let min = allVals[0];
             let max = allVals[allVals.length - 1];
 
-            // v1453-61F: Algorithmic Analysis (P99 + Cubic Curve)
-            // Goal: "Az yoğun yer en fazladır, çok yoğun yer çok azdır" -> Pareto Distribution Visualization
+            // v1453-63F: Tuned Algorithmic Analysis (P98 + Power 2.5 Curve)
+            // Goal: Expand the "Red" peak area slightly, less aggressive suppression than Cubic.
 
-            // P99 Clamp (Exclude top 1% extreme outliers only)
-            const p99Index = Math.floor(allVals.length * 0.99);
-            const p99 = allVals[p99Index];
+            // P98 Clamp (Exclude top 2% extreme outliers)
+            // v61 was P99, which was too strict (tiny red dots).
+            const p98Index = Math.floor(allVals.length * 0.98);
+            const p98 = allVals[p98Index];
 
-            // Use P99 as the cap to define "Max Intensity"
-            const cap = (p99 > min) ? p99 : max;
+            // Use P98 as the cap to define "Max Intensity"
+            const cap = (p98 > min) ? p98 : max;
 
-            console.log(`Heatmap Stats (${filterKey}) [v61F]: Min:${min}, Max:${max}, P99:${p99}, Count:${allVals.length}`);
+            console.log(`Heatmap Stats (${filterKey}) [v63F]: Min:${min}, Max:${max}, P98:${p98}, Count:${allVals.length}`);
 
             collectedData.forEach(d => {
-                // 1. Linear Normalization: 0.0 to 1.0 based on P99 Cap
+                // 1. Linear Normalization: 0.0 to 1.0 based on P98 Cap
                 let intensity;
                 if (cap === min) {
                     intensity = 0.5;
@@ -468,25 +469,23 @@ function updateHeatmap() {
                     intensity = (d.val - min) / (cap - min);
                 }
 
-                // Clamp 0..1 (Handle values > P99)
+                // Clamp 0..1 (Handle values > P98)
                 intensity = Math.max(0, Math.min(1, intensity));
 
-                // 2. Algorithmic Curve (Cubic Power)
-                // Pushes mid-range values DOWN to Blue/Green.
-                // Reserves Orange/Red ONLY for values near 1.0 (P99)
-                // Example: 0.5 input -> 0.125 output (Blue)
-                // Example: 0.8 input -> 0.51 output (Green)
-                // Example: 0.95 input -> 0.85 output (Orange)
-                intensity = Math.pow(intensity, 3);
+                // 2. Algorithmic Curve (Power 2.5)
+                // v61 was Cubic (Power 3). Too strict.
+                // Power 2.5 is a balance between Aggressive (3) and Standard (1).
+                // Example: 0.8 input -> 0.57 output (Green/Yellowish) -> Better visibility than 0.51
+                intensity = Math.pow(intensity, 2.5);
 
                 points.push([d.lat, d.lng, intensity]);
             });
 
-            // v1453-61F: Update Legend Title with P99 info
+            // v1453-63F: Update Legend Title with P98 info
             const legendTitle = document.getElementById('legend-title');
             if (legendTitle && filterKey !== 'ALL') {
                 const niceName = filterKey.charAt(0).toUpperCase() + filterKey.slice(1).toLowerCase();
-                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P99 Cubic)`;
+                legendTitle.textContent = `${niceName}: ${Math.round(min)} - ${Math.round(cap)} (P98 Tuned)`;
             }
         }
 
