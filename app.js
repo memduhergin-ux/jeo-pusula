@@ -2174,11 +2174,11 @@ function initMap() {
         updateMapMarkers(false);
         if (isHeatmapActive) updateHeatmap(); // v413: Recalculate metric radius pixels on zoom
 
-        // v1453-97F: Hide Measurement Labels at Low Zoom (<14) to reduce clutter
+        // v1453-104: Hide Measurement Labels at Low Zoom (<10) - User Requested
         const zoom = map.getZoom();
         const mapContainer = document.getElementById('map-container');
         if (mapContainer) {
-            if (zoom < 14) {
+            if (zoom < 10) {
                 mapContainer.classList.add('low-zoom-labels');
             } else {
                 mapContainer.classList.remove('low-zoom-labels');
