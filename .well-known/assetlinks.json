@@ -1,1 +1,14 @@
-
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.memduhergin_ux.twa",
+      "sha256_cert_fingerprints": [
+        "60:CE:E4:76:24:1F:B6:A1:5B:7A:4E:BE:C4:C3:3C:C6:2C:D8:F3:6E:80:0C:EB:7C:5B:FF:DE:06:30:61:9B:55"
+      ]
+    }
+  }
+]
