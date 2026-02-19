@@ -6,6 +6,9 @@
     "start_url": "index.html",
     "orientation": "portrait",
     "id": "/jeo-pusula/",
+    "display": "fullscreen",
+    "background_color": "#121212",
+    "theme_color": "#1a1a1a",
     "categories": [
         "utilities",
         "productivity",
@@ -30,14 +33,14 @@
             "src": "icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "form_factor": "wide",
+            "form_factor": "narrow",
             "label": "JeoCompass Application"
         },
         {
             "src": "icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "form_factor": "narrow",
+            "form_factor": "wide",
             "label": "JeoCompass Application"
         }
     ]
