@@ -1383,6 +1383,11 @@ function renderCoordinates() {
     const gpsAlt = currentCoords.alt !== null ? Math.round(currentCoords.alt) : 0;
     const baroAlt = currentCoords.baroAlt !== null ? Math.round(currentCoords.baroAlt) : '-';
 
+    // v1453-103: Prioritize Online Elevation & Use "Satellite" Label
+    const activeAlt = onlineMyAlt !== null ? Math.round(onlineMyAlt) : gpsAlt;
+    const activeAltLabel = onlineMyAlt !== null ? "Z (Online)" : "Z (Satellite)";
+    const activeAltColor = onlineMyAlt !== null ? "#4caf50" : "";
+
     if (currentMode === 'wgs') {
         coordContent.innerHTML = `
             <div class="coord-row">
@@ -1394,8 +1399,8 @@ function renderCoordinates() {
                 <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}°</span>
             </div>
             <div class="coord-row">
-                <span class="data-label">Z (Uydu)</span>
-                <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
+                <span class="data-label">${activeAltLabel}</span>
+                <span class="data-value" style="font-size: 1rem; color: ${activeAltColor}">${activeAlt} m</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Z (Baro)</span>
@@ -1423,8 +1428,8 @@ function renderCoordinates() {
                     <span class="data-value" style="font-size: 1rem;">${Math.round(northing)}</span>
                 </div>
                 <div class="coord-row">
-                    <span class="data-label">Z (Uydu)</span>
-                    <span class="data-value" style="font-size: 1rem;">${gpsAlt} m</span>
+                    <span class="data-label">${activeAltLabel}</span>
+                    <span class="data-value" style="font-size: 1rem; color: ${activeAltColor}">${activeAlt} m</span>
                 </div>
                 <div class="coord-row">
                     <span class="data-label">Z (Baro)</span>
