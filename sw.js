@@ -1,5 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-4-6F-7px-labels-v2';
-// Force Update Trigger: 7px Labels v2
+const CACHE_NAME = 'jeo-cache-v1453-4-7F-manifest-fix';
+// Force Update Trigger: Manifest Description Fix
 const ASSETS = [
     './',
     'index.html',

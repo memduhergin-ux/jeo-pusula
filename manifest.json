@@ -2,6 +2,7 @@
     "name": "JeoCompass v1453-4-6F",
     "version": "1453.4.6F",
     "short_name": "JeoCompass",
+    "description": "Profesyonel Jeoloji Pusulası: Eğim, Yön, Konum ve Harita Araçları.",
     "start_url": "index.html",
     "display": "fullscreen",
     "background_color": "#121212",
