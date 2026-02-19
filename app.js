@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-4-6F'; // KML & Objects Interactivity Fixture (v1453-70F)
+﻿const APP_VERSION = 'v1453-4-8F'; // KML & Objects Interactivity Fixture (v1453-70F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
