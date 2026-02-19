@@ -7,13 +7,26 @@
     "prefer_related_applications": false,
     "orientation": "portrait",
     "id": "/jeo-pusula/",
+    "scope": "/jeo-pusula/",
     "display": "fullscreen",
+    "display_override": [
+        "window-controls-overlay",
+        "minimal-ui"
+    ],
     "background_color": "#121212",
     "theme_color": "#1a1a1a",
     "categories": [
         "utilities",
         "productivity",
         "education"
+    ],
+    "iarc_rating_id": "",
+    "related_applications": [
+        {
+            "platform": "play",
+            "url": "https://play.google.com/store/apps/details?id=com.jeopusula.app",
+            "id": "com.jeopusula.app"
+        }
     ],
     "icons": [
         {
@@ -31,15 +44,18 @@
     ],
     "screenshots": [
         {
-            "src": "icon-512.png",
+            "src": "screenshot_narrow.png",
+            "sizes": "1080x1920",
             "type": "image/png",
-            "label": "JeoCompass Application"
+            "form_factor": "narrow",
+            "label": "JeoCompass Mobile View"
         },
         {
-            "src": "icon-512.png",
+            "src": "screenshot_wide.png",
+            "sizes": "1920x1080",
             "type": "image/png",
             "form_factor": "wide",
-            "label": "JeoCompass Application"
+            "label": "JeoCompass Desktop View"
         }
     ]
 }
