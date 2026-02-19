@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeo-cache-v1453-4-7F-manifest-fix';
+const CACHE_NAME = 'jeo-cache-v1453-4-8F-manifest-fix';
 // Force Update Trigger: Manifest Description Fix
 const ASSETS = [
     './',
