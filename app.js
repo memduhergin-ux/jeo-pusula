@@ -4012,7 +4012,8 @@ function addExternalLayer(name, geojson) {
         weight: 2,
         opacity: 1,
         fillColor: '#2196f3',
-        fillOpacity: 0.4 // Default Filled
+        fillOpacity: 0.4, // Default Filled
+        interactive: true // v1453-106: Ensure Polygons/Lines are clickable matching Points
     };
 
     const layerElements = new Set(); // v1453-15: Collect elements during parsing
@@ -4031,7 +4032,8 @@ function addExternalLayer(name, geojson) {
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 1
+                    fillOpacity: 1,
+                    interactive: true // v1453-105: Explicitly enable interaction
                 });
 
                 marker.isKmlMarker = true; // v545: Flag for fast identification
