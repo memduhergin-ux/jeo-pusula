@@ -4,19 +4,41 @@
     "short_name": "JeoCompass",
     "description": "Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.",
     "start_url": "index.html",
-    "display": "fullscreen",
-    "background_color": "#121212",
-    "theme_color": "#1a1a1a",
+    "orientation": "portrait",
+    "id": "/jeo-pusula/",
+    "categories": [
+        "utilities",
+        "productivity",
+        "education"
+    ],
     "icons": [
         {
             "src": "icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
             "src": "icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "JeoCompass Application"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "JeoCompass Application"
         }
     ]
 }
