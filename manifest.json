@@ -4,6 +4,7 @@
     "short_name": "JeoCompass",
     "description": "Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.",
     "start_url": "index.html",
+    "prefer_related_applications": false,
     "orientation": "portrait",
     "id": "/jeo-pusula/",
     "display": "fullscreen",
@@ -33,7 +34,6 @@
             "src": "icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "form_factor": "narrow",
             "label": "JeoCompass Application"
         },
         {
