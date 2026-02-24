@@ -1,5 +1,5 @@
-const CACHE_NAME = 'jeo-cache-v1453-4-6F-manifest-fix';
-// Force Update Trigger: Manifest Description Fix
+const CACHE_NAME = 'jeo-cache-v1453-4-9F-offline-fix';
+// Force Update Trigger: Offline Support Fix
 const ASSETS = [
     './',
     'index.html',
@@ -29,31 +29,37 @@ self.addEventListener('activate', (event) => {
                 })
             );
         }).then(() => {
-            return self.clients.claim(); // Immediately control all clients
+            return self.clients.claim();
         })
     );
 });
 
-
 self.addEventListener('fetch', (event) => {
-    // Network-First strategy for the main page (navigation requests)
-    // This makes the "Refresh" button in the browser actually fetch the latest version
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request)
-                .then((networkResponse) => {
-                    return caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, networkResponse.clone());
-                        return networkResponse;
-                    });
-                })
-                .catch(() => caches.match(event.request))
-        );
-        return;
-    }
-
-    // Cache-First for other assets (styles, scripts, icons)
     event.respondWith(
-        caches.match(event.request).then((response) => response || fetch(event.request))
+        caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+                fetch(event.request).then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, networkResponse.clone());
+                        });
+                    }
+                }).catch(() => {});
+                return cachedResponse;
+            }
+            return fetch(event.request).then((networkResponse) => {
+                if (!networkResponse || networkResponse.status !== 200) {
+                    return networkResponse;
+                }
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, networkResponse.clone());
+                });
+                return networkResponse;
+            }).catch(() => {
+                if (event.request.mode === 'navigate') {
+                    return caches.match('index.html') || caches.match('./');
+                }
+            });
+        })
     );
 });
