@@ -3080,8 +3080,9 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     color: #ffeb3b !important;
     padding: 0 !important;
     border-radius: 0;
-    font-size: 7px !important;
-    /* v1453-99F: Reduced to 7px as requested */
+    font-size: 9px !important;
+    /* v1453-4-10F: 9px as requested, offset azaltıldı */
+    margin-top: -5px !important;
     font-weight: 900 !important;
     border: none !important;
     white-space: nowrap;
