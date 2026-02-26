@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-4-7F'; // KML & Objects Interactivity Fixture (v1453-70F)
+﻿const APP_VERSION = 'v1453-4-8F'; // KML & Objects Interactivity Fixture (v1453-70F)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -1739,6 +1739,12 @@ function startGeolocationWatch() {
     // v1453-1: High Accuracy GPS for Altitude (Z)
     watchId = navigator.geolocation.watchPosition((p) => {
         try {
+            // v1453-8F: Reject absurdly inaccurate fixes (>60m) to stop jumps while standing still
+            if (p.coords.accuracy > 60 && smoothedPos.lat !== 0) {
+                console.log("Ignored inaccurate GPS jump:", Math.round(p.coords.accuracy) + "m");
+                return;
+            }
+
             // v560: Capture last position before updating smoothedPos for bearing calculation
             const lastPos = (smoothedPos.lat === 0 && smoothedPos.lon === 0) ? null : { lat: smoothedPos.lat, lon: smoothedPos.lon };
 
@@ -1906,7 +1912,7 @@ function startGeolocationWatch() {
             console.log("Restarting Geolocation due to timeout...");
             startGeolocationWatch();
         }
-    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+    }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
 }
 startGeolocationWatch();
 
