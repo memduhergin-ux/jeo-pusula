@@ -5701,20 +5701,29 @@ function onLocationError(err) {
     const datumWrap = document.getElementById('coord-datum-wrap');
     const zoneInput = document.getElementById('coord-zone');
     const zoneWrap = document.getElementById('coord-zone-wrap');
-    const manualText = document.getElementById('coord-manual-text');
     const layerNameEl = document.getElementById('coord-layer-name');
     const previewEl = document.getElementById('coord-preview');
+    // Manual form fields
+    const mLabel = document.getElementById('coord-m-label');
+    const mY = document.getElementById('coord-m-y');
+    const mX = document.getElementById('coord-m-x');
+    const mZ = document.getElementById('coord-m-z');
+    const addPointBtn = document.getElementById('btn-coord-add-point');
+    const pointList = document.getElementById('coord-point-list');
 
-    let parsedRows = [];
+    let parsedRows = []; // {lat, lng, label, origY, origX, origZ, zone, fmt}
     let activeTab = 'file';
     let rawFileData = null;
 
     function resetModal() {
         parsedRows = []; rawFileData = null;
-        fileNameEl.textContent = 'No file selected';
-        manualText.value = '';
-        previewEl.style.display = 'none';
-        previewEl.textContent = '';
+        if (fileNameEl) fileNameEl.textContent = 'No file selected';
+        if (previewEl) { previewEl.style.display = 'none'; previewEl.textContent = ''; }
+        if (pointList) { pointList.style.display = 'none'; pointList.innerHTML = ''; }
+        if (mLabel) mLabel.value = '';
+        if (mY) mY.value = '';
+        if (mX) mX.value = '';
+        if (mZ) mZ.value = '';
     }
 
     if (triggerBtn) triggerBtn.addEventListener('click', () => {
@@ -5724,40 +5733,44 @@ function onLocationError(err) {
         if (lm) lm.classList.remove('active');
     });
 
-    cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
+    if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
 
-    tabFile.addEventListener('click', () => {
+    // --- Tabs ---
+    if (tabFile) tabFile.addEventListener('click', () => {
         activeTab = 'file';
         tabFile.classList.replace('btn-cancel', 'btn-confirm');
         tabManual.classList.replace('btn-confirm', 'btn-cancel');
-        panelFile.style.display = '';
-        panelManual.style.display = 'none';
-        parsedRows = []; previewEl.style.display = 'none';
+        panelFile.style.display = ''; panelManual.style.display = 'none';
+        parsedRows = []; if (previewEl) previewEl.style.display = 'none';
     });
-
-    tabManual.addEventListener('click', () => {
+    if (tabManual) tabManual.addEventListener('click', () => {
         activeTab = 'manual';
         tabManual.classList.replace('btn-cancel', 'btn-confirm');
         tabFile.classList.replace('btn-confirm', 'btn-cancel');
-        panelManual.style.display = '';
-        panelFile.style.display = 'none';
-        parsedRows = []; previewEl.style.display = 'none';
+        panelManual.style.display = ''; panelFile.style.display = 'none';
+        // Keep existing points; don't reset
     });
 
-    formatSel.addEventListener('change', () => {
+    // --- Format change ---
+    if (formatSel) formatSel.addEventListener('change', () => {
         const isUTM = formatSel.value === 'utm';
-        zoneWrap.style.display = isUTM ? '' : 'none';
-        datumWrap.style.display = isUTM ? '' : 'none';
-        parsedRows = []; previewEl.style.display = 'none';
+        if (zoneWrap) zoneWrap.style.display = isUTM ? '' : 'none';
+        if (datumWrap) datumWrap.style.display = isUTM ? '' : 'none';
+        parsedRows = []; if (previewEl) previewEl.style.display = 'none';
         if (rawFileData) processFileData(rawFileData);
+        // Update Y/X labels
+        const yLbl = document.querySelector('#coord-panel-manual [for-field="y"]');
+        const xLbl = document.querySelector('#coord-panel-manual [for-field="x"]');
+        if (yLbl) yLbl.textContent = isUTM ? 'Y (Easting)' : 'Latitude';
+        if (xLbl) xLbl.textContent = isUTM ? 'X (Northing)' : 'Longitude';
     });
 
-    filePickBtn.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', async (e) => {
+    // --- File picker ---
+    if (filePickBtn) filePickBtn.addEventListener('click', () => fileInput && fileInput.click());
+    if (fileInput) fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        fileNameEl.textContent = file.name;
+        if (fileNameEl) fileNameEl.textContent = file.name;
         try {
             const ext = file.name.split('.').pop().toLowerCase();
             if (ext === 'csv') {
@@ -5775,79 +5788,112 @@ function onLocationError(err) {
         fileInput.value = '';
     });
 
-    manualText.addEventListener('input', () => {
-        parsedRows = parseTextCoords(manualText.value);
-        showPreview();
+    // --- Manual: Add Point button ---
+    if (addPointBtn) addPointBtn.addEventListener('click', () => {
+        const fmt = formatSel ? formatSel.value : 'utm';
+        const Y = parseFloat(mY ? mY.value : '');
+        const X = parseFloat(mX ? mX.value : '');
+        const Z = parseFloat(mZ ? mZ.value : '') || 0;
+        const lbl = (mLabel && mLabel.value.trim()) || `P${parsedRows.length + 1}`;
+        let lat, lng;
+        if (fmt === 'utm') {
+            const zone = parseInt(zoneInput ? zoneInput.value : '0') || autoZoneFromE(Y);
+            const datum = datumSel ? datumSel.value : 'ed50';
+            if (!isNaN(Y) && !isNaN(X) && zone) {
+                const ll = utmToLatLng(Y, X, zone, datum);
+                lat = ll.lat; lng = ll.lng;
+            }
+        } else {
+            lat = Y; lng = X; // Y=Lat, X=Lng in WGS84
+        }
+        if (isNaN(lat) || isNaN(lng)) { showToast('Invalid coordinates!', 2000); return; }
+        const zone = parseInt(zoneInput ? zoneInput.value : '0') || autoZoneFromE(Y);
+        parsedRows.push({ lat, lng, label: lbl, origY: Y, origX: X, origZ: Z, zone, fmt });
+        refreshPointList();
+        // Clear fields for next entry
+        if (mY) mY.value = '';
+        if (mX) mX.value = '';
+        if (mZ) mZ.value = '';
+        if (mLabel) mLabel.focus();
     });
 
-    addBtn.addEventListener('click', () => {
-        if (activeTab === 'manual') parsedRows = parseTextCoords(manualText.value);
-        if (!parsedRows || parsedRows.length === 0) { showToast('No valid coordinates found!', 2500); return; }
-        const name = (layerNameEl.value || 'Coordinates').trim();
+    // --- Add to Map ---
+    if (addBtn) addBtn.addEventListener('click', () => {
+        if (!parsedRows || parsedRows.length === 0) { showToast('No points added!', 2500); return; }
+        const name = (layerNameEl ? layerNameEl.value : 'Coordinates').trim() || 'Coordinates';
         addCoordLayer(parsedRows, name);
         modal.classList.remove('active');
         showToast(`\u2705 ${parsedRows.length} points added: ${name}`, 2500);
     });
 
+    function refreshPointList() {
+        if (!pointList) return;
+        if (parsedRows.length === 0) { pointList.style.display = 'none'; return; }
+        pointList.innerHTML = parsedRows.map((p, i) => {
+            const coord = p.fmt === 'utm'
+                ? `${p.zone}N ${Math.round(p.origY)} ${Math.round(p.origX)} Z:${p.origZ}`
+                : `${p.origY?.toFixed ? p.origY.toFixed(5) : p.origY}, ${p.origX?.toFixed ? p.origX.toFixed(5) : p.origX}`;
+            return `<div style="display:flex;justify-content:space-between;gap:4px;">
+                <span>${p.label}: ${coord}</span>
+                <span onclick="window._coordRemove(${i})" style="color:#f44336;cursor:pointer;">✕</span>
+            </div>`;
+        }).join('');
+        pointList.style.display = '';
+        if (previewEl) previewEl.style.display = 'none';
+    }
+
+    window._coordRemove = function (idx) {
+        parsedRows.splice(idx, 1);
+        refreshPointList();
+    };
+
+    // ---- File processing helpers ----
     function parseCSV(text) {
         const lines = text.split(/\r?\n/).filter(l => l.trim());
         if (lines.length < 2) return [];
         const headers = lines[0].split(/[,;\t]/).map(h => h.trim().replace(/^"|"$/g, ''));
         return lines.slice(1).map(line => {
             const vals = line.split(/[,;\t]/).map(v => v.trim().replace(/^"|"$/g, ''));
-            const obj = {};
-            headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
-            return obj;
+            const obj = {}; headers.forEach((h, i) => { obj[h] = vals[i] || ''; }); return obj;
         }).filter(o => Object.values(o).some(v => v));
     }
 
     function processFileData(rows) {
         if (!rows || rows.length === 0) return;
-        const fmt = formatSel.value;
+        const fmt = formatSel ? formatSel.value : 'utm';
         parsedRows = [];
         rows.forEach((row, idx) => {
             const keys = Object.keys(row).map(k => ({ k, kl: k.toLowerCase() }));
-            const find = (...names) => {
-                const m = keys.find(({ kl }) => names.some(n => kl.includes(n)));
-                return m ? row[m.k] : undefined;
-            };
+            const find = (...names) => { const m = keys.find(({ kl }) => names.some(n => kl.includes(n))); return m ? row[m.k] : undefined; };
             let lat, lng;
             const label = String(find('name', 'label', 'ad', 'aciklama', 'note', 'id') || `P${idx + 1}`);
+            const Z = parseFloat(find('z', 'rakım', 'alt', 'elev') || 0) || 0;
             if (fmt === 'utm') {
-                const E = parseFloat(find('y', 'e', 'east', 'dogu'));
-                const N = parseFloat(find('x', 'n', 'north', 'kuzey'));
-                let zone = parseInt(zoneInput.value) || parseInt(find('zone', 'zon', 'dilim')) || 0;
-                if (!zone) zone = autoZoneFromE(E);
-                if (!isNaN(E) && !isNaN(N) && zone) { const ll = utmToLatLng(E, N, zone, datumSel.value); lat = ll.lat; lng = ll.lng; }
+                const Y = parseFloat(find('y', 'e', 'east', 'dogu'));
+                const X = parseFloat(find('x', 'n', 'north', 'kuzey'));
+                let zone = parseInt(zoneInput ? zoneInput.value : 0) || parseInt(find('zone', 'zon', 'dilim')) || 0;
+                if (!zone) zone = autoZoneFromE(Y);
+                const datum = datumSel ? datumSel.value : 'ed50';
+                if (!isNaN(Y) && !isNaN(X) && zone) { const ll = utmToLatLng(Y, X, zone, datum); lat = ll.lat; lng = ll.lng; parsedRows.push({ lat, lng, label, origY: Y, origX: X, origZ: Z, zone, fmt }); }
             } else {
-                lat = parseFloat(find('lat', 'latitude', 'enlem'));
-                lng = parseFloat(find('lon', 'lng', 'longitude', 'boylam'));
+                lat = parseFloat(find('lat', 'latitude', 'enlem')); lng = parseFloat(find('lon', 'lng', 'longitude', 'boylam'));
+                if (!isNaN(lat) && !isNaN(lng)) parsedRows.push({ lat, lng, label, origY: lat, origX: lng, origZ: Z, zone: 0, fmt });
             }
-            if (!isNaN(lat) && !isNaN(lng)) parsedRows.push({ lat, lng, label });
         });
-        showPreview();
+        showFilePreview();
     }
 
-    function parseTextCoords(text) {
-        const fmt = formatSel.value;
-        return text.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#')).reduce((acc, line, idx) => {
-            const parts = line.trim().split(/[\s,;]+/);
-            let lat, lng, label = `P${idx + 1}`;
-            if (fmt === 'utm') {
-                let startIdx = 0, zone = parseInt(zoneInput.value) || 0;
-                if (/^\d{1,2}[NS]?$/i.test(parts[0])) { const z = parseInt(parts[0]); if (z >= 1 && z <= 60) { zone = z; startIdx = 1; } }
-                const E = parseFloat(parts[startIdx]);
-                const N = parseFloat(parts[startIdx + 1]);
-                if (parts[startIdx + 2] && isNaN(parseFloat(parts[startIdx + 2]))) label = parts.slice(startIdx + 2).join(' ');
-                if (!zone) zone = autoZoneFromE(E);
-                if (!isNaN(E) && !isNaN(N) && zone) { const ll = utmToLatLng(E, N, zone, datumSel.value); lat = ll.lat; lng = ll.lng; }
-            } else {
-                lat = parseFloat(parts[0]); lng = parseFloat(parts[1]);
-                if (parts[2] && isNaN(parseFloat(parts[2]))) label = parts.slice(2).join(' ');
-            }
-            if (!isNaN(lat) && !isNaN(lng)) acc.push({ lat, lng, label });
-            return acc;
-        }, []);
+    function showFilePreview() {
+        if (!previewEl) return;
+        if (!parsedRows || parsedRows.length === 0) { previewEl.style.display = 'none'; return; }
+        const lines = parsedRows.slice(0, 4).map(p =>
+            p.fmt === 'utm'
+                ? `${p.label}: ${p.zone}N ${Math.round(p.origY)} ${Math.round(p.origX)}`
+                : `${p.label}: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`
+        );
+        if (parsedRows.length > 4) lines.push(`... and ${parsedRows.length - 4} more`);
+        previewEl.innerHTML = lines.join('<br>');
+        previewEl.style.display = '';
     }
 
     function utmToLatLng(E, N, zone, datum) {
@@ -5858,15 +5904,9 @@ function onLocationError(err) {
     }
 
     function autoZoneFromE(E) { return (E > 100000 && E < 900000) ? 36 : 0; }
-
-    function showPreview() {
-        if (!parsedRows || parsedRows.length === 0) { previewEl.style.display = 'none'; return; }
-        const lines = parsedRows.slice(0, 4).map(p => `${p.label}: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
-        if (parsedRows.length > 4) lines.push(`... and ${parsedRows.length - 4} more`);
-        previewEl.innerHTML = lines.join('<br>');
-        previewEl.style.display = '';
-    }
 })();
+
+
 
 // -------------------------------------------------------
 // addCoordLayer — Creates a GeoJSON point layer on the map
@@ -5878,7 +5918,20 @@ function addCoordLayer(points, name) {
         features: points.map(p => ({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-            properties: { name: p.label, lat: p.lat.toFixed(6), lng: p.lng.toFixed(6) }
+            properties: p.fmt === 'utm'
+                ? {
+                    name: p.label,
+                    'Zone': `${p.zone}N`,
+                    'Y (Easting)': Math.round(p.origY),
+                    'X (Northing)': Math.round(p.origX),
+                    'Z (m)': p.origZ || 0
+                }
+                : {
+                    name: p.label,
+                    'Lat': p.lat.toFixed(6),
+                    'Lng': p.lng.toFixed(6),
+                    'Z (m)': p.origZ || 0
+                }
         }))
     };
     addExternalLayer(name, geojson);
