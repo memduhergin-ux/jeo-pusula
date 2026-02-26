@@ -742,188 +742,192 @@
                     <input type="file" id="coord-file-input" accept=".csv,.xlsx,.xls" style="display:none;">
                     <div id="coord-file-name"
                         style="font-size:0.8rem; color:#888; text-align:center; margin-bottom:8px;">No file selected
-                        <div id="coord-panel-manual" style="display:none;">
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
-                                <div>
-                                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Label</div>
-                                    <input id="coord-m-label" type="text" placeholder="e.g. N1"
-                                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                                </div>
-                                <div>
-                                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Z (m)</div>
-                                    <input id="coord-m-z" type="number" placeholder="0"
-                                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                                </div>
-                            </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
-                                <div>
-                                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Y (Easting)</div>
-                                    <input id="coord-m-y" type="number" placeholder="Y"
-                                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                                </div>
-                                <div>
-                                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">X (Northing)</div>
-                                    <input id="coord-m-x" type="number" placeholder="X"
-                                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                                </div>
-                            </div>
-                            <button id="btn-coord-add-point"
-                                style="width:100%; padding:9px; background:#2196f3; border:none; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:8px;">
-                                + Add Point
-                            </button>
-                            <div id="coord-point-list"
-                                style="max-height:90px; overflow-y:auto; font-size:0.75rem; font-family:monospace; color:#4caf50; background:#111; border-radius:6px; padding:6px; display:none;">
-                            </div>
-                        </div>
-
-                        <!-- Settings -->
-                        <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                            <div>
-                                <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Format</div>
-                                <select id="coord-format"
-                                    style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                                    <option value="utm">UTM</option>
-                                    <option value="wgs84">WGS84 (Lat/Lng)</option>
-                                </select>
-                            </div>
-                            <div id="coord-datum-wrap">
-                                <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Datum</div>
-                                <select id="coord-datum"
-                                    style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                                    <option value="ed50">ED50</option>
-                                    <option value="wgs84">WGS84</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div id="coord-zone-wrap" style="margin-top:8px;">
-                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">UTM Zone (auto-detect or
-                                override)
-                            </div>
-                            <input id="coord-zone" type="number" min="1" max="60" placeholder="e.g. 36"
-                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                        </div>
-
-                        <!-- Layer Name -->
-                        <div style="margin-top:8px;">
-                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Layer Name</div>
-                            <input id="coord-layer-name" type="text" value="Coordinates"
-                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
-                        </div>
-
-                        <!-- Preview -->
-                        <div id="coord-preview"
-                            style="margin-top:10px; display:none; background:#111; border-radius:6px; padding:8px; font-size:0.75rem; color:#4caf50; font-family:monospace; max-height:80px; overflow-y:auto;">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="modal-btn btn-cancel" id="btn-coord-cancel">Cancel</button>
-                        <button class="modal-btn btn-confirm" id="btn-coord-add">Add to Map</button>
                     </div>
                 </div>
+
+                <!-- Manual Tab -->
+                <div id="coord-panel-manual" style="display:none;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Label</div>
+                            <input id="coord-m-label" type="text" placeholder="e.g. N1"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Z (m)</div>
+                            <input id="coord-m-z" type="number" placeholder="0"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Y (Easting)</div>
+                            <input id="coord-m-y" type="number" placeholder="Y"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">X (Northing)</div>
+                            <input id="coord-m-x" type="number" placeholder="X"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <button id="btn-coord-add-point"
+                        style="width:100%; padding:9px; background:#2196f3; border:none; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:8px;">
+                        + Add Point
+                    </button>
+                    <div id="coord-point-list"
+                        style="max-height:90px; overflow-y:auto; font-size:0.75rem; font-family:monospace; color:#4caf50; background:#111; border-radius:6px; padding:6px; display:none;">
+                    </div>
+                </div>
+
+                <!-- Shared Settings -->
+                <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>
+                        <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Format</div>
+                        <select id="coord-format"
+                            style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                            <option value="utm">UTM</option>
+                            <option value="wgs84">WGS84 (Lat/Lng)</option>
+                        </select>
+                    </div>
+                    <div id="coord-datum-wrap">
+                        <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Datum</div>
+                        <select id="coord-datum"
+                            style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                            <option value="ed50">ED50</option>
+                            <option value="wgs84">WGS84</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="coord-zone-wrap" style="margin-top:8px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">UTM Zone (auto-detect or
+                        override)
+                    </div>
+                    <input id="coord-zone" type="number" min="1" max="60" placeholder="e.g. 36"
+                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                </div>
+
+                <!-- Layer Name -->
+                <div style="margin-top:8px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Layer Name</div>
+                    <input id="coord-layer-name" type="text" value="Coordinates"
+                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                </div>
+
+                <!-- Preview -->
+                <div id="coord-preview"
+                    style="margin-top:10px; display:none; background:#111; border-radius:6px; padding:8px; font-size:0.75rem; color:#4caf50; font-family:monospace; max-height:80px; overflow-y:auto;">
+                </div>
             </div>
-
-            <div class="bottom-nav">
-                <button class="nav-item active" data-target="view-compass">
-                    <span class="nav-icon">🧭</span>
-                </button>
-                <button class="nav-item" data-target="view-map">
-                    <span class="nav-icon">🗺️</span>
-                </button>
-                <button class="nav-item" data-target="view-records">
-                    <span class="nav-icon">📝</span>
-                </button>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-coord-cancel">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-coord-add">Add to Map</button>
             </div>
+        </div>
+    </div>
 
-            <!-- Error Handler for Robustness & Stability (v546) -->
-            <script>
-                // Track consecutive crash counts for Safe Mode logic
-                const crashKey = 'jeo_crash_count';
-                const lastCrashKey = 'jeo_last_crash_time';
+    <div class="bottom-nav">
+        <button class="nav-item active" data-target="view-compass">
+            <span class="nav-icon">🧭</span>
+        </button>
+        <button class="nav-item" data-target="view-map">
+            <span class="nav-icon">🗺️</span>
+        </button>
+        <button class="nav-item" data-target="view-records">
+            <span class="nav-icon">📝</span>
+        </button>
+    </div>
 
-                window.onerror = function (msg, url, lineNo, columnNo, error) {
-                    console.error("Global Error Caught:", msg, "at", url, ":", lineNo);
+    <!-- Error Handler for Robustness & Stability (v546) -->
+    <script>
+        // Track consecutive crash counts for Safe Mode logic
+        const crashKey = 'jeo_crash_count';
+        const lastCrashKey = 'jeo_last_crash_time';
 
-                    // Increment crash count if error happens during boot (first 10 seconds)
-                    const now = Date.now();
-                    const lastCrashTime = parseInt(localStorage.getItem(lastCrashKey) || 0);
-                    if (now - window.bootTime < 10000) {
-                        let count = parseInt(localStorage.getItem(crashKey) || 0) + 1;
-                        localStorage.setItem(crashKey, count);
-                        localStorage.setItem(lastCrashKey, now);
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            console.error("Global Error Caught:", msg, "at", url, ":", lineNo);
 
-                        if (count >= 3) {
-                            if (confirm("Uygulama arka arkaya çökmeler yaşadı. Kayıtlı katmanları sıfırlayarak 'Güvenli Mod'da başlatmak ister misiniz?\n\n(The app crashed repeatedly. Start in Safe Mode by clearing layers?)")) {
-                                localStorage.setItem(crashKey, 0);
-                                indexedDB.deleteDatabase('JeoCompassDB');
-                                location.reload();
-                                return true;
-                            }
-                        }
-                    }
+            // Increment crash count if error happens during boot (first 10 seconds)
+            const now = Date.now();
+            const lastCrashTime = parseInt(localStorage.getItem(lastCrashKey) || 0);
+            if (now - window.bootTime < 10000) {
+                let count = parseInt(localStorage.getItem(crashKey) || 0) + 1;
+                localStorage.setItem(crashKey, count);
+                localStorage.setItem(lastCrashKey, now);
 
-                    alert("Bir Hata Oluştu (An Error Occurred):\n" + msg + "\nSatır (Line): " + lineNo + (columnNo ? ":" + columnNo : ""));
-                    return false;
-                };
-
-                window.onunhandledrejection = function (event) {
-                    console.error("Async Rejection:", event.reason);
-                    const errorMsg = (event.reason ? event.reason.message || event.reason : "").toString();
-                    if (errorMsg.includes("ServiceWorker") && errorMsg.includes("fetching")) {
-                        console.log("ServiceWorker fetch error suppressed");
-                        return;
-                    }
-                    alert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
-                };
-
-                window.bootTime = Date.now();
-                // Clear crash counter after 15 seconds of stable operation
-                setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
-            </script>
-            <script src="app.js?v=FORCE_35F"></script>
-            <script>
-                console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        // Register with version query to bypass browser cache of sw.js
-                        // Use APP_VERSION if available (defined in app.js which is loaded before)
-                        const v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F';
-                        navigator.serviceWorker.register(`sw.js?v=${v}`)
-                            .then(reg => {
-                                console.log('Service Worker registered', v);
-                                reg.update().catch(() => { });
-                                setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
-                            })
-                            .catch(err => console.log('Service Worker failed', err));
-                    });
-
-                    navigator.serviceWorker.addEventListener('message', (event) => {
-                        if (event.data === 'sw-updated') {
-                            console.log('New version detected. Manual refresh suggested.');
-                            // window.location.reload(); // v632: Stop aggressive reload
-                        }
-                    });
-
-                    let refreshing = false;
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        if (refreshing) return;
-                        refreshing = true;
-                        // window.location.reload(); // v632: Stop aggressive reload
-                    });
-                }
-
-                function forceAppUpdate() {
-                    if ('serviceWorker' in navigator) {
-                        caches.keys().then(names => {
-                            for (let name of names) caches.delete(name);
-                        }).then(() => {
-                            location.reload(true);
-                        });
-                    } else {
-                        location.reload(true);
+                if (count >= 3) {
+                    if (confirm("Uygulama arka arkaya çökmeler yaşadı. Kayıtlı katmanları sıfırlayarak 'Güvenli Mod'da başlatmak ister misiniz?\n\n(The app crashed repeatedly. Start in Safe Mode by clearing layers?)")) {
+                        localStorage.setItem(crashKey, 0);
+                        indexedDB.deleteDatabase('JeoCompassDB');
+                        location.reload();
+                        return true;
                     }
                 }
-            </script>
+            }
+
+            alert("Bir Hata Oluştu (An Error Occurred):\n" + msg + "\nSatır (Line): " + lineNo + (columnNo ? ":" + columnNo : ""));
+            return false;
+        };
+
+        window.onunhandledrejection = function (event) {
+            console.error("Async Rejection:", event.reason);
+            const errorMsg = (event.reason ? event.reason.message || event.reason : "").toString();
+            if (errorMsg.includes("ServiceWorker") && errorMsg.includes("fetching")) {
+                console.log("ServiceWorker fetch error suppressed");
+                return;
+            }
+            alert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
+        };
+
+        window.bootTime = Date.now();
+        // Clear crash counter after 15 seconds of stable operation
+        setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
+    </script>
+    <script src="app.js?v=FORCE_35F"></script>
+    <script>
+        console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Register with version query to bypass browser cache of sw.js
+                // Use APP_VERSION if available (defined in app.js which is loaded before)
+                const v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F';
+                navigator.serviceWorker.register(`sw.js?v=${v}`)
+                    .then(reg => {
+                        console.log('Service Worker registered', v);
+                        reg.update().catch(() => { });
+                        setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
+                    })
+                    .catch(err => console.log('Service Worker failed', err));
+            });
+
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data === 'sw-updated') {
+                    console.log('New version detected. Manual refresh suggested.');
+                    // window.location.reload(); // v632: Stop aggressive reload
+                }
+            });
+
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                // window.location.reload(); // v632: Stop aggressive reload
+            });
+        }
+
+        function forceAppUpdate() {
+            if ('serviceWorker' in navigator) {
+                caches.keys().then(names => {
+                    for (let name of names) caches.delete(name);
+                }).then(() => {
+                    location.reload(true);
+                });
+            } else {
+                location.reload(true);
+            }
+        }
+    </script>
 </body>
 
 </html>
