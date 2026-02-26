@@ -5673,6 +5673,266 @@ function startRouting(targetLat, targetLng) {
 // v700: Duplicate GPS logic removed as per user request. 
 // Relying on the original 'liveMarker' system.
 
+
 function onLocationError(err) {
     console.warn("GPS Error:", err);
+}
+
+// =============================================================
+// COORDINATE IMPORT FEATURE
+// =============================================================
+
+(function initCoordImport() {
+    const modal = document.getElementById('coord-import-modal');
+    if (!modal) return;
+
+    const triggerBtn = document.getElementById('btn-coord-import-trigger');
+    const cancelBtn = document.getElementById('btn-coord-cancel');
+    const addBtn = document.getElementById('btn-coord-add');
+    const tabFile = document.getElementById('coord-tab-file');
+    const tabManual = document.getElementById('coord-tab-manual');
+    const panelFile = document.getElementById('coord-panel-file');
+    const panelManual = document.getElementById('coord-panel-manual');
+    const fileInput = document.getElementById('coord-file-input');
+    const filePickBtn = document.getElementById('btn-coord-file-pick');
+    const fileNameEl = document.getElementById('coord-file-name');
+    const formatSel = document.getElementById('coord-format');
+    const datumSel = document.getElementById('coord-datum');
+    const datumWrap = document.getElementById('coord-datum-wrap');
+    const zoneInput = document.getElementById('coord-zone');
+    const zoneWrap = document.getElementById('coord-zone-wrap');
+    const layerNameEl = document.getElementById('coord-layer-name');
+    const previewEl = document.getElementById('coord-preview');
+    // Manual form fields
+    const mLabel = document.getElementById('coord-m-label');
+    const mY = document.getElementById('coord-m-y');
+    const mX = document.getElementById('coord-m-x');
+    const mZ = document.getElementById('coord-m-z');
+    const addPointBtn = document.getElementById('btn-coord-add-point');
+    const pointList = document.getElementById('coord-point-list');
+
+    let parsedRows = []; // {lat, lng, label, origY, origX, origZ, zone, fmt}
+    let activeTab = 'file';
+    let rawFileData = null;
+
+    function resetModal() {
+        parsedRows = []; rawFileData = null;
+        if (fileNameEl) fileNameEl.textContent = 'No file selected';
+        if (previewEl) { previewEl.style.display = 'none'; previewEl.textContent = ''; }
+        if (pointList) { pointList.style.display = 'none'; pointList.innerHTML = ''; }
+        if (mLabel) mLabel.value = '';
+        if (mY) mY.value = '';
+        if (mX) mX.value = '';
+        if (mZ) mZ.value = '';
+    }
+
+    if (triggerBtn) triggerBtn.addEventListener('click', () => {
+        resetModal();
+        modal.classList.add('active');
+        const lm = document.getElementById('layers-modal');
+        if (lm) lm.classList.remove('active');
+    });
+
+    if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
+
+    // --- Tabs ---
+    if (tabFile) tabFile.addEventListener('click', () => {
+        activeTab = 'file';
+        tabFile.classList.replace('btn-cancel', 'btn-confirm');
+        tabManual.classList.replace('btn-confirm', 'btn-cancel');
+        panelFile.style.display = ''; panelManual.style.display = 'none';
+        parsedRows = []; if (previewEl) previewEl.style.display = 'none';
+    });
+    if (tabManual) tabManual.addEventListener('click', () => {
+        activeTab = 'manual';
+        tabManual.classList.replace('btn-cancel', 'btn-confirm');
+        tabFile.classList.replace('btn-confirm', 'btn-cancel');
+        panelManual.style.display = ''; panelFile.style.display = 'none';
+        // Keep existing points; don't reset
+    });
+
+    // --- Format change ---
+    if (formatSel) formatSel.addEventListener('change', () => {
+        const isUTM = formatSel.value === 'utm';
+        if (zoneWrap) zoneWrap.style.display = isUTM ? '' : 'none';
+        if (datumWrap) datumWrap.style.display = isUTM ? '' : 'none';
+        parsedRows = []; if (previewEl) previewEl.style.display = 'none';
+        if (rawFileData) processFileData(rawFileData);
+        // Update Y/X labels
+        const yLbl = document.querySelector('#coord-panel-manual [for-field="y"]');
+        const xLbl = document.querySelector('#coord-panel-manual [for-field="x"]');
+        if (yLbl) yLbl.textContent = isUTM ? 'Y (Easting)' : 'Latitude';
+        if (xLbl) xLbl.textContent = isUTM ? 'X (Northing)' : 'Longitude';
+    });
+
+    // --- File picker ---
+    if (filePickBtn) filePickBtn.addEventListener('click', () => fileInput && fileInput.click());
+    if (fileInput) fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (fileNameEl) fileNameEl.textContent = file.name;
+        try {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext === 'csv') {
+                const text = await file.text();
+                rawFileData = parseCSV(text);
+            } else if (ext === 'xlsx' || ext === 'xls') {
+                if (typeof XLSX === 'undefined') { showToast('XLSX library not loaded', 2500); return; }
+                const buf = await file.arrayBuffer();
+                const wb = XLSX.read(buf, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                rawFileData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            }
+            processFileData(rawFileData);
+        } catch (err) { showToast('File error: ' + err.message, 3000); }
+        fileInput.value = '';
+    });
+
+    // --- Manual: Add Point button ---
+    if (addPointBtn) addPointBtn.addEventListener('click', () => {
+        const fmt = formatSel ? formatSel.value : 'utm';
+        const Y = parseFloat(mY ? mY.value : '');
+        const X = parseFloat(mX ? mX.value : '');
+        const Z = parseFloat(mZ ? mZ.value : '') || 0;
+        const lbl = (mLabel && mLabel.value.trim()) || `P${parsedRows.length + 1}`;
+        let lat, lng;
+        if (fmt === 'utm') {
+            const zone = parseInt(zoneInput ? zoneInput.value : '0') || autoZoneFromE(Y);
+            const datum = datumSel ? datumSel.value : 'ed50';
+            if (!isNaN(Y) && !isNaN(X) && zone) {
+                const ll = utmToLatLng(Y, X, zone, datum);
+                lat = ll.lat; lng = ll.lng;
+            }
+        } else {
+            lat = Y; lng = X; // Y=Lat, X=Lng in WGS84
+        }
+        if (isNaN(lat) || isNaN(lng)) { showToast('Invalid coordinates!', 2000); return; }
+        const zone = parseInt(zoneInput ? zoneInput.value : '0') || autoZoneFromE(Y);
+        parsedRows.push({ lat, lng, label: lbl, origY: Y, origX: X, origZ: Z, zone, fmt });
+        refreshPointList();
+        // Clear fields for next entry
+        if (mY) mY.value = '';
+        if (mX) mX.value = '';
+        if (mZ) mZ.value = '';
+        if (mLabel) mLabel.focus();
+    });
+
+    // --- Add to Map ---
+    if (addBtn) addBtn.addEventListener('click', () => {
+        if (!parsedRows || parsedRows.length === 0) { showToast('No points added!', 2500); return; }
+        const name = (layerNameEl ? layerNameEl.value : 'Coordinates').trim() || 'Coordinates';
+        addCoordLayer(parsedRows, name);
+        modal.classList.remove('active');
+        showToast(`\u2705 ${parsedRows.length} points added: ${name}`, 2500);
+    });
+
+    function refreshPointList() {
+        if (!pointList) return;
+        if (parsedRows.length === 0) { pointList.style.display = 'none'; return; }
+        pointList.innerHTML = parsedRows.map((p, i) => {
+            const coord = p.fmt === 'utm'
+                ? `${p.zone}N ${Math.round(p.origY)} ${Math.round(p.origX)} Z:${p.origZ}`
+                : `${p.origY?.toFixed ? p.origY.toFixed(5) : p.origY}, ${p.origX?.toFixed ? p.origX.toFixed(5) : p.origX}`;
+            return `<div style="display:flex;justify-content:space-between;gap:4px;">
+                <span>${p.label}: ${coord}</span>
+                <span onclick="window._coordRemove(${i})" style="color:#f44336;cursor:pointer;">✕</span>
+            </div>`;
+        }).join('');
+        pointList.style.display = '';
+        if (previewEl) previewEl.style.display = 'none';
+    }
+
+    window._coordRemove = function (idx) {
+        parsedRows.splice(idx, 1);
+        refreshPointList();
+    };
+
+    // ---- File processing helpers ----
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(/[,;\t]/).map(h => h.trim().replace(/^"|"$/g, ''));
+        return lines.slice(1).map(line => {
+            const vals = line.split(/[,;\t]/).map(v => v.trim().replace(/^"|"$/g, ''));
+            const obj = {}; headers.forEach((h, i) => { obj[h] = vals[i] || ''; }); return obj;
+        }).filter(o => Object.values(o).some(v => v));
+    }
+
+    function processFileData(rows) {
+        if (!rows || rows.length === 0) return;
+        const fmt = formatSel ? formatSel.value : 'utm';
+        parsedRows = [];
+        rows.forEach((row, idx) => {
+            const keys = Object.keys(row).map(k => ({ k, kl: k.toLowerCase() }));
+            const find = (...names) => { const m = keys.find(({ kl }) => names.some(n => kl.includes(n))); return m ? row[m.k] : undefined; };
+            let lat, lng;
+            const label = String(find('name', 'label', 'ad', 'aciklama', 'note', 'id') || `P${idx + 1}`);
+            const Z = parseFloat(find('z', 'rakım', 'alt', 'elev') || 0) || 0;
+            if (fmt === 'utm') {
+                const Y = parseFloat(find('y', 'e', 'east', 'dogu'));
+                const X = parseFloat(find('x', 'n', 'north', 'kuzey'));
+                let zone = parseInt(zoneInput ? zoneInput.value : 0) || parseInt(find('zone', 'zon', 'dilim')) || 0;
+                if (!zone) zone = autoZoneFromE(Y);
+                const datum = datumSel ? datumSel.value : 'ed50';
+                if (!isNaN(Y) && !isNaN(X) && zone) { const ll = utmToLatLng(Y, X, zone, datum); lat = ll.lat; lng = ll.lng; parsedRows.push({ lat, lng, label, origY: Y, origX: X, origZ: Z, zone, fmt }); }
+            } else {
+                lat = parseFloat(find('lat', 'latitude', 'enlem')); lng = parseFloat(find('lon', 'lng', 'longitude', 'boylam'));
+                if (!isNaN(lat) && !isNaN(lng)) parsedRows.push({ lat, lng, label, origY: lat, origX: lng, origZ: Z, zone: 0, fmt });
+            }
+        });
+        showFilePreview();
+    }
+
+    function showFilePreview() {
+        if (!previewEl) return;
+        if (!parsedRows || parsedRows.length === 0) { previewEl.style.display = 'none'; return; }
+        const lines = parsedRows.slice(0, 4).map(p =>
+            p.fmt === 'utm'
+                ? `${p.label}: ${p.zone}N ${Math.round(p.origY)} ${Math.round(p.origX)}`
+                : `${p.label}: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`
+        );
+        if (parsedRows.length > 4) lines.push(`... and ${parsedRows.length - 4} more`);
+        previewEl.innerHTML = lines.join('<br>');
+        previewEl.style.display = '';
+    }
+
+    function utmToLatLng(E, N, zone, datum) {
+        const towgs = datum === 'ed50' ? '+towgs84=-87,-98,-121,0,0,0,0 ' : '';
+        const projStr = `+proj=utm +zone=${zone} +ellps=intl ${towgs}+units=m +no_defs`;
+        try { const [lo, la] = proj4(projStr, 'WGS84', [E, N]); return { lat: la, lng: lo }; }
+        catch (e) { return { lat: NaN, lng: NaN }; }
+    }
+
+    function autoZoneFromE(E) { return (E > 100000 && E < 900000) ? 36 : 0; }
+})();
+
+
+
+// -------------------------------------------------------
+// addCoordLayer — Creates a GeoJSON point layer on the map
+// -------------------------------------------------------
+function addCoordLayer(points, name) {
+    if (!map || !points || points.length === 0) return;
+    const geojson = {
+        type: 'FeatureCollection',
+        features: points.map(p => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+            properties: p.fmt === 'utm'
+                ? {
+                    name: p.label,
+                    'Zone': `${p.zone}N`,
+                    'Y (Easting)': Math.round(p.origY),
+                    'X (Northing)': Math.round(p.origX),
+                    'Z (m)': p.origZ || 0
+                }
+                : {
+                    name: p.label,
+                    'Lat': p.lat.toFixed(6),
+                    'Lng': p.lng.toFixed(6),
+                    'Z (m)': p.origZ || 0
+                }
+        }))
+    };
+    addExternalLayer(name, geojson);
 }

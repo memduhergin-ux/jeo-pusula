@@ -28,6 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -710,12 +711,122 @@
                 <button class="modal-btn btn-cancel" id="btn-layers-close">Close</button>
                 <button class="modal-btn btn-confirm" id="id-btn-import-layer-trigger"
                     style="display:none;">HIDDEN</button>
+                <button class="modal-btn btn-confirm" style="background:#ff9800; margin-right:6px;"
+                    id="btn-coord-import-trigger">📍 Coords</button>
                 <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Load File (+)</button>
             </div>
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- Coordinate Import Modal -->
+    <div id="coord-import-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 360px;">
+            <div class="modal-header">
+                <h2>📍 Import Coordinates</h2>
+            </div>
+            <div class="modal-body" style="padding: 10px 0;">
+                <!-- Tabs -->
+                <div style="display:flex; gap:6px; margin-bottom:12px;">
+                    <button id="coord-tab-file" class="modal-btn btn-confirm"
+                        style="flex:1; padding:8px; font-size:0.85rem;">📂 File</button>
+                    <button id="coord-tab-manual" class="modal-btn btn-cancel"
+                        style="flex:1; padding:8px; font-size:0.85rem;">✏️ Manual</button>
+                </div>
+
+                <!-- File Tab -->
+                <div id="coord-panel-file">
+                    <div style="color:#aaa; font-size:0.8rem; margin-bottom:8px;">CSV or Excel (.xlsx) file with
+                        coordinate columns</div>
+                    <button id="btn-coord-file-pick" class="modal-btn btn-confirm"
+                        style="width:100%; padding:12px; margin-bottom:8px;">📂 Choose File</button>
+                    <input type="file" id="coord-file-input" accept=".csv,.xlsx,.xls" style="display:none;">
+                    <div id="coord-file-name"
+                        style="font-size:0.8rem; color:#888; text-align:center; margin-bottom:8px;">No file selected
+                    </div>
+                </div>
+
+                <!-- Manual Tab -->
+                <div id="coord-panel-manual" style="display:none;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Label</div>
+                            <input id="coord-m-label" type="text" placeholder="e.g. N1"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Z (m)</div>
+                            <input id="coord-m-z" type="number" placeholder="0"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Y (Easting)</div>
+                            <input id="coord-m-y" type="number" placeholder="Y"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">X (Northing)</div>
+                            <input id="coord-m-x" type="number" placeholder="X"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <button id="btn-coord-add-point"
+                        style="width:100%; padding:9px; background:#2196f3; border:none; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:8px;">
+                        + Add Point
+                    </button>
+                    <div id="coord-point-list"
+                        style="max-height:90px; overflow-y:auto; font-size:0.75rem; font-family:monospace; color:#4caf50; background:#111; border-radius:6px; padding:6px; display:none;">
+                    </div>
+                </div>
+
+                <!-- Shared Settings -->
+                <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>
+                        <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Format</div>
+                        <select id="coord-format"
+                            style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                            <option value="utm">UTM</option>
+                            <option value="wgs84">WGS84 (Lat/Lng)</option>
+                        </select>
+                    </div>
+                    <div id="coord-datum-wrap">
+                        <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Datum</div>
+                        <select id="coord-datum"
+                            style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                            <option value="ed50">ED50</option>
+                            <option value="wgs84">WGS84</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="coord-zone-wrap" style="margin-top:8px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">UTM Zone (auto-detect or
+                        override)
+                    </div>
+                    <input id="coord-zone" type="number" min="1" max="60" placeholder="e.g. 36"
+                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                </div>
+
+                <!-- Layer Name -->
+                <div style="margin-top:8px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Layer Name</div>
+                    <input id="coord-layer-name" type="text" value="Coordinates"
+                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                </div>
+
+                <!-- Preview -->
+                <div id="coord-preview"
+                    style="margin-top:10px; display:none; background:#111; border-radius:6px; padding:8px; font-size:0.75rem; color:#4caf50; font-family:monospace; max-height:80px; overflow-y:auto;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-coord-cancel">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-coord-add">Add to Map</button>
+            </div>
+        </div>
+    </div>
+
     <div class="bottom-nav">
         <button class="nav-item active" data-target="view-compass">
             <span class="nav-icon">🧭</span>

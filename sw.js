@@ -37,16 +37,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
+            // Cache-First: serve from cache immediately if available
             if (cachedResponse) {
+                // Update cache in background (Stale-While-Revalidate)
                 fetch(event.request).then((networkResponse) => {
                     if (networkResponse && networkResponse.status === 200) {
                         caches.open(CACHE_NAME).then((cache) => {
                             cache.put(event.request, networkResponse.clone());
                         });
                     }
-                }).catch(() => {});
+                }).catch(() => { });
                 return cachedResponse;
             }
+            // Not in cache: try network, cache the result
             return fetch(event.request).then((networkResponse) => {
                 if (!networkResponse || networkResponse.status !== 200) {
                     return networkResponse;
@@ -56,6 +59,7 @@ self.addEventListener('fetch', (event) => {
                 });
                 return networkResponse;
             }).catch(() => {
+                // Offline fallback: return cached index.html for navigation
                 if (event.request.mode === 'navigate') {
                     return caches.match('index.html') || caches.match('./');
                 }
