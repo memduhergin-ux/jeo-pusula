@@ -8,11 +8,7 @@
     "orientation": "portrait",
     "id": "/jeo-pusula/",
     "scope": "/jeo-pusula/",
-    "display": "fullscreen",
-    "display_override": [
-        "window-controls-overlay",
-        "minimal-ui"
-    ],
+    "display": "standalone",
     "background_color": "#121212",
     "theme_color": "#1a1a1a",
     "categories": [
