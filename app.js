@@ -2890,6 +2890,15 @@ function updateMapMarkers(shouldFitBounds = false) {
                 shape.bindPopup(popupContent);
                 // v535: Enable Grid Interaction for saved geometries
                 shape.on('click', (e) => {
+                    if (isMeasuring) {
+                        L.DomEvent.stopPropagation(e);
+                        updateMeasurement(e.latlng);
+                        return;
+                    }
+                    if (isAddingPoint) {
+                        L.DomEvent.stopPropagation(e);
+                        return;
+                    }
                     if (isGridMode && activeGridInterval) {
                         L.DomEvent.stopPropagation(e);
                         map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
@@ -2941,7 +2950,8 @@ function updateMapMarkers(shouldFitBounds = false) {
             });
 
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
-            marker.bindPopup(`
+            // v1453-4-8F: Manual click handler to respect isMeasuring / isAddingPoint / isGridMode
+            const recordPopupContent = `
                 <div class="map-popup-container">
                     <b style="font-size: 1.1rem;">Record ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Strike / Dip:</b> ${r.strike} / ${r.dip}</div>
@@ -2952,7 +2962,30 @@ function updateMapMarkers(shouldFitBounds = false) {
                         <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️</button>
                     </div>
                 </div>
-            `);
+            `;
+            marker.on('click', (e) => {
+                if (isMeasuring) {
+                    L.DomEvent.stopPropagation(e);
+                    updateMeasurement(e.latlng);
+                    return;
+                }
+                if (isAddingPoint) {
+                    L.DomEvent.stopPropagation(e);
+                    return;
+                }
+                if (isGridMode && activeGridInterval) {
+                    L.DomEvent.stopPropagation(e);
+                    map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                    return;
+                }
+                const isTopHalf = e.containerPoint.y < (window.innerHeight / 2);
+                L.popup({
+                    maxHeight: window.innerHeight / 4,
+                    autoPan: false,
+                    className: isTopHalf ? 'custom-query-popup popup-open-down' : 'custom-query-popup',
+                    offset: isTopHalf ? [0, 20] : [0, -7]
+                }).setLatLng(e.latlng).setContent(recordPopupContent).openOn(map);
+            });
 
             // Always-visible label for marker (Tooltip) - REMOVED per user request
             /*
