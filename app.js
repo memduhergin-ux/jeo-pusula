@@ -1952,7 +1952,9 @@ if (document.getElementById('btn-modal-save')) {
                 type: "Feature",
                 properties: {
                     "name": label,
-                    "note": note
+                    "note": note,
+                    "color": "#ffeb3b",
+                    "fillColor": "#ffeb3b"
                 },
                 geometry: {
                     type: isPolygon ? "Polygon" : "LineString",
@@ -4108,22 +4110,30 @@ function addExternalLayer(name, geojson) {
         return;
     }
 
-    // Default Style: Blue outline, semi-transparent blue fill
-    const style = {
+    // Basic default styles
+    const defaultStyle = {
         color: '#2196f3',
         weight: 2,
         opacity: 1,
         fillColor: '#2196f3',
-        fillOpacity: 0.4, // Default Filled
-        interactive: true // v1453-106: Ensure Polygons/Lines are clickable matching Points
+        fillOpacity: 0.4,
+        interactive: true
     };
 
     const layerElements = new Set(); // v1453-15: Collect elements during parsing
 
     try {
         const layer = L.geoJSON(geojson, {
-            renderer: window.sharedCanvasRenderer, // v1453-48F: Use Shared Renderer
-            style: style,
+            renderer: window.sharedCanvasRenderer,
+            style: (feature) => {
+                let customStyle = { ...defaultStyle };
+                if (feature.properties) {
+                    if (feature.properties.color) customStyle.color = feature.properties.color;
+                    if (feature.properties.fillColor) customStyle.fillColor = feature.properties.fillColor;
+                    if (feature.properties.weight) customStyle.weight = feature.properties.weight;
+                }
+                return customStyle;
+            },
             pointToLayer: (feature, latlng) => {
                 // v666: Revert to "Old Style" Simple CircleMarker
                 // User requested "Eski hali" (Old state) - usually implies simple vector circle
@@ -4913,7 +4923,8 @@ function saveMeasurement() {
     isSavingLayer = true;
 
     // Clear/prepare the record modal fields
-    document.getElementById('rec-label').value = "";
+    const defaultName = isPolygon ? "New Polygon" : "New Line";
+    document.getElementById('rec-label').value = defaultName;
     document.getElementById('rec-note').value = measureText.innerText.replace(/\n/g, ", ");
 
     // Hide irrelevant fields since we are just saving a shape
@@ -4924,7 +4935,7 @@ function saveMeasurement() {
     document.getElementById('rec-dip').value = "";
 
     // Set modal text temporarily to guide the user
-    document.getElementById('rec-label').placeholder = isPolygon ? "New Polygon Name..." : "New Line Name...";
+    document.getElementById('rec-label').placeholder = defaultName;
 
     // Open the existing Modal
     recordModal.classList.add('active');
