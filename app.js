@@ -1,28 +1,28 @@
-﻿const APP_VERSION = 'v1453-4-8F'; // KML & Objects Interactivity Fixture (v1453-70F)
-const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
+const APP_VERSION = 'v1453-4-9F'; // KML & Objects Interactivity Fixture (v1453-70F)
+const JEO_VERSION = APP_VERSION; // Geriye d�n�k uyumluluk i�in
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'jeo-store-v1';
 
-// Sürümü UI üzerinde güncelleme fonksiyonu
+// S�r�m� UI �zerinde g�ncelleme fonksiyonu
 function updateAppVersionDisplay() {
     const versionElements = document.querySelectorAll('.app-version-display');
     versionElements.forEach(el => {
         el.textContent = APP_VERSION;
     });
 
-    // Özel ID'leri de güncelle (Eski yapıyı desteklemek için)
+    // �zel ID'leri de g�ncelle (Eski yap�y� desteklemek i�in)
     const activeVersionEl = document.getElementById('active-version');
     if (activeVersionEl) activeVersionEl.textContent = APP_VERSION;
 
     const sensorStatusText = document.getElementById('sensor-status-text');
     if (sensorStatusText && sensorStatusText.textContent.includes('v1453')) {
-        // Sadece versiyon kısmını güncellemek zor olabilir, bu yüzden manuel bırakabiliriz
-        // veya dinamik yapabiliriz. Şimdilik sınıf tabanlı güncelleme yeterli.
+        // Sadece versiyon k�sm�n� g�ncellemek zor olabilir, bu y�zden manuel b�rakabiliriz
+        // veya dinamik yapabiliriz. �imdilik s�n�f tabanl� g�ncelleme yeterli.
     }
 }
 
-// v750: Global Security & Stability Kalkanı
+// v750: Global Security & Stability Kalkan�
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     console.error(`GLOBAL ERROR: ${msg} at ${lineNo}:${columnNo}`, error);
     // v1453-06F: Restored polite message after debugging success
@@ -159,27 +159,27 @@ const PERIODIC_TABLE_SYMBOLS = new Set([
 // v1453-16: Element Aliases (Common Turkish/English Names -> Symbol)
 const ELEMENT_ALIASES = {
     // TR
-    'ALTIN': 'AU', 'GÜMÜŞ': 'AG', 'BAKIR': 'CU', 'DEMİR': 'FE', 'KURŞUN': 'PB', 'ÇİNKO': 'ZN',
-    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'NİKEL': 'NI', 'KOBALT': 'CO',
+    'ALTIN': 'AU', 'G�M��': 'AG', 'BAKIR': 'CU', 'DEM�R': 'FE', 'KUR�UN': 'PB', '��NKO': 'ZN',
+    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'N�KEL': 'NI', 'KOBALT': 'CO',
     'MNO': 'MN', 'MNO2': 'MN', // v1453-17: Manganese Oxides
-    'ALÜMİNYUM': 'AL', 'ARSENİK': 'AS', 'ANTİMON': 'SB', 'KALAY': 'SN', 'TİTANYUM': 'TI',
-    'URANYUM': 'U', 'PLATİN': 'PT', 'PALADYUM': 'PD', 'OSMİYUM': 'OS', 'İRİDYUM': 'IR',
-    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMİYUM': 'CD', 'BİZMUT': 'BI', 'MOLİBDEN': 'MO',
-    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'LİTYUM': 'LI', 'BERİLYUM': 'BE',
-    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'KÜKÜRT': 'S', 'SİLİSYUM': 'SI',
-    'KALSİYUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
-    'BARYUM': 'BA', 'STRONSİYUM': 'SR', 'ZİRKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
-    'OKSİJEN': 'O', 'HİDROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
-    'NEODİM': 'ND', 'HAFNİYUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
+    'AL�M�NYUM': 'AL', 'ARSEN�K': 'AS', 'ANT�MON': 'SB', 'KALAY': 'SN', 'T�TANYUM': 'TI',
+    'URANYUM': 'U', 'PLAT�N': 'PT', 'PALADYUM': 'PD', 'OSM�YUM': 'OS', '�R�DYUM': 'IR',
+    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADM�YUM': 'CD', 'B�ZMUT': 'BI', 'MOL�BDEN': 'MO',
+    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'L�TYUM': 'LI', 'BER�LYUM': 'BE',
+    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'K�K�RT': 'S', 'S�L�SYUM': 'SI',
+    'KALS�YUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
+    'BARYUM': 'BA', 'STRONS�YUM': 'SR', 'Z�RKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
+    'OKS�JEN': 'O', 'H�DROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
+    'NEOD�M': 'ND', 'HAFN�YUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
     // Common Minerals (TR)
-    'PİROLUSİT': 'MN', 'RODOKROSİT': 'MN', 'PSİLOMELAN': 'MN', 'BRAUNİT': 'MN', 'MANGANİT': 'MN',
-    'KALKOPİRİT': 'CU', 'MALAHİT': 'CU', 'AZURİT': 'CU', 'KOVELLİN': 'CU', 'BORNİT': 'CU', 'KUPRİT': 'CU',
-    'GALEN': 'PB', 'SERÜZİT': 'PB', 'ANGLEZİT': 'PB',
-    'SFALERİT': 'ZN', 'SMİTSONİT': 'ZN', 'HEMİMORFİT': 'ZN',
-    'HEMATİT': 'FE', 'MANYETİT': 'FE', 'LİMONİT': 'FE', 'SİDERİT': 'FE', 'PİRİT': 'FE', 'GÖTİT': 'FE',
-    'KROMİT': 'CR', 'BOKSİT': 'AL', 'KORUND': 'AL',
-    'SİNOBAR': 'HG', 'STİBNİT': 'SB', 'ARSENOPİRİT': 'AS', 'KASSİTERİT': 'SN',
-    'SCHEELİT': 'W', 'VOLFRAMİT': 'W', 'MOLİBDENİT': 'MO',
+    'P�ROLUS�T': 'MN', 'RODOKROS�T': 'MN', 'PS�LOMELAN': 'MN', 'BRAUN�T': 'MN', 'MANGAN�T': 'MN',
+    'KALKOP�R�T': 'CU', 'MALAH�T': 'CU', 'AZUR�T': 'CU', 'KOVELL�N': 'CU', 'BORN�T': 'CU', 'KUPR�T': 'CU',
+    'GALEN': 'PB', 'SER�Z�T': 'PB', 'ANGLEZ�T': 'PB',
+    'SFALER�T': 'ZN', 'SM�TSON�T': 'ZN', 'HEM�MORF�T': 'ZN',
+    'HEMAT�T': 'FE', 'MANYET�T': 'FE', 'L�MON�T': 'FE', 'S�DER�T': 'FE', 'P�R�T': 'FE', 'G�T�T': 'FE',
+    'KROM�T': 'CR', 'BOKS�T': 'AL', 'KORUND': 'AL',
+    'S�NOBAR': 'HG', 'ST�BN�T': 'SB', 'ARSENOP�R�T': 'AS', 'KASS�TER�T': 'SN',
+    'SCHEEL�T': 'W', 'VOLFRAM�T': 'W', 'MOL�BDEN�T': 'MO',
 
     // EN (Common ones that differ from symbol)
     'GOLD': 'AU', 'SILVER': 'AG', 'COPPER': 'CU', 'IRON': 'FE', 'LEAD': 'PB', 'ZINC': 'ZN',
@@ -204,7 +204,7 @@ const ELEMENT_ALIASES = {
 
 /**
  * v1453-16: Robust Element Extraction from Text
- * Handles: "Au", "Altın", "Bakır-Çinko", "Fe, Mn", "Cu 1.2%"
+ * Handles: "Au", "Alt�n", "Bak�r-�inko", "Fe, Mn", "Cu 1.2%"
  */
 function extractElements(text) {
     if (!text) return new Set();
@@ -717,13 +717,13 @@ function updateHeatmapFilterOptions() {
     });
 
     const emojiMap = {
-        'MN': '🟣', 'CR': '🟢', 'CU': '🟠', 'NI': '🔵',
-        'FE': '🟤', 'AU': '🟡', 'AG': '⚪', 'ZN': '💎', 'PB': '⚫'
+        'MN': '??', 'CR': '??', 'CU': '??', 'NI': '??',
+        'FE': '??', 'AU': '??', 'AG': '?', 'ZN': '??', 'PB': '?'
     };
 
-    let html = '<option value="ALL">🌈 All Points</option>';
+    let html = '<option value="ALL">?? All Points</option>';
     Array.from(foundElements).sort().forEach(el => {
-        const emoji = emojiMap[el] || '⛏️';
+        const emoji = emojiMap[el] || '??';
         html += `<option value="${el}">${emoji} ${el}</option>`;
     });
 
@@ -969,12 +969,12 @@ function generateTicks() {
 generateTicks();
 
 // State
-let currentMode = 'utm'; // Ekranda varsayÄ±lan gÃ¶rÃ¼nÃ¼m UTM ED50 6 Derece
+let currentMode = 'utm'; // Ekranda varsayılan görünüm UTM ED50 6 Derece
 let currentCoords = { lat: 0, lon: 0, alt: 0, baroAlt: null, acc: 0 };
 let targetHeading = 0;
 let displayedHeading = 0;
 let firstReading = true;
-const SMOOTHING_FACTOR = 0.025; // 1.5 saniye oturma sÃ¼resi (Profesyonel Standart)
+const SMOOTHING_FACTOR = 0.025; // 1.5 saniye oturma süresi (Profesyonel Standart)
 let currentTilt = { beta: 0, gamma: 0 };
 let lockStrike = false;
 let lockDip = false;
@@ -986,7 +986,7 @@ let sensorSource = null; // 'ios', 'absolute', 'relative'
 let followMe = false;
 let isFirstLocationFix = true; // v515: Track first GPS fix to auto-focus map
 let editingRecordId = null;
-let isRecordsLocked = true; // KayÄ±tlar varsayÄ±lan olarak kilitli baÅŸlar
+let isRecordsLocked = true; // Kayıtlar varsayılan olarak kilitli başlar
 
 // Shape Persistence
 let pendingGeometry = null;
@@ -998,7 +998,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-let isTracksLocked = true; // İzlekler de varsayılan olarak kilitli başlar
+let isTracksLocked = true; // �zlekler de varsay�lan olarak kilitli ba�lar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1037,11 +1037,11 @@ let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
 jeoTracks.forEach(t => { t.visible = false; });
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 let activeTab = 'points'; // 'points' or 'tracks' (v503 Fix)
-const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
+const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
 
 // Track Auto-Recording State (v442)
 let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
-const MAX_TRACKS = 20; // Maksimum izlek sayısı
+const MAX_TRACKS = 20; // Maksimum izlek say�s�
 let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // v510: Default true (boolean)
 
 // Measurement State
@@ -1392,11 +1392,11 @@ function renderCoordinates() {
         coordContent.innerHTML = `
             <div class="coord-row">
                 <span class="data-label">Enlem</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}�</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Boylam</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}�</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">${activeAltLabel}</span>
@@ -1464,13 +1464,13 @@ function handleOrientation(event) {
     }
 
     if (rawHeading !== null) {
-        // --- SENSÃ–R KÄ°LÄ°TLEME MANTIÄI ---
-        // Daha kaliteli bir kaynak (ios veya absolute) zaten kilitlenmiÅŸse, 
-        // daha dÃ¼ÅŸÃ¼k kaliteli (relative) gelen veriyi yok sayarÄ±z.
+        // --- SENSÖR KİLİTLEME MANTIĞI ---
+        // Daha kaliteli bir kaynak (ios veya absolute) zaten kilitlenmişse, 
+        // daha düşük kaliteli (relative) gelen veriyi yok sayarız.
         if (sensorSource === 'ios' && currentEventSource !== 'ios') return;
         if (sensorSource === 'absolute' && currentEventSource === 'relative') return;
 
-        // KaynaÄŸÄ± gÃ¼ncelle
+        // Kaynağı güncelle
         if (currentEventSource !== sensorSource) {
             sensorSource = currentEventSource;
             updateSensorUI();
@@ -1492,14 +1492,14 @@ function handleOrientation(event) {
         // currentTilt.beta = event.beta || 0; // REMOVED: Managed below
         currentTilt.gamma = event.gamma || 0;
 
-        // --- STABILIZASYON MANTIÄI ---
+        // --- STABILIZASYON MANTIĞI ---
 
-        // 1. Median Filter (GÃ¼rÃ¼ltÃ¼ Temizleme)
+        // 1. Median Filter (Gürültü Temizleme)
         // Heading Buffer
         headingBuffer.push(rawHeading);
         if (headingBuffer.length > BUFFER_SIZE) headingBuffer.shift();
 
-        // Beta Buffer (Dip iÃ§in)
+        // Beta Buffer (Dip için)
         let rawBeta = event.beta || 0;
         betaBuffer.push(rawBeta);
         if (betaBuffer.length > BUFFER_SIZE) betaBuffer.shift();
@@ -1515,8 +1515,8 @@ function handleOrientation(event) {
         // Update Global Beta State with Stabilized Value
         currentTilt.beta = medianBeta;
 
-        // 0-360 geÃ§iÅŸinde (kuzeyde) medyan filtresi sapÄ±tabilir, bunu dÃ¼zelt:
-        // EÄŸer deÄŸerler arasÄ±nda Ã§ok fark varsa (Ã¶rn. 359 ve 1), medyanÄ± iptal et ham veriyi kullan
+        // 0-360 geçişinde (kuzeyde) medyan filtresi sapıtabilir, bunu düzelt:
+        // Eğer değerler arasında çok fark varsa (örn. 359 ve 1), medyanı iptal et ham veriyi kullan
         if (sorted[sorted.length - 1] - sorted[0] > 180) {
             medianHeading = rawHeading;
         }
@@ -1536,11 +1536,11 @@ function handleOrientation(event) {
     }
 }
 
-// Motion Listener (Jiroskop ile Sabitlik AlgÄ±lama)
+// Motion Listener (Jiroskop ile Sabitlik Algılama)
 function handleMotion(event) {
     if (!event.rotationRate) return;
 
-    // Toplam dÃ¶nme hareketi bÃ¼yÃ¼klÃ¼ÄŸÃ¼
+    // Toplam dönme hareketi büyüklüğü
     const alpha = event.rotationRate.alpha || 0;
     const beta = event.rotationRate.beta || 0;
     const gamma = event.rotationRate.gamma || 0;
@@ -1549,7 +1549,7 @@ function handleMotion(event) {
     lastRotations.push(magnitude);
     if (lastRotations.length > STATIONARY_FRAMES) lastRotations.shift();
 
-    // Son N karedeki ortalama hareket eÅŸiÄŸin altÄ±ndaysa "SABÄ°T" kabul et
+    // Son N karedeki ortalama hareket eşiğin altındaysa "SABİT" kabul et
     const avgMotion = lastRotations.reduce((a, b) => a + b, 0) / lastRotations.length;
 
     if (avgMotion < STATIONARY_THRESHOLD) {
@@ -1687,9 +1687,9 @@ if (btnSave) {
 
     btnSave.addEventListener('click', () => {
         if (lockStrike && lockDip) {
-            // v455: Capture exact text from displays ("ekranları kayıt edilir")
+            // v455: Capture exact text from displays ("ekranlar� kay�t edilir")
             const strikeVal = valStrike ? valStrike.textContent : formatStrike(displayedHeading);
-            const dipVal = valDip ? valDip.textContent : "0°";
+            const dipVal = valDip ? valDip.textContent : "0�";
 
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
             const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
@@ -2039,11 +2039,11 @@ function renderRecords(filter = '') {
             <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(r.note)}</td>
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}">
                 <div class="action-menu">
-                    <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">⋮</button>
+                    <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">?</button>
                     <div id="dropdown-${r.id}" class="dropdown-content">
-                        <button class="btn-edit-row" data-id="${r.id}" onclick="toggleActionMenu(${r.id}, event)">✏️ Edit</button>
-                        <button onclick="exportSingleRecordKML(${r.id})">📤 Share KML</button>
-                        <button class="delete-action" onclick="deleteRecordFromMap(${r.id})">🗑️ Delete</button>
+                        <button class="btn-edit-row" data-id="${r.id}" onclick="toggleActionMenu(${r.id}, event)">?? Edit</button>
+                        <button onclick="exportSingleRecordKML(${r.id})">?? Share KML</button>
+                        <button class="delete-action" onclick="deleteRecordFromMap(${r.id})">??? Delete</button>
                     </div>
                 </div>
             </td>
@@ -2078,7 +2078,7 @@ function initMap() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '© OpenStreetMap'
+        attribution: '� OpenStreetMap'
     });
 
     // v1453-48F: Global Shared Canvas Renderer for High Performance KML
@@ -2089,7 +2089,7 @@ function initMap() {
     const osmHeatmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '© OpenStreetMap',
+        attribution: '� OpenStreetMap',
         className: 'osm-heatmap-filter'
     });
 
@@ -2097,21 +2097,21 @@ function initMap() {
         maxZoom: 25,
         maxNativeZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
+        attribution: '� Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 21, // Higher native zoom for satellite if available
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
+        attribution: '� Google'
     });
 
 
     const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        attribution: 'Map data: � OpenStreetMap contributors, SRTM | Map style: � OpenTopoMap (CC-BY-SA)'
     });
 
     // v1453-58F: Grayscale Topo Map for Heatmap Contrast
@@ -2119,7 +2119,7 @@ function initMap() {
     const openTopoGray = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)',
+        attribution: 'Map data: � OpenStreetMap contributors, SRTM | Map style: � OpenTopoMap (CC-BY-SA)',
         className: 'grayscale-map-filter'
     });
 
@@ -2889,7 +2889,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
                             ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">??? Delete</button>
                     </div>
                 `;
 
@@ -2956,7 +2956,7 @@ function updateMapMarkers(shouldFitBounds = false) {
             });
 
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
-            // v1453-4-8F: Manual click handler to respect isMeasuring / isAddingPoint / isGridMode
+            // v1453-4-9F: Manual click handler to respect isMeasuring / isAddingPoint / isGridMode
             const recordPopupContent = `
                 <div class="map-popup-container">
                     <b style="font-size: 1.1rem;">Record ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
@@ -2964,8 +2964,8 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'No note'}"</div>
                     <div style="display: flex; gap: 5px;">
-                        <button onclick="startRouting(${r.lat}, ${r.lon})" style="flex: 1; background: #2196f3; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;">🧭 Rota</button>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️</button>
+                        <button onclick="startRouting(${r.lat}, ${r.lon})" style="flex: 1; background: #2196f3; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;">?? Rota</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">???</button>
                     </div>
                 </div>
             `;
@@ -3061,11 +3061,11 @@ function renderTracks(filter = '') {
         html += `
             <tr class="live-track-row" style="background: rgba(76, 175, 80, 0.1);">
                 <td class="${isTracksLocked ? 'locked-hidden' : ''}"></td>
-                <td style="color: #4caf50; font-weight: bold;">🔴 ${liveName}</td>
+                <td style="color: #4caf50; font-weight: bold;">?? ${liveName}</td>
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
                 <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
                 <td><input type="checkbox" checked disabled></td>
-                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kayıtta...</td>
+                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kay�tta...</td>
             </tr>
         `;
     }
@@ -3201,7 +3201,7 @@ function updateTrack(lat, lon) {
         localStorage.setItem('jeoTrackStartTime', trackStartTime);
     }
 
-    // Canlı izleği haritada güncelle
+    // Canl� izle�i haritada g�ncelle
     if (showLiveTrack && map) {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
@@ -3236,16 +3236,16 @@ function saveCurrentTrack() {
         length: calculateTrackLength(trackPath) // v466: Save length in meters
     };
 
-    // v456: FIFO: Eğer 20 kayıt varsa, en eskiyi sil (21. kayıt 1.yi siler)
+    // v456: FIFO: E�er 20 kay�t varsa, en eskiyi sil (21. kay�t 1.yi siler)
     if (jeoTracks.length >= MAX_TRACKS) {
-        jeoTracks.shift(); // İlk elemanı (en eski) çıkar
+        jeoTracks.shift(); // �lk eleman� (en eski) ��kar
     }
 
     jeoTracks.push(newTrack);
     localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
     localStorage.setItem('trackIdCounter', trackIdCounter);
 
-    // Canlı izleği temizle
+    // Canl� izle�i temizle
     trackPath = [];
     trackStartTime = null; // v467: Reset start time
     localStorage.removeItem('jeoTrackPath'); // Temizle
@@ -3264,7 +3264,7 @@ function toggleTracking() {
     isTracking = !isTracking;
 
     if (!isTracking) {
-        // Tik kaldırıldı: Mevcut kaydı sonlandır ve sessizce kaydet
+        // Tik kald�r�ld�: Mevcut kayd� sonland�r ve sessizce kaydet
         saveCurrentTrack();
 
         // v512: Auto-Rec OFF -> Live Track also OFF
@@ -3276,7 +3276,7 @@ function toggleTracking() {
 
         showToast('Auto-Recording: OFF', 1000);
     } else {
-        // Tik atıldı: Yeni kayıt süreci başlasın
+        // Tik at�ld�: Yeni kay�t s�reci ba�las�n
         trackPath = [];
         trackStartTime = new Date().toISOString();
 
@@ -3635,17 +3635,17 @@ if (fileImportInput) {
         // v546: Memory Guardrails - Avoid browser crashes on massive files
         const sizeMB = file.size / (1024 * 1024);
         if (sizeMB > 50) {
-            alert(`Dosya çok büyük (${sizeMB.toFixed(1)}MB). Tarayıcı çökmesini önlemek için 50MB üzerindeki dosyalar engellendi.`);
+            alert(`Dosya �ok b�y�k (${sizeMB.toFixed(1)}MB). Taray�c� ��kmesini �nlemek i�in 50MB �zerindeki dosyalar engellendi.`);
             fileImportInput.value = '';
             return;
         }
-        if (sizeMB > 10 && !confirm(`Dosya boyutu büyük (${sizeMB.toFixed(1)}MB). İşleme sırasında telefonunuz kısa süreli donabilir. Devam etmek istiyor musunuz?`)) {
+        if (sizeMB > 10 && !confirm(`Dosya boyutu b�y�k (${sizeMB.toFixed(1)}MB). ��leme s�ras�nda telefonunuz k�sa s�reli donabilir. Devam etmek istiyor musunuz?`)) {
             fileImportInput.value = '';
             return;
         }
 
         showLoading(`${file.name} processing...`);
-        // v1453-1: Crucial 200ms delay to allow the 'Lütfen Bekleyin' overlay to physically paint 
+        // v1453-1: Crucial 200ms delay to allow the 'L�tfen Bekleyin' overlay to physically paint 
         // to the screen before the heavy file parsing blocks the main thread (JS Engine).
         await new Promise(r => setTimeout(r, 200));
 
@@ -4152,7 +4152,7 @@ function addExternalLayer(name, geojson) {
                     const [lng, lat] = feature.geometry.coordinates;
                     popupContent += `
                         <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick="startRouting(${lat}, ${lng})" style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px;">🧭 Rota</button>
+                            <button onclick="startRouting(${lat}, ${lng})" style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px;">?? Rota</button>
                         </div>`;
                 }
                 popupContent += `</div>`;
@@ -4244,7 +4244,7 @@ function addExternalLayer(name, geojson) {
 
     } catch (e) {
         console.error("Critical error in addExternalLayer:", e);
-        alert("Katman eklenirken bir hata oluştu: " + e.message);
+        alert("Katman eklenirken bir hata olu�tu: " + e.message);
     }
 }
 
@@ -4278,7 +4278,7 @@ function renderLayerList() {
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
-                    ${l.visible ? '👁️' : '👁️‍🗨️'}
+                    ${l.visible ? '???' : '???????'}
                 </button>
                 <div style="display:flex; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
@@ -4286,7 +4286,7 @@ function renderLayerList() {
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
                 </div>
-                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
+                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">???</button>
             </div>
         `;
         layersList.appendChild(item);
@@ -5426,12 +5426,12 @@ function updateLockUI() {
     const currentLocked = (activeTab === 'points') ? isRecordsLocked : isTracksLocked;
 
     if (currentLocked) {
-        btnToggleLock.innerHTML = '🔒';
+        btnToggleLock.innerHTML = '??';
         btnToggleLock.classList.remove('unlocked');
         btnToggleLock.style.backgroundColor = "";
         btnToggleLock.title = 'Unlock';
     } else {
-        btnToggleLock.innerHTML = '🔓';
+        btnToggleLock.innerHTML = '??';
         btnToggleLock.classList.add('unlocked');
         btnToggleLock.style.backgroundColor = "rgba(76, 175, 80, 0.2)";
         btnToggleLock.title = 'Lock';
@@ -5665,7 +5665,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 // v697: Google Maps Native Integration (Internal Navigation Removed)
 function startRouting(targetLat, targetLng) {
     if (!targetLat || !targetLng) {
-        showToast("Hedef konum geçersiz.", 2000);
+        showToast("Hedef konum ge�ersiz.", 2000);
         return;
     }
     // Direct link to Google Maps Navigation
@@ -5841,7 +5841,7 @@ function onLocationError(err) {
                 : `${p.origY?.toFixed ? p.origY.toFixed(5) : p.origY}, ${p.origX?.toFixed ? p.origX.toFixed(5) : p.origX}`;
             return `<div style="display:flex;justify-content:space-between;gap:4px;">
                 <span>${p.label}: ${coord}</span>
-                <span onclick="window._coordRemove(${i})" style="color:#f44336;cursor:pointer;">✕</span>
+                <span onclick="window._coordRemove(${i})" style="color:#f44336;cursor:pointer;">?</span>
             </div>`;
         }).join('');
         pointList.style.display = '';
@@ -5869,21 +5869,42 @@ function onLocationError(err) {
         const fmt = formatSel ? formatSel.value : 'utm';
         parsedRows = [];
         rows.forEach((row, idx) => {
-            const keys = Object.keys(row).map(k => ({ k, kl: k.toLowerCase() }));
-            const find = (...names) => { const m = keys.find(({ kl }) => names.some(n => kl.includes(n))); return m ? row[m.k] : undefined; };
+            // Trim keys for reliable exact matching
+            const keys = Object.keys(row).map(k => ({ k, kl: String(k).toLowerCase().trim() }));
+
+            // Robust find function evaluating exact, prefixed, then substring matches
+            const find = (...names) => {
+                let m = keys.find(({ kl }) => names.includes(kl));
+                if (!m) m = keys.find(({ kl }) => names.some(n => kl.startsWith(n + ' ') || kl.startsWith(n + '(') || kl.startsWith(n + '_')));
+                if (!m) m = keys.find(({ kl }) => names.some(n => n.length > 2 && kl.includes(n)));
+                return m ? row[m.k] : undefined;
+            };
+
             let lat, lng;
-            const label = String(find('name', 'label', 'ad', 'aciklama', 'note', 'id') || `P${idx + 1}`);
-            const Z = parseFloat(find('z', 'rakım', 'alt', 'elev') || 0) || 0;
+            const labelVal = find('label', 'nokta', 'ad', 'name', 'id', 'noktano');
+            const label = String(labelVal || `P${idx + 1}`);
+
+            const Z = parseFloat(find('z', 'rak�m', 'rakm', 'kot', 'alt', 'elev', 'elevation') || 0) || 0;
+            const Note = String(find('note', 'not', 'a��klama', 'aciklama', 'desc', 'description') || '').trim();
+
             if (fmt === 'utm') {
-                const Y = parseFloat(find('y', 'e', 'east', 'dogu'));
-                const X = parseFloat(find('x', 'n', 'north', 'kuzey'));
+                const Y = parseFloat(find('y', 'e', 'east', 'easting', 'do�u', 'dogu', 'sa�a', 'saga'));
+                const X = parseFloat(find('x', 'n', 'north', 'northing', 'kuzey', 'yukar�', 'yukari'));
                 let zone = parseInt(zoneInput ? zoneInput.value : 0) || parseInt(find('zone', 'zon', 'dilim')) || 0;
-                if (!zone) zone = autoZoneFromE(Y);
+                if (!zone && !isNaN(Y)) zone = autoZoneFromE(Y);
                 const datum = datumSel ? datumSel.value : 'ed50';
-                if (!isNaN(Y) && !isNaN(X) && zone) { const ll = utmToLatLng(Y, X, zone, datum); lat = ll.lat; lng = ll.lng; parsedRows.push({ lat, lng, label, origY: Y, origX: X, origZ: Z, zone, fmt }); }
+
+                if (!isNaN(Y) && !isNaN(X) && zone) {
+                    const ll = utmToLatLng(Y, X, zone, datum);
+                    lat = ll.lat; lng = ll.lng;
+                    parsedRows.push({ lat, lng, label, origY: Y, origX: X, origZ: Z, zone, fmt, note: Note });
+                }
             } else {
-                lat = parseFloat(find('lat', 'latitude', 'enlem')); lng = parseFloat(find('lon', 'lng', 'longitude', 'boylam'));
-                if (!isNaN(lat) && !isNaN(lng)) parsedRows.push({ lat, lng, label, origY: lat, origX: lng, origZ: Z, zone: 0, fmt });
+                lat = parseFloat(find('lat', 'latitude', 'enlem', 'y'));
+                lng = parseFloat(find('lon', 'lng', 'longitude', 'boylam', 'x'));
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    parsedRows.push({ lat, lng, label, origY: lat, origX: lng, origZ: Z, zone: 0, fmt, note: Note });
+                }
             }
         });
         showFilePreview();
@@ -5915,16 +5936,14 @@ function onLocationError(err) {
 
 
 // -------------------------------------------------------
-// addCoordLayer — Creates a GeoJSON point layer on the map
+// addCoordLayer � Creates a GeoJSON point layer on the map
 // -------------------------------------------------------
 function addCoordLayer(points, name) {
     if (!map || !points || points.length === 0) return;
     const geojson = {
         type: 'FeatureCollection',
-        features: points.map(p => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-            properties: p.fmt === 'utm'
+        features: points.map(p => {
+            const props = p.fmt === 'utm'
                 ? {
                     name: p.label,
                     'Zone': `${p.zone}N`,
@@ -5937,8 +5956,14 @@ function addCoordLayer(points, name) {
                     'Lat': p.lat.toFixed(6),
                     'Lng': p.lng.toFixed(6),
                     'Z (m)': p.origZ || 0
-                }
-        }))
+                };
+            if (p.note) props['Note'] = p.note;
+            return {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+                properties: props
+            };
+        })
     };
     addExternalLayer(name, geojson);
 }
