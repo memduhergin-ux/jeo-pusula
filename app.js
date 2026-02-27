@@ -4125,6 +4125,7 @@ function addExternalLayer(name, geojson) {
     try {
         const layer = L.geoJSON(geojson, {
             renderer: window.sharedCanvasRenderer,
+            interactive: true, // MUST be in options, not just style
             style: (feature) => {
                 let customStyle = { ...defaultStyle };
                 if (feature.properties) {
@@ -4461,7 +4462,7 @@ function toggleLayerFill(id, isFilled) {
     const l = externalLayers.find(x => x.id === id);
     if (!l) return;
     l.filled = isFilled;
-    l.layer.setStyle({ fillOpacity: isFilled ? 0.4 : 0 });
+    l.layer.setStyle({ fillOpacity: isFilled ? 0.4 : 0, fill: isFilled });
     saveExternalLayers();
 }
 
@@ -4495,9 +4496,9 @@ function toggleLayerAreas(id, showAreas) {
         // v678: Use setStyle for consistent visibility of paths/polygons (non-markers)
         if (layer instanceof L.Path && !(layer instanceof L.Marker || layer.isKmlMarker)) {
             if (showAreas) {
-                layer.setStyle({ opacity: 1, fillOpacity: l.filled ? 0.4 : 0 });
+                layer.setStyle({ opacity: 1, fillOpacity: l.filled ? 0.4 : 0, fill: l.filled, stroke: true });
             } else {
-                layer.setStyle({ opacity: 0, fillOpacity: 0 });
+                layer.setStyle({ opacity: 0, fillOpacity: 0, fill: false, stroke: false });
             }
         }
     });
@@ -4944,22 +4945,63 @@ function saveMeasurement() {
 function updateMeasurement(latlng) {
     if (!map) return;
 
+    // v1453-99F: Global Snapping Logic
+    // Allow snapping to ANY existing point (from records or imported layers) if within 40 pixels
+    let snappedLatLng = latlng;
+    let closestPixelDist = Infinity;
+    const clickPx = map.latLngToContainerPoint(latlng);
+
+    // 1. Check Records (Points)
+    records.forEach(r => {
+        if (r.lat && r.lon) {
+            const pPx = map.latLngToContainerPoint([r.lat, r.lon]);
+            const dist = clickPx.distanceTo(pPx);
+            if (dist < 40 && dist < closestPixelDist) {
+                closestPixelDist = dist;
+                snappedLatLng = L.latLng(r.lat, r.lon);
+            }
+        }
+    });
+
+    // 2. Check Imported Markers
+    if (typeof allKmlMarkers !== 'undefined') {
+        allKmlMarkers.forEach(m => {
+            if (m.getLatLng) {
+                const markLl = m.getLatLng();
+                const pPx = map.latLngToContainerPoint(markLl);
+                const dist = clickPx.distanceTo(pPx);
+                if (dist < 40 && dist < closestPixelDist) {
+                    closestPixelDist = dist;
+                    snappedLatLng = markLl;
+                }
+            }
+        });
+    }
+
+    // 3. Check Current Measurement Nodes (for snapping to other drawing points)
+    measurePoints.forEach(p => {
+        const pPx = map.latLngToContainerPoint(p);
+        const dist = clickPx.distanceTo(pPx);
+        if (dist < 40 && dist < closestPixelDist) {
+            closestPixelDist = dist;
+            snappedLatLng = p;
+        }
+    });
+
+    // Apply Snapped Coordinate for the rest of the function!
+    latlng = snappedLatLng;
+
     // Check Snapping (Close Polygon)
-    if (measurePoints.length > 2) {
+    if (measureMode === 'polygon' && measurePoints.length > 2) {
         const startPoint = measurePoints[0];
         // v1453-69F: Pixel-based Snapping Logic (Zoom Independent)
-        // Convert both points to screen pixels
         const p1 = map.latLngToContainerPoint(latlng);
         const p2 = map.latLngToContainerPoint(startPoint);
-
-        // Calculate screen distance in pixels
         const pixelDist = p1.distanceTo(p2);
 
-        // Snapping Tolerance: 40 pixels (Roughly finger touch size)
-        // This works at ANY zoom level.
+        // Snapping Tolerance: 40 pixels
         if (pixelDist < 40) {
             if (confirm("Close polygon? (Area will be calculated)")) {
-                // Close the polygon
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
                 redrawMeasurement();
@@ -4973,15 +5015,7 @@ function updateMeasurement(latlng) {
         return;
     }
 
-    // Force polygon mode to close if second point matches start (not applicable)
-    // Add Point
     measurePoints.push(latlng);
-
-    // If we are in line mode, we only allow 2 points? No, ruler can have multiple segments too.
-    // If user intended 'polygon', they should use polygon button.
-    if (measureMode === 'polygon' && measurePoints.length > 2) {
-        // Just keep adding, user will close it by clicking start.
-    }
 
     // Add Marker
     const marker = L.circleMarker(latlng, {
