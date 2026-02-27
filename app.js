@@ -2796,6 +2796,15 @@ function updateMapMarkers(shouldFitBounds = false) {
         }
     });
 
+    // Toggle active measurement labels
+    if (activeMeasureLabels && activeMeasureLabels.length > 0) {
+        activeMeasureLabels.forEach(l => {
+            if (l.getElement && l.getElement()) {
+                l.getElement().style.display = showRecordsOnMap ? '' : 'none';
+            }
+        });
+    }
+
     if (!showRecordsOnMap) return;
 
     // Remove fixed zoom limit, we will use dynamic scaling instead
@@ -4272,23 +4281,24 @@ function renderLayerList() {
         item.style.marginBottom = '8px';
 
         item.innerHTML = `
-            <div style="flex:1; overflow:hidden; display:flex; align-items:center; gap:8px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2196f3"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+            <div style="flex:1; overflow:hidden; display:flex; align-items:center; gap:8px; min-width: 120px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2196f3" style="flex-shrink:0;"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
                 <div style="font-weight:bold; color:#2196f3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; font-size:0.9rem;">${l.name}</div>
             </div>
-            <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
-                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
+            <div style="display:flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; align-items:center; padding-bottom: 2px; scrollbar-width: none; -ms-overflow-style: none;">
+                <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="flex-shrink:0; background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
                     ${l.visible ? '👁️' : '🙈'}
                 </button>
-                <div style="display:flex; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Area</span></label>
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
-                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
+                <div style="display:flex; flex-wrap: nowrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px; white-space: nowrap;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px; white-space: nowrap;"><input type="checkbox" class="layer-areas-toggle" data-id="${l.id}" ${l.areasVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Area</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px; white-space: nowrap;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
+                     <label style="display:flex; align-items:center; cursor:pointer; gap:2px; white-space: nowrap;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
                 </div>
-                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
+                <button class="layer-delete-btn" data-id="${l.id}" style="flex-shrink:0; background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
         `;
+        // Hide scrollbar extension for webkit in the container above (managed via inline styles mostly, but ensure clean look)
         layersList.appendChild(item);
     });
 
@@ -4846,33 +4856,57 @@ function calculateAndDisplayMeasurement() {
 function saveMeasurement() {
     if (measurePoints.length === 0) return;
 
-    // Save geometry for persistence
-    pendingGeometry = measurePoints.map(p => [p.lat, p.lng]);
-    pendingGeometryType = isPolygon ? 'polygon' : 'polyline';
+    let layerName = prompt("Enter a name for this shape/measurement:", isPolygon ? "New Polygon" : "New Line");
+    if (!layerName) return; // User cancelled
 
-    // Open Modal
-    editingRecordId = null;
-    document.getElementById('rec-label').value = nextId;
+    let geojson = {
+        type: "FeatureCollection",
+        name: layerName,
+        crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+        features: []
+    };
 
-    // Coords: Use Last Point
-    const lastP = measurePoints[measurePoints.length - 1];
+    let feature = {
+        type: "Feature",
+        properties: {
+            "name": layerName,
+            "note": measureText.innerText.replace(/\n/g, ", ")
+        },
+        geometry: {
+            type: isPolygon ? "Polygon" : "LineString",
+            coordinates: []
+        }
+    };
 
-    // UTM Conversion
-    const zone = Math.floor((lastP.lng + 180) / 6) + 1;
-    const utmZoneDef = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-    const utm = proj4('WGS84', utmZoneDef, [lastP.lng, lastP.lat]);
+    if (isPolygon) {
+        // GeoJSON Polygon coordinates are arrays of linear rings: [[[lng,lat], [lng,lat], ...]]
+        // The first and last positions must be equivalent
+        let ring = measurePoints.map(p => [p.lng, p.lat]);
+        ring.push([measurePoints[0].lng, measurePoints[0].lat]); // Close the ring explicitly if not already
+        feature.geometry.coordinates = [ring];
+    } else {
+        // GeoJSON LineString: [[lng,lat], [lng,lat], ...]
+        feature.geometry.coordinates = measurePoints.map(p => [p.lng, p.lat]);
+    }
 
-    document.getElementById('rec-y').value = Math.round(utm[0]);
-    document.getElementById('rec-x').value = Math.round(utm[1]);
-    document.getElementById('rec-z').value = 0;
-    document.getElementById('rec-strike').value = 0;
-    document.getElementById('rec-dip').value = 0;
+    geojson.features.push(feature);
 
-    // Note
-    let note = measureText.innerText.replace(/\n/g, ", ");
-    document.getElementById('rec-note').value = note;
+    const layerId = Date.now();
+    addExternalLayer({
+        id: layerId,
+        name: layerName,
+        data: geojson
+    });
 
-    recordModal.classList.add('active');
+    clearMeasurement();
+    renderLayerList();
+
+    // Add success notification
+    const popup = document.createElement('div');
+    popup.className = 'toast show';
+    popup.textContent = `Layer "${layerName}" saved to Map Layers!`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 3000);
 }
 
 function updateMeasurement(latlng) {
