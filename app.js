@@ -1,4 +1,4 @@
-﻿const APP_VERSION = 'v1453-4-10F'; // Fixed TWA URL Bar caching
+﻿const APP_VERSION = 'v1453-4-11F'; // Map Snapping and Segment Label Fixes
 const JEO_VERSION = APP_VERSION; // Geriye d�n�k uyumluluk i�in
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
