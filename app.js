@@ -717,13 +717,13 @@ function updateHeatmapFilterOptions() {
     });
 
     const emojiMap = {
-        'MN': '??', 'CR': '??', 'CU': '??', 'NI': '??',
-        'FE': '??', 'AU': '??', 'AG': '?', 'ZN': '??', 'PB': '?'
+        'MN': '🟤', 'CR': '⚫', 'CU': '🟠', 'NI': '⚪',
+        'FE': '🟤', 'AU': '🟡', 'AG': '⚪', 'ZN': '⚪', 'PB': '⚫'
     };
 
-    let html = '<option value="ALL">?? All Points</option>';
+    let html = '<option value="ALL">🌈 All Points</option>';
     Array.from(foundElements).sort().forEach(el => {
-        const emoji = emojiMap[el] || '??';
+        const emoji = emojiMap[el] || '📍';
         html += `<option value="${el}">${emoji} ${el}</option>`;
     });
 
@@ -2041,9 +2041,9 @@ function renderRecords(filter = '') {
                 <div class="action-menu">
                     <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">?</button>
                     <div id="dropdown-${r.id}" class="dropdown-content">
-                        <button class="btn-edit-row" data-id="${r.id}" onclick="toggleActionMenu(${r.id}, event)">?? Edit</button>
-                        <button onclick="exportSingleRecordKML(${r.id})">?? Share KML</button>
-                        <button class="delete-action" onclick="deleteRecordFromMap(${r.id})">??? Delete</button>
+                        <button class="btn-edit-row" data-id="${r.id}" onclick="toggleActionMenu(${r.id}, event)">✏️ Edit</button>
+                        <button onclick="exportSingleRecordKML(${r.id})">📤 Share KML</button>
+                        <button class="delete-action" onclick="deleteRecordFromMap(${r.id})">🗑️ Delete</button>
                     </div>
                 </div>
             </td>
@@ -2889,7 +2889,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
                             ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">??? Delete</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                     </div>
                 `;
 
@@ -2964,8 +2964,8 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
                     <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 10px;">"${r.note || 'No note'}"</div>
                     <div style="display: flex; gap: 5px;">
-                        <button onclick="startRouting(${r.lat}, ${r.lon})" style="flex: 1; background: #2196f3; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;">?? Rota</button>
-                        <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">???</button>
+                        <button onclick="startRouting(${r.lat}, ${r.lon})" style="flex: 1; background: #2196f3; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;">🗺️ Rota</button>
+                        <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️</button>
                     </div>
                 </div>
             `;
@@ -3061,7 +3061,7 @@ function renderTracks(filter = '') {
         html += `
             <tr class="live-track-row" style="background: rgba(76, 175, 80, 0.1);">
                 <td class="${isTracksLocked ? 'locked-hidden' : ''}"></td>
-                <td style="color: #4caf50; font-weight: bold;">?? ${liveName}</td>
+                <td style="color: #4caf50; font-weight: bold;">📍 ${liveName}</td>
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
                 <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
                 <td><input type="checkbox" checked disabled></td>
@@ -4152,7 +4152,7 @@ function addExternalLayer(name, geojson) {
                     const [lng, lat] = feature.geometry.coordinates;
                     popupContent += `
                         <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick="startRouting(${lat}, ${lng})" style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px;">?? Rota</button>
+                            <button onclick="startRouting(${lat}, ${lng})" style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px;">🗺️ Rota</button>
                         </div>`;
                 }
                 popupContent += `</div>`;
@@ -4278,7 +4278,7 @@ function renderLayerList() {
             </div>
             <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center;">
                 <button class="layer-toggle-vis ${l.visible ? 'active' : ''}" data-id="${l.id}" style="background:${l.visible ? '#2196f3' : '#555'}; border:none; color:white; width:32px; height:32px; border-radius:6px; cursor:pointer;" title="Visibility">
-                    ${l.visible ? '???' : '???????'}
+                    ${l.visible ? '👁️' : '🙈'}
                 </button>
                 <div style="display:flex; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; gap: 8px;">
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-points-toggle" data-id="${l.id}" ${l.pointsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Point</span></label>
@@ -4286,7 +4286,7 @@ function renderLayerList() {
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-fill-toggle" data-id="${l.id}" ${l.filled ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Fill</span></label>
                      <label style="display:flex; align-items:center; cursor:pointer; gap:2px;"><input type="checkbox" class="layer-labels-toggle" data-id="${l.id}" ${l.labelsVisible ? 'checked' : ''}> <span style="font-size:10px; color:#fff">Label</span></label>
                 </div>
-                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">???</button>
+                <button class="layer-delete-btn" data-id="${l.id}" style="background:#f44336; border:none; color:white; width:30px; height:30px; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
         `;
         layersList.appendChild(item);
@@ -5426,12 +5426,12 @@ function updateLockUI() {
     const currentLocked = (activeTab === 'points') ? isRecordsLocked : isTracksLocked;
 
     if (currentLocked) {
-        btnToggleLock.innerHTML = '??';
+        btnToggleLock.innerHTML = '🔒';
         btnToggleLock.classList.remove('unlocked');
         btnToggleLock.style.backgroundColor = "";
         btnToggleLock.title = 'Unlock';
     } else {
-        btnToggleLock.innerHTML = '??';
+        btnToggleLock.innerHTML = '🔓';
         btnToggleLock.classList.add('unlocked');
         btnToggleLock.style.backgroundColor = "rgba(76, 175, 80, 0.2)";
         btnToggleLock.title = 'Lock';
@@ -5883,26 +5883,26 @@ function onLocationError(err) {
             // Fallback for Netcad Standard Excel Structure: 
             // 0: Nokta Adi, 1: Y Kolonu, 2: X Kolonu, 3: Z Kolonu
             const getVal = (index) => keys.length > index ? row[keys[index].k] : undefined;
-            
+
             let lat, lng;
-            
+
             let labelVal = find('label', 'nokta', 'ad', 'name', 'id', 'noktano');
             if (labelVal === undefined) labelVal = getVal(0);
             const label = String(labelVal || `P${idx + 1}`);
 
-            let zVal = find('z', 'rakÄ±m', 'rakm', 'kot', 'alt', 'elev', 'elevation');
+            let zVal = find('z', 'rakım', 'rakm', 'kot', 'alt', 'elev', 'elevation');
             if (zVal === undefined) zVal = getVal(3);
             const Z = parseFloat(zVal) || 0;
 
-            const Note = String(find('note', 'not', 'aÃ§Ä±klama', 'aciklama', 'desc', 'description') || '').trim();
+            const Note = String(find('note', 'not', 'açıklama', 'aciklama', 'desc', 'description') || '').trim();
 
             if (fmt === 'utm') {
-                let yVal = find('y', 'e', 'east', 'easting', 'doÄŸu', 'dogu', 'saÄŸa', 'saga');
+                let yVal = find('y', 'e', 'east', 'easting', 'doğu', 'dogu', 'sağa', 'saga');
                 if (yVal === undefined) yVal = getVal(1);
 
-                let xVal = find('x', 'n', 'north', 'northing', 'kuzey', 'yukarÄ±', 'yukari');
+                let xVal = find('x', 'n', 'north', 'northing', 'kuzey', 'yukarı', 'yukari');
                 if (xVal === undefined) xVal = getVal(2);
-                
+
                 const Y = parseFloat(yVal);
                 const X = parseFloat(xVal);
 
