@@ -1,158 +1,101 @@
-$path = "c:\Users\memdu\Contacts\JeolojiPusulasi\app.js"
-$lines = Get-Content $path
-$newContent = @()
+$lines = Get-Content "c:\Users\memdu\Contacts\JeolojiPusulasi\app.js" -Encoding UTF8
+$startIdx = -1
+$endIdx = -1
 
-# Part 1: Before optimizeMapPoints
-# Keep lines 0 to 899 (inclusive headers)
-$newContent += $lines[0..899]
+for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match "^\s*function processFileData\(rows\) \{") {
+        $startIdx = $i
+    }
+    if ($startIdx -ne -1 -and $i -gt $startIdx -and $lines[$i] -match "^\s*showFilePreview\(\);\s*$") {
+        # The function ends at the next line "    }"
+        $endIdx = $i + 1
+        break
+    }
+}
 
-# Part 2: New optimizeMapPoints Logic
-$newContent += '    // Smart Label Placement (v383 - 8-Way Collision Avoidance)'
-$newContent += '    let optimizeTimeout = null;'
-$newContent += '    function optimizeMapPoints() {'
-$newContent += '        if (optimizeTimeout) clearTimeout(optimizeTimeout);'
-$newContent += ''
-$newContent += '        optimizeTimeout = setTimeout(() => {'
-$newContent += '            // 1. Get all visible KML markers and their tooltips'
-$newContent += '            const markers = []; '
-$newContent += '            externalLayers.forEach(l => {'
-$newContent += '                if (!l.visible || !l.pointsVisible) return;'
-$newContent += '                l.layer.eachLayer(layer => {'
-$newContent += '                    if (layer instanceof L.Marker && layer.getElement() && layer.getElement().querySelector(".kml-custom-icon")) {'
-$newContent += '                        markers.push(layer);'
-$newContent += '                    }'
-$newContent += '                });'
-$newContent += '            });'
-$newContent += ''
-$newContent += '            if (markers.length === 0) return;'
-$newContent += ''
-$newContent += '            const mapBounds = map.getBounds();'
-$newContent += '            const occupiedRects = []; // Store {top, left, right, bottom} of occupied areas'
-$newContent += '            const labelsToPlace = []; // Collect valid labels to process'
-$newContent += ''
-$newContent += '            // 2. Pre-process markers: Ensure they are visible and visible on map'
-$newContent += '            markers.forEach(marker => {'
-$newContent += '                const el = marker.getElement();'
-$newContent += '                if (!el) return;'
-$newContent += ''
-$newContent += '                // Always show marker (User Rule: Never hide markers)'
-$newContent += '                el.style.display = "block";'
-$newContent += '                el.style.opacity = "1";'
-$newContent += ''
-$newContent += '                const latLng = marker.getLatLng();'
-$newContent += '                if (!mapBounds.contains(latLng)) {'
-$newContent += '                    // Off-screen optimization'
-$newContent += '                    if (marker.getTooltip()) {'
-$newContent += '                        marker.closeTooltip();'
-$newContent += '                    }'
-$newContent += '                    return;'
-$newContent += '                }'
-$newContent += ''
-$newContent += '                // If on screen, ensure tooltip is open/created'
-$newContent += '                if (marker.getTooltip()) {'
-$newContent += '                    if (!map.hasLayer(marker.getTooltip())) {'
-$newContent += '                        marker.openTooltip();'
-$newContent += '                    }'
-$newContent += '                    const tooltip = marker.getTooltip();'
-$newContent += '                    const tooltipEl = tooltip.getElement();'
-$newContent += '                    // Add marker rect to occupied list'
-$newContent += '                    const markerRect = el.getBoundingClientRect();'
-$newContent += '                    occupiedRects.push({'
-$newContent += '                        left: markerRect.left,'
-$newContent += '                        top: markerRect.top,'
-$newContent += '                        right: markerRect.right,'
-$newContent += '                        bottom: markerRect.bottom'
-$newContent += '                    });'
-$newContent += ''
-$newContent += '                    if (tooltipEl) {'
-$newContent += '                        labelsToPlace.push({ marker, tooltip, tooltipEl, markerRect });'
-$newContent += '                    }'
-$newContent += '                }'
-$newContent += '            });'
-$newContent += ''
-$newContent += '            // 3. Smart Placement Algorithm'
-$newContent += '            // Try 8 positions: Top(N), NE, E, SE, S, SW, W, NW'
-$newContent += '            const dist = 12; '
-$newContent += '            const positions = ['
-$newContent += '                { x: 0, y: -dist }, // N'
-$newContent += '                { x: dist, y: -dist }, // NE'
-$newContent += '                { x: dist, y: 0 }, // E'
-$newContent += '                { x: dist, y: dist }, // SE'
-$newContent += '                { x: 0, y: dist }, // S'
-$newContent += '                { x: -dist, y: dist }, // SW'
-$newContent += '                { x: -dist, y: 0 }, // W'
-$newContent += '                { x: -dist, y: -dist } // NW'
-$newContent += '            ];'
-$newContent += ''
-$newContent += '            labelsToPlace.forEach(item => {'
-$newContent += '                const { tooltipEl, markerRect } = item;'
-$newContent += '                '
-$newContent += '                tooltipEl.style.transform = "none"; '
-$newContent += '                tooltipEl.style.display = "block"; '
-$newContent += '                '
-$newContent += '                const width = tooltipEl.offsetWidth;'
-$newContent += '                const height = tooltipEl.offsetHeight;'
-$newContent += '                const markerCenter = {'
-$newContent += '                    x: markerRect.left + markerRect.width / 2,'
-$newContent += '                    y: markerRect.top + markerRect.height / 2'
-$newContent += '                };'
-$newContent += ''
-$newContent += '                let bestPos = null;'
-$newContent += ''
-$newContent += '                for (let i = 0; i < positions.length; i++) {'
-$newContent += '                    const offset = positions[i];'
-$newContent += '                    '
-$newContent += '                    const targetX = markerCenter.x + offset.x; '
-$newContent += '                    const targetY = markerCenter.y + offset.y;'
-$newContent += ''
-$newContent += '                    const candidateRect = {'
-$newContent += '                        left: targetX - width / 2,'
-$newContent += '                        right: targetX + width / 2,'
-$newContent += '                        top: targetY - height / 2,'
-$newContent += '                        bottom: targetY + height / 2'
-$newContent += '                    };'
-$newContent += ''
-$newContent += '                    let collision = false;'
-$newContent += '                    for (const obst of occupiedRects) {'
-$newContent += '                         if (!(candidateRect.right < obst.left || '
-$newContent += '                               candidateRect.left > obst.right || '
-$newContent += '                               candidateRect.bottom < obst.top || '
-$newContent += '                               candidateRect.top > obst.bottom)) {'
-$newContent += '                            collision = true;'
-$newContent += '                            break;'
-$newContent += '                        }'
-$newContent += '                    }'
-$newContent += ''
-$newContent += '                    if (!collision) {'
-$newContent += '                        bestPos = { x: offset.x, y: offset.y, rect: candidateRect };'
-$newContent += '                        break; '
-$newContent += '                    }'
-$newContent += '                }'
-$newContent += ''
-$newContent += '                if (bestPos) {'
-$newContent += '                    tooltipEl.style.opacity = "1";'
-$newContent += '                    tooltipEl.style.visibility = "visible";'
-$newContent += '                    tooltipEl.style.transform = `translate3d(${bestPos.x}px, ${bestPos.y}px, 0)`;'
-$newContent += '                    occupiedRects.push(bestPos.rect);'
-$newContent += '                } else {'
-$newContent += '                    tooltipEl.style.opacity = "0";'
-$newContent += '                    tooltipEl.style.visibility = "hidden";'
-$newContent += '                }'
-$newContent += '            });'
-$newContent += ''
-$newContent += '        }, 50);'
-$newContent += '    }'
+if ($startIdx -ne -1 -and $endIdx -ne -1) {
+    Write-Host "Found function from line $($startIdx+1) to $($endIdx+1). Replacing..."
+    $newFunc = @'
+    function processFileData(rows) {
+        if (!rows || rows.length === 0) return;
+        const fmt = formatSel ? formatSel.value : 'utm';
+        parsedRows = [];
+        rows.forEach((row, idx) => {
+            // Trim keys for reliable exact matching
+            const keys = Object.keys(row).map(k => ({ k, kl: String(k).toLowerCase().trim() }));
 
-# Part 3: Middle section (Resume from line 980 -> Index 979)
-# Stop before line 1979 -> Index 1978. So keep until 1977.
-$newContent += $lines[979..1977]
+            // Robust find function evaluating exact, prefixed, then substring matches
+            const find = (...names) => {
+                let m = keys.find(({ kl }) => names.includes(kl));
+                if (!m) m = keys.find(({ kl }) => names.some(n => kl.startsWith(n + ' ') || kl.startsWith(n + '(') || kl.startsWith(n + '_')));
+                if (!m) m = keys.find(({ kl }) => names.some(n => n.length > 2 && kl.includes(n)));
+                return m ? row[m.k] : undefined;
+            };
 
-# Part 4: New Offset
-$newContent += '                    offset: [0, 0], // v383: Start at center, Smart Label will move it'
-$newContent += '                    sticky: false // Changed to false for better stability'
+            // Fallback for Netcad Standard Excel Structure: 
+            // 0: Nokta Adi, 1: Y Kolonu, 2: X Kolonu, 3: Z Kolonu
+            const getVal = (index) => keys.length > index ? row[keys[index].k] : undefined;
+            
+            let lat, lng;
+            
+            let labelVal = find('label', 'nokta', 'ad', 'name', 'id', 'noktano');
+            if (labelVal === undefined) labelVal = getVal(0);
+            const label = String(labelVal || `P${idx + 1}`);
 
-# Part 5: Rest of file (Resume from line 1981 -> Index 1980)
-$newContent += $lines[1980..($lines.Count-1)]
+            let zVal = find('z', 'rakım', 'rakm', 'kot', 'alt', 'elev', 'elevation');
+            if (zVal === undefined) zVal = getVal(3);
+            const Z = parseFloat(zVal) || 0;
 
-$newContent | Set-Content $path -Encoding UTF8
-Write-Host "Update Complete"
+            const Note = String(find('note', 'not', 'açıklama', 'aciklama', 'desc', 'description') || '').trim();
+
+            if (fmt === 'utm') {
+                let yVal = find('y', 'e', 'east', 'easting', 'doğu', 'dogu', 'sağa', 'saga');
+                if (yVal === undefined) yVal = getVal(1);
+
+                let xVal = find('x', 'n', 'north', 'northing', 'kuzey', 'yukarı', 'yukari');
+                if (xVal === undefined) xVal = getVal(2);
+                
+                const Y = parseFloat(yVal);
+                const X = parseFloat(xVal);
+
+                let zone = parseInt(zoneInput ? zoneInput.value : 0) || parseInt(find('zone', 'zon', 'dilim')) || 0;
+                if (!zone && !isNaN(Y)) zone = autoZoneFromE(Y);
+                const datum = datumSel ? datumSel.value : 'ed50';
+
+                if (!isNaN(Y) && !isNaN(X) && zone) {
+                    const ll = utmToLatLng(Y, X, zone, datum);
+                    lat = ll.lat; lng = ll.lng;
+                    parsedRows.push({ lat, lng, label, origY: Y, origX: X, origZ: Z, zone, fmt, note: Note });
+                }
+            } else {
+                let latVal = find('lat', 'latitude', 'enlem', 'y');
+                if (latVal === undefined) latVal = getVal(1);
+
+                let lngVal = find('lon', 'lng', 'longitude', 'boylam', 'x');
+                if (lngVal === undefined) lngVal = getVal(2);
+
+                lat = parseFloat(latVal);
+                lng = parseFloat(lngVal);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    parsedRows.push({ lat, lng, label, origY: lat, origX: lng, origZ: Z, zone: 0, fmt, note: Note });
+                }
+            }
+        });
+        showFilePreview();
+    }
+'@
+
+    $newFuncLines = $newFunc -split "`n"
+    # Remove the carriage return character if present
+    $newFuncLines = $newFuncLines | ForEach-Object { $_.TrimEnd("`r") }
+
+    $before = $lines[0..($startIdx - 1)]
+    $after = $lines[($endIdx + 1)..($lines.Count - 1)]
+
+    $newContent = $before + $newFuncLines + $after
+    $newContent | Set-Content "c:\Users\memdu\Contacts\JeolojiPusulasi\app.js" -Encoding UTF8
+    Write-Host "Replaced successfully."
+} else {
+    Write-Host "Could not find the function boundaries."
+}

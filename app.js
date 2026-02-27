@@ -1,28 +1,28 @@
-const APP_VERSION = 'v1453-4-9F'; // KML & Objects Interactivity Fixture (v1453-70F)
-const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
+ï»¿const APP_VERSION = 'v1453-4-9F'; // KML & Objects Interactivity Fixture (v1453-70F)
+const JEO_VERSION = APP_VERSION; // Geriye dï¿½nï¿½k uyumluluk iï¿½in
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'jeo-store-v1';
 
-// Sürümü UI üzerinde güncelleme fonksiyonu
+// Sï¿½rï¿½mï¿½ UI ï¿½zerinde gï¿½ncelleme fonksiyonu
 function updateAppVersionDisplay() {
     const versionElements = document.querySelectorAll('.app-version-display');
     versionElements.forEach(el => {
         el.textContent = APP_VERSION;
     });
 
-    // Özel ID'leri de güncelle (Eski yapýyý desteklemek için)
+    // ï¿½zel ID'leri de gï¿½ncelle (Eski yapï¿½yï¿½ desteklemek iï¿½in)
     const activeVersionEl = document.getElementById('active-version');
     if (activeVersionEl) activeVersionEl.textContent = APP_VERSION;
 
     const sensorStatusText = document.getElementById('sensor-status-text');
     if (sensorStatusText && sensorStatusText.textContent.includes('v1453')) {
-        // Sadece versiyon kýsmýný güncellemek zor olabilir, bu yüzden manuel býrakabiliriz
-        // veya dinamik yapabiliriz. Þimdilik sýnýf tabanlý güncelleme yeterli.
+        // Sadece versiyon kï¿½smï¿½nï¿½ gï¿½ncellemek zor olabilir, bu yï¿½zden manuel bï¿½rakabiliriz
+        // veya dinamik yapabiliriz. ï¿½imdilik sï¿½nï¿½f tabanlï¿½ gï¿½ncelleme yeterli.
     }
 }
 
-// v750: Global Security & Stability Kalkaný
+// v750: Global Security & Stability Kalkanï¿½
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     console.error(`GLOBAL ERROR: ${msg} at ${lineNo}:${columnNo}`, error);
     // v1453-06F: Restored polite message after debugging success
@@ -159,27 +159,27 @@ const PERIODIC_TABLE_SYMBOLS = new Set([
 // v1453-16: Element Aliases (Common Turkish/English Names -> Symbol)
 const ELEMENT_ALIASES = {
     // TR
-    'ALTIN': 'AU', 'GÜMÜÞ': 'AG', 'BAKIR': 'CU', 'DEMÝR': 'FE', 'KURÞUN': 'PB', 'ÇÝNKO': 'ZN',
-    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'NÝKEL': 'NI', 'KOBALT': 'CO',
+    'ALTIN': 'AU', 'Gï¿½Mï¿½ï¿½': 'AG', 'BAKIR': 'CU', 'DEMï¿½R': 'FE', 'KURï¿½UN': 'PB', 'ï¿½ï¿½NKO': 'ZN',
+    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'Nï¿½KEL': 'NI', 'KOBALT': 'CO',
     'MNO': 'MN', 'MNO2': 'MN', // v1453-17: Manganese Oxides
-    'ALÜMÝNYUM': 'AL', 'ARSENÝK': 'AS', 'ANTÝMON': 'SB', 'KALAY': 'SN', 'TÝTANYUM': 'TI',
-    'URANYUM': 'U', 'PLATÝN': 'PT', 'PALADYUM': 'PD', 'OSMÝYUM': 'OS', 'ÝRÝDYUM': 'IR',
-    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMÝYUM': 'CD', 'BÝZMUT': 'BI', 'MOLÝBDEN': 'MO',
-    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'LÝTYUM': 'LI', 'BERÝLYUM': 'BE',
-    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'KÜKÜRT': 'S', 'SÝLÝSYUM': 'SI',
-    'KALSÝYUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
-    'BARYUM': 'BA', 'STRONSÝYUM': 'SR', 'ZÝRKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
-    'OKSÝJEN': 'O', 'HÝDROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
-    'NEODÝM': 'ND', 'HAFNÝYUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
+    'ALï¿½Mï¿½NYUM': 'AL', 'ARSENï¿½K': 'AS', 'ANTï¿½MON': 'SB', 'KALAY': 'SN', 'Tï¿½TANYUM': 'TI',
+    'URANYUM': 'U', 'PLATï¿½N': 'PT', 'PALADYUM': 'PD', 'OSMï¿½YUM': 'OS', 'ï¿½Rï¿½DYUM': 'IR',
+    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMï¿½YUM': 'CD', 'Bï¿½ZMUT': 'BI', 'MOLï¿½BDEN': 'MO',
+    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'Lï¿½TYUM': 'LI', 'BERï¿½LYUM': 'BE',
+    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'Kï¿½Kï¿½RT': 'S', 'Sï¿½Lï¿½SYUM': 'SI',
+    'KALSï¿½YUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
+    'BARYUM': 'BA', 'STRONSï¿½YUM': 'SR', 'Zï¿½RKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
+    'OKSï¿½JEN': 'O', 'Hï¿½DROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
+    'NEODï¿½M': 'ND', 'HAFNï¿½YUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
     // Common Minerals (TR)
-    'PÝROLUSÝT': 'MN', 'RODOKROSÝT': 'MN', 'PSÝLOMELAN': 'MN', 'BRAUNÝT': 'MN', 'MANGANÝT': 'MN',
-    'KALKOPÝRÝT': 'CU', 'MALAHÝT': 'CU', 'AZURÝT': 'CU', 'KOVELLÝN': 'CU', 'BORNÝT': 'CU', 'KUPRÝT': 'CU',
-    'GALEN': 'PB', 'SERÜZÝT': 'PB', 'ANGLEZÝT': 'PB',
-    'SFALERÝT': 'ZN', 'SMÝTSONÝT': 'ZN', 'HEMÝMORFÝT': 'ZN',
-    'HEMATÝT': 'FE', 'MANYETÝT': 'FE', 'LÝMONÝT': 'FE', 'SÝDERÝT': 'FE', 'PÝRÝT': 'FE', 'GÖTÝT': 'FE',
-    'KROMÝT': 'CR', 'BOKSÝT': 'AL', 'KORUND': 'AL',
-    'SÝNOBAR': 'HG', 'STÝBNÝT': 'SB', 'ARSENOPÝRÝT': 'AS', 'KASSÝTERÝT': 'SN',
-    'SCHEELÝT': 'W', 'VOLFRAMÝT': 'W', 'MOLÝBDENÝT': 'MO',
+    'Pï¿½ROLUSï¿½T': 'MN', 'RODOKROSï¿½T': 'MN', 'PSï¿½LOMELAN': 'MN', 'BRAUNï¿½T': 'MN', 'MANGANï¿½T': 'MN',
+    'KALKOPï¿½Rï¿½T': 'CU', 'MALAHï¿½T': 'CU', 'AZURï¿½T': 'CU', 'KOVELLï¿½N': 'CU', 'BORNï¿½T': 'CU', 'KUPRï¿½T': 'CU',
+    'GALEN': 'PB', 'SERï¿½Zï¿½T': 'PB', 'ANGLEZï¿½T': 'PB',
+    'SFALERï¿½T': 'ZN', 'SMï¿½TSONï¿½T': 'ZN', 'HEMï¿½MORFï¿½T': 'ZN',
+    'HEMATï¿½T': 'FE', 'MANYETï¿½T': 'FE', 'Lï¿½MONï¿½T': 'FE', 'Sï¿½DERï¿½T': 'FE', 'Pï¿½Rï¿½T': 'FE', 'Gï¿½Tï¿½T': 'FE',
+    'KROMï¿½T': 'CR', 'BOKSï¿½T': 'AL', 'KORUND': 'AL',
+    'Sï¿½NOBAR': 'HG', 'STï¿½BNï¿½T': 'SB', 'ARSENOPï¿½Rï¿½T': 'AS', 'KASSï¿½TERï¿½T': 'SN',
+    'SCHEELï¿½T': 'W', 'VOLFRAMï¿½T': 'W', 'MOLï¿½BDENï¿½T': 'MO',
 
     // EN (Common ones that differ from symbol)
     'GOLD': 'AU', 'SILVER': 'AG', 'COPPER': 'CU', 'IRON': 'FE', 'LEAD': 'PB', 'ZINC': 'ZN',
@@ -204,7 +204,7 @@ const ELEMENT_ALIASES = {
 
 /**
  * v1453-16: Robust Element Extraction from Text
- * Handles: "Au", "Altýn", "Bakýr-Çinko", "Fe, Mn", "Cu 1.2%"
+ * Handles: "Au", "Altï¿½n", "Bakï¿½r-ï¿½inko", "Fe, Mn", "Cu 1.2%"
  */
 function extractElements(text) {
     if (!text) return new Set();
@@ -998,7 +998,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-let isTracksLocked = true; // Ýzlekler de varsayýlan olarak kilitli baþlar
+let isTracksLocked = true; // ï¿½zlekler de varsayï¿½lan olarak kilitli baï¿½lar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -1041,7 +1041,7 @@ const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalÄ±rsa kilitlenmeye baÅŸlar
 
 // Track Auto-Recording State (v442)
 let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
-const MAX_TRACKS = 20; // Maksimum izlek sayýsý
+const MAX_TRACKS = 20; // Maksimum izlek sayï¿½sï¿½
 let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // v510: Default true (boolean)
 
 // Measurement State
@@ -1392,11 +1392,11 @@ function renderCoordinates() {
         coordContent.innerHTML = `
             <div class="coord-row">
                 <span class="data-label">Enlem</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}ï¿½</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Boylam</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}°</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}ï¿½</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">${activeAltLabel}</span>
@@ -1687,9 +1687,9 @@ if (btnSave) {
 
     btnSave.addEventListener('click', () => {
         if (lockStrike && lockDip) {
-            // v455: Capture exact text from displays ("ekranlarý kayýt edilir")
+            // v455: Capture exact text from displays ("ekranlarï¿½ kayï¿½t edilir")
             const strikeVal = valStrike ? valStrike.textContent : formatStrike(displayedHeading);
-            const dipVal = valDip ? valDip.textContent : "0°";
+            const dipVal = valDip ? valDip.textContent : "0ï¿½";
 
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
             const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
@@ -2078,7 +2078,7 @@ function initMap() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '© OpenStreetMap'
+        attribution: 'ï¿½ OpenStreetMap'
     });
 
     // v1453-48F: Global Shared Canvas Renderer for High Performance KML
@@ -2089,7 +2089,7 @@ function initMap() {
     const osmHeatmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '© OpenStreetMap',
+        attribution: 'ï¿½ OpenStreetMap',
         className: 'osm-heatmap-filter'
     });
 
@@ -2097,21 +2097,21 @@ function initMap() {
         maxZoom: 25,
         maxNativeZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
+        attribution: 'ï¿½ Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 21, // Higher native zoom for satellite if available
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
+        attribution: 'ï¿½ Google'
     });
 
 
     const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        attribution: 'Map data: ï¿½ OpenStreetMap contributors, SRTM | Map style: ï¿½ OpenTopoMap (CC-BY-SA)'
     });
 
     // v1453-58F: Grayscale Topo Map for Heatmap Contrast
@@ -2119,7 +2119,7 @@ function initMap() {
     const openTopoGray = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)',
+        attribution: 'Map data: ï¿½ OpenStreetMap contributors, SRTM | Map style: ï¿½ OpenTopoMap (CC-BY-SA)',
         className: 'grayscale-map-filter'
     });
 
@@ -3065,7 +3065,7 @@ function renderTracks(filter = '') {
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
                 <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
                 <td><input type="checkbox" checked disabled></td>
-                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kayýtta...</td>
+                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kayï¿½tta...</td>
             </tr>
         `;
     }
@@ -3201,7 +3201,7 @@ function updateTrack(lat, lon) {
         localStorage.setItem('jeoTrackStartTime', trackStartTime);
     }
 
-    // Canlý izleði haritada güncelle
+    // Canlï¿½ izleï¿½i haritada gï¿½ncelle
     if (showLiveTrack && map) {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
@@ -3236,16 +3236,16 @@ function saveCurrentTrack() {
         length: calculateTrackLength(trackPath) // v466: Save length in meters
     };
 
-    // v456: FIFO: Eðer 20 kayýt varsa, en eskiyi sil (21. kayýt 1.yi siler)
+    // v456: FIFO: Eï¿½er 20 kayï¿½t varsa, en eskiyi sil (21. kayï¿½t 1.yi siler)
     if (jeoTracks.length >= MAX_TRACKS) {
-        jeoTracks.shift(); // Ýlk elemaný (en eski) çýkar
+        jeoTracks.shift(); // ï¿½lk elemanï¿½ (en eski) ï¿½ï¿½kar
     }
 
     jeoTracks.push(newTrack);
     localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
     localStorage.setItem('trackIdCounter', trackIdCounter);
 
-    // Canlý izleði temizle
+    // Canlï¿½ izleï¿½i temizle
     trackPath = [];
     trackStartTime = null; // v467: Reset start time
     localStorage.removeItem('jeoTrackPath'); // Temizle
@@ -3264,7 +3264,7 @@ function toggleTracking() {
     isTracking = !isTracking;
 
     if (!isTracking) {
-        // Tik kaldýrýldý: Mevcut kaydý sonlandýr ve sessizce kaydet
+        // Tik kaldï¿½rï¿½ldï¿½: Mevcut kaydï¿½ sonlandï¿½r ve sessizce kaydet
         saveCurrentTrack();
 
         // v512: Auto-Rec OFF -> Live Track also OFF
@@ -3276,7 +3276,7 @@ function toggleTracking() {
 
         showToast('Auto-Recording: OFF', 1000);
     } else {
-        // Tik atýldý: Yeni kayýt süreci baþlasýn
+        // Tik atï¿½ldï¿½: Yeni kayï¿½t sï¿½reci baï¿½lasï¿½n
         trackPath = [];
         trackStartTime = new Date().toISOString();
 
@@ -3635,17 +3635,17 @@ if (fileImportInput) {
         // v546: Memory Guardrails - Avoid browser crashes on massive files
         const sizeMB = file.size / (1024 * 1024);
         if (sizeMB > 50) {
-            alert(`Dosya çok büyük (${sizeMB.toFixed(1)}MB). Tarayýcý çökmesini önlemek için 50MB üzerindeki dosyalar engellendi.`);
+            alert(`Dosya ï¿½ok bï¿½yï¿½k (${sizeMB.toFixed(1)}MB). Tarayï¿½cï¿½ ï¿½ï¿½kmesini ï¿½nlemek iï¿½in 50MB ï¿½zerindeki dosyalar engellendi.`);
             fileImportInput.value = '';
             return;
         }
-        if (sizeMB > 10 && !confirm(`Dosya boyutu büyük (${sizeMB.toFixed(1)}MB). Ýþleme sýrasýnda telefonunuz kýsa süreli donabilir. Devam etmek istiyor musunuz?`)) {
+        if (sizeMB > 10 && !confirm(`Dosya boyutu bï¿½yï¿½k (${sizeMB.toFixed(1)}MB). ï¿½ï¿½leme sï¿½rasï¿½nda telefonunuz kï¿½sa sï¿½reli donabilir. Devam etmek istiyor musunuz?`)) {
             fileImportInput.value = '';
             return;
         }
 
         showLoading(`${file.name} processing...`);
-        // v1453-1: Crucial 200ms delay to allow the 'Lütfen Bekleyin' overlay to physically paint 
+        // v1453-1: Crucial 200ms delay to allow the 'Lï¿½tfen Bekleyin' overlay to physically paint 
         // to the screen before the heavy file parsing blocks the main thread (JS Engine).
         await new Promise(r => setTimeout(r, 200));
 
@@ -4244,7 +4244,7 @@ function addExternalLayer(name, geojson) {
 
     } catch (e) {
         console.error("Critical error in addExternalLayer:", e);
-        alert("Katman eklenirken bir hata oluþtu: " + e.message);
+        alert("Katman eklenirken bir hata oluï¿½tu: " + e.message);
     }
 }
 
@@ -5665,7 +5665,7 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
 // v697: Google Maps Native Integration (Internal Navigation Removed)
 function startRouting(targetLat, targetLng) {
     if (!targetLat || !targetLng) {
-        showToast("Hedef konum geçersiz.", 2000);
+        showToast("Hedef konum geï¿½ersiz.", 2000);
         return;
     }
     // Direct link to Google Maps Navigation
@@ -5880,16 +5880,32 @@ function onLocationError(err) {
                 return m ? row[m.k] : undefined;
             };
 
+            // Fallback for Netcad Standard Excel Structure: 
+            // 0: Nokta Adi, 1: Y Kolonu, 2: X Kolonu, 3: Z Kolonu
+            const getVal = (index) => keys.length > index ? row[keys[index].k] : undefined;
+            
             let lat, lng;
-            const labelVal = find('label', 'nokta', 'ad', 'name', 'id', 'noktano');
+            
+            let labelVal = find('label', 'nokta', 'ad', 'name', 'id', 'noktano');
+            if (labelVal === undefined) labelVal = getVal(0);
             const label = String(labelVal || `P${idx + 1}`);
 
-            const Z = parseFloat(find('z', 'rakým', 'rakm', 'kot', 'alt', 'elev', 'elevation') || 0) || 0;
-            const Note = String(find('note', 'not', 'açýklama', 'aciklama', 'desc', 'description') || '').trim();
+            let zVal = find('z', 'rakÃ„Â±m', 'rakm', 'kot', 'alt', 'elev', 'elevation');
+            if (zVal === undefined) zVal = getVal(3);
+            const Z = parseFloat(zVal) || 0;
+
+            const Note = String(find('note', 'not', 'aÃƒÂ§Ã„Â±klama', 'aciklama', 'desc', 'description') || '').trim();
 
             if (fmt === 'utm') {
-                const Y = parseFloat(find('y', 'e', 'east', 'easting', 'doðu', 'dogu', 'saða', 'saga'));
-                const X = parseFloat(find('x', 'n', 'north', 'northing', 'kuzey', 'yukarý', 'yukari'));
+                let yVal = find('y', 'e', 'east', 'easting', 'doÃ„Å¸u', 'dogu', 'saÃ„Å¸a', 'saga');
+                if (yVal === undefined) yVal = getVal(1);
+
+                let xVal = find('x', 'n', 'north', 'northing', 'kuzey', 'yukarÃ„Â±', 'yukari');
+                if (xVal === undefined) xVal = getVal(2);
+                
+                const Y = parseFloat(yVal);
+                const X = parseFloat(xVal);
+
                 let zone = parseInt(zoneInput ? zoneInput.value : 0) || parseInt(find('zone', 'zon', 'dilim')) || 0;
                 if (!zone && !isNaN(Y)) zone = autoZoneFromE(Y);
                 const datum = datumSel ? datumSel.value : 'ed50';
@@ -5900,8 +5916,15 @@ function onLocationError(err) {
                     parsedRows.push({ lat, lng, label, origY: Y, origX: X, origZ: Z, zone, fmt, note: Note });
                 }
             } else {
-                lat = parseFloat(find('lat', 'latitude', 'enlem', 'y'));
-                lng = parseFloat(find('lon', 'lng', 'longitude', 'boylam', 'x'));
+                let latVal = find('lat', 'latitude', 'enlem', 'y');
+                if (latVal === undefined) latVal = getVal(1);
+
+                let lngVal = find('lon', 'lng', 'longitude', 'boylam', 'x');
+                if (lngVal === undefined) lngVal = getVal(2);
+
+                lat = parseFloat(latVal);
+                lng = parseFloat(lngVal);
+
                 if (!isNaN(lat) && !isNaN(lng)) {
                     parsedRows.push({ lat, lng, label, origY: lat, origX: lng, origZ: Z, zone: 0, fmt, note: Note });
                 }
@@ -5936,7 +5959,7 @@ function onLocationError(err) {
 
 
 // -------------------------------------------------------
-// addCoordLayer — Creates a GeoJSON point layer on the map
+// addCoordLayer ï¿½ Creates a GeoJSON point layer on the map
 // -------------------------------------------------------
 function addCoordLayer(points, name) {
     if (!map || !points || points.length === 0) return;
