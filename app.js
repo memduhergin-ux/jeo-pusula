@@ -1985,6 +1985,8 @@ if (document.getElementById('btn-modal-save')) {
 
             recordModal.classList.remove('active');
             isSavingLayer = false;
+            isMeasuring = false; // Reset map interaction state
+            updateMeasureModeUI();
             return;
         }
 
@@ -4193,6 +4195,41 @@ function addExternalLayer(name, geojson) {
                         }
                     });
                 }
+
+                // v1453-99F: Permanent Segment Labels for Polygons and LineStrings
+                if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
+                    let latlngs = layer.getLatLngs();
+                    if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
+                    if (Array.isArray(latlngs) && latlngs.length > 1) {
+                        for (let i = 0; i < latlngs.length - 1; i++) {
+                            const p1 = latlngs[i];
+                            const p2 = latlngs[i + 1];
+                            const dist = map.distance(p1, p2);
+                            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+                            const point1 = map.latLngToContainerPoint(p1);
+                            const point2 = map.latLngToContainerPoint(p2);
+                            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+                            if (angle > 90 || angle < -90) angle += 180;
+
+
+                            const lab = L.marker(mid, {
+                                icon: L.divIcon({
+                                    className: 'segment-label-container',
+                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                                    iconSize: [1, 1],
+                                    iconAnchor: [0, 0]
+                                }),
+                                interactive: false
+                            });
+
+                            // v1453-99F: Store in feature to collect later
+                            if (!feature._segmentLabels) feature._segmentLabels = [];
+                            feature._segmentLabels.push(lab);
+                            lab.addTo(map);
+                        }
+                    }
+                }
+
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {
                     if (feature.properties.name) {
@@ -4288,7 +4325,7 @@ function addExternalLayer(name, geojson) {
                     }
                 });
             }
-        }).addTo(map);
+        });
 
         const layerObj = {
             id: layerIdCounter++,
@@ -4300,8 +4337,18 @@ function addExternalLayer(name, geojson) {
             pointsVisible: true,
             areasVisible: true,
             labelsVisible: true,
+            segmentLabels: [], // Array to hold L.marker labels
             _jeoElements: layerElements // v1453-15: Store discovered elements
         };
+
+        // v1453-99F: Collect all attached segment labels from features into layerObj
+        layer.eachLayer(l => {
+            if (l.feature && l.feature._segmentLabels) {
+                layerObj.segmentLabels.push(...l.feature._segmentLabels);
+            }
+        });
+
+        layer.addTo(map);
         externalLayers.push(layerObj);
 
         // Zoom to layer
@@ -4439,6 +4486,18 @@ function toggleLayerLabels(id, showLabels) {
             }
         }
     });
+
+    // v1453-99F: Toggle segment labels (distances)
+    if (l.segmentLabels && Array.isArray(l.segmentLabels)) {
+        l.segmentLabels.forEach(lab => {
+            if (showLabels && l.visible) {
+                if (!map.hasLayer(lab)) lab.addTo(map);
+            } else {
+                if (map.hasLayer(lab)) map.removeLayer(lab);
+            }
+        });
+    }
+
     saveExternalLayers();
 }
 
@@ -4451,8 +4510,20 @@ function toggleLayerVisibility(id, isVisible) {
         // Reapply sub-layer visibility based on their individual toggles
         toggleLayerPoints(id, l.pointsVisible);
         toggleLayerAreas(id, l.areasVisible);
+        // v1453-99F: Restore segment labels if labels are set to visible
+        if (l.labelsVisible && l.segmentLabels) {
+            l.segmentLabels.forEach(lab => {
+                if (!map.hasLayer(lab)) lab.addTo(map);
+            });
+        }
     } else {
         map.removeLayer(l.layer);
+        // v1453-99F: Hide segment labels when main layer is hidden
+        if (l.segmentLabels) {
+            l.segmentLabels.forEach(lab => {
+                if (map.hasLayer(lab)) map.removeLayer(lab);
+            });
+        }
     }
     saveExternalLayers();
     // No need to re-render list, just update the internal state
@@ -4506,21 +4577,29 @@ function toggleLayerAreas(id, showAreas) {
 }
 
 function removeLayer(id) {
-    const index = externalLayers.findIndex(x => x.id === id);
-    if (index === -1) return;
-    const l = externalLayers[index];
+    if (confirm("Silmek istediğinize emin misiniz?")) {
+        const index = externalLayers.findIndex(x => x.id === id);
+        if (index > -1) {
+            // Remove segment labels from map
+            if (externalLayers[index].segmentLabels) {
+                externalLayers[index].segmentLabels.forEach(lab => map.removeLayer(lab));
+            }
+            // v545: Clean up flat marker array
+            externalLayers[index].layer.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    allKmlMarkers = allKmlMarkers.filter(m => m !== layer);
+                }
+            });
 
-    // v545: Clean up flat marker array
-    l.layer.eachLayer(layer => {
-        if (layer instanceof L.Marker) {
-            allKmlMarkers = allKmlMarkers.filter(m => m !== layer);
+            map.removeLayer(externalLayers[index].layer);
+            externalLayers.splice(index, 1);
+            saveExternalLayers();
+            renderLayerList();
+
+            // v1453-15: Trigger recalculation via a dummy point deletion to prune the dictionary
+            buildAutocompleters();
         }
-    });
-
-    if (map) map.removeLayer(l.layer);
-    externalLayers.splice(index, 1);
-    saveExternalLayers();
-    renderLayerList();
+    }
 }
 
 async function saveExternalLayers() {
@@ -4808,10 +4887,10 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3, renderer: L.svg(), interactive: true };
+        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, renderer: L.svg(), interactive: true };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4, renderer: L.svg(), interactive: true }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, renderer: L.svg(), interactive: true }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
