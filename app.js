@@ -4074,6 +4074,57 @@ function initGridListeners() {
         newClear.addEventListener('click', (e) => window.clearGridLayer(e));
     }
 
+    // v1453-99F: Save Active Grid as geoJSON Layer
+    const btnGridSave = document.getElementById('btn-grid-save');
+    if (btnGridSave) {
+        const newSave = btnGridSave.cloneNode(true);
+        btnGridSave.parentNode.replaceChild(newSave, btnGridSave);
+        newSave.addEventListener('click', (e) => {
+            if (!currentGridLayer) {
+                showToast("Aktif bir ızgara yok! (No active grid)", 2000);
+                return;
+            }
+
+            // Extract latlngs from the grid polyline
+            let gridLatLngs = [];
+            currentGridLayer.eachLayer(layer => {
+                if (layer instanceof L.Polyline) {
+                    gridLatLngs = layer.getLatLngs();
+                }
+            });
+
+            if (!gridLatLngs || gridLatLngs.length === 0) return;
+
+            // Convert Leaflet LatLngs to GeoJSON format [lng, lat]
+            // Leaflet Polyline latlngs for grid are nested: [ [LatLng, LatLng...], [LatLng, LatLng...] ]
+            const geoJsonCoords = gridLatLngs.map(segment => {
+                return segment.map(pt => [pt.lng, pt.lat]);
+            });
+
+            const geojson = {
+                type: "FeatureCollection",
+                features: [
+                    {
+                        type: "Feature",
+                        properties: {
+                            name: `Grid ${activeGridInterval}m`,
+                            description: "Saved Grid Overlay",
+                            color: activeGridColor,
+                            weight: 2
+                        },
+                        geometry: {
+                            type: "MultiLineString",
+                            coordinates: geoJsonCoords
+                        }
+                    }
+                ]
+            };
+
+            addExternalLayer(`Grid ${activeGridInterval}m`, geojson);
+            showToast("Grid Layer Saved / Izgara Kaydedildi", 2000);
+        });
+    }
+
     document.querySelectorAll('.grid-opt-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const target = e.currentTarget;
@@ -4198,8 +4249,17 @@ function addExternalLayer(name, geojson) {
 
                 // v1453-99F: Permanent Segment Labels for Polygons and LineStrings
                 if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
-                    let latlngs = layer.getLatLngs();
-                    if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
+                    let rawLatLngs = layer.getLatLngs();
+                    let latlngs = [];
+
+                    if (feature.geometry.type === 'Polygon') {
+                        // Polygons return [[LatLng, LatLng...]] or deeper nesting
+                        latlngs = Array.isArray(rawLatLngs[0]) ? (Array.isArray(rawLatLngs[0][0]) ? rawLatLngs[0][0] : rawLatLngs[0]) : rawLatLngs;
+                    } else if (feature.geometry.type === 'LineString') {
+                        // Polyline returns [LatLng, LatLng...] or nested depending on Multi
+                        latlngs = Array.isArray(rawLatLngs[0]) ? rawLatLngs[0] : rawLatLngs;
+                    }
+
                     if (Array.isArray(latlngs) && latlngs.length > 1) {
                         for (let i = 0; i < latlngs.length - 1; i++) {
                             const p1 = latlngs[i];
@@ -4210,7 +4270,6 @@ function addExternalLayer(name, geojson) {
                             const point2 = map.latLngToContainerPoint(p2);
                             let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
                             if (angle > 90 || angle < -90) angle += 180;
-
 
                             const lab = L.marker(mid, {
                                 icon: L.divIcon({
