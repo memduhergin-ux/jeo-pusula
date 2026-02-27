@@ -1919,40 +1919,96 @@ startGeolocationWatch();
 // Save & Modal
 // Save Button Removed - Auto Save Logic Only
 
+// Flag for intercepting modal save for External Layers instead of point records
+let isSavingLayer = false;
+
 if (document.getElementById('btn-modal-cancel')) {
-    document.getElementById('btn-modal-cancel').addEventListener('click', () => recordModal.classList.remove('active'));
+    document.getElementById('btn-modal-cancel').addEventListener('click', () => {
+        recordModal.classList.remove('active');
+        isSavingLayer = false;
+    });
 }
 
 if (document.getElementById('btn-modal-save')) {
     document.getElementById('btn-modal-save').addEventListener('click', () => {
-        // ID is internal only now, Label is user-facing
         const label = document.getElementById('rec-label').value;
+        const note = document.getElementById('rec-note').value;
+
+        // If we are saving a drawing/measurement as an external layer instead of a point
+        if (isSavingLayer) {
+            if (!label) {
+                alert("Please enter a name for the shape.");
+                return;
+            }
+
+            let geojson = {
+                type: "FeatureCollection",
+                name: label,
+                crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+                features: []
+            };
+
+            let feature = {
+                type: "Feature",
+                properties: {
+                    "name": label,
+                    "note": note
+                },
+                geometry: {
+                    type: isPolygon ? "Polygon" : "LineString",
+                    coordinates: []
+                }
+            };
+
+            if (isPolygon) {
+                let ring = measurePoints.map(p => [p.lng, p.lat]);
+                if (ring.length > 0) ring.push([measurePoints[0].lng, measurePoints[0].lat]);
+                feature.geometry.coordinates = [ring];
+            } else {
+                feature.geometry.coordinates = measurePoints.map(p => [p.lng, p.lat]);
+            }
+
+            geojson.features.push(feature);
+
+            addExternalLayer(label, geojson);
+
+            clearMeasurement();
+            renderLayerList();
+
+            const popup = document.createElement('div');
+            popup.className = 'toast show';
+            popup.textContent = `Layer "${label}" saved to Map Layers!`;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 3000);
+
+            recordModal.classList.remove('active');
+            isSavingLayer = false;
+            return;
+        }
+
+        // --- Standard Point Saving Logic ---
         const y = document.getElementById('rec-y').value;
         const x = document.getElementById('rec-x').value;
         const z = document.getElementById('rec-z').value;
         const strikeLine = document.getElementById('rec-strike').value;
         const dip = document.getElementById('rec-dip').value;
-        const note = document.getElementById('rec-note').value;
 
         if (editingRecordId !== null) {
             // Update existing
             const index = records.findIndex(r => r.id === editingRecordId);
             if (index !== -1) {
-                // Keep the original creation time when editing
                 records[index] = { ...records[index], label, strike: strikeLine, dip, note, y, x, z };
             }
         } else {
             // Create new
-            const id = nextId; // Use current nextId global
+            const id = nextId;
 
-            // If we have pending coords (from measurement or pin drop), use them.
-            // Otherwise use live GPS.
             const recordLat = pendingLat !== null ? pendingLat : currentCoords.lat;
             const recordLon = pendingLon !== null ? pendingLon : currentCoords.lon;
 
             const newRecord = {
                 id: id,
-                label: label || id.toString(), // Fallback
+                label: label || id.toString(),
                 y: y,
                 x: x,
                 z: z,
@@ -1961,18 +2017,16 @@ if (document.getElementById('btn-modal-save')) {
                 strike: strikeLine,
                 dip: dip,
                 note: note,
-                time: new Date().toLocaleString('en-GB'), // Added Time (Eng format)
-                geom: pendingGeometry, // Saved shape
+                time: new Date().toLocaleString('en-GB'),
+                geom: pendingGeometry,
                 geomType: pendingGeometryType
             };
 
             records.push(newRecord);
-            // Reset pending
             pendingGeometry = null;
             pendingGeometryType = null;
             pendingLat = null;
             pendingLon = null;
-            // Only increment ID if we used the global counter for a new record
             nextId++;
             localStorage.setItem('jeoNextId', nextId);
         }
@@ -1980,11 +2034,11 @@ if (document.getElementById('btn-modal-save')) {
         saveRecords();
         renderRecords();
         updateMapMarkers(true);
-        if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
+        if (isHeatmapActive) updateHeatmap();
         recordModal.classList.remove('active');
         editingRecordId = null;
 
-        // Clear measurement state if we just saved one
+        // Clear measurement state if we happened to just save one normally previously
         if (measurePoints.length > 0) {
             clearMeasurement();
             isMeasuring = false;
@@ -4856,57 +4910,24 @@ function calculateAndDisplayMeasurement() {
 function saveMeasurement() {
     if (measurePoints.length === 0) return;
 
-    let layerName = prompt("Enter a name for this shape/measurement:", isPolygon ? "New Polygon" : "New Line");
-    if (!layerName) return; // User cancelled
+    isSavingLayer = true;
 
-    let geojson = {
-        type: "FeatureCollection",
-        name: layerName,
-        crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-        features: []
-    };
+    // Clear/prepare the record modal fields
+    document.getElementById('rec-label').value = "";
+    document.getElementById('rec-note').value = measureText.innerText.replace(/\n/g, ", ");
 
-    let feature = {
-        type: "Feature",
-        properties: {
-            "name": layerName,
-            "note": measureText.innerText.replace(/\n/g, ", ")
-        },
-        geometry: {
-            type: isPolygon ? "Polygon" : "LineString",
-            coordinates: []
-        }
-    };
+    // Hide irrelevant fields since we are just saving a shape
+    document.getElementById('rec-y').value = "";
+    document.getElementById('rec-x').value = "";
+    document.getElementById('rec-z').value = "";
+    document.getElementById('rec-strike').value = "";
+    document.getElementById('rec-dip').value = "";
 
-    if (isPolygon) {
-        // GeoJSON Polygon coordinates are arrays of linear rings: [[[lng,lat], [lng,lat], ...]]
-        // The first and last positions must be equivalent
-        let ring = measurePoints.map(p => [p.lng, p.lat]);
-        ring.push([measurePoints[0].lng, measurePoints[0].lat]); // Close the ring explicitly if not already
-        feature.geometry.coordinates = [ring];
-    } else {
-        // GeoJSON LineString: [[lng,lat], [lng,lat], ...]
-        feature.geometry.coordinates = measurePoints.map(p => [p.lng, p.lat]);
-    }
+    // Set modal text temporarily to guide the user
+    document.getElementById('rec-label').placeholder = isPolygon ? "New Polygon Name..." : "New Line Name...";
 
-    geojson.features.push(feature);
-
-    const layerId = Date.now();
-    addExternalLayer({
-        id: layerId,
-        name: layerName,
-        data: geojson
-    });
-
-    clearMeasurement();
-    renderLayerList();
-
-    // Add success notification
-    const popup = document.createElement('div');
-    popup.className = 'toast show';
-    popup.textContent = `Layer "${layerName}" saved to Map Layers!`;
-    document.body.appendChild(popup);
-    setTimeout(() => popup.remove(), 3000);
+    // Open the existing Modal
+    recordModal.classList.add('active');
 }
 
 function updateMeasurement(latlng) {
