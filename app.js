@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-22F'; // Final Data Loss Fix
+const APP_VERSION = 'v1453-4-23F'; // Total Data Resilience Fix 🧭🔒
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2346,6 +2346,43 @@ function initMap() {
     loadExternalLayers(true); // v734: Silent load on startup
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
+    // v1453-4-23F: Auto-Restore Active States
+    setTimeout(() => {
+        // 1. Restore Measurement
+        const savedPoints = localStorage.getItem('jeoActiveMeasurePoints');
+        if (savedPoints) {
+            try {
+                measurePoints = JSON.parse(savedPoints).map(p => L.latLng(p.lat, p.lng));
+                isPolygon = localStorage.getItem('jeoActiveMeasureIsPoly') === 'true';
+                isMeasuring = true;
+                updateMeasureModeUI();
+                
+                // Add markers back
+                measurePoints.forEach(p => {
+                    const m = L.circleMarker(p, { radius: 6, color: '#ffeb3b', fillOpacity: 0.8 }).addTo(map);
+                    measureMarkers.push(m);
+                });
+                redrawMeasurement();
+            } catch(e) { console.error("Restore measurement failed", e); }
+        }
+
+        // 2. Restore Grid
+        const savedGrid = localStorage.getItem('jeoActiveGridParams');
+        if (savedGrid) {
+            try {
+                const params = JSON.parse(savedGrid);
+                activeGridInterval = params.interval;
+                activeGridColor = params.color;
+                // Re-find the target layer if it was a saved layer
+                let target = null;
+                externalLayers.forEach(l => {
+                    if (l.name === params.targetName) target = l.layer;
+                });
+                if (target) createAreaGrid(target, activeGridInterval, activeGridColor, true);
+            } catch(e) { console.error("Restore grid failed", e); }
+        }
+    }, 500);
+
 
 
     // v563: Restore UI States for Heatmap/Grid/Filter/Radius on Startup
@@ -3955,6 +3992,12 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
     currentGridLayer = gridGroup;
     currentGridLayer.addTo(map);
 
+    // v1453-4-23F: Persist Grid State
+    if (polygon.name || (polygon.feature && polygon.feature.properties && polygon.feature.properties.name)) {
+        const name = polygon.name || polygon.feature.properties.name;
+        localStorage.setItem('jeoActiveGridParams', JSON.stringify({ interval, color, targetName: name }));
+    }
+
     showToast(`True North Grid: ${interval}m`, 2000);
 }
 
@@ -4041,6 +4084,7 @@ window.clearGridLayer = function (e) {
     // 3. Reset UI states
     document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
     activeGridInterval = null;
+    localStorage.removeItem('jeoActiveGridParams'); // v1453-4-23F
     showToast("Grid Cleared / Izgara Temizlendi", 1500);
 };
 
@@ -4908,6 +4952,8 @@ function clearMeasurement() {
     activeMeasureLabels = [];
 
     measureText.textContent = "0 m";
+    localStorage.removeItem('jeoActiveMeasurePoints'); // v1453-4-23F
+    localStorage.removeItem('jeoActiveMeasureIsPoly'); // v1453-4-23F
     updateMeasureButtons();
 }
 
