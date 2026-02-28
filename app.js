@@ -2228,7 +2228,7 @@ function renderRecords(filter = '') {
             <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(r.note)}</td>
             <td class="${isRecordsLocked ? 'locked-hidden' : ''}">
                 <div class="action-menu">
-                    <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">?</button>
+                    <button class="action-btn" onclick="toggleActionMenu(${r.id}, event)">⋮</button>
                     <div id="dropdown-${r.id}" class="dropdown-content">
                         <button class="btn-edit-row" data-id="${r.id}" onclick="toggleActionMenu(${r.id}, event)">✏️ Edit</button>
                         <button onclick="exportSingleRecordKML(${r.id})">📤 Share KML</button>
@@ -2521,15 +2521,16 @@ function initMap() {
                     // Check Records first
                     if (records) {
                         records.forEach(r => {
-                        if (r.label === params.targetName || r.id === params.targetName) {
-                            // Find the leaflet layer in markerGroup
-                            markerGroup.eachLayer(l => {
-                                if (l.getLatLngs && (l instanceof L.Polygon || l instanceof L.Polyline)) {
-                                    target = l;
-                                }
-                            });
-                        }
-                    });
+                            if (r.label === params.targetName || r.id === params.targetName) {
+                                // Find the leaflet layer in markerGroup
+                                markerGroup.eachLayer(l => {
+                                    if (l.getLatLngs && (l instanceof L.Polygon || l instanceof L.Polyline)) {
+                                        target = l;
+                                    }
+                                });
+                            }
+                        });
+                    }
 
                     // Check External Layers
                     if (!target) {
@@ -3056,7 +3057,8 @@ function updateMapMarkers(shouldFitBounds = false) {
             poly.bindPopup(`<b>${t.name}</b><br>${t.time}<br>${formatScaleDist(calculateTrackLength(t.path))}`);
             trackLayers[t.id] = poly;
         }
-    });
+        });
+    }
 
     // Toggle active measurement labels
     if (activeMeasureLabels && activeMeasureLabels.length > 0) {
@@ -5328,7 +5330,8 @@ function updateMeasurement(latlng) {
                 snappedLatLng = L.latLng(r.lat, r.lon);
             }
         }
-    });
+        });
+    }
 
     // 2. Check Imported Markers
     if (typeof allKmlMarkers !== 'undefined') {
