@@ -208,34 +208,47 @@ function hideLoading() {
 
 // App Initialization & Splash Screen
 async function initApp() {
-    // 0. v1453-4-25F: Data Resilience Migration & Load
-    await migrateToIndexedDB();
-    records = await dbLoadRecords() || [];
-    nextId = await dbLoadMeta('jeoNextId') || 1;
-    jeoTracks = await dbLoadMeta('jeoTracks') || [];
-    trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
-    
-    isDataLoaded = true; // Signal that it's safe to save now
-    console.log("Resilience: Data loaded safely, save guard disabled.");
-    
-    // Refresh UI after data load
-    renderRecords();
-    if (typeof updateMapMarkers === 'function') updateMapMarkers();
-
-    // 1. Remove Splash Screen
-    setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
-        if (splash) {
-            splash.classList.add('hidden');
-            setTimeout(() => splash.remove(), 1000);
-        }
-    }, 1500); // v1453-46F: Reduced to 1.5s for faster experience
-
-    // 2. Request Wake Lock (Screen On)
     try {
-        requestWakeLock();
-    } catch (e) {
-        console.warn('Wake Lock request failed', e);
+        console.log("Resilience: initApp starting...");
+        updateAppVersionDisplay(); // Ensure version is updated early
+
+        // 0. v1453-4-25F: Data Resilience Migration & Load
+        await migrateToIndexedDB();
+        records = await dbLoadRecords() || [];
+        nextId = await dbLoadMeta('jeoNextId') || 1;
+        jeoTracks = await dbLoadMeta('jeoTracks') || [];
+        trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
+        
+        isDataLoaded = true; // Signal that it's safe to save now
+        console.log("Resilience: Data loaded safely, save guard disabled.");
+        
+        // Refresh UI after data load
+        renderRecords();
+        if (typeof updateMapMarkers === 'function') updateMapMarkers();
+
+    } catch (err) {
+        console.error("FATAL: initApp failed", err);
+        showToast("Error loading data. Using temporary storage.", 5000);
+        // Fallback: Initialize with empty arrays to prevent crashes
+        if (records === null) records = [];
+        if (jeoTracks === null) jeoTracks = [];
+        isDataLoaded = true; // Allow new saves to local if needed, or keep locked?
+    } finally {
+        // 1. Remove Splash Screen (Always do this)
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.classList.add('hidden');
+                setTimeout(() => splash.remove(), 1000);
+            }
+        }, 1500); 
+
+        // 2. Request Wake Lock (Screen On)
+        try {
+            if (typeof requestWakeLock === 'function') requestWakeLock();
+        } catch (e) {
+            console.warn('Wake Lock request failed', e);
+        }
     }
 }
 
