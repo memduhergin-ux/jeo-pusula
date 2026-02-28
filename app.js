@@ -5317,7 +5317,7 @@ function saveMeasurement() {
     recordModal.classList.add('active');
 }
 
-function updateMeasurement(latlng) {
+async function updateMeasurement(latlng) {
     if (!map) return;
 
     // v1453-99F: Global Snapping Logic
@@ -5378,13 +5378,11 @@ function updateMeasurement(latlng) {
         // v1453-SNAP: Increased tolerance from 40 to 60 for easier closing on mobile
         if (pixelDist < 60) {
             latlng = startPoint; // Snap exactly to start point visually
-            JeoConfirm("Do you want to close the polygon? (Area will be calculated)").then(confirmed => {
-                if (confirmed) {
-                    measurePoints.push(measurePoints[0]);
-                    isPolygon = true;
-                    redrawMeasurement();
-                }
-            });
+            if (await JeoConfirm("Do you want to close the polygon? (Area will be calculated)")) {
+                measurePoints.push(measurePoints[0]);
+                isPolygon = true;
+                redrawMeasurement();
+            }
             return;
         }
     }
@@ -6068,9 +6066,8 @@ if (document.getElementById('restore-file-input')) {
 
                     // 4. RESTORE SETTINGS (Optional)
                     if (data.settings) {
-                            manualDeclination = data.settings.declination;
-                            await dbSaveMeta('jeoDeclination', manualDeclination);
-                        }
+                        manualDeclination = data.settings.declination;
+                        await dbSaveMeta('jeoDeclination', manualDeclination);
                     }
 
                     // Save all

@@ -32,6 +32,18 @@
 </head>
 
 <body>
+    <!-- Custom JeoCompass Modals (Moved to top for early error catching v1453-4-26F) -->
+    <div id="jeo-modal-overlay" class="jeo-modal-overlay">
+        <div class="jeo-modal">
+            <div id="jeo-modal-header" class="jeo-modal-header">JeoCompass</div>
+            <div id="jeo-modal-body" class="jeo-modal-body"></div>
+            <div class="jeo-modal-footer">
+                <button id="jeo-modal-cancel" class="jeo-modal-btn secondary" style="display: none;">CANCEL</button>
+                <button id="jeo-modal-ok" class="jeo-modal-btn primary">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay (v543) -->
     <div id="loading-overlay"
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
@@ -869,11 +881,22 @@
                 const body = document.getElementById('jeo-modal-body');
                 const okBtn = document.getElementById('jeo-modal-ok');
                 const cancelBtn = document.getElementById('jeo-modal-cancel');
-                if (!overlay || !body) { alert(message); return resolve(); }
+                
+                // Fallback to native if DOM not ready (extremely early errors)
+                if (!overlay || !body) { 
+                    alert("JeoCompass Message:\n" + message); 
+                    return resolve(); 
+                }
+                
                 body.innerText = message;
-                cancelBtn.style.display = 'none';
+                if (cancelBtn) cancelBtn.style.display = 'none';
                 overlay.classList.add('show');
-                const onOk = () => { overlay.classList.remove('show'); okBtn.removeEventListener('click', onOk); resolve(); };
+                
+                const onOk = () => { 
+                    overlay.classList.remove('show'); 
+                    okBtn.removeEventListener('click', onOk); 
+                    resolve(); 
+                };
                 okBtn.addEventListener('click', onOk);
             });
         };
@@ -884,13 +907,31 @@
                 const body = document.getElementById('jeo-modal-body');
                 const okBtn = document.getElementById('jeo-modal-ok');
                 const cancelBtn = document.getElementById('jeo-modal-cancel');
-                if (!overlay || !body) { return resolve(confirm(message)); }
+                
+                // Fallback to native if DOM not ready
+                if (!overlay || !body) { 
+                    return resolve(confirm("JeoCompass:\n" + message)); 
+                }
+                
                 body.innerText = message;
-                cancelBtn.style.display = 'block';
+                if (cancelBtn) cancelBtn.style.display = 'block';
                 overlay.classList.add('show');
-                const onOk = () => { overlay.classList.remove('show'); cleanup(); resolve(true); };
-                const onCancel = () => { overlay.classList.remove('show'); cleanup(); resolve(false); };
-                const cleanup = () => { okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); };
+                
+                const onOk = () => { 
+                    overlay.classList.remove('show'); 
+                    cleanup(); 
+                    resolve(true); 
+                };
+                const onCancel = () => { 
+                    overlay.classList.remove('show'); 
+                    cleanup(); 
+                    resolve(false); 
+                };
+                const cleanup = () => { 
+                    okBtn.removeEventListener('click', onOk); 
+                    cancelBtn.removeEventListener('click', onCancel); 
+                };
+                
                 okBtn.addEventListener('click', onOk);
                 cancelBtn.addEventListener('click', onCancel);
             });
@@ -979,17 +1020,6 @@
             }
         }
     </script>
-    <!-- Custom JeoCompass Modals -->
-    <div id="jeo-modal-overlay" class="jeo-modal-overlay">
-        <div class="jeo-modal">
-            <div id="jeo-modal-header" class="jeo-modal-header">JeoCompass</div>
-            <div id="jeo-modal-body" class="jeo-modal-body"></div>
-            <div class="jeo-modal-footer">
-                <button id="jeo-modal-cancel" class="jeo-modal-btn secondary" style="display: none;">CANCEL</button>
-                <button id="jeo-modal-ok" class="jeo-modal-btn primary">OK</button>
-            </div>
-        </div>
-    </div>
 
 </body>
 
