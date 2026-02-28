@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-17F'; // Reverted to English
+const APP_VERSION = 'v1453-4-18F'; // Reverted Alerts to English
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -3709,7 +3709,7 @@ if (fileImportInput) {
             fileImportInput.value = '';
             return;
         }
-        if (sizeMB > 10 && !await JeoConfirm(`Dosya boyutu büyük (${sizeMB.toFixed(1)}MB). İşleme sırasında telefonunuz kısa süreli donabilir. Devam etmek istiyor musunuz?`)) {
+        if (sizeMB > 10 && !await JeoConfirm(`File size is large (${sizeMB.toFixed(1)}MB). Your phone may freeze briefly during processing. Do you want to proceed?`)) {
             fileImportInput.value = '';
             return;
         }
@@ -4639,7 +4639,7 @@ function toggleLayerAreas(id, showAreas) {
 }
 
 async function removeLayer(id) {
-    if (await JeoConfirm("Silmek istediğinize emin misiniz?")) {
+    if (await JeoConfirm("Are you sure you want to delete this?")) {
         const index = externalLayers.findIndex(x => x.id === id);
         if (index > -1) {
             // Remove segment labels from map
@@ -5142,7 +5142,7 @@ function updateMeasurement(latlng) {
         // v1453-SNAP: Increased tolerance from 40 to 60 for easier closing on mobile
         if (pixelDist < 60) {
             latlng = startPoint; // Snap exactly to start point visually
-            JeoConfirm("Poligonu kapatmak istiyor musunuz? (Alan hesaplanacak)").then(confirmed => {
+            JeoConfirm("Do you want to close the polygon? (Area will be calculated)").then(confirmed => {
                 if (confirmed) {
                     measurePoints.push(measurePoints[0]);
                     isPolygon = true;

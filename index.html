@@ -10,10 +10,10 @@
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
     <meta name="description"
         content="Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.">
-    <title>JeoCompass v1453-4-17F</title>
+    <title>JeoCompass v1453-4-18F</title>
     <!-- JeoCompass Version Managed by JS -->
-    <meta name="version" content="v1453-4-17F">
-    <meta name="jeo-version" content="v1453-4-17F">
+    <meta name="version" content="v1453-4-18F">
+    <meta name="jeo-version" content="v1453-4-18F">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -908,7 +908,7 @@
                 localStorage.setItem(lastCrashKey, now);
 
                 if (count >= 3) {
-                if (await JeoConfirm("Uygulama arka arkaya çökmeler yaşadı. Kayıtlı katmanları sıfırlayarak 'Güvenli Mod'da başlatmak ister misiniz?\n\n(The app crashed repeatedly. Start in Safe Mode by clearing layers?)")) {
+                if (await JeoConfirm("The app crashed repeatedly. Start in Safe Mode by clearing layers?")) {
                         localStorage.setItem(crashKey, 0);
                         indexedDB.deleteDatabase('JeoCompassDB');
                         location.reload();
@@ -917,7 +917,7 @@
                 }
             }
 
-            JeoAlert("Bir Hata Oluştu (An Error Occurred):\n" + msg + "\nSatır (Line): " + lineNo + (columnNo ? ":" + columnNo : ""));
+            JeoAlert("An Error Occurred:\n" + msg + "\nLine: " + lineNo + (columnNo ? ":" + columnNo : ""));
             return false;
         };
 
@@ -928,7 +928,7 @@
                 console.log("ServiceWorker fetch error suppressed");
                 return;
             }
-            JeoAlert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
+            JeoAlert("Unexpected Error (Async):\n" + (event.reason ? event.reason.message || event.reason : "Unknown error"));
         };
 
         window.bootTime = Date.now();
@@ -985,8 +985,8 @@
             <div id="jeo-modal-header" class="jeo-modal-header">JeoCompass</div>
             <div id="jeo-modal-body" class="jeo-modal-body"></div>
             <div class="jeo-modal-footer">
-                <button id="jeo-modal-cancel" class="jeo-modal-btn secondary" style="display: none;">İPTAL</button>
-                <button id="jeo-modal-ok" class="jeo-modal-btn primary">TAMAM</button>
+                <button id="jeo-modal-cancel" class="jeo-modal-btn secondary" style="display: none;">CANCEL</button>
+                <button id="jeo-modal-ok" class="jeo-modal-btn primary">OK</button>
             </div>
         </div>
     </div>
