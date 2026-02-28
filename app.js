@@ -121,7 +121,7 @@ async function dbLoadMeta(key) {
 }
 
 async function migrateToIndexedDB() {
-    const isMigrated = localStorage.getItem('jeoIDBMigrated_v25F') === 'true';
+    const isMigrated = localStorage.getItem('jeoIDBMigrated_v1453_4_26F') === 'true';
     if (isMigrated) return;
 
     try {
@@ -152,8 +152,15 @@ async function migrateToIndexedDB() {
         const gridColor = localStorage.getItem('jeoGridColor');
         if (gridColor) await dbSaveMeta('jeoGridColor', gridColor);
 
+        // 5. Tracks
+        const oldTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
+        if (oldTracks.length > 0) await dbSaveMeta('jeoTracks', oldTracks);
+
+        const oldTrackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
+        await dbSaveMeta('trackIdCounter', oldTrackIdCounter);
+
         // Mark as migrated
-        localStorage.setItem('jeoIDBMigrated_v25F', 'true');
+        localStorage.setItem('jeoIDBMigrated_v1453_4_26F', 'true');
         console.log("Resilience: Full migration completed successfully.");
     } catch (e) {
         console.error("Resilience: Migration failed", e);
@@ -232,13 +239,9 @@ async function initApp() {
         nextId = await dbLoadMeta('jeoNextId') || 1;
         jeoTracks = await dbLoadMeta('jeoTracks') || [];
         trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
-
-        // v1453-4-26F: Load External Layers (Drawings) and Grid
+        isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
         await loadExternalLayers(true); // Silent load from IDB
         
-        const savedGridMode = await dbLoadMeta('jeoGridMode');
-        if (savedGridMode !== null) isGridMode = (savedGridMode === 'true');
-
         const savedGridInterval = await dbLoadMeta('jeoGridInterval');
         if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
 
@@ -1155,7 +1158,7 @@ const STATIONARY_THRESHOLD = 0.15;
 // Tracking State (v354)
 // Tracking State (v354)
 // v511: Robust initialization for tracking state
-let isTracking = true;
+let isTracking = localStorage.getItem('jeoIsTracking') === 'true'; // v1453-4-26F: Persisted across refresh
 try {
     const savedAutoRec = localStorage.getItem('jeoAutoTrackEnabled');
     if (savedAutoRec !== null) {
@@ -1188,7 +1191,7 @@ const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
 
 // Track Auto-Recording State (v442)
 let trackIdCounter = 1; // v1453-4-26F: Initialized as 1, loaded async
-const MAX_TRACKS = 20; // Maksimum izlek say�s�
+const MAX_TRACKS = 20; // Maksimum izlek says
 let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // v510: Default true (boolean)
 
 // Measurement State
@@ -1539,11 +1542,11 @@ function renderCoordinates() {
         coordContent.innerHTML = `
             <div class="coord-row">
                 <span class="data-label">Enlem</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}�</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lat.toFixed(6)}</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">Boylam</span>
-                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}�</span>
+                <span class="data-value" style="font-size: 1rem;">${currentCoords.lon.toFixed(6)}</span>
             </div>
             <div class="coord-row">
                 <span class="data-label">${activeAltLabel}</span>
@@ -1834,9 +1837,9 @@ if (btnSave) {
 
     btnSave.addEventListener('click', () => {
         if (lockStrike && lockDip) {
-            // v455: Capture exact text from displays ("ekranlar� kay�t edilir")
+            // v455: Capture exact text from displays ("ekranlar kayt edilir")
             const strikeVal = valStrike ? valStrike.textContent : formatStrike(displayedHeading);
-            const dipVal = valDip ? valDip.textContent : "0�";
+            const dipVal = valDip ? valDip.textContent : "0";
 
             const gpsAlt = currentCoords.baroAlt !== null ? currentCoords.baroAlt : currentCoords.alt;
             const bestAlt = onlineMyAlt !== null ? onlineMyAlt : gpsAlt;
@@ -2095,7 +2098,7 @@ if (document.getElementById('btn-modal-save')) {
                 features: []
             };
 
-            let feature = {
+            const feature = {
                 type: "Feature",
                 properties: {
                     "name": label,
@@ -2105,34 +2108,17 @@ if (document.getElementById('btn-modal-save')) {
                 },
                 geometry: {
                     type: isPolygon ? "Polygon" : "LineString",
-                    coordinates: []
+                    coordinates: isPolygon ? [measurePoints.map(p => [p.lng, p.lat]).concat([[measurePoints[0].lng, measurePoints[0].lat]])] : measurePoints.map(p => [p.lng, p.lat])
                 }
             };
-
-            if (isPolygon) {
-                let ring = measurePoints.map(p => [p.lng, p.lat]);
-                if (ring.length > 0) ring.push([measurePoints[0].lng, measurePoints[0].lat]);
-                feature.geometry.coordinates = [ring];
-            } else {
-                feature.geometry.coordinates = measurePoints.map(p => [p.lng, p.lat]);
-            }
-
             geojson.features.push(feature);
 
-            addExternalLayer(label, geojson);
-
-            clearMeasurement();
-            renderLayerList();
-
-            const popup = document.createElement('div');
-            popup.className = 'toast show';
-            popup.textContent = `Layer "${label}" saved to Map Layers!`;
-            document.body.appendChild(popup);
-            setTimeout(() => popup.remove(), 3000);
+            await addExternalLayer(label, geojson);
+            showToast(`Layer "${label}" saved to Map Layers!`, 3000);
 
             recordModal.classList.remove('active');
             isSavingLayer = false;
-            isMeasuring = false; // Reset map interaction state
+            isMeasuring = false; 
             updateMeasureModeUI();
             return;
         }
@@ -2149,11 +2135,11 @@ if (document.getElementById('btn-modal-save')) {
             const index = records.findIndex(r => r.id === editingRecordId);
             if (index !== -1) {
                 records[index] = { ...records[index], label, strike: strikeLine, dip, note, y, x, z };
+                await saveRecords();
             }
         } else {
             // Create new
             const id = nextId;
-
             const recordLat = pendingLat !== null ? pendingLat : currentCoords.lat;
             const recordLon = pendingLon !== null ? pendingLon : currentCoords.lon;
 
@@ -2174,6 +2160,7 @@ if (document.getElementById('btn-modal-save')) {
             };
 
             records.push(newRecord);
+            await saveRecords(); // Added missing await saveRecords()
             pendingGeometry = null;
             pendingGeometryType = null;
             pendingLat = null;
@@ -2293,7 +2280,7 @@ function initMap() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '� OpenStreetMap'
+        attribution: '&copy; OpenStreetMap'
     });
 
     // v1453-48F: Global Shared Canvas Renderer for High Performance KML
@@ -2304,7 +2291,7 @@ function initMap() {
     const osmHeatmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 19,
-        attribution: '� OpenStreetMap',
+        attribution: ' OpenStreetMap',
         className: 'osm-heatmap-filter'
     });
 
@@ -2312,21 +2299,21 @@ function initMap() {
         maxZoom: 25,
         maxNativeZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '� Google'
+        attribution: '&copy; Google'
     });
 
     const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 25,
         maxNativeZoom: 21, // Higher native zoom for satellite if available
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '� Google'
+        attribution: '&copy; Google'
     });
 
 
     const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: � OpenStreetMap contributors, SRTM | Map style: � OpenTopoMap (CC-BY-SA)'
+        attribution: 'Map data:  OpenStreetMap contributors, SRTM | Map style:  OpenTopoMap (CC-BY-SA)'
     });
 
     // v1453-58F: Grayscale Topo Map for Heatmap Contrast
@@ -2334,7 +2321,7 @@ function initMap() {
     const openTopoGray = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 25,
         maxNativeZoom: 17,
-        attribution: 'Map data: � OpenStreetMap contributors, SRTM | Map style: � OpenTopoMap (CC-BY-SA)',
+        attribution: 'Map data:  OpenStreetMap contributors, SRTM | Map style:  OpenTopoMap (CC-BY-SA)',
         className: 'grayscale-map-filter'
     });
 
@@ -2958,19 +2945,17 @@ function updateScaleValues() {
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
                         <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
-                            <div class="scale-body" style="display:flex; align-items:center; justify-content:center;">
-                                <div class="scale-row-wrapper" style="display:flex; align-items:center; gap:5px;">
-                                    <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
-                                        <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
-                                        <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
-                                    </div>
-                                    <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
-                                        <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
-                                        <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
-                                        <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
-                                    </div>
+                            <div class="scale-body" style="display:flex; flex-direction:column; align-items:center;">
+                                <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
+                                    <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
+                                    <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
                                 </div>
-                                <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:8px;">${unit}</span>
+                                <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
+                                    <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
+                                    <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
+                                    <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
+                                </div>
+                                <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:3px;">${unit}</span>
                             </div>
                             <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.2;">
                                 <div class="utm-row-line">
@@ -3518,7 +3503,7 @@ function updateTrack(lat, lon) {
 
 // updateLiveTrackVisibility removed from here as it is defined globally above
 
-function saveCurrentTrack() {
+async function saveCurrentTrack() {
     if (!isDataLoaded || !jeoTracks) {
         console.warn("Resilience: Prevented saveCurrentTrack before data load.");
         return;
@@ -3540,20 +3525,20 @@ function saveCurrentTrack() {
         length: calculateTrackLength(trackPath) // v466: Save length in meters
     };
 
-    // v456: FIFO: Eer 20 kayt varsa, en eskiyi sil (21. kayt 1.yi siler)
+    // v456: FIFO: Eger 20 kayit varsa, en eskiyi sil
     if (jeoTracks.length >= MAX_TRACKS) {
-        jeoTracks.shift(); // lk eleman (en eski) kar
+        jeoTracks.shift(); 
     }
 
     jeoTracks.push(newTrack);
-    dbSaveMeta('jeoTracks', jeoTracks);
-    dbSaveMeta('trackIdCounter', trackIdCounter);
+    await dbSaveMeta('jeoTracks', jeoTracks);
+    await dbSaveMeta('trackIdCounter', trackIdCounter);
 
-    // Canl izlei temizle
+    // Canlı izlei temizle
     trackPath = [];
-    trackStartTime = null; // v467: Reset start time
-    localStorage.removeItem('jeoTrackPath'); // Temizle
-    localStorage.removeItem('jeoTrackStartTime'); // Temizle
+    trackStartTime = null; 
+    localStorage.removeItem('jeoTrackPath');
+    localStorage.removeItem('jeoTrackStartTime');
     if (trackPolyline && map) {
         map.removeLayer(trackPolyline);
         trackPolyline = null;
@@ -3564,12 +3549,12 @@ function saveCurrentTrack() {
     updateTrackCountBadge();
 }
 
-function toggleTracking() {
+async function toggleTracking() {
     isTracking = !isTracking;
-
+    localStorage.setItem('jeoIsTracking', isTracking);
     if (!isTracking) {
         // Tik kaldrld: Mevcut kayd sonlandr ve sessizce kaydet
-        saveCurrentTrack();
+        await saveCurrentTrack();
 
         // v512: Auto-Rec OFF -> Live Track also OFF
         showLiveTrack = false;
@@ -4405,7 +4390,7 @@ function initGridListeners() {
 if (document.readyState !== 'loading') initGridListeners();
 else document.addEventListener('DOMContentLoaded', initGridListeners);
 
-function addExternalLayer(name, geojson, skipSave = false) {
+async function addExternalLayer(name, geojson, skipSave = false) {
     if (!map) return;
     if (!geojson || !geojson.features) {
         console.error("Invalid GeoJSON for layer:", name);
@@ -5884,7 +5869,7 @@ if (btnDeleteSelected) {
 
         if (await JeoConfirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
             records = records.filter(r => !selectedIds.includes(r.id));
-            saveRecords();
+            await saveRecords();
             renderRecords();
             updateMapMarkers(false);
             if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
@@ -5898,7 +5883,7 @@ if (btnDeleteSelected) {
 window.deleteRecordFromMap = async function (id) {
     if (await JeoConfirm(`Record #${id} will be deleted. Are you sure?`)) {
         records = records.filter(r => r.id !== id);
-        saveRecords();
+        await saveRecords();
         renderRecords();
         updateMapMarkers(false);
         if (isHeatmapActive) updateHeatmap(); // v414: Dynamic Update
@@ -6083,17 +6068,16 @@ if (document.getElementById('restore-file-input')) {
 
                     // 4. RESTORE SETTINGS (Optional)
                     if (data.settings) {
-                        if (manualDeclination === 0 && data.settings.declination) {
                             manualDeclination = data.settings.declination;
-                            localStorage.setItem('jeoDeclination', manualDeclination);
+                            await dbSaveMeta('jeoDeclination', manualDeclination);
                         }
                     }
 
                     // Save all
-                    saveRecords();
-                    localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
-                    localStorage.setItem('jeoNextId', nextId);
-                    saveExternalLayers();
+                    await saveRecords();
+                    await dbSaveMeta('jeoTracks', jeoTracks);
+                    await dbSaveMeta('jeoNextId', nextId);
+                    await saveExternalLayers();
 
                     // Refresh UI
                     renderRecords();
