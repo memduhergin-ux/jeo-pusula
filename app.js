@@ -210,10 +210,13 @@ function hideLoading() {
 async function initApp() {
     // 0. v1453-4-25F: Data Resilience Migration & Load
     await migrateToIndexedDB();
-    records = await dbLoadRecords();
+    records = await dbLoadRecords() || [];
     nextId = await dbLoadMeta('jeoNextId') || 1;
     jeoTracks = await dbLoadMeta('jeoTracks') || [];
     trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
+    
+    isDataLoaded = true; // Signal that it's safe to save now
+    console.log("Resilience: Data loaded safely, save guard disabled.");
     
     // Refresh UI after data load
     renderRecords();
@@ -1079,8 +1082,9 @@ let currentTilt = { beta: 0, gamma: 0 };
 let lockStrike = false;
 let lockDip = false;
 let manualDeclination = parseFloat(localStorage.getItem('jeoDeclination')) || 0;
-let records = []; // v1453-4-25F: Initialized as empty, loaded async
-let nextId = 1; // v1453-4-25F: Initialized as 1, loaded async
+let records = null; // v1453-4-25F: null = not loaded yet
+let nextId = 1; 
+let isDataLoaded = false; // v1453-4-25F: Crucial guard against race condition
 let map, markerGroup, liveMarker;
 let sensorSource = null; // 'ios', 'absolute', 'relative'
 let followMe = false;
@@ -1132,7 +1136,7 @@ let heatmapFilter = localStorage.getItem('jeoHeatmapFilter') || 'ALL'; // v403
 // Smoothing state (v400)
 let smoothedPos = { lat: 0, lon: 0 };
 const SMOOTH_ALPHA = 0.3;
-let jeoTracks = []; // v1453-4-25F: Initialized as empty, loaded async
+let jeoTracks = null; // v1453-4-25F: null = not loaded yet
 // v466: Hide all saved tracks by default on startup
 jeoTracks.forEach(t => { t.visible = false; });
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
@@ -2152,6 +2156,10 @@ if (document.getElementById('btn-modal-save')) {
 }
 
 async function saveRecords() {
+    if (!isDataLoaded || !records) {
+        console.warn("Resilience: Prevented saveRecords before data load.");
+        return;
+    }
     try {
         await dbSaveRecords(records);
         await dbSaveMeta('jeoNextId', nextId);
@@ -2163,9 +2171,7 @@ async function saveRecords() {
 
 function renderRecords(filter = '') {
     const tableBody = document.getElementById('records-body');
-    const selectAllTh = document.getElementById('select-all-th');
-    const editTh = document.getElementById('edit-th');
-    if (!tableBody) return;
+    if (!tableBody || !records) return; // v1453-4-25F: Guard against null
 
     // Sync Header Visibility
     if (selectAllTh) selectAllTh.classList.toggle('locked-hidden', isRecordsLocked);
@@ -3007,7 +3013,7 @@ function formatArea(area) {
 }
 
 function updateMapMarkers(shouldFitBounds = false) {
-    if (!map || !markerGroup) return;
+    if (!map || !markerGroup || !records) return; // v1453-4-25F: Guard against null
     markerGroup.clearLayers();
 
     // Clear and Redraw saved tracks
@@ -3270,7 +3276,7 @@ function calculateTrackLength(path) {
 
 function renderTracks(filter = '') {
     const tableBody = document.getElementById('tracks-body');
-    if (!tableBody) return;
+    if (!tableBody || !jeoTracks) return; // v1453-4-25F: Guard against null
 
     updateTrackCountBadge();
 
@@ -3326,6 +3332,7 @@ function renderTracks(filter = '') {
 }
 
 window.updateTrackColor = function (id, color) {
+    if (!isDataLoaded || !jeoTracks) return; // v1453-4-25F
     const track = jeoTracks.find(t => t.id === id);
     if (track) {
         track.color = color;
@@ -3335,6 +3342,7 @@ window.updateTrackColor = function (id, color) {
 };
 
 window.toggleTrackVisibility = function (id) {
+    if (!isDataLoaded || !jeoTracks) return; // v1453-4-25F
     const track = jeoTracks.find(t => t.id === id);
     if (track) {
         track.visible = !track.visible;
@@ -3344,6 +3352,7 @@ window.toggleTrackVisibility = function (id) {
 };
 
 window.deleteTrack = async function (id) {
+    if (!isDataLoaded || !jeoTracks) return; // v1453-4-25F
     if (await JeoConfirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         dbSaveMeta('jeoTracks', jeoTracks);
@@ -3460,6 +3469,10 @@ function updateTrack(lat, lon) {
 // updateLiveTrackVisibility removed from here as it is defined globally above
 
 function saveCurrentTrack() {
+    if (!isDataLoaded || !jeoTracks) {
+        console.warn("Resilience: Prevented saveCurrentTrack before data load.");
+        return;
+    }
     if (trackPath.length === 0) return;
 
     const now = new Date();
