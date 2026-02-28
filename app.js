@@ -135,12 +135,26 @@ async function migrateToIndexedDB() {
         const oldNextId = parseInt(localStorage.getItem('jeoNextId')) || 1;
         await dbSaveMeta('jeoNextId', oldNextId);
 
-        const oldTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
-        if (oldTracks.length > 0) await dbSaveMeta('jeoTracks', oldTracks);
+        // 3. External Layers (Drawings)
+        const oldLayers = JSON.parse(localStorage.getItem('jeoExternalLayers')) || [];
+        if (oldLayers.length > 0) await dbSaveLayers(oldLayers);
+
+        // 4. Grid States & Other App Meta
+        const gridParams = localStorage.getItem('jeoActiveGridParams');
+        if (gridParams) await dbSaveMeta('jeoActiveGridParams', gridParams);
+        
+        const gridMode = localStorage.getItem('jeoGridMode');
+        if (gridMode) await dbSaveMeta('jeoGridMode', gridMode);
+
+        const gridInterval = localStorage.getItem('jeoGridInterval');
+        if (gridInterval) await dbSaveMeta('jeoGridInterval', gridInterval);
+
+        const gridColor = localStorage.getItem('jeoGridColor');
+        if (gridColor) await dbSaveMeta('jeoGridColor', gridColor);
 
         // Mark as migrated
         localStorage.setItem('jeoIDBMigrated_v25F', 'true');
-        console.log("Resilience: Migration completed successfully.");
+        console.log("Resilience: Full migration completed successfully.");
     } catch (e) {
         console.error("Resilience: Migration failed", e);
     }
@@ -218,6 +232,18 @@ async function initApp() {
         nextId = await dbLoadMeta('jeoNextId') || 1;
         jeoTracks = await dbLoadMeta('jeoTracks') || [];
         trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
+
+        // v1453-4-26F: Load External Layers (Drawings) and Grid
+        await loadExternalLayers(true); // Silent load from IDB
+        
+        const savedGridMode = await dbLoadMeta('jeoGridMode');
+        if (savedGridMode !== null) isGridMode = (savedGridMode === 'true');
+
+        const savedGridInterval = await dbLoadMeta('jeoGridInterval');
+        if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
+
+        const savedGridColor = await dbLoadMeta('jeoGridColor');
+        if (savedGridColor !== null) activeGridColor = savedGridColor;
         
         isDataLoaded = true; // Signal that it's safe to save now
         console.log("Resilience: Data loaded safely, save guard disabled.");
@@ -1178,8 +1204,8 @@ let measureMode = 'line'; // 'line' or 'polygon'
 let isAddingPoint = false;
 
 // Grid State (v516/v563: Persisted)
-let isGridMode = localStorage.getItem('jeoGridMode') === 'true';
-let activeGridInterval = parseInt(localStorage.getItem('jeoGridInterval')) || null;
+let isGridMode = false; // v1453-4-25F: Initialized as false, loaded async
+let activeGridInterval = null; 
 let currentGridLayer = null;
 
 // KML/KMZ Layers State
@@ -2475,23 +2501,23 @@ function initMap() {
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
     // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
-    setTimeout(() => {
-        const savedPoints = localStorage.getItem('jeoActiveMeasurePoints');
-        const savedGrid = localStorage.getItem('jeoActiveGridParams');
+    setTimeout(async () => {
+        const savedMeasurePoints = localStorage.getItem('jeoActiveMeasurePoints');
+        const savedGrid = await dbLoadMeta('jeoActiveGridParams'); // v1453-4-26F: IDB Load
 
-        if (savedPoints) {
+        if (savedMeasurePoints) {
             try {
-                const pts = JSON.parse(savedPoints);
-                if (pts && pts.length > 0) {
-                    measurePoints = pts.map(p => L.latLng(p.lat, p.lng));
-                    
+                const points = JSON.parse(savedMeasurePoints);
+                if (points && points.length > 0) {
+                    measurePoints = points.map(p => L.latLng(p.lat, p.lng));
+
                     // v1453-4-24F: Safe Boolean Conversion Fix
-                    const savedIsPoly = localStorage.getItem('jeoActiveMeasureIsPoly');
-                    isPolygon = (savedIsPoly === 'true'); 
-                    
+                    const isPoly = localStorage.getItem('jeoActiveMeasureIsPoly');
+                    isPolygon = (isPoly === 'true');
+
                     measureMode = isPolygon ? 'polygon' : 'line';
                     isMeasuring = true;
-                    
+
                     // Clear any existing active markers before restoring
                     measureMarkers.forEach(m => map.removeLayer(m));
                     measureMarkers = [];
@@ -2515,7 +2541,7 @@ function initMap() {
                     const params = JSON.parse(savedGrid);
                     activeGridInterval = params.interval;
                     activeGridColor = params.color;
-                    
+
                     // Re-find the target layer aggressively
                     let target = null;
                     // Check Records first
@@ -2934,19 +2960,17 @@ function updateScaleValues() {
                         <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
                             <div class="scale-body" style="display:flex; align-items:center; justify-content:center;">
                                 <div class="scale-row-wrapper" style="display:flex; align-items:center; gap:5px;">
-                                    <div class="scale-group-left" style="display:flex; flex-direction:column; align-items:center;">
-                                        <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
-                                            <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
-                                            <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
-                                        </div>
-                                        <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
-                                            <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
-                                            <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
-                                            <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
-                                        </div>
+                                    <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
+                                        <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
+                                        <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
                                     </div>
-                                    <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:8px;">${unit}</span>
+                                    <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
+                                        <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
+                                        <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
+                                        <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
+                                    </div>
                                 </div>
+                                <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:8px;">${unit}</span>
                             </div>
                             <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.2;">
                                 <div class="utm-row-line">
@@ -3208,18 +3232,18 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px; display: flex; align-items: center; justify-content: center; position: relative;">
                         <!-- v669: Much larger red dot with thick white border -->
                         <div class="red-dot-symbol" style="
-                            width:${20 * scaleFactor}px; 
-                            height:${20 * scaleFactor}px; 
-                            background-color: ${pinColor}; 
-                            border-radius: 50%; 
-                            border: ${3 * scaleFactor}px solid white; 
+                            width:${20 * scaleFactor}px;
+                            height:${20 * scaleFactor}px;
+                            background-color: ${pinColor};
+                            border-radius: 50%;
+                            border: ${3 * scaleFactor}px solid white;
                             box-shadow: 0 0 6px rgba(0,0,0,0.6);
                         "></div>
                         <!-- v669: Adjusted label size and position -->
                         <div class="marker-id-label-v3" style="
-                            font-size:${labelFontSize * 1.2}px; 
-                            padding: 2px ${5 * scaleFactor}px; 
-                            top:-${8 * scaleFactor}px; 
+                            font-size:${labelFontSize * 1.2}px;
+                            padding: 2px ${5 * scaleFactor}px;
+                            top:-${8 * scaleFactor}px;
                             right:-${10 * scaleFactor}px;
                         ">${labelText}</div>
                     </div>
@@ -3282,7 +3306,7 @@ function updateMapMarkers(shouldFitBounds = false) {
 
     if (shouldFitBounds && dataToRender.length > 0 && selectedIds.length > 0) {
         const group = new L.featureGroup(markerGroup.getLayers());
-        // Add visible tracks to bounds calculation if requested? 
+        // Add visible tracks to bounds calculation if requested?
         // For now just keep it to points as before unless requested otherwise
         map.fitBounds(group.getBounds().pad(0.2));
     }
@@ -3338,7 +3362,7 @@ function renderTracks(filter = '') {
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
                 <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
                 <td><input type="checkbox" checked disabled></td>
-                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kay�tta...</td>
+                <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kaytta...</td>
             </tr>
         `;
     }
@@ -3477,7 +3501,7 @@ function updateTrack(lat, lon) {
         localStorage.setItem('jeoTrackStartTime', trackStartTime);
     }
 
-    // Canl� izle�i haritada g�ncelle
+    // Canl izlei haritada gncelle
     if (showLiveTrack && map) {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
@@ -3516,16 +3540,16 @@ function saveCurrentTrack() {
         length: calculateTrackLength(trackPath) // v466: Save length in meters
     };
 
-    // v456: FIFO: E�er 20 kay�t varsa, en eskiyi sil (21. kay�t 1.yi siler)
+    // v456: FIFO: Eer 20 kayt varsa, en eskiyi sil (21. kayt 1.yi siler)
     if (jeoTracks.length >= MAX_TRACKS) {
-        jeoTracks.shift(); // �lk eleman� (en eski) ��kar
+        jeoTracks.shift(); // lk eleman (en eski) kar
     }
 
     jeoTracks.push(newTrack);
     dbSaveMeta('jeoTracks', jeoTracks);
     dbSaveMeta('trackIdCounter', trackIdCounter);
 
-    // Canl� izle�i temizle
+    // Canl izlei temizle
     trackPath = [];
     trackStartTime = null; // v467: Reset start time
     localStorage.removeItem('jeoTrackPath'); // Temizle
@@ -3544,7 +3568,7 @@ function toggleTracking() {
     isTracking = !isTracking;
 
     if (!isTracking) {
-        // Tik kald�r�ld�: Mevcut kayd� sonland�r ve sessizce kaydet
+        // Tik kaldrld: Mevcut kayd sonlandr ve sessizce kaydet
         saveCurrentTrack();
 
         // v512: Auto-Rec OFF -> Live Track also OFF
@@ -3556,7 +3580,7 @@ function toggleTracking() {
 
         showToast('Auto-Recording: OFF', 1000);
     } else {
-        // Tik at�ld�: Yeni kay�t s�reci ba�las�n
+        // Tik atld: Yeni kayt sreci balasn
         trackPath = [];
         trackStartTime = new Date().toISOString();
 
@@ -3818,7 +3842,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         }
 
         // v1453-4-22F: Protect active measurements during tab switching
-        // isMeasuring = false; 
+        // isMeasuring = false;
         // if (typeof updateMeasureModeUI === 'function') updateMeasureModeUI();
 
         if (!isRecordsLocked) {
@@ -3925,7 +3949,7 @@ if (fileImportInput) {
         }
 
         showLoading(`${file.name} processing...`);
-        // v1453-1: Crucial 200ms delay to allow the 'Ltfen Bekleyin' overlay to physically paint 
+        // v1453-1: Crucial 200ms delay to allow the 'Ltfen Bekleyin' overlay to physically paint
         // to the screen before the heavy file parsing blocks the main thread (JS Engine).
         await new Promise(r => setTimeout(r, 200));
 
@@ -4168,8 +4192,11 @@ function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
     // v1453-4-23F: Persist Grid State
     if (polygon.name || (polygon.feature && polygon.feature.properties && polygon.feature.properties.name)) {
-        const name = polygon.name || polygon.feature.properties.name;
-        localStorage.setItem('jeoActiveGridParams', JSON.stringify({ interval, color, targetName: name }));
+        const name = polygon.name || polygon.feature.properties.name; // v1453-4-26F: Persist Grid Params to IndexedDB
+        await dbSaveMeta('jeoActiveGridParams', JSON.stringify({ interval, color, targetName: name }));
+        await dbSaveMeta('jeoGridInterval', interval);
+        await dbSaveMeta('jeoGridColor', color);
+        await dbSaveMeta('jeoGridMode', 'true');
     }
 
     showToast(`True North Grid: ${interval}m`, 2000);
@@ -4236,7 +4263,7 @@ if (document.readyState !== 'loading') initGridPanelDraggable();
 else document.addEventListener('DOMContentLoaded', initGridPanelDraggable);
 
 // v1453-05F: Global Grid Clear Function - SCANS MAP LAYERS for robustness
-window.clearGridLayer = function (e) {
+window.clearGridLayer = async function (e) {
     if (e && e.preventDefault) e.preventDefault();
     if (e && e.stopPropagation) e.stopPropagation();
 
@@ -4258,7 +4285,8 @@ window.clearGridLayer = function (e) {
     // 3. Reset UI states
     document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
     activeGridInterval = null;
-    localStorage.removeItem('jeoActiveGridParams'); // v1453-4-23F
+    await dbSaveMeta('jeoActiveGridParams', null); // v1453-4-23F
+    await dbSaveMeta('jeoGridMode', 'false');
     showToast("Grid Cleared / Izgara Temizlendi", 1500);
 };
 
@@ -4272,7 +4300,7 @@ function initGridListeners() {
         const newToggle = btnGridToggle.cloneNode(true);
         btnGridToggle.parentNode.replaceChild(newToggle, btnGridToggle);
 
-        newToggle.addEventListener('click', () => {
+        newToggle.addEventListener('click', async () => {
             isGridMode = !isGridMode;
             newToggle.classList.toggle('active', isGridMode);
             gridPanel.style.display = isGridMode ? 'flex' : 'none';
@@ -4283,7 +4311,7 @@ function initGridListeners() {
             } else {
                 gridPanel.classList.remove('grid-active');
             }
-            localStorage.setItem('jeoGridMode', isGridMode);
+            await dbSaveMeta('jeoGridMode', isGridMode.toString());
             if (isGridMode) showToast("Grid Mode: ON - Select interval and click on a polygon", 3000);
         });
     }
@@ -4347,10 +4375,10 @@ function initGridListeners() {
     }
 
     document.querySelectorAll('.grid-opt-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             const target = e.currentTarget;
             activeGridInterval = parseInt(target.getAttribute('data-interval'));
-            localStorage.setItem('jeoGridInterval', activeGridInterval);
+            await dbSaveMeta('jeoGridInterval', activeGridInterval);
             document.querySelectorAll('.grid-opt-btn').forEach(b => b.classList.remove('active'));
             target.classList.add('active');
             showToast(`Interval: ${activeGridInterval}m`, 1500);
@@ -4358,10 +4386,10 @@ function initGridListeners() {
     });
 
     document.querySelectorAll('.grid-color-opt').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             const target = e.currentTarget;
             activeGridColor = target.getAttribute('data-color');
-            localStorage.setItem('jeoGridColor', activeGridColor);
+            await dbSaveMeta('jeoGridColor', activeGridColor);
             document.querySelectorAll('.grid-color-opt').forEach(b => {
                 b.classList.remove('active');
                 b.style.border = "1px solid rgba(255,255,255,0.4)";
@@ -4550,7 +4578,7 @@ function addExternalLayer(name, geojson, skipSave = false) {
                 popupContent += `</div>`;
                 popupContent += `</div>`;
                 // v1453-41F: Remove static bindPopup to allow Smart Direction on Click
-                // layer.bindPopup(popupContent, { ... }); 
+                // layer.bindPopup(popupContent, { ... });
 
                 // Pass clicks to map handler if in special modes
                 layer.on('click', (e) => {
@@ -4588,7 +4616,7 @@ function addExternalLayer(name, geojson, skipSave = false) {
                     /* REMOVED: SVG-specific DOM attribute checks that fail on Canvas
                     if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
                         // ... old buggy logic ...
-                    } 
+                    }
                     */
 
                     if (isMeasuring) {
@@ -4647,7 +4675,7 @@ function addExternalLayer(name, geojson, skipSave = false) {
 
     } catch (e) {
         console.error("Critical error in addExternalLayer:", e);
-        JeoAlert("Katman eklenirken bir hata olu�tu: " + e.message);
+        JeoAlert("Katman eklenirken bir hata olutu: " + e.message);
     }
 }
 
@@ -4744,7 +4772,7 @@ function renderLayerList() {
     });
 }
 
-function toggleLayerLabels(id, showLabels) {
+async function toggleLayerLabels(id, showLabels) {
     const l = externalLayers.find(x => x.id === id);
     if (!l) return;
     l.labelsVisible = showLabels;
@@ -5111,24 +5139,18 @@ if (btnMeasureClear) {
     });
 }
 
-function clearMeasurement() {
+async function clearMeasurement() {
     measurePoints = [];
-    if (measureLine) {
-        map.removeLayer(measureLine);
-        measureLine = null;
-    }
     measureMarkers.forEach(m => map.removeLayer(m));
     measureMarkers = [];
-    measurePoints = [];
-    isPolygon = false;
-
-    // Clear Labels
+    if (measureLine) map.removeLayer(measureLine);
+    measureLine = null;
     activeMeasureLabels.forEach(l => map.removeLayer(l));
     activeMeasureLabels = [];
 
-    measureText.textContent = "0 m";
-    localStorage.removeItem('jeoActiveMeasurePoints'); // v1453-4-23F
-    localStorage.removeItem('jeoActiveMeasureIsPoly'); // v1453-4-23F
+    measureInfo.style.display = 'none';
+    localStorage.removeItem('jeoActiveMeasurePoints');
+    localStorage.removeItem('jeoActiveMeasureIsPoly');
     updateMeasureButtons();
 }
 
