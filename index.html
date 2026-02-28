@@ -323,6 +323,20 @@
 
             <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
 
+        
+    <!-- Custom JeoCompass Modals -->
+    <div id="jeo-modal-overlay" class="jeo-modal-overlay">
+        <div class="jeo-modal">
+            <div id="jeo-modal-header" class="jeo-modal-header">JeoCompass</div>
+            <div id="jeo-modal-body" class="jeo-modal-body"></div>
+            <div class="jeo-modal-footer">
+                <button id="jeo-modal-cancel" class="jeo-modal-btn secondary" style="display: none;">İPTAL</button>
+                <button id="jeo-modal-ok" class="jeo-modal-btn primary">TAMAM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- v1453-27F: Update Logic -->
             <!-- v1453-99F: Save Grid Button -->
             <div id="btn-grid-save" title="Save Grid as Layer"
                 style="cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(33, 150, 243, 0.1); margin-right: 4px;">
@@ -870,7 +884,7 @@
                 localStorage.setItem(lastCrashKey, now);
 
                 if (count >= 3) {
-                    if (confirm("Uygulama arka arkaya çökmeler yaşadı. Kayıtlı katmanları sıfırlayarak 'Güvenli Mod'da başlatmak ister misiniz?\n\n(The app crashed repeatedly. Start in Safe Mode by clearing layers?)")) {
+                if (await JeoConfirm("Uygulama arka arkaya çökmeler yaşadı. Kayıtlı katmanları sıfırlayarak 'Güvenli Mod'da başlatmak ister misiniz?\n\n(The app crashed repeatedly. Start in Safe Mode by clearing layers?)")) {
                         localStorage.setItem(crashKey, 0);
                         indexedDB.deleteDatabase('JeoCompassDB');
                         location.reload();
@@ -879,7 +893,7 @@
                 }
             }
 
-            alert("Bir Hata Oluştu (An Error Occurred):\n" + msg + "\nSatır (Line): " + lineNo + (columnNo ? ":" + columnNo : ""));
+            JeoAlert("Bir Hata Oluştu (An Error Occurred):\n" + msg + "\nSatır (Line): " + lineNo + (columnNo ? ":" + columnNo : ""));
             return false;
         };
 
@@ -890,7 +904,7 @@
                 console.log("ServiceWorker fetch error suppressed");
                 return;
             }
-            alert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
+            JeoAlert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
         };
 
         window.bootTime = Date.now();

@@ -1,8 +1,63 @@
-﻿const APP_VERSION = 'v1453-4-11F'; // Map Snapping and Segment Label Fixes
+const APP_VERSION = 'v1453-4-11F'; // Map Snapping and Segment Label Fixes
 const JEO_VERSION = APP_VERSION; // Geriye d�n�k uyumluluk i�in
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'jeo-store-v1';
+
+/* --- JeoCompass Custom Modal System --- */
+window.JeoAlert = function(message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('jeo-modal-overlay');
+        const body = document.getElementById('jeo-modal-body');
+        const okBtn = document.getElementById('jeo-modal-ok');
+        const cancelBtn = document.getElementById('jeo-modal-cancel');
+        
+        body.innerText = message;
+        cancelBtn.style.display = 'none';
+        overlay.classList.add('show');
+        
+        const cleanup = () => {
+            overlay.classList.remove('show');
+            okBtn.removeEventListener('click', onOk);
+        };
+        
+        const onOk = () => {
+            cleanup();
+            resolve();
+        };
+        
+        okBtn.addEventListener('click', onOk);
+    });
+};
+
+window.JeoConfirm = function(message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('jeo-modal-overlay');
+        const body = document.getElementById('jeo-modal-body');
+        const okBtn = document.getElementById('jeo-modal-ok');
+        const cancelBtn = document.getElementById('jeo-modal-cancel');
+        
+        body.innerText = message;
+        cancelBtn.style.display = 'block';
+        overlay.classList.add('show');
+        
+        const cleanup = () => {
+            overlay.classList.remove('show');
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+        };
+        
+        const onOk = () => { cleanup(); resolve(true); };
+        const onCancel = () => { cleanup(); resolve(false); };
+        
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+    });
+};
+
+// Override native dialogs (Optional but safer)
+// window.alert = window.JeoAlert; 
+// We will manually replace them to ensure async/await handling
 
 // S�r�m� UI �zerinde g�ncelleme fonksiyonu
 function updateAppVersionDisplay() {
@@ -1937,7 +1992,7 @@ if (document.getElementById('btn-modal-save')) {
         // If we are saving a drawing/measurement as an external layer instead of a point
         if (isSavingLayer) {
             if (!label) {
-                alert("Please enter a name for the shape.");
+                JeoAlert("Please enter a name for the shape.");
                 return;
             }
 
@@ -3170,7 +3225,7 @@ window.toggleTrackVisibility = function (id) {
 };
 
 window.deleteTrack = function (id) {
-    if (confirm("Delete track?")) {
+    if (await JeoConfirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
         renderTracks();
@@ -3532,10 +3587,10 @@ if (btnDeleteSelected) {
         if (isTracks) {
             const selectedIds = Array.from(document.querySelectorAll('.track-select:checked')).map(cb => parseInt(cb.dataset.id));
             if (selectedIds.length === 0) {
-                alert("No tracks selected to delete.");
+                JeoAlert("No tracks selected to delete.");
                 return;
             }
-            if (confirm(`Are you sure you want to delete ${selectedIds.length} selected track(s)?`)) {
+            if (await JeoConfirm(`Are you sure you want to delete ${selectedIds.length} selected track(s)?`)) {
                 jeoTracks = jeoTracks.filter(t => !selectedIds.includes(t.id));
                 localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
                 renderTracks();
@@ -3546,10 +3601,10 @@ if (btnDeleteSelected) {
             // Existing Points Delete Logic
             const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
             if (selectedIds.length === 0) {
-                alert("No records selected to delete.");
+                JeoAlert("No records selected to delete.");
                 return;
             }
-            if (confirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) {
+            if (await JeoConfirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) {
                 records = records.filter(r => !selectedIds.includes(r.id));
                 saveRecords();
                 renderRecords();
@@ -3702,11 +3757,11 @@ if (fileImportInput) {
         // v546: Memory Guardrails - Avoid browser crashes on massive files
         const sizeMB = file.size / (1024 * 1024);
         if (sizeMB > 50) {
-            alert(`Dosya �ok b�y�k (${sizeMB.toFixed(1)}MB). Taray�c� ��kmesini �nlemek i�in 50MB �zerindeki dosyalar engellendi.`);
+            JeoAlert(`Dosya �ok b�y�k (${sizeMB.toFixed(1)}MB). Taray�c� ��kmesini �nlemek i�in 50MB �zerindeki dosyalar engellendi.`);
             fileImportInput.value = '';
             return;
         }
-        if (sizeMB > 10 && !confirm(`Dosya boyutu b�y�k (${sizeMB.toFixed(1)}MB). ��leme s�ras�nda telefonunuz k�sa s�reli donabilir. Devam etmek istiyor musunuz?`)) {
+        if (sizeMB > 10 && !await JeoConfirm(`Dosya boyutu b�y�k (${sizeMB.toFixed(1)}MB). ��leme s�ras�nda telefonunuz k�sa s�reli donabilir. Devam etmek istiyor musunuz?`)) {
             fileImportInput.value = '';
             return;
         }
@@ -3742,11 +3797,11 @@ if (fileImportInput) {
                 await saveExternalLayers(); // Persist (Async v543)
                 layersModal.classList.remove('active');
             } else {
-                alert("No valid KML found.");
+                JeoAlert("No valid KML found.");
             }
         } catch (err) {
             console.error(err);
-            alert("File could not be read: " + err.message);
+            JeoAlert("File could not be read: " + err.message);
         } finally {
             hideLoading();
             fileImportInput.value = ''; // Reset
@@ -4424,7 +4479,7 @@ function addExternalLayer(name, geojson) {
 
     } catch (e) {
         console.error("Critical error in addExternalLayer:", e);
-        alert("Katman eklenirken bir hata olu�tu: " + e.message);
+        JeoAlert("Katman eklenirken bir hata olu�tu: " + e.message);
     }
 }
 
@@ -4636,7 +4691,7 @@ function toggleLayerAreas(id, showAreas) {
 }
 
 function removeLayer(id) {
-    if (confirm("Silmek istediğinize emin misiniz?")) {
+    if (await JeoConfirm("Silmek istediğinize emin misiniz?")) {
         const index = externalLayers.findIndex(x => x.id === id);
         if (index > -1) {
             // Remove segment labels from map
@@ -5139,7 +5194,7 @@ function updateMeasurement(latlng) {
 
         // Snapping Tolerance: 40 pixels
         if (pixelDist < 40) {
-            if (confirm("Close polygon? (Area will be calculated)")) {
+            if (await JeoConfirm("Close polygon? (Area will be calculated)")) {
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
                 redrawMeasurement();
@@ -5149,7 +5204,7 @@ function updateMeasurement(latlng) {
     }
 
     if (isPolygon) {
-        alert("Area already closed. Use 'Undo' to modify.");
+        JeoAlert("Area already closed. Use 'Undo' to modify.");
         return;
     }
 
@@ -5181,7 +5236,7 @@ function exportData(type, scope = 'selected') {
     }
 
     if (dataToExport.length === 0) {
-        alert("No records found to export.");
+        JeoAlert("No records found to export.");
         return;
     }
 
@@ -5305,7 +5360,7 @@ if (document.getElementById('btn-backup-json')) {
         } catch (err) {
             console.error("Backup failed", err);
             if (err.name !== 'AbortError') {
-                alert("Backup error: " + err.message);
+                JeoAlert("Backup error: " + err.message);
             }
         }
     });
@@ -5439,7 +5494,7 @@ async function socialShare(appTarget = null) {
     }
 
     if (dataToShare.length === 0) {
-        alert("No items selected for sharing. Please select items from the table.");
+        JeoAlert("No items selected for sharing. Please select items from the table.");
         return;
     }
 
@@ -5626,7 +5681,7 @@ if (btnDeleteSelected) {
         const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
         if (selectedIds.length === 0) return;
 
-        if (confirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
+        if (await JeoConfirm(`Are you sure you want to delete ${selectedIds.length} records?`)) {
             records = records.filter(r => !selectedIds.includes(r.id));
             saveRecords();
             renderRecords();
@@ -5640,7 +5695,7 @@ if (btnDeleteSelected) {
 
 /** Global delete helper for Map Popups **/
 window.deleteRecordFromMap = function (id) {
-    if (confirm(`Record #${id} will be deleted. Are you sure?`)) {
+    if (await JeoConfirm(`Record #${id} will be deleted. Are you sure?`)) {
         records = records.filter(r => r.id !== id);
         saveRecords();
         renderRecords();
@@ -5758,7 +5813,7 @@ if (document.getElementById('restore-file-input')) {
                 const incomingLayers = data.externalLayers || [];
 
                 if (incomingRecords.length === 0 && incomingTracks.length === 0 && incomingLayers.length === 0) {
-                    alert("No valid records or tracks found in file.");
+                    JeoAlert("No valid records or tracks found in file.");
                     return;
                 }
 
@@ -5770,7 +5825,7 @@ if (document.getElementById('restore-file-input')) {
                     `Current data will be KEPT. Only NEW unique data will be added.\n` +
                     `Do you want to proceed?`;
 
-                if (confirm(msg)) {
+                if (await JeoConfirm(msg)) {
                     let recAdded = 0, recSkipped = 0;
                     let trackAdded = 0, trackSkipped = 0;
                     let layerAdded = 0, layerSkipped = 0;
@@ -5845,7 +5900,7 @@ if (document.getElementById('restore-file-input')) {
                     renderLayerList();
                     updateMapMarkers(true);
 
-                    alert(`RESTORE COMPLETE\n\n` +
+                    JeoAlert(`RESTORE COMPLETE\n\n` +
                         `Points: +${recAdded} (Skipped: ${recSkipped})\n` +
                         `Tracks: +${trackAdded} (Skipped: ${trackSkipped})\n` +
                         `Layers: +${layerAdded} (Skipped: ${layerSkipped})\n\n` +
@@ -5854,7 +5909,7 @@ if (document.getElementById('restore-file-input')) {
                     if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
                 }
             } catch (err) {
-                alert("Error: Failed to read file!\n" + err.message);
+                JeoAlert("Error: Failed to read file!\n" + err.message);
             }
             e.target.value = '';
         };
