@@ -1,7 +1,7 @@
-const APP_VERSION = 'v1453-4-25F'; // Total Data Resilience Fix 🧭🔒
+const APP_VERSION = 'v1453-4-26F'; // Total Data Resilience Fix 🧭🔒
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
-const JEO_DB_VERSION = 2; // v1453-4-25F: Upgraded for Records store
+const JEO_DB_VERSION = 2; // v1453-4-26F: Upgraded for Records store
 const JEO_STORE_NAME = 'jeo-store-v1'; // Layers
 const JEO_RECORDS_STORE = 'jeo-records-v1'; // Geologic Records
 const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
@@ -57,7 +57,7 @@ function openJeoDB() {
             if (!db.objectStoreNames.contains(JEO_STORE_NAME)) {
                 db.createObjectStore(JEO_STORE_NAME, { keyPath: 'id' });
             }
-            // v2: Records & Meta Store (v1453-4-25F)
+            // v2: Records & Meta Store (v1453-4-26F)
             if (!db.objectStoreNames.contains(JEO_RECORDS_STORE)) {
                 db.createObjectStore(JEO_RECORDS_STORE, { keyPath: 'id' });
             }
@@ -70,7 +70,7 @@ function openJeoDB() {
     });
 }
 
-// v1453-4-25F: Atomic Record Persistence
+// v1453-4-26F: Atomic Record Persistence
 async function dbSaveRecords(records) {
     try {
         const db = await openJeoDB();
@@ -226,7 +226,7 @@ async function initApp() {
         console.log("Resilience: initApp starting...");
         updateAppVersionDisplay(); // Ensure version is updated early
 
-        // 0. v1453-4-25F: Data Resilience Migration & Load
+        // 0. v1453-4-26F: Data Resilience Migration & Load
         await migrateToIndexedDB();
         records = await dbLoadRecords() || [];
         nextId = await dbLoadMeta('jeoNextId') || 1;
@@ -472,7 +472,7 @@ function getElementGradient(element) {
 }
 
 function updateHeatmap() {
-    if (!map || !isHeatmapActive || !records) return; // v1453-4-25F: records guard
+    if (!map || !isHeatmapActive || !records) return; // v1453-4-26F: records guard
 
     // v1453-05F: Fix for "not rendering" - Clear existing layer before adding new one
     if (heatmapLayer) {
@@ -1126,9 +1126,9 @@ let currentTilt = { beta: 0, gamma: 0 };
 let lockStrike = false;
 let lockDip = false;
 let manualDeclination = parseFloat(localStorage.getItem('jeoDeclination')) || 0;
-let records = null; // v1453-4-25F: null = not loaded yet
+let records = null; // v1453-4-26F: null = not loaded yet
 let nextId = 1; 
-let isDataLoaded = false; // v1453-4-25F: Crucial guard against race condition
+let isDataLoaded = false; // v1453-4-26F: Crucial guard against race condition
 let map, markerGroup, liveMarker;
 let sensorSource = null; // 'ios', 'absolute', 'relative'
 let followMe = false;
@@ -1180,14 +1180,14 @@ let heatmapFilter = localStorage.getItem('jeoHeatmapFilter') || 'ALL'; // v403
 // Smoothing state (v400)
 let smoothedPos = { lat: 0, lon: 0 };
 const SMOOTH_ALPHA = 0.3;
-let jeoTracks = null; // v1453-4-25F: null = not loaded yet
+let jeoTracks = null; // v1453-4-26F: null = not loaded yet
 // v466 logic moved to initApp
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 let activeTab = 'points'; // 'points' or 'tracks' (v503 Fix)
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
 
 // Track Auto-Recording State (v442)
-let trackIdCounter = 1; // v1453-4-25F: Initialized as 1, loaded async
+let trackIdCounter = 1; // v1453-4-26F: Initialized as 1, loaded async
 const MAX_TRACKS = 20; // Maksimum izlek say�s�
 let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // v510: Default true (boolean)
 
@@ -1204,7 +1204,7 @@ let measureMode = 'line'; // 'line' or 'polygon'
 let isAddingPoint = false;
 
 // Grid State (v516/v563: Persisted)
-let isGridMode = false; // v1453-4-25F: Initialized as false, loaded async
+let isGridMode = false; // v1453-4-26F: Initialized as false, loaded async
 let activeGridInterval = null; 
 let currentGridLayer = null;
 
@@ -2216,7 +2216,7 @@ function renderRecords(filter = '') {
     const tableBody = document.getElementById('records-body');
     if (!tableBody || !records) return; 
 
-    // v1453-4-25F: Redefine accidentally removed variables
+    // v1453-4-26F: Redefine accidentally removed variables
     const selectAllTh = document.getElementById('select-all-th');
     const editTh = document.getElementById('edit-th');
 
@@ -2427,7 +2427,7 @@ function initMap() {
 
 
     // Map Click Handler for Interactions (v527: Absolute Grid Dominance)
-    map.on('click', (e) => {
+    map.on('click', async (e) => {
         // v527: If Grid Mode is active, SHUT DOWN all other interactions
         if (isGridMode && activeGridInterval) {
             if (e.originalEvent) e.originalEvent.stopPropagation();
@@ -2480,7 +2480,7 @@ function initMap() {
                     return currArea < prevArea ? curr : prev;
                 }, candidates[0]);
 
-                createAreaGrid(targetLayer, activeGridInterval, activeGridColor);
+                await createAreaGrid(targetLayer, activeGridInterval, activeGridColor);
                 return; // INTERACTION STOPPED: No popups allowed in grid mode
             }
             return; // Even if no polygon found, stop here if grid mode is on (prevents random popups)
@@ -2536,7 +2536,7 @@ function initMap() {
 
         // v1453-4-24F: Phased Grid Restoration (After Layers)
         if (savedGrid) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 try {
                     const params = JSON.parse(savedGrid);
                     activeGridInterval = params.interval;
@@ -2566,7 +2566,7 @@ function initMap() {
                     }
 
                     if (target) {
-                        createAreaGrid(target, activeGridInterval, activeGridColor);
+                        await createAreaGrid(target, activeGridInterval, activeGridColor);
                     }
                 } catch(e) { console.error("Resilience: Restore grid failed", e); }
             }, 500); // v1453-4-24F: Extra 500ms safety for grid
@@ -3060,7 +3060,7 @@ function formatArea(area) {
 }
 
 function updateMapMarkers(shouldFitBounds = false) {
-    if (!map || !markerGroup || !records || !jeoTracks) return; // v1453-4-25F: Guard against null
+    if (!map || !markerGroup || !records || !jeoTracks) return; // v1453-4-26F: Guard against null
     markerGroup.clearLayers();
 
     // Clear and Redraw saved tracks
@@ -3326,7 +3326,7 @@ function calculateTrackLength(path) {
 
 function renderTracks(filter = '') {
     const tableBody = document.getElementById('tracks-body');
-    if (!tableBody || !jeoTracks) return; // v1453-4-25F: Guard against null
+    if (!tableBody || !jeoTracks) return; // v1453-4-26F: Guard against null
 
     updateTrackCountBadge();
 
@@ -3382,7 +3382,7 @@ function renderTracks(filter = '') {
 }
 
 window.updateTrackColor = function (id, color) {
-    if (!isDataLoaded || !jeoTracks) return; // v1453-4-25F
+    if (!isDataLoaded || !jeoTracks) return; // v1453-4-26F
     const track = jeoTracks.find(t => t.id === id);
     if (track) {
         track.color = color;
@@ -3392,7 +3392,7 @@ window.updateTrackColor = function (id, color) {
 };
 
 window.toggleTrackVisibility = function (id) {
-    if (!isDataLoaded || !jeoTracks) return; // v1453-4-25F
+    if (!isDataLoaded || !jeoTracks) return; // v1453-4-26F
     const track = jeoTracks.find(t => t.id === id);
     if (track) {
         track.visible = !track.visible;
@@ -3402,7 +3402,7 @@ window.toggleTrackVisibility = function (id) {
 };
 
 window.deleteTrack = async function (id) {
-    if (!isDataLoaded || !jeoTracks) return; // v1453-4-25F
+    if (!isDataLoaded || !jeoTracks) return; // v1453-4-26F
     if (await JeoConfirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         dbSaveMeta('jeoTracks', jeoTracks);
@@ -4117,7 +4117,7 @@ function isPointInPolygon(latlng, polygon) {
 }
 
 // v1453-12: True North (Geographic) Grid Implementation
-function createAreaGrid(polygon, interval, color = '#ffeb3b') {
+async function createAreaGrid(polygon, interval, color = '#ffeb3b') {
     if (!map || !polygon) return;
     const bounds = polygon.getBounds();
     const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
