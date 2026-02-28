@@ -3224,12 +3224,17 @@ window.toggleTrackVisibility = function (id) {
     }
 };
 
-window.deleteTrack = function (id) {
+window.deleteTrack = async function (id) {
     if (await JeoConfirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
-        renderTracks();
-        updateMapMarkers(false);
+window.removeLayer = async function (id) {
+    const track = jeoTracks.find(t => t.id === id);
+    if (track && track.path && track.path.length > 0) {
+        const poly = trackLayers[id];
+        if (poly) {
+            map.fitBounds(poly.getBounds());
+        }
     }
 };
 
@@ -3757,17 +3762,16 @@ if (fileImportInput) {
         // v546: Memory Guardrails - Avoid browser crashes on massive files
         const sizeMB = file.size / (1024 * 1024);
         if (sizeMB > 50) {
-            JeoAlert(`Dosya �ok b�y�k (${sizeMB.toFixed(1)}MB). Taray�c� ��kmesini �nlemek i�in 50MB �zerindeki dosyalar engellendi.`);
+            JeoAlert(`Dosya ok byk (${sizeMB.toFixed(1)}MB). Tarayc kmesini nlemek iin 50MB zerindeki dosyalar engellendi.`);
             fileImportInput.value = '';
             return;
         }
-        if (sizeMB > 10 && !await JeoConfirm(`Dosya boyutu b�y�k (${sizeMB.toFixed(1)}MB). ��leme s�ras�nda telefonunuz k�sa s�reli donabilir. Devam etmek istiyor musunuz?`)) {
-            fileImportInput.value = '';
+        if (sizeMB > 10 && !await JeoConfirm(`Dosya boyutu byk (${sizeMB.toFixed(1)}MB). leme srasnda telefonunuz ksa sreli donabilir. Devam etmek istiyor musunuz?`)) {
             return;
         }
 
         showLoading(`${file.name} processing...`);
-        // v1453-1: Crucial 200ms delay to allow the 'L�tfen Bekleyin' overlay to physically paint 
+        // v1453-1: Crucial 200ms delay to allow the 'Ltfen Bekleyin' overlay to physically paint 
         // to the screen before the heavy file parsing blocks the main thread (JS Engine).
         await new Promise(r => setTimeout(r, 200));
 
@@ -5184,6 +5188,55 @@ function updateMeasurement(latlng) {
     // Apply Snapped Coordinate for the rest of the function!
     latlng = snappedLatLng;
 
+function updateMeasurement(latlng) {
+    if (!map) return;
+
+    // v1453-99F: Global Snapping Logic
+    // Allow snapping to ANY existing point (from records or imported layers) if within 40 pixels
+    let snappedLatLng = latlng;
+    let closestPixelDist = Infinity;
+    const clickPx = map.latLngToContainerPoint(latlng);
+
+    // 1. Check Records (Points)
+    records.forEach(r => {
+        if (r.lat && r.lon) {
+            const pPx = map.latLngToContainerPoint([r.lat, r.lon]);
+            const dist = clickPx.distanceTo(pPx);
+            if (dist < 40 && dist < closestPixelDist) {
+                closestPixelDist = dist;
+                snappedLatLng = L.latLng(r.lat, r.lon);
+            }
+        }
+    });
+
+    // 2. Check Imported Markers
+    if (typeof allKmlMarkers !== 'undefined') {
+        allKmlMarkers.forEach(m => {
+            if (m.getLatLng) {
+                const markLl = m.getLatLng();
+                const pPx = map.latLngToContainerPoint(markLl);
+                const dist = clickPx.distanceTo(pPx);
+                if (dist < 40 && dist < closestPixelDist) {
+                    closestPixelDist = dist;
+                    snappedLatLng = markLl;
+                }
+            }
+        });
+    }
+
+    // 3. Check Current Measurement Nodes (for snapping to other drawing points)
+    measurePoints.forEach(p => {
+        const pPx = map.latLngToContainerPoint(p);
+        const dist = clickPx.distanceTo(pPx);
+        if (dist < 40 && dist < closestPixelDist) {
+            closestPixelDist = dist;
+            snappedLatLng = p;
+        }
+    });
+
+    // Apply Snapped Coordinate for the rest of the function!
+    latlng = snappedLatLng;
+
     // Check Snapping (Close Polygon)
     if (measureMode === 'polygon' && measurePoints.length > 2) {
         const startPoint = measurePoints[0];
@@ -5194,7 +5247,19 @@ function updateMeasurement(latlng) {
 
         // Snapping Tolerance: 40 pixels
         if (pixelDist < 40) {
-            if (await JeoConfirm("Close polygon? (Area will be calculated)")) {
+            // Error fix: This function needs to be async if it uses await.
+            // But Leaflet event handlers are usually synchronous.
+            // We'll wrap the logic to handle the promise.
+            JeoConfirm("Close polygon? (Area will be calculated)").then(confirmed => {
+                if (confirmed) {
+                    measurePoints.push(measurePoints[0]);
+                    isPolygon = true;
+                    redrawMeasurement();
+                }
+            });
+            return;
+        }
+    }
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
                 redrawMeasurement();
@@ -5694,7 +5759,7 @@ if (btnDeleteSelected) {
 }
 
 /** Global delete helper for Map Popups **/
-window.deleteRecordFromMap = function (id) {
+window.deleteRecordFromMap = async function (id) {
     if (await JeoConfirm(`Record #${id} will be deleted. Are you sure?`)) {
         records = records.filter(r => r.id !== id);
         saveRecords();
@@ -5803,7 +5868,7 @@ if (document.getElementById('restore-file-input')) {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
 

@@ -872,7 +872,7 @@
         const crashKey = 'jeo_crash_count';
         const lastCrashKey = 'jeo_last_crash_time';
 
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
+        window.onerror = async function (msg, url, lineNo, columnNo, error) {
             console.error("Global Error Caught:", msg, "at", url, ":", lineNo);
 
             // Increment crash count if error happens during boot (first 10 seconds)
