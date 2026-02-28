@@ -1,5 +1,4 @@
-const APP_VERSION = 'v1453-4-13F'; // Boot Fix & Debug
-console.log("App.js: Script evaluation started.");
+const APP_VERSION = 'v1453-4-15F'; // UI Refinement (6px & Snap)
 const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -123,10 +122,8 @@ function hideLoading() {
 
 // App Initialization & Splash Screen
 function initApp() {
-    console.log("App.js: initApp() called.");
     // 1. Remove Splash Screen
     setTimeout(() => {
-        console.log("App.js: Removing splash screen...");
         const splash = document.getElementById('splash-screen');
         if (splash) {
             splash.classList.add('hidden');
@@ -2901,7 +2898,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                 let shape;
                 if (r.geomType === 'polygon') {
                     totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
-                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 4, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
+                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
 
                     // Labelling Polygon Edges
                     for (let i = 0; i < latlngs.length; i++) {
@@ -2924,7 +2921,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         markerGroup.addLayer(edgeLabel);
                     }
                 } else {
-                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4, renderer: L.svg(), interactive: true });
+                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 6, renderer: L.svg(), interactive: true });
 
                     // Labelling Total Length for Polyline (at the middle of the path)
                     // DRAW SEGMENT LABELS FOR POLYLINE
@@ -5142,8 +5139,10 @@ function updateMeasurement(latlng) {
         const p2 = map.latLngToContainerPoint(startPoint);
         const pixelDist = p1.distanceTo(p2);
 
-        if (pixelDist < 40) {
-            JeoConfirm("Close polygon? (Area will be calculated)").then(confirmed => {
+        // v1453-SNAP: Increased tolerance from 40 to 60 for easier closing on mobile
+        if (pixelDist < 60) {
+            latlng = startPoint; // Snap exactly to start point visually
+            JeoConfirm("Poligonu kapatmak istiyor musunuz? (Alan hesaplanacak)").then(confirmed => {
                 if (confirmed) {
                     measurePoints.push(measurePoints[0]);
                     isPolygon = true;

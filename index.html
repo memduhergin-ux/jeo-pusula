@@ -10,10 +10,10 @@
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
     <meta name="description"
         content="Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.">
-    <title>Jeoloji Pusulası v1453-4-13F</title>
+    <title>Jeoloji Pusulası v1453-4-14F</title>
     <!-- Jeoloji Pusulası Version Managed by JS -->
-    <meta name="version" content="v1453-4-13F">
-    <meta name="jeo-version" content="v1453-4-13F">
+    <meta name="version" content="v1453-4-14F">
+    <meta name="jeo-version" content="v1453-4-14F">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -931,13 +931,11 @@
             JeoAlert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
         };
 
-        console.log("Index.html: Error handlers ready.");
         window.bootTime = Date.now();
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script>console.log("Index.html: Loading app.js...");</script>
-    <script src="app.js?v=FORCE_37F"></script>
+    <script src="app.js?v=FORCE_40F"></script>
     <script>
         console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
         if ('serviceWorker' in navigator) {
@@ -993,42 +991,6 @@
         </div>
     </div>
 
-    <!-- Visual Debugger for Mobile (v1453-Debug) -->
-    <div id="jeo-debug-console" style="position:fixed; bottom:60px; left:10px; right:10px; max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.8); color:#00ffcc; font-family:monospace; font-size:10px; padding:8px; border-radius:8px; z-index:99999; pointer-events:none; border:1px solid #333; display:none;">
-        <div style="font-weight:bold; border-bottom:1px solid #333; margin-bottom:4px; display:flex; justify-content:space-between;">
-            <span>JEO-DEBUG</span>
-            <span id="jeo-debug-status">BOOTING...</span>
-        </div>
-        <div id="jeo-debug-logs"></div>
-    </div>
-
-    <script>
-        function logToScreen(msg, type = 'log') {
-            const consoleEl = document.getElementById('jeo-debug-console');
-            const logsEl = document.getElementById('jeo-debug-logs');
-            if (consoleEl && logsEl) {
-                consoleEl.style.display = 'block';
-                const div = document.createElement('div');
-                div.style.color = type === 'error' ? '#ff5252' : '#00ffcc';
-                div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-                logsEl.appendChild(div);
-                consoleEl.scrollTop = consoleEl.scrollHeight;
-            }
-        }
-        window.logToScreen = logToScreen;
-        console.log = (function(oldLog) {
-            return function(...args) {
-                oldLog.apply(console, args);
-                logToScreen(args.join(' '));
-            }
-        })(console.log);
-        console.error = (function(oldErr) {
-            return function(...args) {
-                oldErr.apply(console, args);
-                logToScreen(args.join(' '), 'error');
-            }
-        })(console.error);
-    </script>
 </body>
 
 </html>
