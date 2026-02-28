@@ -872,6 +872,41 @@
         const crashKey = 'jeo_crash_count';
         const lastCrashKey = 'jeo_last_crash_time';
 
+
+        /* --- JeoCompass Custom Modal System --- */
+        window.JeoAlert = function(message) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('jeo-modal-overlay');
+                const body = document.getElementById('jeo-modal-body');
+                const okBtn = document.getElementById('jeo-modal-ok');
+                const cancelBtn = document.getElementById('jeo-modal-cancel');
+                if (!overlay || !body) { alert(message); return resolve(); }
+                body.innerText = message;
+                cancelBtn.style.display = 'none';
+                overlay.classList.add('show');
+                const onOk = () => { overlay.classList.remove('show'); okBtn.removeEventListener('click', onOk); resolve(); };
+                okBtn.addEventListener('click', onOk);
+            });
+        };
+
+        window.JeoConfirm = function(message) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('jeo-modal-overlay');
+                const body = document.getElementById('jeo-modal-body');
+                const okBtn = document.getElementById('jeo-modal-ok');
+                const cancelBtn = document.getElementById('jeo-modal-cancel');
+                if (!overlay || !body) { return resolve(confirm(message)); }
+                body.innerText = message;
+                cancelBtn.style.display = 'block';
+                overlay.classList.add('show');
+                const onOk = () => { overlay.classList.remove('show'); cleanup(); resolve(true); };
+                const onCancel = () => { overlay.classList.remove('show'); cleanup(); resolve(false); };
+                const cleanup = () => { okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); };
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
+            });
+        };
+
         window.onerror = async function (msg, url, lineNo, columnNo, error) {
             console.error("Global Error Caught:", msg, "at", url, ":", lineNo);
 
@@ -911,7 +946,7 @@
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=FORCE_35F"></script>
+    <script src="app.js?v=FORCE_36F"></script>
     <script>
         console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
         if ('serviceWorker' in navigator) {

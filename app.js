@@ -1,63 +1,11 @@
-const APP_VERSION = 'v1453-4-11F'; // Map Snapping and Segment Label Fixes
+const APP_VERSION = 'v1453-4-12F'; // Custom Modal & Boot Fix
 const JEO_VERSION = APP_VERSION; // Geriye d�n�k uyumluluk i�in
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'jeo-store-v1';
 
-/* --- JeoCompass Custom Modal System --- */
-window.JeoAlert = function(message) {
-    return new Promise((resolve) => {
-        const overlay = document.getElementById('jeo-modal-overlay');
-        const body = document.getElementById('jeo-modal-body');
-        const okBtn = document.getElementById('jeo-modal-ok');
-        const cancelBtn = document.getElementById('jeo-modal-cancel');
-        
-        body.innerText = message;
-        cancelBtn.style.display = 'none';
-        overlay.classList.add('show');
-        
-        const cleanup = () => {
-            overlay.classList.remove('show');
-            okBtn.removeEventListener('click', onOk);
-        };
-        
-        const onOk = () => {
-            cleanup();
-            resolve();
-        };
-        
-        okBtn.addEventListener('click', onOk);
-    });
-};
 
-window.JeoConfirm = function(message) {
-    return new Promise((resolve) => {
-        const overlay = document.getElementById('jeo-modal-overlay');
-        const body = document.getElementById('jeo-modal-body');
-        const okBtn = document.getElementById('jeo-modal-ok');
-        const cancelBtn = document.getElementById('jeo-modal-cancel');
-        
-        body.innerText = message;
-        cancelBtn.style.display = 'block';
-        overlay.classList.add('show');
-        
-        const cleanup = () => {
-            overlay.classList.remove('show');
-            okBtn.removeEventListener('click', onOk);
-            cancelBtn.removeEventListener('click', onCancel);
-        };
-        
-        const onOk = () => { cleanup(); resolve(true); };
-        const onCancel = () => { cleanup(); resolve(false); };
-        
-        okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
-    });
-};
-
-// Override native dialogs (Optional but safer)
-// window.alert = window.JeoAlert; 
-// We will manually replace them to ensure async/await handling
+// Native dialog replacement system moved to index.html for earlier availability.
 
 // S�r�m� UI �zerinde g�ncelleme fonksiyonu
 function updateAppVersionDisplay() {
@@ -181,7 +129,7 @@ function initApp() {
             splash.classList.add('hidden');
             setTimeout(() => splash.remove(), 1000);
         }
-    }, 5000); // v1453-46F: Increased to 5s for better readability
+    }, 1500); // v1453-46F: Reduced to 1.5s for faster experience
 
     // 2. Request Wake Lock (Screen On)
     try {
@@ -3587,7 +3535,7 @@ if (selectAllTracksCheckbox) {
 
 // Listener for Delete Selected (btnDeleteSelected defined at top)
 if (btnDeleteSelected) {
-    btnDeleteSelected.addEventListener('click', () => {
+    btnDeleteSelected.addEventListener('click', async () => {
         let isTracks = (activeTab === 'tracks');
         if (isTracks) {
             const selectedIds = Array.from(document.querySelectorAll('.track-select:checked')).map(cb => parseInt(cb.dataset.id));
@@ -3766,7 +3714,8 @@ if (fileImportInput) {
             fileImportInput.value = '';
             return;
         }
-        if (sizeMB > 10 && !await JeoConfirm(`Dosya boyutu byk (${sizeMB.toFixed(1)}MB). leme srasnda telefonunuz ksa sreli donabilir. Devam etmek istiyor musunuz?`)) {
+        if (sizeMB > 10 && !await JeoConfirm(`Dosya boyutu büyük (${sizeMB.toFixed(1)}MB). İşleme sırasında telefonunuz kısa süreli donabilir. Devam etmek istiyor musunuz?`)) {
+            fileImportInput.value = '';
             return;
         }
 
@@ -5188,68 +5137,14 @@ function updateMeasurement(latlng) {
     // Apply Snapped Coordinate for the rest of the function!
     latlng = snappedLatLng;
 
-function updateMeasurement(latlng) {
-    if (!map) return;
-
-    // v1453-99F: Global Snapping Logic
-    // Allow snapping to ANY existing point (from records or imported layers) if within 40 pixels
-    let snappedLatLng = latlng;
-    let closestPixelDist = Infinity;
-    const clickPx = map.latLngToContainerPoint(latlng);
-
-    // 1. Check Records (Points)
-    records.forEach(r => {
-        if (r.lat && r.lon) {
-            const pPx = map.latLngToContainerPoint([r.lat, r.lon]);
-            const dist = clickPx.distanceTo(pPx);
-            if (dist < 40 && dist < closestPixelDist) {
-                closestPixelDist = dist;
-                snappedLatLng = L.latLng(r.lat, r.lon);
-            }
-        }
-    });
-
-    // 2. Check Imported Markers
-    if (typeof allKmlMarkers !== 'undefined') {
-        allKmlMarkers.forEach(m => {
-            if (m.getLatLng) {
-                const markLl = m.getLatLng();
-                const pPx = map.latLngToContainerPoint(markLl);
-                const dist = clickPx.distanceTo(pPx);
-                if (dist < 40 && dist < closestPixelDist) {
-                    closestPixelDist = dist;
-                    snappedLatLng = markLl;
-                }
-            }
-        });
-    }
-
-    // 3. Check Current Measurement Nodes (for snapping to other drawing points)
-    measurePoints.forEach(p => {
-        const pPx = map.latLngToContainerPoint(p);
-        const dist = clickPx.distanceTo(pPx);
-        if (dist < 40 && dist < closestPixelDist) {
-            closestPixelDist = dist;
-            snappedLatLng = p;
-        }
-    });
-
-    // Apply Snapped Coordinate for the rest of the function!
-    latlng = snappedLatLng;
-
     // Check Snapping (Close Polygon)
     if (measureMode === 'polygon' && measurePoints.length > 2) {
         const startPoint = measurePoints[0];
-        // v1453-69F: Pixel-based Snapping Logic (Zoom Independent)
         const p1 = map.latLngToContainerPoint(latlng);
         const p2 = map.latLngToContainerPoint(startPoint);
         const pixelDist = p1.distanceTo(p2);
 
-        // Snapping Tolerance: 40 pixels
         if (pixelDist < 40) {
-            // Error fix: This function needs to be async if it uses await.
-            // But Leaflet event handlers are usually synchronous.
-            // We'll wrap the logic to handle the promise.
             JeoConfirm("Close polygon? (Area will be calculated)").then(confirmed => {
                 if (confirmed) {
                     measurePoints.push(measurePoints[0]);
@@ -5257,13 +5152,6 @@ function updateMeasurement(latlng) {
                     redrawMeasurement();
                 }
             });
-            return;
-        }
-    }
-                measurePoints.push(measurePoints[0]);
-                isPolygon = true;
-                redrawMeasurement();
-            }
             return;
         }
     }
@@ -5281,7 +5169,7 @@ function updateMeasurement(latlng) {
         color: '#ffeb3b',
         fillColor: '#ffeb3b',
         fillOpacity: 1,
-        interactive: false // Allow map clicks to pass through to the map for snapping
+        interactive: false
     }).addTo(map);
     measureMarkers.push(marker);
 
@@ -5742,7 +5630,7 @@ initAboutModal();
 
 // Updated Delete Logic Location (Now inside Options Modal)
 if (btnDeleteSelected) {
-    btnDeleteSelected.addEventListener('click', () => {
+    btnDeleteSelected.addEventListener('click', async () => {
         const selectedIds = Array.from(document.querySelectorAll('.record-select:checked')).map(cb => parseInt(cb.dataset.id));
         if (selectedIds.length === 0) return;
 
