@@ -1,5 +1,5 @@
-const APP_VERSION = 'v1453-4-15F'; // UI Refinement (6px & Snap)
-const JEO_VERSION = APP_VERSION; // Geriye dönük uyumluluk için
+const APP_VERSION = 'v1453-4-17F'; // Reverted to English
+const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'jeo-store-v1';
@@ -2955,7 +2955,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div class="map-popup-container">
                         <b style="font-size: 1.1rem;">Measurement: ${escapeHTML(labelText)}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${escapeHTML(r.note) || 'No note'}</div>
+                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${escapeHTML(r.note) || 'Not yok'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
                             ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
                         </div>
