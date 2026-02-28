@@ -942,11 +942,13 @@
             JeoAlert("Beklenmeyen Bir Hata (Async Error):\n" + (event.reason ? event.reason.message || event.reason : "Bilinmeyen Hata"));
         };
 
+        console.log("Index.html: Error handlers ready.");
         window.bootTime = Date.now();
         // Clear crash counter after 15 seconds of stable operation
         setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
     </script>
-    <script src="app.js?v=FORCE_36F"></script>
+    <script>console.log("Index.html: Loading app.js...");</script>
+    <script src="app.js?v=FORCE_37F"></script>
     <script>
         console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
         if ('serviceWorker' in navigator) {

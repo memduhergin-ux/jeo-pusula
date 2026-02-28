@@ -1,5 +1,6 @@
-const APP_VERSION = 'v1453-4-12F'; // Custom Modal & Boot Fix
-const JEO_VERSION = APP_VERSION; // Geriye d�n�k uyumluluk i�in
+const APP_VERSION = 'v1453-4-13F'; // Boot Debug Mode
+console.log("App.js: Script evaluation started.");
+const JEO_VERSION = APP_VERSION; // Geriye dnk uyumluluk iin
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
 const JEO_STORE_NAME = 'jeo-store-v1';
@@ -122,8 +123,10 @@ function hideLoading() {
 
 // App Initialization & Splash Screen
 function initApp() {
+    console.log("App.js: initApp() called.");
     // 1. Remove Splash Screen
     setTimeout(() => {
+        console.log("App.js: Removing splash screen...");
         const splash = document.getElementById('splash-screen');
         if (splash) {
             splash.classList.add('hidden');
@@ -3176,13 +3179,8 @@ window.deleteTrack = async function (id) {
     if (await JeoConfirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
         localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
-window.removeLayer = async function (id) {
-    const track = jeoTracks.find(t => t.id === id);
-    if (track && track.path && track.path.length > 0) {
-        const poly = trackLayers[id];
-        if (poly) {
-            map.fitBounds(poly.getBounds());
-        }
+        updateMapMarkers(false);
+        renderTracks();
     }
 };
 
@@ -4643,7 +4641,7 @@ function toggleLayerAreas(id, showAreas) {
     saveExternalLayers();
 }
 
-function removeLayer(id) {
+async function removeLayer(id) {
     if (await JeoConfirm("Silmek istediğinize emin misiniz?")) {
         const index = externalLayers.findIndex(x => x.id === id);
         if (index > -1) {
