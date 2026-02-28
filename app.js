@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-24F'; // Total Data Resilience Fix 🧭🔒
+const APP_VERSION = 'v1453-4-25F'; // Total Data Resilience Fix 🧭🔒
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2346,7 +2346,7 @@ function initMap() {
     loadExternalLayers(true); // v734: Silent load on startup
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
-    // v1453-4-23F: Total Data Resilience - Atomic Auto-Restore Sequence
+    // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
     setTimeout(() => {
         const savedPoints = localStorage.getItem('jeoActiveMeasurePoints');
         const savedGrid = localStorage.getItem('jeoActiveGridParams');
@@ -2356,7 +2356,11 @@ function initMap() {
                 const pts = JSON.parse(savedPoints);
                 if (pts && pts.length > 0) {
                     measurePoints = pts.map(p => L.latLng(p.lat, p.lng));
-                    isPolygon = localStorage.getItem('jeoActiveMeasureIsPoly') === 'true';
+                    
+                    // v1453-4-24F: Safe Boolean Conversion Fix
+                    const savedIsPoly = localStorage.getItem('jeoActiveMeasureIsPoly');
+                    isPolygon = (savedIsPoly === 'true'); 
+                    
                     measureMode = isPolygon ? 'polygon' : 'line';
                     isMeasuring = true;
                     
@@ -2376,24 +2380,42 @@ function initMap() {
             } catch(e) { console.error("Resilience: Restore measurement failed", e); }
         }
 
+        // v1453-4-24F: Phased Grid Restoration (After Layers)
         if (savedGrid) {
-            try {
-                const params = JSON.parse(savedGrid);
-                activeGridInterval = params.interval;
-                activeGridColor = params.color;
-                
-                // Re-find the target layer aggressively
-                let target = null;
-                externalLayers.forEach(l => {
-                    if (l.name === params.targetName) target = l.layer;
-                });
+            setTimeout(() => {
+                try {
+                    const params = JSON.parse(savedGrid);
+                    activeGridInterval = params.interval;
+                    activeGridColor = params.color;
+                    
+                    // Re-find the target layer aggressively
+                    let target = null;
+                    // Check Records first
+                    records.forEach(r => {
+                        if (r.label === params.targetName || r.id === params.targetName) {
+                            // Find the leaflet layer in markerGroup
+                            markerGroup.eachLayer(l => {
+                                if (l.getLatLngs && (l instanceof L.Polygon || l instanceof L.Polyline)) {
+                                    target = l;
+                                }
+                            });
+                        }
+                    });
 
-                if (target) {
-                    createAreaGrid(target, activeGridInterval, activeGridColor, true);
-                }
-            } catch(e) { console.error("Resilience: Restore grid failed", e); }
+                    // Check External Layers
+                    if (!target) {
+                        externalLayers.forEach(l => {
+                            if (l.name === params.targetName) target = l.layer;
+                        });
+                    }
+
+                    if (target) {
+                        createAreaGrid(target, activeGridInterval, activeGridColor);
+                    }
+                } catch(e) { console.error("Resilience: Restore grid failed", e); }
+            }, 500); // v1453-4-24F: Extra 500ms safety for grid
         }
-    }, 1500); // v1453-4-23F: Increased to 1500ms to ensure all async map layers are ready
+    }, 1500); // v1453-4-24F: Increased to 1500ms for async stability
 
 
 
@@ -5096,9 +5118,9 @@ function redrawMeasurement() {
         });
     }
 
-    // v1453-4-23F: Persist Active Measurement State
+    // v1453-4-24F: Immediate Robust Persistence
     localStorage.setItem('jeoActiveMeasurePoints', JSON.stringify(measurePoints));
-    localStorage.setItem('jeoActiveMeasureIsPoly', isPolygon);
+    localStorage.setItem('jeoActiveMeasureIsPoly', String(isPolygon));
 
     updateMeasureButtons();
 }
