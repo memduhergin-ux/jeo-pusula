@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-19F'; // Fixed Layer Persistence
+const APP_VERSION = 'v1453-4-20F'; // Area Units: m2 & ha
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -2830,9 +2830,8 @@ function calculateAreaHelper(latlngs) {
 }
 
 function formatArea(area) {
-    if (area < 10000) return Math.round(area) + " m2";
-    if (area < 1000000) return (area / 10000).toFixed(2) + " ha";
-    return (area / 1000000).toFixed(2) + " km2";
+    if (area < 10000) return Math.round(area).toLocaleString() + " m²";
+    return (area / 10000).toFixed(3) + " ha";
 }
 
 function updateMapMarkers(shouldFitBounds = false) {
