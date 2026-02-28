@@ -222,8 +222,11 @@ async function initApp() {
         isDataLoaded = true; // Signal that it's safe to save now
         console.log("Resilience: Data loaded safely, save guard disabled.");
         
-        // Refresh UI after data load
-        renderRecords();
+        // v466: Hide all saved tracks by default on startup
+    if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
+
+    // Refresh UI after data load
+    renderRecords();
         if (typeof updateMapMarkers === 'function') updateMapMarkers();
 
     } catch (err) {
@@ -443,7 +446,7 @@ function getElementGradient(element) {
 }
 
 function updateHeatmap() {
-    if (!map || !isHeatmapActive) return;
+    if (!map || !isHeatmapActive || !records) return; // v1453-4-25F: records guard
 
     // v1453-05F: Fix for "not rendering" - Clear existing layer before adding new one
     if (heatmapLayer) {
@@ -819,11 +822,13 @@ function updateHeatmapFilterOptions() {
     const foundElements = new Set();
 
     // 1. Scan records (usually small set, scan on the fly is safe)
-    records.forEach(r => {
-        // v1453-16: Use Robust Extraction
-        const extracted = extractElements(r.label);
-        extracted.forEach(e => foundElements.add(e));
-    });
+    if (records) {
+        records.forEach(r => {
+            // v1453-16: Use Robust Extraction
+            const extracted = extractElements(r.label);
+            extracted.forEach(e => foundElements.add(e));
+        });
+    }
 
     // 2. Aggregate from pre-scanned KML layers
     externalLayers.forEach(l => {
@@ -1150,8 +1155,7 @@ let heatmapFilter = localStorage.getItem('jeoHeatmapFilter') || 'ALL'; // v403
 let smoothedPos = { lat: 0, lon: 0 };
 const SMOOTH_ALPHA = 0.3;
 let jeoTracks = null; // v1453-4-25F: null = not loaded yet
-// v466: Hide all saved tracks by default on startup
-jeoTracks.forEach(t => { t.visible = false; });
+// v466 logic moved to initApp
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
 let activeTab = 'points'; // 'points' or 'tracks' (v503 Fix)
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
@@ -2184,7 +2188,11 @@ async function saveRecords() {
 
 function renderRecords(filter = '') {
     const tableBody = document.getElementById('records-body');
-    if (!tableBody || !records) return; // v1453-4-25F: Guard against null
+    if (!tableBody || !records) return; 
+
+    // v1453-4-25F: Redefine accidentally removed variables
+    const selectAllTh = document.getElementById('select-all-th');
+    const editTh = document.getElementById('edit-th');
 
     // Sync Header Visibility
     if (selectAllTh) selectAllTh.classList.toggle('locked-hidden', isRecordsLocked);
@@ -2511,7 +2519,8 @@ function initMap() {
                     // Re-find the target layer aggressively
                     let target = null;
                     // Check Records first
-                    records.forEach(r => {
+                    if (records) {
+                        records.forEach(r => {
                         if (r.label === params.targetName || r.id === params.targetName) {
                             // Find the leaflet layer in markerGroup
                             markerGroup.eachLayer(l => {
@@ -3026,14 +3035,16 @@ function formatArea(area) {
 }
 
 function updateMapMarkers(shouldFitBounds = false) {
-    if (!map || !markerGroup || !records) return; // v1453-4-25F: Guard against null
+    if (!map || !markerGroup || !records || !jeoTracks) return; // v1453-4-25F: Guard against null
     markerGroup.clearLayers();
 
     // Clear and Redraw saved tracks
     Object.values(trackLayers).forEach(layer => map.removeLayer(layer));
     trackLayers = {};
 
-    jeoTracks.forEach(t => {
+    // Redraw saved tracks
+    if (jeoTracks) {
+        jeoTracks.forEach(t => {
         if (t.visible && t.path && t.path.length > 1) {
             const poly = L.polyline(t.path, {
                 color: t.color || '#ff5722',
@@ -5307,7 +5318,8 @@ function updateMeasurement(latlng) {
     const clickPx = map.latLngToContainerPoint(latlng);
 
     // 1. Check Records (Points)
-    records.forEach(r => {
+    if (records) {
+        records.forEach(r => {
         if (r.lat && r.lon) {
             const pPx = map.latLngToContainerPoint([r.lat, r.lon]);
             const dist = clickPx.distanceTo(pPx);
