@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-18F'; // Reverted Alerts to English
+const APP_VERSION = 'v1453-4-19F'; // Fixed Layer Persistence
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -4159,7 +4159,7 @@ function initGridListeners() {
 if (document.readyState !== 'loading') initGridListeners();
 else document.addEventListener('DOMContentLoaded', initGridListeners);
 
-function addExternalLayer(name, geojson) {
+function addExternalLayer(name, geojson, skipSave = false) {
     if (!map) return;
     if (!geojson || !geojson.features) {
         console.error("Invalid GeoJSON for layer:", name);
@@ -4688,7 +4688,7 @@ async function loadExternalLayers(silent = false) {
         }
 
         for (const d of data) {
-            addExternalLayer(d.name, d.geojson);
+            addExternalLayer(d.name, d.geojson, true); // v1453-4-19F: Skip internal saves during bulk load
             const last = externalLayers[externalLayers.length - 1];
             if (last) {
                 last.id = d.id; // Ensure ID persistence
