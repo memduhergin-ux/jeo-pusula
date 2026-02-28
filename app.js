@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-20F'; // Area Units: m2 & ha
+const APP_VERSION = 'v1453-4-21F'; // Grid Save Fix & Area Unit Filtering
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -4122,8 +4122,9 @@ function initGridListeners() {
                 ]
             };
 
-            addExternalLayer(`Grid ${activeGridInterval}m`, geojson);
-            showToast("Grid Layer Saved / Izgara Kaydedildi", 2000);
+            if (addExternalLayer(`Grid ${activeGridInterval}m`, geojson)) {
+                showToast("Grid Layer Saved / Izgara Kaydedildi", 2000);
+            }
         });
     }
 
@@ -4298,7 +4299,8 @@ function addExternalLayer(name, geojson, skipSave = false) {
                     }
                     popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
                     for (let key in feature.properties) {
-                        if (['name', 'styleUrl', 'styleHash', 'styleMapHash', 'description'].indexOf(key) === -1) {
+                        const keyLower = key.toLowerCase();
+                        if (['name', 'styleurl', 'stylehash', 'stylemaphash', 'description', 'area'].indexOf(keyLower) === -1) {
                             popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
                         }
                     }
