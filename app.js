@@ -1,8 +1,10 @@
 const APP_VERSION = 'v1453-4-25F'; // Total Data Resilience Fix 🧭🔒
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
-const JEO_DB_VERSION = 1;
-const JEO_STORE_NAME = 'jeo-store-v1';
+const JEO_DB_VERSION = 2; // v1453-4-25F: Upgraded for Records store
+const JEO_STORE_NAME = 'jeo-store-v1'; // Layers
+const JEO_RECORDS_STORE = 'jeo-records-v1'; // Geologic Records
+const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
 
 
 // Native dialog replacement system moved to index.html for earlier availability.
@@ -51,13 +53,97 @@ function openJeoDB() {
         const request = indexedDB.open(DB_NAME, JEO_DB_VERSION);
         request.onupgradeneeded = (e) => {
             const db = e.target.result;
+            // v1: Layers Store
             if (!db.objectStoreNames.contains(JEO_STORE_NAME)) {
                 db.createObjectStore(JEO_STORE_NAME, { keyPath: 'id' });
+            }
+            // v2: Records & Meta Store (v1453-4-25F)
+            if (!db.objectStoreNames.contains(JEO_RECORDS_STORE)) {
+                db.createObjectStore(JEO_RECORDS_STORE, { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains(JEO_META_STORE)) {
+                db.createObjectStore(JEO_META_STORE, { keyPath: 'key' });
             }
         };
         request.onsuccess = (e) => resolve(e.target.result);
         request.onerror = (e) => reject(e.target.error);
     });
+}
+
+// v1453-4-25F: Atomic Record Persistence
+async function dbSaveRecords(records) {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
+        const store = tx.objectStore(JEO_RECORDS_STORE);
+        await store.clear();
+        for (const record of records) {
+            await store.put(record);
+        }
+        return new Promise(r => tx.oncomplete = () => r());
+    } catch (e) { console.error("IDB Save Records Error:", e); }
+}
+
+async function dbLoadRecords() {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_RECORDS_STORE, 'readonly');
+        const store = tx.objectStore(JEO_RECORDS_STORE);
+        const request = store.getAll();
+        return new Promise((r, j) => {
+            request.onsuccess = () => r(request.result);
+            request.onerror = () => j(request.error);
+        });
+    } catch (e) { console.error("IDB Load Records Error:", e); return []; }
+}
+
+async function dbSaveMeta(key, value) {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_META_STORE, 'readwrite');
+        const store = tx.objectStore(JEO_META_STORE);
+        await store.put({ key, value });
+        return new Promise(r => tx.oncomplete = () => r());
+    } catch (e) { console.error("IDB Save Meta Error:", e); }
+}
+
+async function dbLoadMeta(key) {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_META_STORE, 'readonly');
+        const store = tx.objectStore(JEO_META_STORE);
+        const request = store.get(key);
+        return new Promise((r) => {
+            request.onsuccess = () => r(request.result ? request.result.value : null);
+            request.onerror = () => r(null);
+        });
+    } catch (e) { return null; }
+}
+
+async function migrateToIndexedDB() {
+    const isMigrated = localStorage.getItem('jeoIDBMigrated_v25F') === 'true';
+    if (isMigrated) return;
+
+    try {
+        console.log("Resilience: Starting localStorage to IndexedDB migration...");
+        
+        // 1. Records
+        const oldRecords = JSON.parse(localStorage.getItem('jeoRecords')) || [];
+        if (oldRecords.length > 0) await dbSaveRecords(oldRecords);
+
+        // 2. Meta Data
+        const oldNextId = parseInt(localStorage.getItem('jeoNextId')) || 1;
+        await dbSaveMeta('jeoNextId', oldNextId);
+
+        const oldTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
+        if (oldTracks.length > 0) await dbSaveMeta('jeoTracks', oldTracks);
+
+        // Mark as migrated
+        localStorage.setItem('jeoIDBMigrated_v25F', 'true');
+        console.log("Resilience: Migration completed successfully.");
+    } catch (e) {
+        console.error("Resilience: Migration failed", e);
+    }
 }
 
 async function dbSaveLayers(layers) {
@@ -121,7 +207,18 @@ function hideLoading() {
 }
 
 // App Initialization & Splash Screen
-function initApp() {
+async function initApp() {
+    // 0. v1453-4-25F: Data Resilience Migration & Load
+    await migrateToIndexedDB();
+    records = await dbLoadRecords();
+    nextId = await dbLoadMeta('jeoNextId') || 1;
+    jeoTracks = await dbLoadMeta('jeoTracks') || [];
+    trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
+    
+    // Refresh UI after data load
+    renderRecords();
+    if (typeof updateMapMarkers === 'function') updateMapMarkers();
+
     // 1. Remove Splash Screen
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
@@ -982,8 +1079,8 @@ let currentTilt = { beta: 0, gamma: 0 };
 let lockStrike = false;
 let lockDip = false;
 let manualDeclination = parseFloat(localStorage.getItem('jeoDeclination')) || 0;
-let records = JSON.parse(localStorage.getItem('jeoRecords')) || [];
-let nextId = parseInt(localStorage.getItem('jeoNextId')) || 1;
+let records = []; // v1453-4-25F: Initialized as empty, loaded async
+let nextId = 1; // v1453-4-25F: Initialized as 1, loaded async
 let map, markerGroup, liveMarker;
 let sensorSource = null; // 'ios', 'absolute', 'relative'
 let followMe = false;
@@ -1035,7 +1132,7 @@ let heatmapFilter = localStorage.getItem('jeoHeatmapFilter') || 'ALL'; // v403
 // Smoothing state (v400)
 let smoothedPos = { lat: 0, lon: 0 };
 const SMOOTH_ALPHA = 0.3;
-let jeoTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
+let jeoTracks = []; // v1453-4-25F: Initialized as empty, loaded async
 // v466: Hide all saved tracks by default on startup
 jeoTracks.forEach(t => { t.visible = false; });
 let trackLayers = {}; // Store Leaflet layers for saved tracks by ID
@@ -1043,7 +1140,7 @@ let activeTab = 'points'; // 'points' or 'tracks' (v503 Fix)
 const STATIONARY_FRAMES = 10; // ~0.5 saniye sabit kalırsa kilitlenmeye başlar
 
 // Track Auto-Recording State (v442)
-let trackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
+let trackIdCounter = 1; // v1453-4-25F: Initialized as 1, loaded async
 const MAX_TRACKS = 20; // Maksimum izlek say�s�
 let showLiveTrack = JSON.parse(localStorage.getItem('jeoShowLiveTrack')) !== false; // v510: Default true (boolean)
 
@@ -1933,7 +2030,7 @@ if (document.getElementById('btn-modal-cancel')) {
 }
 
 if (document.getElementById('btn-modal-save')) {
-    document.getElementById('btn-modal-save').addEventListener('click', () => {
+    document.getElementById('btn-modal-save').addEventListener('click', async () => {
         const label = document.getElementById('rec-label').value;
         const note = document.getElementById('rec-note').value;
 
@@ -2035,10 +2132,10 @@ if (document.getElementById('btn-modal-save')) {
             pendingLat = null;
             pendingLon = null;
             nextId++;
-            localStorage.setItem('jeoNextId', nextId);
+            await dbSaveMeta('jeoNextId', nextId);
         }
 
-        saveRecords();
+        await saveRecords();
         renderRecords();
         updateMapMarkers(true);
         if (isHeatmapActive) updateHeatmap();
@@ -2054,10 +2151,14 @@ if (document.getElementById('btn-modal-save')) {
     });
 }
 
-function saveRecords() {
-    localStorage.setItem('jeoRecords', JSON.stringify(records));
-    localStorage.setItem('jeoNextId', nextId);
-    if (isHeatmapActive) updateHeatmapFilterOptions();
+async function saveRecords() {
+    try {
+        await dbSaveRecords(records);
+        await dbSaveMeta('jeoNextId', nextId);
+        if (isHeatmapActive) updateHeatmapFilterOptions();
+    } catch (e) {
+        console.error("Resilience: saveRecords failed", e);
+    }
 }
 
 function renderRecords(filter = '') {
@@ -3228,7 +3329,7 @@ window.updateTrackColor = function (id, color) {
     const track = jeoTracks.find(t => t.id === id);
     if (track) {
         track.color = color;
-        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        dbSaveMeta('jeoTracks', jeoTracks);
         updateMapMarkers(false);
     }
 };
@@ -3237,7 +3338,7 @@ window.toggleTrackVisibility = function (id) {
     const track = jeoTracks.find(t => t.id === id);
     if (track) {
         track.visible = !track.visible;
-        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        dbSaveMeta('jeoTracks', jeoTracks);
         updateMapMarkers(false);
     }
 };
@@ -3245,7 +3346,7 @@ window.toggleTrackVisibility = function (id) {
 window.deleteTrack = async function (id) {
     if (await JeoConfirm("Delete track?")) {
         jeoTracks = jeoTracks.filter(t => t.id !== id);
-        localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+        dbSaveMeta('jeoTracks', jeoTracks);
         updateMapMarkers(false);
         renderTracks();
     }
@@ -3382,8 +3483,8 @@ function saveCurrentTrack() {
     }
 
     jeoTracks.push(newTrack);
-    localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
-    localStorage.setItem('trackIdCounter', trackIdCounter);
+    dbSaveMeta('jeoTracks', jeoTracks);
+    dbSaveMeta('trackIdCounter', trackIdCounter);
 
     // Canl� izle�i temizle
     trackPath = [];
@@ -3610,7 +3711,7 @@ if (btnDeleteSelected) {
             }
             if (await JeoConfirm(`Are you sure you want to delete ${selectedIds.length} selected track(s)?`)) {
                 jeoTracks = jeoTracks.filter(t => !selectedIds.includes(t.id));
-                localStorage.setItem('jeoTracks', JSON.stringify(jeoTracks));
+                await dbSaveMeta('jeoTracks', jeoTracks);
                 renderTracks();
                 updateMapMarkers(false);
                 if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
@@ -3624,7 +3725,7 @@ if (btnDeleteSelected) {
             }
             if (await JeoConfirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) {
                 records = records.filter(r => !selectedIds.includes(r.id));
-                saveRecords();
+                await saveRecords();
                 renderRecords();
                 updateMapMarkers(true);
                 if (typeof optionsModal !== 'undefined') optionsModal.classList.remove('active');
