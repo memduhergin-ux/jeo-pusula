@@ -2346,42 +2346,54 @@ function initMap() {
     loadExternalLayers(true); // v734: Silent load on startup
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
-    // v1453-4-23F: Auto-Restore Active States
+    // v1453-4-23F: Total Data Resilience - Atomic Auto-Restore Sequence
     setTimeout(() => {
-        // 1. Restore Measurement
         const savedPoints = localStorage.getItem('jeoActiveMeasurePoints');
+        const savedGrid = localStorage.getItem('jeoActiveGridParams');
+
         if (savedPoints) {
             try {
-                measurePoints = JSON.parse(savedPoints).map(p => L.latLng(p.lat, p.lng));
-                isPolygon = localStorage.getItem('jeoActiveMeasureIsPoly') === 'true';
-                isMeasuring = true;
-                updateMeasureModeUI();
-                
-                // Add markers back
-                measurePoints.forEach(p => {
-                    const m = L.circleMarker(p, { radius: 6, color: '#ffeb3b', fillOpacity: 0.8 }).addTo(map);
-                    measureMarkers.push(m);
-                });
-                redrawMeasurement();
-            } catch(e) { console.error("Restore measurement failed", e); }
+                const pts = JSON.parse(savedPoints);
+                if (pts && pts.length > 0) {
+                    measurePoints = pts.map(p => L.latLng(p.lat, p.lng));
+                    isPolygon = localStorage.getItem('jeoActiveMeasureIsPoly') === 'true';
+                    measureMode = isPolygon ? 'polygon' : 'line';
+                    isMeasuring = true;
+                    
+                    // Clear any existing active markers before restoring
+                    measureMarkers.forEach(m => map.removeLayer(m));
+                    measureMarkers = [];
+
+                    // Add markers back with stable styling
+                    measurePoints.forEach(p => {
+                        const m = L.circleMarker(p, { radius: 6, color: '#ffeb3b', fillOpacity: 0.8 }).addTo(map);
+                        measureMarkers.push(m);
+                    });
+
+                    updateMeasureModeUI();
+                    redrawMeasurement();
+                }
+            } catch(e) { console.error("Resilience: Restore measurement failed", e); }
         }
 
-        // 2. Restore Grid
-        const savedGrid = localStorage.getItem('jeoActiveGridParams');
         if (savedGrid) {
             try {
                 const params = JSON.parse(savedGrid);
                 activeGridInterval = params.interval;
                 activeGridColor = params.color;
-                // Re-find the target layer if it was a saved layer
+                
+                // Re-find the target layer aggressively
                 let target = null;
                 externalLayers.forEach(l => {
                     if (l.name === params.targetName) target = l.layer;
                 });
-                if (target) createAreaGrid(target, activeGridInterval, activeGridColor, true);
-            } catch(e) { console.error("Restore grid failed", e); }
+
+                if (target) {
+                    createAreaGrid(target, activeGridInterval, activeGridColor, true);
+                }
+            } catch(e) { console.error("Resilience: Restore grid failed", e); }
         }
-    }, 500);
+    }, 1500); // v1453-4-23F: Increased to 1500ms to ensure all async map layers are ready
 
 
 
