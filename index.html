@@ -959,7 +959,7 @@
             }
 
             JeoAlert("An Error Occurred:\n" + msg + "\nLine: " + lineNo + (columnNo ? ":" + columnNo : ""));
-            return false;
+            return true;
         };
 
         window.onunhandledrejection = function (event) {

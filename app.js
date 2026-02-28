@@ -2263,7 +2263,7 @@ let activeMapLayer = "Street (OSM)"; // Track active layer globally
 let lastSelectedParcel = null; // Track the last clicked parcel for two-stage check
 let routingControl = null; // v620: Global Routing Control
 
-function initMap() {
+async function initMap() {
     if (map) return;
 
     const initialLat = currentCoords.lat || parseFloat(localStorage.getItem('jeoLastLat')) || 39.9334;
@@ -2945,8 +2945,7 @@ function updateScaleValues() {
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
                         <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:20px; height:100%; padding:0 12px;">
                             <!-- Left: Classic Scale Section -->
-                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:center; min-width:1.5cm;">
-                                <div class="scale-unit" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-bottom:1px; line-height:1;">${unit}</div>
+                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:flex-start; min-width:1.5cm;">
                                 <div class="scale-labels" style="display:flex; justify-content:space-between; width:100%; font-size:11px; font-weight:900; color:#fff; margin-bottom:1px; padding:0 1px;">
                                     <span>0</span>
                                     <span>${displayDist}</span>
@@ -2955,6 +2954,7 @@ function updateScaleValues() {
                                     <div style="position:absolute; left:0; top:-3px; width:2px; height:6px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3px; width:2px; height:6px; background:#ffeb3b;"></div>
                                 </div>
+                                <div class="scale-unit" style="align-self: flex-end; font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:1px; line-height:1;">${unit}</div>
                             </div>
                             <!-- Right: UTM Section -->
                             <div class="utm-section" style="display:flex; flex-direction:column; gap:0.5px; font-size:10.5px; line-height:1.1;">
@@ -3836,8 +3836,8 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 
         // 4. View-specific Logic (Map / Records)
         if (targetId === 'view-map') {
-            setTimeout(() => {
-                if (typeof initMap === 'function') initMap();
+            setTimeout(async () => {
+                if (typeof initMap === 'function') await initMap();
                 if (map) map.invalidateSize();
             }, 150); // v574: Slightly increased delay for stability
         }
