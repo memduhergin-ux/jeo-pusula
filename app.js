@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-21F'; // Grid Save Fix & Area Unit Filtering
+const APP_VERSION = 'v1453-4-22F'; // Final Data Loss Fix
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 1;
@@ -3606,9 +3606,9 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             fabContainer.style.display = (targetId === 'view-map') ? 'flex' : 'none';
         }
 
-        // 3. Security & State Reset
-        isMeasuring = false;
-        if (typeof updateMeasureModeUI === 'function') updateMeasureModeUI();
+        // v1453-4-22F: Protect active measurements during tab switching
+        // isMeasuring = false; 
+        // if (typeof updateMeasureModeUI === 'function') updateMeasureModeUI();
 
         if (!isRecordsLocked) {
             isRecordsLocked = true;
