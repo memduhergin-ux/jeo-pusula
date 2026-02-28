@@ -307,27 +307,27 @@ const PERIODIC_TABLE_SYMBOLS = new Set([
 // v1453-16: Element Aliases (Common Turkish/English Names -> Symbol)
 const ELEMENT_ALIASES = {
     // TR
-    'ALTIN': 'AU', 'G�M��': 'AG', 'BAKIR': 'CU', 'DEM�R': 'FE', 'KUR�UN': 'PB', '��NKO': 'ZN',
-    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'N�KEL': 'NI', 'KOBALT': 'CO',
-    'MNO': 'MN', 'MNO2': 'MN', // v1453-17: Manganese Oxides
-    'AL�M�NYUM': 'AL', 'ARSEN�K': 'AS', 'ANT�MON': 'SB', 'KALAY': 'SN', 'T�TANYUM': 'TI',
-    'URANYUM': 'U', 'PLAT�N': 'PT', 'PALADYUM': 'PD', 'OSM�YUM': 'OS', '�R�DYUM': 'IR',
-    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADM�YUM': 'CD', 'B�ZMUT': 'BI', 'MOL�BDEN': 'MO',
-    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'L�TYUM': 'LI', 'BER�LYUM': 'BE',
-    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'K�K�RT': 'S', 'S�L�SYUM': 'SI',
-    'KALS�YUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
-    'BARYUM': 'BA', 'STRONS�YUM': 'SR', 'Z�RKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
-    'OKS�JEN': 'O', 'H�DROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
-    'NEOD�M': 'ND', 'HAFN�YUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
+    'ALTIN': 'AU', 'GÜMÜŞ': 'AG', 'BAKIR': 'CU', 'DEMİR': 'FE', 'KURŞUN': 'PB', 'ÇİNKO': 'ZN',
+    'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'NİKEL': 'NI', 'KOBALT': 'CO',
+    'MNO': 'MN', 'MNO2': 'MN', 
+    'ALÜMİNYUM': 'AL', 'ARSENİK': 'AS', 'ANTİMON': 'SB', 'KALAY': 'SN', 'TİTANYUM': 'TI',
+    'URANYUM': 'U', 'PLATİN': 'PT', 'PALADYUM': 'PD', 'OSMİYUM': 'OS', 'İRİDYUM': 'IR',
+    'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMİYUM': 'CD', 'BİZMUT': 'BI', 'MOLİBDEN': 'MO',
+    'VOLFRAM': 'W', 'TUNGSTEN': 'W', 'VANADYUM': 'V', 'LİTYUM': 'LI', 'BERİLYUM': 'BE',
+    'BOR': 'B', 'FLOR': 'F', 'FOSFOR': 'P', 'KÜKÜRT': 'S', 'SİLİSYUM': 'SI',
+    'KALSİYUM': 'CA', 'MAGNEZYUM': 'MG', 'SODYUM': 'NA', 'POTASYUM': 'K',
+    'BARYUM': 'BA', 'STRONSİYUM': 'SR', 'ZİRKONYUM': 'ZR', 'KLOR': 'CL', 'KARBON': 'C',
+    'OKSİJEN': 'O', 'HİDROJEN': 'H', 'AZOT': 'N', 'LANTAN': 'LA', 'SERYUM': 'CE',
+    'NEODİM': 'ND', 'HAFNİYUM': 'HF', 'TANTAL': 'TA', 'RENYUM': 'RE',
     // Common Minerals (TR)
-    'P�ROLUS�T': 'MN', 'RODOKROS�T': 'MN', 'PS�LOMELAN': 'MN', 'BRAUN�T': 'MN', 'MANGAN�T': 'MN',
-    'KALKOP�R�T': 'CU', 'MALAH�T': 'CU', 'AZUR�T': 'CU', 'KOVELL�N': 'CU', 'BORN�T': 'CU', 'KUPR�T': 'CU',
-    'GALEN': 'PB', 'SER�Z�T': 'PB', 'ANGLEZ�T': 'PB',
-    'SFALER�T': 'ZN', 'SM�TSON�T': 'ZN', 'HEM�MORF�T': 'ZN',
-    'HEMAT�T': 'FE', 'MANYET�T': 'FE', 'L�MON�T': 'FE', 'S�DER�T': 'FE', 'P�R�T': 'FE', 'G�T�T': 'FE',
-    'KROM�T': 'CR', 'BOKS�T': 'AL', 'KORUND': 'AL',
-    'S�NOBAR': 'HG', 'ST�BN�T': 'SB', 'ARSENOP�R�T': 'AS', 'KASS�TER�T': 'SN',
-    'SCHEEL�T': 'W', 'VOLFRAM�T': 'W', 'MOL�BDEN�T': 'MO',
+    'PİROLUSİT': 'MN', 'RODOKROSİT': 'MN', 'PSİLOMELAN': 'MN', 'BRAUNİT': 'MN', 'MANGANİT': 'MN',
+    'KALKOPİRİT': 'CU', 'MALAHİT': 'CU', 'AZURİT': 'CU', 'KOVELLİN': 'CU', 'BORNİT': 'CU', 'KUPRİT': 'CU',
+    'GALEN': 'PB', 'SERÜZİT': 'PB', 'ANGLEZİT': 'PB',
+    'SFALERİT': 'ZN', 'SMİTSONİT': 'ZN', 'HEMİMORFİT': 'ZN',
+    'HEMATİT': 'FE', 'MANYETİT': 'FE', 'LİMONİT': 'FE', 'SİDERİT': 'FE', 'PİRİT': 'FE', 'GÖTİT': 'FE',
+    'KROMİT': 'CR', 'BOKSİT': 'AL', 'KORUND': 'AL',
+    'SİNOBAR': 'HG', 'STİBNİT': 'SB', 'ARSENOPİRİT': 'AS', 'KASSİTERİT': 'SN',
+    'SCHEELİT': 'W', 'VOLFRAMİT': 'W', 'MOLİBDENİT': 'MO',
 
     // EN (Common ones that differ from symbol)
     'GOLD': 'AU', 'SILVER': 'AG', 'COPPER': 'CU', 'IRON': 'FE', 'LEAD': 'PB', 'ZINC': 'ZN',
@@ -352,7 +352,7 @@ const ELEMENT_ALIASES = {
 
 /**
  * v1453-16: Robust Element Extraction from Text
- * Handles: "Au", "Alt�n", "Bak�r-�inko", "Fe, Mn", "Cu 1.2%"
+ * Handles: "Au", "Altn", "Bakr-inko", "Fe, Mn", "Cu 1.2%"
  */
 function extractElements(text) {
     if (!text) return new Set();
@@ -1149,7 +1149,7 @@ let pendingLon = null;
 let headingBuffer = [];
 let betaBuffer = []; // NEW: Buffer for dip
 const BUFFER_SIZE = 10;
-let isTracksLocked = true; // �zlekler de varsay�lan olarak kilitli ba�lar
+let isTracksLocked = true; // zlekler de varsaylan olarak kilitli balar
 let activeGridColor = localStorage.getItem('jeoGridColor') || '#00ffcc'; // v520/v563: Persisted Grid Color
 let isStationary = false;
 let lastRotations = [];
@@ -2484,7 +2484,7 @@ function initMap() {
 
 
     updateMapMarkers(true);
-    loadExternalLayers(true); // v734: Silent load on startup
+    await loadExternalLayers(true); // v1453-4-26F: MUST be awaited to ensure data resilience
     initMapControls(); // v604: Single definitive call to ensure stable UI
 
     // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
@@ -2743,7 +2743,6 @@ function makeDraggable(element, storageKey) {
             map.dragging.disable();
         }
 
-        // v727: Capture current viewport Grab Offset (Direct Anchor)
         // v1453-1: Force position fixed and lock current top/left IMMEDIATELY to stop "jump"
         const rect = element.getBoundingClientRect();
         element.style.setProperty('position', 'fixed', 'important');
@@ -2944,21 +2943,21 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:18px; height:100%; padding:0 15px;">
-                            <!-- Left: Scale Section -->
-                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:center;">
-                                <div class="scale-labels" style="display:flex; justify-content:space-between; width:1.42cm; font-size:11px; font-weight:bold; color:#fff; margin-bottom:2px;">
+                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:20px; height:100%; padding:0 12px;">
+                            <!-- Left: Classic Scale Section -->
+                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:center; min-width:1.5cm;">
+                                <div class="scale-unit" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-bottom:1px; line-height:1;">${unit}</div>
+                                <div class="scale-labels" style="display:flex; justify-content:space-between; width:100%; font-size:11px; font-weight:900; color:#fff; margin-bottom:1px; padding:0 1px;">
                                     <span>0</span>
                                     <span>${displayDist}</span>
                                 </div>
-                                <div class="scale-line" style="width:1.42cm; height:2px; background:#ffeb3b; position:relative;">
-                                    <div style="position:absolute; left:0; top:-3px; width:2px; height:5px; background:#ffeb3b;"></div>
-                                    <div style="position:absolute; right:0; top:-3px; width:2px; height:5px; background:#ffeb3b;"></div>
+                                <div class="scale-line" style="width:100%; height:2px; background:#ffeb3b; position:relative; box-shadow: 0 0 2px rgba(0,0,0,0.5);">
+                                    <div style="position:absolute; left:0; top:-3px; width:2px; height:6px; background:#ffeb3b;"></div>
+                                    <div style="position:absolute; right:0; top:-3px; width:2px; height:6px; background:#ffeb3b;"></div>
                                 </div>
-                                <div class="scale-unit" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:1px;">${unit}</div>
                             </div>
                             <!-- Right: UTM Section -->
-                            <div class="utm-section" style="display:flex; flex-direction:column; gap:1px; font-size:11px; line-height:1.1;">
+                            <div class="utm-section" style="display:flex; flex-direction:column; gap:0.5px; font-size:10.5px; line-height:1.1;">
                                 <div><span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span></div>
                                 <div><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
                                 <div><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
@@ -4550,13 +4549,6 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                         popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
                     }
                 }
-                if (feature.geometry && feature.geometry.type === 'Point') {
-                    const [lng, lat] = feature.geometry.coordinates;
-                    popupContent += `
-                        <div style="margin-top:10px; display:flex; gap:5px;">
-                            <button onclick="startRouting(${lat}, ${lng})" style="flex:1; background:#2196f3; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px;">🗺️ Rota</button>
-                        </div>`;
-                }
                 popupContent += `</div>`;
                 popupContent += `</div>`;
                 // v1453-41F: Remove static bindPopup to allow Smart Direction on Click
@@ -4649,8 +4641,8 @@ async function addExternalLayer(name, geojson, skipSave = false) {
             // Empty layer
         }
 
-        // v1453-4-23F: Definitive Race Condition Fix
-        if (!skipSave) saveExternalLayers();
+        // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
+        if (!skipSave) await saveExternalLayers();
         renderLayerList();
         // Optimized trigger
         optimizeMapPoints();
@@ -5123,6 +5115,7 @@ if (btnMeasureClear) {
 
 async function clearMeasurement() {
     measurePoints = [];
+    isPolygon = false; // v1453-4-26F: Reset flag to allow drawing again!
     measureMarkers.forEach(m => map.removeLayer(m));
     measureMarkers = [];
     if (measureLine) map.removeLayer(measureLine);
