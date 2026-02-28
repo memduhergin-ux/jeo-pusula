@@ -4465,7 +4465,8 @@ function addExternalLayer(name, geojson, skipSave = false) {
             // Empty layer
         }
 
-        saveExternalLayers();
+        // v1453-4-23F: Definitive Race Condition Fix
+        if (!skipSave) saveExternalLayers();
         renderLayerList();
         // Optimized trigger
         optimizeMapPoints();
@@ -5082,6 +5083,11 @@ function redrawMeasurement() {
             }
         });
     }
+
+    // v1453-4-23F: Persist Active Measurement State
+    localStorage.setItem('jeoActiveMeasurePoints', JSON.stringify(measurePoints));
+    localStorage.setItem('jeoActiveMeasureIsPoly', isPolygon);
+
     updateMeasureButtons();
 }
 
