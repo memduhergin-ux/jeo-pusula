@@ -2944,27 +2944,24 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:15px; height:100%; width:100%;">
-                            <div class="scale-body" style="display:flex; flex-direction:column; align-items:center;">
-                                <div class="scale-labels" style="position:relative; width:1.42cm; height:12px; font-size:10px; margin-bottom:-1px;">
-                                    <span class="scale-lbl-0" style="position:absolute; left:0; transform:translateX(-50%); color:#fff;">0</span>
-                                    <span class="scale-lbl-val" style="position:absolute; right:0; transform:translateX(50%); color:#fff;">${displayDist}</span>
+                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:18px; height:100%; padding:0 15px;">
+                            <!-- Left: Scale Section -->
+                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:center;">
+                                <div class="scale-labels" style="display:flex; justify-content:space-between; width:1.42cm; font-size:11px; font-weight:bold; color:#fff; margin-bottom:2px;">
+                                    <span>0</span>
+                                    <span>${displayDist}</span>
                                 </div>
-                                <div class="scale-line" style="width:1.42cm; height:5px; position:relative; display:flex; align-items:flex-end;">
-                                    <div class="scale-notch notch-left" style="width:2px; height:5px; background:#ffeb3b; position:absolute; left:0; bottom:0;"></div>
-                                    <div class="scale-bar" style="width:100%; height:2px; background:#ffeb3b;"></div>
-                                    <div class="scale-notch notch-right" style="width:2px; height:5px; background:#ffeb3b; position:absolute; right:0; bottom:0;"></div>
+                                <div class="scale-line" style="width:1.42cm; height:2px; background:#ffeb3b; position:relative;">
+                                    <div style="position:absolute; left:0; top:-3px; width:2px; height:5px; background:#ffeb3b;"></div>
+                                    <div style="position:absolute; right:0; top:-3px; width:2px; height:5px; background:#ffeb3b;"></div>
                                 </div>
-                                <span class="scale-unit-text" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:3px;">${unit}</span>
+                                <div class="scale-unit" style="font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:1px;">${unit}</div>
                             </div>
-                            <div class="utm-rows-container" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start; line-height:1.2;">
-                                <div class="utm-row-line">
-                                    <span class="utm-lbl">Y:</span><span class="utm-val" style="color:#fff;">${eastPart}</span>
-                                </div>
-                                <div class="utm-row-line">
-                                    <span class="utm-lbl">X:</span><span class="utm-val" style="color:#fff;">${northPart}</span>
-                                    <span class="utm-lbl" style="margin-left:5px;">Z:</span><span class="utm-val" style="color:#fff; font-weight:bold;">${displayAlt}m</span>
-                                </div>
+                            <!-- Right: UTM Section -->
+                            <div class="utm-section" style="display:flex; flex-direction:column; gap:1px; font-size:11px; line-height:1.1;">
+                                <div><span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span></div>
+                                <div><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
+                                <div><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
                             </div>
                         </div>
                     `;
@@ -5387,10 +5384,7 @@ async function updateMeasurement(latlng) {
         }
     }
 
-    if (isPolygon) {
-        JeoAlert("Area already closed. Use 'Undo' to modify.");
-        return;
-    }
+    if (isPolygon) return;
 
     measurePoints.push(latlng);
 
