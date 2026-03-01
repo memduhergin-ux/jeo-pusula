@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-43F'; // IDB Diagnostic + Verify Fix 🔧🧭🔄
+const APP_VERSION = 'v1453-4-45F'; // Layer Persistence Root Fix 🏷️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -245,26 +245,37 @@ async function dbSaveLayers(layers) {
     }
     try {
         const db = await openJeoDB();
-        const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
-        const store = tx.objectStore(JEO_STORE_NAME);
-        await store.clear();
-        for (const layer of layers) {
-            await store.put({
-                id: layer.id,
-                name: layer.name,
-                geojson: layer.geojson,
-                visible: layer.visible,
-                filled: layer.filled,
-                pointsVisible: layer.pointsVisible,
-                areasVisible: layer.areasVisible,
-                labelsVisible: layer.labelsVisible
-            });
-        }
-        return new Promise((resolve) => {
-            tx.oncomplete = () => resolve();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
+            const store = tx.objectStore(JEO_STORE_NAME);
+
+            // Correctly clear, THEN put — all inside Promise callbacks
+            const clearReq = store.clear();
+            clearReq.onsuccess = () => {
+                layers.forEach(layer => {
+                    store.put({
+                        id: layer.id,
+                        name: layer.name,
+                        geojson: layer.geojson,
+                        visible: layer.visible,
+                        filled: layer.filled,
+                        pointsVisible: layer.pointsVisible,
+                        areasVisible: layer.areasVisible,
+                        labelsVisible: layer.labelsVisible
+                    });
+                });
+            };
+            clearReq.onerror = () => reject(clearReq.error);
+
+            tx.oncomplete = () => {
+                console.log(`Resilience: Successfully saved ${layers.length} layers to IDB.`);
+                resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(new Error("Layers transaction aborted"));
         });
     } catch (e) {
-        console.error("IndexedDB Save Error:", e);
+        console.error("IndexedDB Save Layers Error:", e);
     }
 }
 
@@ -350,8 +361,8 @@ async function initApp() {
         // v1453-4-43F: Show diagnostic toast to user
         const idbOk = await testIDBWrite();
         const diagMsg = idbOk
-            ? `✅ Veri OK: ${records.length} nokta, ${jeoTracks.length} iz, ${externalLayers.length} katman yüklendi.`
-            : '❌ IndexedDB HATA! Veri kaydedilemeyebilir. Tarayıcı ayarlarını kontrol edin.';
+            ? `✅ Data OK: ${records.length} records, ${jeoTracks.length} tracks, ${externalLayers.length} layers loaded.`
+            : '❌ IndexedDB ERROR! Data may not be saved. Check browser/app settings.';
         console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
         setTimeout(() => showToast(diagMsg, 6000), 2000);
 
