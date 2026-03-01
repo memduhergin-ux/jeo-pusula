@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeocompass-v1453-4-35F';
+const CACHE_NAME = 'jeocompass-v1453-4-36F';
 // Force Update Trigger: Offline Support Fix
 const ASSETS = [
     './',

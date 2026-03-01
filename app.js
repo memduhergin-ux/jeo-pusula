@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-35F'; // Stability & Alignment Fix 🧭✅
+const APP_VERSION = 'v1453-4-36F'; // Final Alignment & Stability 🧭💎
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 2; // v1453-4-26F: Upgraded for Records store
