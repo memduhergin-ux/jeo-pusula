@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-39F'; // Persistence & Grid Fix 🧭🔄
+const APP_VERSION = 'v1453-4-40F'; // Robust Resilience Fix 🧭💎🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -48,16 +48,16 @@ function escapeHTML(str) {
     return div.innerHTML;
 }
 
+let dbInstance = null;
 function openJeoDB() {
+    if (dbInstance) return Promise.resolve(dbInstance);
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, JEO_DB_VERSION);
         request.onupgradeneeded = (e) => {
             const db = e.target.result;
-            // v1: Layers Store
             if (!db.objectStoreNames.contains(JEO_STORE_NAME)) {
                 db.createObjectStore(JEO_STORE_NAME, { keyPath: 'id' });
             }
-            // v2: Records & Meta Store (v1453-4-26F)
             if (!db.objectStoreNames.contains(JEO_RECORDS_STORE)) {
                 db.createObjectStore(JEO_RECORDS_STORE, { keyPath: 'id' });
             }
@@ -65,7 +65,10 @@ function openJeoDB() {
                 db.createObjectStore(JEO_META_STORE, { keyPath: 'key' });
             }
         };
-        request.onsuccess = (e) => resolve(e.target.result);
+        request.onsuccess = (e) => {
+            dbInstance = e.target.result;
+            resolve(dbInstance);
+        };
         request.onerror = (e) => reject(e.target.error);
     });
 }
@@ -125,19 +128,28 @@ async function migrateToIndexedDB() {
     if (isMigrated) return;
 
     try {
-        console.log("Resilience: Starting localStorage to IndexedDB migration...");
+        console.log("Resilience: Checking for legacy data to migrate...");
 
         // 1. Records
-        const oldRecords = JSON.parse(localStorage.getItem('jeoRecords')) || [];
-        if (oldRecords.length > 0) await dbSaveRecords(oldRecords);
+        const rawRecords = localStorage.getItem('jeoRecords');
+        if (rawRecords && rawRecords !== '[]') {
+            const oldRecords = JSON.parse(rawRecords);
+            if (oldRecords.length > 0) await dbSaveRecords(oldRecords);
+        }
 
         // 2. Meta Data
-        const oldNextId = parseInt(localStorage.getItem('jeoNextId')) || 1;
-        await dbSaveMeta('jeoNextId', oldNextId);
+        const oldNextIdStr = localStorage.getItem('jeoNextId');
+        if (oldNextIdStr) {
+            const oldNextId = parseInt(oldNextIdStr) || 1;
+            await dbSaveMeta('jeoNextId', oldNextId);
+        }
 
         // 3. External Layers (Drawings)
-        const oldLayers = JSON.parse(localStorage.getItem('jeoExternalLayers')) || [];
-        if (oldLayers.length > 0) await dbSaveLayers(oldLayers);
+        const rawLayers = localStorage.getItem('jeoExternalLayers');
+        if (rawLayers && rawLayers !== '[]') {
+            const oldLayers = JSON.parse(rawLayers);
+            if (oldLayers.length > 0) await dbSaveLayers(oldLayers);
+        }
 
         // 4. Grid States & Other App Meta
         const gridParams = localStorage.getItem('jeoActiveGridParams');
@@ -153,30 +165,49 @@ async function migrateToIndexedDB() {
         if (gridColor) await dbSaveMeta('jeoGridColor', gridColor);
 
         // 5. Tracks
-        const oldTracks = JSON.parse(localStorage.getItem('jeoTracks')) || [];
-        if (oldTracks.length > 0) await dbSaveMeta('jeoTracks', oldTracks);
+        const rawTracks = localStorage.getItem('jeoTracks');
+        if (rawTracks && rawTracks !== '[]') {
+            const oldTracks = JSON.parse(rawTracks);
+            if (oldTracks.length > 0) await dbSaveMeta('jeoTracks', oldTracks);
+        }
 
-        const oldTrackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
-        await dbSaveMeta('trackIdCounter', oldTrackIdCounter);
+        const oldTrackIdCounterStr = localStorage.getItem('trackIdCounter');
+        if (oldTrackIdCounterStr) {
+            const oldTrackIdCounter = parseInt(oldTrackIdCounterStr) || 1;
+            await dbSaveMeta('trackIdCounter', oldTrackIdCounter);
+        }
 
         // 6. Active Measurements (v1453-4-39F)
         const activePoints = localStorage.getItem('jeoActiveMeasurePoints');
-        if (activePoints) await dbSaveMeta('jeoActiveMeasurePoints', JSON.parse(activePoints));
+        if (activePoints && activePoints !== '[]' && activePoints !== 'null') {
+            await dbSaveMeta('jeoActiveMeasurePoints', JSON.parse(activePoints));
+        }
 
         const activePoly = localStorage.getItem('jeoActiveMeasureIsPoly');
-        if (activePoly) await dbSaveMeta('jeoActiveMeasureIsPoly', activePoly);
+        if (activePoly && activePoly !== 'null') await dbSaveMeta('jeoActiveMeasureIsPoly', activePoly);
 
         const activeMeasuring = localStorage.getItem('jeoIsMeasuring');
-        if (activeMeasuring) await dbSaveMeta('jeoIsMeasuring', activeMeasuring);
+        if (activeMeasuring && activeMeasuring !== 'null') await dbSaveMeta('jeoIsMeasuring', activeMeasuring);
 
         const activeMode = localStorage.getItem('jeoMeasureMode');
-        if (activeMode) await dbSaveMeta('jeoMeasureMode', activeMode);
+        if (activeMode && activeMode !== 'null') await dbSaveMeta('jeoMeasureMode', activeMode);
 
         // Mark as migrated
         localStorage.setItem('jeoIDBMigrated_v1453_4_26F', 'true');
-        console.log("Resilience: Full migration completed successfully.");
+        console.log("Resilience: Migration step completed safely.");
     } catch (e) {
-        console.error("Resilience: Migration failed", e);
+        console.error("Resilience: Migration check failed", e);
+    }
+}
+
+async function requestStoragePersistence() {
+    if (navigator.storage && navigator.storage.persist) {
+        try {
+            const isPersisted = await navigator.storage.persist();
+            console.log(`Resilience: Storage persisted: ${isPersisted}`);
+        } catch (e) {
+            console.warn("Resilience: Storage persist request failed", e);
+        }
     }
 }
 
@@ -245,6 +276,7 @@ async function initApp() {
     try {
         console.log("Resilience: initApp starting...");
         updateAppVersionDisplay(); // Ensure version is updated early
+        await requestStoragePersistence(); // v1453-4-40F: Request permanent storage
 
         // 0. v1453-4-26F: Data Resilience Migration & Load
         await migrateToIndexedDB();
