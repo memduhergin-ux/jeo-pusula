@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-50F'; // Per-ID Layer Storage Safety 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-51F'; // Deep-Clone Layer Safety 🏷️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -4642,6 +4642,17 @@ async function addExternalLayer(name, geojson, skipSave = false) {
         return;
     }
 
+    // v1453-4-51F: CRITICAL - Deep clone GeoJSON BEFORE Leaflet touches it.
+    // Leaflet's L.geoJSON adds circular references and Leaflet-specific properties
+    // to the input object, which breaks IndexedDB storage and JSON serialization.
+    let cleanGeojson = null;
+    try {
+        cleanGeojson = JSON.parse(JSON.stringify(geojson));
+    } catch (e) {
+        console.error("Deep clone failed in addExternalLayer:", e);
+        cleanGeojson = geojson; // Fallback (risky)
+    }
+
     // Basic default styles
     const defaultStyle = {
         color: '#2196f3',
@@ -4655,7 +4666,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
     const layerElements = new Set(); // v1453-15: Collect elements during parsing
 
     try {
-        const layer = L.geoJSON(geojson, {
+        const layer = L.geoJSON(cleanGeojson, {
             renderer: window.sharedCanvasRenderer,
             interactive: true, // MUST be in options, not just style
             style: (feature) => {
@@ -4860,12 +4871,12 @@ async function addExternalLayer(name, geojson, skipSave = false) {
         });
 
         const layerObj = {
-            id: layerIdCounter++,
+            id: Date.now() + Math.floor(Math.random() * 1000),
             name: name,
-            layer: layer,
-            geojson: geojson, // Store for persistence
-            filled: true,
+            layer: layer, // Leaflet instance
+            geojson: cleanGeojson, // v1453-4-51F: Use the clean, cloned copy for storage
             visible: true,
+            filled: true,
             pointsVisible: true,
             areasVisible: true,
             labelsVisible: true,
