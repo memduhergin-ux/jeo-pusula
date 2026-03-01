@@ -5,7 +5,7 @@
     "description": "Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.",
     "start_url": "index.html",
     "prefer_related_applications": false,
-    "orientation": "portrait",
+    "orientation": "any",
     "id": "/JeolojiPusulasi/",
     "scope": "/JeolojiPusulasi/",
     "display": "standalone",

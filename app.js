@@ -2693,8 +2693,30 @@ function initMapControls() {
     }
 
     map.on('zoom move zoomend moveend', updateScaleValues);
-    // Refresh it on window resize too
-    window.addEventListener('resize', updateScaleValues);
+    // Refresh it on window resize and orientation change too
+    const handleResize = () => {
+        updateScaleValues();
+        if (map) {
+            map.invalidateSize();
+            // v1453-4-32F: Force recalibration of map container after rotation
+            setTimeout(() => map.invalidateSize(), 500); 
+        }
+
+        // v1453-4-33F: Enforce Compass-only Portrait warning
+        const orientationWarning = document.getElementById('orientation-warning');
+        if (orientationWarning) {
+            const activeNav = document.querySelector('.nav-item.active');
+            const targetId = activeNav ? activeNav.dataset.target : '';
+            if (targetId === 'view-compass' && window.innerWidth > window.innerHeight) {
+                orientationWarning.classList.add('active');
+            } else {
+                orientationWarning.classList.remove('active');
+            }
+        }
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    
     map.on('zoomend', () => {
         if (isHeatmapActive) updateHeatmap();
     });
@@ -2943,32 +2965,29 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <div class="scale-integrated-container" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; padding-top: 2px;">
-                            <!-- Row 1: Labels and Y (Z above is empty) -->
-                            <div class="scale-row-top" style="display:flex; align-items:flex-end; gap:10px; font-size:10.5px; width:100%; justify-content:center;">
-                                <div style="display:flex; justify-content:space-between; width:70px; font-weight:bold; color:#fff; padding:0 2px;">
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:100%; font-family:'Inter', sans-serif; line-height:1.1;">
+                            <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
+                            <div style="display:flex; align-items:baseline; width:100%; justify-content:center; gap:10px;">
+                                <div style="display:flex; justify-content:space-between; width:70px; color:#fff; font-size:11px; font-weight:bold;">
                                     <span>0</span>
-                                    <span style="color:#ffeb3b;">${displayDist}</span>
+                                    <span>${displayDist}</span>
                                 </div>
-                                <div style="width:25px;"></div> <!-- Spacer for Unit -->
-                                <div style="min-width:85px;">
-                                    <span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span>
+                                <div style="width:25px;"></div> <!-- Gap for unit below -->
+                                <div style="min-width:145px; text-align:left; font-size:11px; font-weight:bold;">
+                                    <span style="color:#ffeb3b;">Y:</span> <span style="color:#fff;">${eastPart}</span>
                                 </div>
-                                <div style="min-width:45px;"></div> <!-- Empty space above Z -->
                             </div>
                             
-                            <!-- Row 2: Line, Unit, X, Z (IP GIBI) -->
-                            <div class="scale-row-bottom" style="display:flex; align-items:center; gap:10px; font-size:10.5px; width:100%; justify-content:center;">
-                                <div class="scale-line" style="width:70px; height:2px; background:#ffeb3b; position:relative;">
-                                    <div style="position:absolute; left:0; top:-3px; width:2px; height:7px; background:#ffeb3b;"></div>
-                                    <div style="position:absolute; right:0; top:-3px; width:2px; height:7px; background:#ffeb3b;"></div>
+                            <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
+                            <div style="display:flex; align-items:center; width:100%; justify-content:center; gap:10px; margin-top: -3px;">
+                                <div style="width:70px; height:2px; background:#ffeb3b; position:relative;">
+                                    <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
+                                    <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                 </div>
-                                <div style="color:#ffeb3b; font-weight:bold; width:25px; text-align:left;">${unit}</div>
-                                <div style="min-width:85px;">
-                                    <span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span>
-                                </div>
-                                <div style="min-width:45px;">
-                                    <span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span>
+                                <div style="color:#ffeb3b; width:25px; text-align:left; font-size:11px; font-weight:bold;">${unit}</div>
+                                <div style="min-width:145px; text-align:left; font-size:11px; font-weight:bold;">
+                                    <span style="color:#ffeb3b;">X:</span> <span style="color:#fff;">${northPart}</span>
+                                    <span style="color:#ffeb3b; margin-left:12px;">Z:</span> <span style="color:#fff;">${displayAlt}m</span>
                                 </div>
                             </div>
                         </div>
@@ -3843,12 +3862,35 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             } catch (err) { console.error("Lock reset error:", err); }
         }
 
-        // 4. View-specific Logic (Map / Records)
+        // 4. View-specific Logic (Map / Records / Compass Orientation Lock)
         if (targetId === 'view-map') {
             setTimeout(async () => {
                 if (typeof initMap === 'function') await initMap();
                 if (map) map.invalidateSize();
             }, 150); // v574: Slightly increased delay for stability
+        }
+
+        // v1453-4-33F: Selective Orientation Lock (Compass only)
+        if (targetId === 'view-compass') {
+            // Try locking screen to portrait if API exists
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('portrait-primary').catch(() => {
+                    // Fail silently if not supported or not in fullscreen
+                    console.log("Orientation lock not subbed/failed");
+                });
+            }
+            // Check current orientation immediately
+            if (window.innerWidth > window.innerHeight) {
+                const warn = document.getElementById('orientation-warning');
+                if (warn) warn.classList.add('active');
+            }
+        } else {
+            // Unlock orientation for all other views
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+            const warn = document.getElementById('orientation-warning');
+            if (warn) warn.classList.remove('active');
         }
     });
 });
@@ -5190,10 +5232,12 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: true };
+        // v1453-4-32F: interactive: false while drawing so you don't click the line instead of the map
+        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: false };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: true }).addTo(map);
+        // v1453-4-32F: interactive: false while drawing
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: false }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
