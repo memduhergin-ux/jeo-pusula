@@ -1753,15 +1753,15 @@ textarea.form-input {
     align-items: center !important;
     justify-content: center !important;
     position: fixed;
-    height: 52px !important;
-    width: 290px !important;
-    padding: 0 15px !important;
+    height: 42px !important;
+    width: 240px !important;
+    padding: 0 8px !important;
     /* v1453-4-27F: Darker, wider capsule look as per latest screenshot */
-    background: rgba(0, 0, 0, 0.75) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 26px !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px !important;
     /* Perfect pill shape for 52px height */
     box-sizing: border-box !important;
     z-index: 3000 !important;
@@ -1858,7 +1858,7 @@ textarea.form-input {
         right: auto !important;
         bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
         top: auto !important;
-        width: 220px !important;
+        width: 240px !important;
         max-height: 80vh !important;
         overflow-y: auto !important;
         /* v1453-30F: Removed display: none (handled by opacity/pointer-events) */

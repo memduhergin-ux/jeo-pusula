@@ -2415,6 +2415,9 @@ async function initMap() {
 
     // Map Click Handler for Interactions (v527: Absolute Grid Dominance)
     map.on('click', async (e) => {
+        // v1453-4-28F DEBUG: Check if click reaches here
+        if (isMeasuring) console.log("Map Click Detected in Measure Mode:", e.latlng);
+        
         // v527: If Grid Mode is active, SHUT DOWN all other interactions
         if (isGridMode && activeGridInterval) {
             if (e.originalEvent) e.originalEvent.stopPropagation();
@@ -2943,28 +2946,26 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:22px; height:100%; padding:0 15px;">
-                            <!-- Left: Classic Scale Section -->
-                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:flex-start; min-width:80px;">
-                                <div class="scale-labels" style="display:flex; justify-content:space-between; width:60px; font-size:12px; font-weight:900; color:#fff; margin-bottom:1px; line-height:1; padding:0 1px;">
+                        <div class="scale-integrated-container" style="display:flex; flex-direction:row; align-items:center; justify-content:center; gap:15px; width:100%; height:100%;">
+                            <!-- v1453-20F: Optimized Scale Block -->
+                            <div class="scale-body">
+                                <div class="scale-labels">
                                     <span>0</span>
-                                    <span>${displayDist}</span>
+                                    <span id="scale-end">${displayDist}</span>
                                 </div>
-                                <div style="display:flex; align-items:center; gap:5px;">
-                                    <div class="scale-line" style="width:60px; height:2px; background:#ffeb3b; position:relative; box-shadow: 0 0 2px rgba(0,0,0,0.5);">
-                                        <div style="position:absolute; left:0; top:-4px; width:2px; height:8px; background:#ffeb3b;"></div>
-                                        <div style="position:absolute; right:0; top:-4px; width:2px; height:8px; background:#ffeb3b;"></div>
-                                    </div>
-                                    <div class="scale-unit" style="font-size:12px; color:#ffeb3b; font-weight:bold; line-height:1;">${unit}</div>
+                                <div class="scale-line">
+                                    <div class="scale-notch notch-left"></div>
+                                    <div class="scale-bar"></div>
+                                    <div class="scale-notch notch-right"></div>
                                 </div>
+                                <div class="scale-unit" style="margin-top: -2px;">${unit}</div>
                             </div>
-                            <!-- Right: UTM Section -->
-                            <div class="utm-section" style="display:flex; flex-direction:column; gap:1px; font-size:11px; line-height:1.2;">
-                                <div><span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span></div>
-                                <div style="display:flex; gap:10px; align-items:center;">
-                                    <div><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
-                                    <div><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
-                                </div>
+                            
+                            <!-- v1453-20F: Clean UTM Block -->
+                            <div class="utm-rows-container">
+                                <div class="utm-row"><span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span></div>
+                                <div class="utm-row"><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
+                                <div class="utm-row"><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
                             </div>
                         </div>
                     `;
@@ -5061,6 +5062,8 @@ if (btnPolygon) {
         } else {
             isMeasuring = true;
             measureMode = 'polygon';
+            // v1453-4-28F: Ensure flag is reset when starting fresh
+            if (measurePoints.length === 0) isPolygon = false;
         }
 
         updateMeasureModeUI();
@@ -5181,10 +5184,10 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: false };
+        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: true };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: false }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: true }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
