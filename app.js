@@ -1,7 +1,7 @@
-const APP_VERSION = 'v1453-4-53H'; // Ultra-Safe Recovery Shield 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53I'; // Immutable Layer Storage 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
-const JEO_DB_VERSION = 4; // v1453-4-53H: Forced schema re-check for recovery
+const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
 const JEO_STORE_NAME = 'jeo-store-v1'; // Layers
 const JEO_RECORDS_STORE = 'jeo-records-v1'; // Geologic Records
 const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
@@ -229,12 +229,25 @@ async function migrateToIndexedDB() {
 }
 
 /**
- * v1453-4-53H: Additive Legacy IndexedDB Recovery
+ * v1453-4-53I: Additive Legacy IndexedDB Recovery + Emergency Scavenge
  * Merges data from OLD stores into NEW stores instead of overwriting.
  */
 async function migrateLegacyIDBStores() {
-    const migrationKey = 'jeo_idb_migration_v53H';
-    if (localStorage.getItem(migrationKey) === 'true') return;
+    const migrationKey = 'jeo_idb_migration_v53I';
+
+    // v1453-4-53I: Emergency Scavenge Trigger
+    // If we have ZERO records and ZERO tracks, we force a re-check of old stores
+    // even if the migration key exists.
+    const currentRecords = await dbLoadRecords();
+    const currentTracks = await dbLoadMeta('jeoTracks') || [];
+    const currentLayers = await dbLoadLayers();
+
+    const isEmpty = currentRecords.length === 0 && currentTracks.length === 0 && currentLayers.length === 0;
+    if (localStorage.getItem(migrationKey) === 'true' && !isEmpty) return;
+
+    if (isEmpty && localStorage.getItem(migrationKey) === 'true') {
+        console.warn("Resilience: Emergency Scavenge Triggered (No data found).");
+    }
 
     try {
         const db = await openJeoDB();
@@ -348,7 +361,9 @@ async function dbPutLayer(layer) {
                 resolve();
             };
             tx.onerror = () => {
-                console.error(`dbPutLayer: TX ERROR for "${layer.name}":`, tx.error);
+                const err = `IDB ERROR: Failed to save layer "${layer.name}". Check storage space.`;
+                console.error(`dbPutLayer: TX ERROR:`, tx.error);
+                showToast(err, 5000);
                 resolve();
             };
             tx.onabort = () => {
@@ -4729,15 +4744,24 @@ async function addExternalLayer(name, geojson, skipSave = false) {
         return;
     }
 
-    // v1453-4-51F: CRITICAL - Deep clone GeoJSON BEFORE Leaflet touches it.
-    // Leaflet's L.geoJSON adds circular references and Leaflet-specific properties
-    // to the input object, which breaks IndexedDB storage and JSON serialization.
-    let cleanGeojson = null;
+    // v1453-4-53I: CRITICAL - IMMUTABLE STORAGE CLONING.
+    // We create TWO separate copies of the GeoJSON:
+    // 1. One for Leaflet (which will be mutated by L.geoJSON)
+    // 2. One for IndexedDB (which remains clean and immutable)
+    let leafletGeojson = null;
+    let storageGeojson = null;
     try {
-        cleanGeojson = JSON.parse(JSON.stringify(geojson));
+        if (typeof structuredClone === 'function') {
+            leafletGeojson = structuredClone(geojson);
+            storageGeojson = structuredClone(geojson);
+        } else {
+            leafletGeojson = JSON.parse(JSON.stringify(geojson));
+            storageGeojson = JSON.parse(JSON.stringify(geojson));
+        }
     } catch (e) {
         console.error("Deep clone failed in addExternalLayer:", e);
-        cleanGeojson = geojson; // Fallback (risky)
+        leafletGeojson = geojson;
+        storageGeojson = geojson;
     }
 
     // Basic default styles
@@ -4753,7 +4777,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
     const layerElements = new Set(); // v1453-15: Collect elements during parsing
 
     try {
-        const layer = L.geoJSON(cleanGeojson, {
+        const layer = L.geoJSON(leafletGeojson, {
             renderer: window.sharedCanvasRenderer,
             interactive: true, // MUST be in options, not just style
             style: (feature) => {
@@ -4961,7 +4985,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
             id: Date.now() + Math.floor(Math.random() * 1000),
             name: name,
             layer: layer, // Leaflet instance
-            geojson: cleanGeojson, // v1453-4-51F: Use the clean, cloned copy for storage
+            geojson: storageGeojson, // v1453-4-53I: Use the IMMUTABLE copy for storage
             visible: true,
             filled: true,
             pointsVisible: true,
