@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-45F'; // Layer Persistence Root Fix 🏷️🧭🔄
+const APP_VERSION = 'v1453-4-46F'; // Anti-Wipe Protection 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -75,8 +75,9 @@ function openJeoDB() {
 
 // v1453-4-26F: Atomic Record Persistence
 async function dbSaveRecords(records) {
-    if (!isDataLoaded && records && records.length === 0) {
-        console.warn("Resilience: Blocked empty records save before load.");
+    if (!records || records.length === 0) {
+        // ANTI-WIPE: Never clear the records store with empty data
+        console.warn(`Resilience: dbSaveRecords blocked — refusing to save empty records array.`);
         return;
     }
     try {
@@ -91,7 +92,7 @@ async function dbSaveRecords(records) {
             };
 
             tx.oncomplete = () => {
-                console.log(`Resilience: Successfully saved ${records.length} records to IDB.`);
+                console.log(`[${new Date().toISOString()}] Resilience: Saved ${records.length} records to IDB.`);
                 resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -116,8 +117,9 @@ async function dbLoadRecords() {
 }
 
 async function dbSaveMeta(key, value) {
-    if (!isDataLoaded && (key === 'jeoActiveMeasurePoints' || key === 'jeoTracks')) {
-        console.warn(`Resilience: Blocked meta save for ${key} before load.`);
+    // ANTI-WIPE: Never save empty tracks array
+    if (key === 'jeoTracks' && Array.isArray(value) && value.length === 0) {
+        console.warn('Resilience: dbSaveMeta blocked — refusing to save empty jeoTracks array.');
         return;
     }
     try {
@@ -239,8 +241,9 @@ async function requestStoragePersistence() {
 }
 
 async function dbSaveLayers(layers) {
-    if (!isDataLoaded && layers && layers.length === 0) {
-        console.warn("Resilience: Blocked empty layers save before load.");
+    if (!layers || layers.length === 0) {
+        // ANTI-WIPE: Never clear the layers store with empty data
+        console.warn(`Resilience: dbSaveLayers blocked — refusing to save empty layers array. isDataLoaded=${isDataLoaded}`);
         return;
     }
     try {
@@ -357,6 +360,9 @@ async function initApp() {
         if (savedGridColor !== null) activeGridColor = savedGridColor;
 
         isDataLoaded = true; // Signal that it's safe to save now
+
+        // v1453-4-46F: Verbose diagnostic log
+        console.log(`[${new Date().toISOString()}] INIT-COMPLETE records.length=${records.length} tracks.length=${jeoTracks.length} layers.length=${externalLayers.length}`);
 
         // v1453-4-43F: Show diagnostic toast to user
         const idbOk = await testIDBWrite();
