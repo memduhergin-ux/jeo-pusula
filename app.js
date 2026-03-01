@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53I'; // Immutable Layer Storage 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53K'; // Smart Labeling Restoration 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -488,13 +488,8 @@ async function initApp() {
         // v1453-4-46F: Verbose diagnostic log
         console.log(`[${new Date().toISOString()}] INIT-COMPLETE records.length=${records.length} tracks.length=${jeoTracks.length} layers.length=${externalLayers.length}`);
 
-        // v1453-4-43F: Show diagnostic toast to user
-        const idbOk = await testIDBWrite();
-        const diagMsg = idbOk
-            ? `✅ Data OK: ${records.length} records, ${jeoTracks.length} tracks, ${externalLayers.length} layers loaded.`
-            : '❌ IndexedDB ERROR! Data may not be saved. Check browser/app settings.';
+        // v1453-4-53J: Removed startup diagnostic toast as per user request
         console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
-        setTimeout(() => showToast(diagMsg, 6000), 2000);
 
         // v1453-PERSIST: Restore Active Measurements from IndexedDB
         const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
@@ -4834,9 +4829,9 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
                         permanent: true,
-                        direction: 'center', // v673: Reverted to 'center' to allow `optimizeMapPoints` 8-way placement logic to work correctly
+                        direction: 'center', // v1453-4-53K: Re-enabled smart 8-way placement
                         className: 'kml-label',
-                        offset: [0, 0], // v673: Let smart placement handle the offset
+                        offset: [0, 0], // Handled by optimizeMapPoints
                         sticky: false
                     });
 
@@ -4849,46 +4844,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                 }
 
                 // v1453-99F: Permanent Segment Labels for Polygons and LineStrings
-                if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
-                    let rawLatLngs = layer.getLatLngs();
-                    let latlngs = [];
-
-                    if (feature.geometry.type === 'Polygon') {
-                        // Polygons return [[LatLng, LatLng...]] or deeper nesting
-                        latlngs = Array.isArray(rawLatLngs[0]) ? (Array.isArray(rawLatLngs[0][0]) ? rawLatLngs[0][0] : rawLatLngs[0]) : rawLatLngs;
-                    } else if (feature.geometry.type === 'LineString') {
-                        // Polyline returns [LatLng, LatLng...] or nested depending on Multi
-                        latlngs = Array.isArray(rawLatLngs[0]) ? rawLatLngs[0] : rawLatLngs;
-                    }
-
-                    if (Array.isArray(latlngs) && latlngs.length > 1) {
-                        for (let i = 0; i < latlngs.length - 1; i++) {
-                            const p1 = latlngs[i];
-                            const p2 = latlngs[i + 1];
-                            const dist = map.distance(p1, p2);
-                            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
-                            const point1 = map.latLngToContainerPoint(p1);
-                            const point2 = map.latLngToContainerPoint(p2);
-                            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
-                            if (angle > 90 || angle < -90) angle += 180;
-
-                            const lab = L.marker(mid, {
-                                icon: L.divIcon({
-                                    className: 'segment-label-container',
-                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                                    iconSize: [1, 1],
-                                    iconAnchor: [0, 0]
-                                }),
-                                interactive: false
-                            });
-
-                            // v1453-99F: Store in feature to collect later
-                            if (!feature._segmentLabels) feature._segmentLabels = [];
-                            feature._segmentLabels.push(lab);
-                            lab.addTo(map);
-                        }
-                    }
-                }
+                // v1453-4-53J: Segment labels removed as per user request (use ruler instead)
 
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {

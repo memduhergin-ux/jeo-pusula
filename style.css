@@ -3137,6 +3137,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 .low-zoom-labels .segment-label-container {
     display: none !important;
 }
+
 /* --- Custom JeoCompass Modals --- */
 .jeo-modal-overlay {
     position: fixed;
@@ -3147,7 +3148,10 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(5px);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    /* v1453-4-53J: Moved to top as per user request */
+    padding-top: 50px;
+    /* Spacing from top */
     justify-content: center;
     z-index: 10000;
     opacity: 0;
@@ -3260,7 +3264,15 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 @keyframes rotate-phone {
-    0% { transform: rotate(90deg); }
-    50% { transform: rotate(0deg); }
-    100% { transform: rotate(90deg); }
+    0% {
+        transform: rotate(90deg);
+    }
+
+    50% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(90deg);
+    }
 }
