@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53O'; // Orux-Style Atomic Storage 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53Q'; // Drawing Refinement 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -486,18 +486,42 @@ async function initApp() {
     try {
         console.log("Resilience: initApp starting...");
         updateAppVersionDisplay(); // Ensure version is updated early
-        await requestStoragePersistence(); // v1453-4-40F: Request permanent storage
 
-        // 0. v1453-4-52G: Total Recovery - LocalStorage + Legacy IDB
-        await migrateToIndexedDB();
-        await migrateLegacyIDBStores();
+        // v1453-4-53P: Move persistence request to the VERY TOP and await it
+        await requestStoragePersistence();
 
-        records = await dbLoadRecords() || [];
-        nextId = await dbLoadMeta('jeoNextId') || 1;
-        jeoTracks = await dbLoadMeta('jeoTracks') || [];
-        trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
-        isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
-        await loadExternalLayers(true); // Silent load from IDB
+        // v1453-4-53P: Database Load with RETRY Logic (Power Sync)
+        let loadSuccess = false;
+        for (let i = 0; i < 3; i++) {
+            try {
+                // 0. v1453-4-52G: Total Recovery - LocalStorage + Legacy IDB
+                await migrateToIndexedDB();
+                await migrateLegacyIDBStores();
+
+                records = await dbLoadRecords() || [];
+                nextId = await dbLoadMeta('jeoNextId') || 1;
+                jeoTracks = await dbLoadMeta('jeoTracks') || [];
+                trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
+                isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
+                await loadExternalLayers(true); // Silent load from IDB
+
+                // v1453-4-53P: Recover active track path if app crashed
+                const recoveredPath = await dbLoadMeta('jeoActiveTrackPath');
+                if (recoveredPath && recoveredPath.length > 0 && !isTracking) {
+                    trackPath = recoveredPath;
+                    trackStartTime = localStorage.getItem('jeoTrackStartTime');
+                    console.log("Resilience: Recovered active track path from IDB.");
+                }
+
+                loadSuccess = true;
+                break; // Success!
+            } catch (loadErr) {
+                console.warn(`Resilience: Load attempt ${i + 1} failed. Retrying...`, loadErr);
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+
+        if (!loadSuccess) throw new Error("IDB Loading failed after 3 attempts.");
 
         const savedGridInterval = await dbLoadMeta('jeoGridInterval');
         if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
@@ -2696,7 +2720,8 @@ async function initMap() {
         const zoom = map.getZoom();
         const mapContainer = document.getElementById('map-container');
         if (mapContainer) {
-            if (zoom < 10) {
+            // v1453-4-53Q: Only hide labels at VERY low zoom (zoom < 5) to keep them visible longer
+            if (zoom < 5) {
                 mapContainer.classList.add('low-zoom-labels');
             } else {
                 mapContainer.classList.remove('low-zoom-labels');
@@ -3817,7 +3842,8 @@ function updateTrack(lat, lon) {
     if (lat === 0 && lon === 0) return; // v464: Ignore (0,0)
 
     trackPath.push([lat, lon]);
-    // v456: Persist live track path immediately
+    // v1453-4-53P: Global Field Persistence - Save track point instantly
+    dbSaveMeta('jeoActiveTrackPath', trackPath, true);
     localStorage.setItem('jeoTrackPath', JSON.stringify(trackPath));
 
     // v467: Persist start time if this is the first point
@@ -4517,7 +4543,7 @@ async function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
     const gridPoly = L.polyline(gridLines, {
         color: color,
-        weight: 1.0, // v1453: Reverted to 1.0 (Original Precision)
+        weight: 6, // v1453-4-53Q: Enforced 6px Thickness
         opacity: 0.9,
         dashArray: '5, 8',
         interactive: false
@@ -4703,7 +4729,7 @@ function initGridListeners() {
                             name: `Grid ${activeGridInterval}m`,
                             description: "Saved Grid Overlay",
                             color: activeGridColor,
-                            weight: 2
+                            weight: 6
                         },
                         geometry: {
                             type: "MultiLineString",
@@ -4780,7 +4806,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
     // Basic default styles
     const defaultStyle = {
         color: '#2196f3',
-        weight: 2,
+        weight: 6,
         opacity: 1,
         fillColor: '#2196f3',
         fillOpacity: 0.4,
@@ -4810,7 +4836,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     radius: 4, // v677: Reverted to blue dot (radius 4 as requested)
                     fillColor: '#2196f3',
                     color: '#ffffff',
-                    weight: 2,
+                    weight: 6,
                     opacity: 1,
                     fillOpacity: 1,
                     interactive: true // v1453-105: Explicitly enable interaction

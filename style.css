@@ -2381,17 +2381,20 @@ textarea.form-input {
 }
 
 .segment-label {
-    background: rgba(0, 0, 0, 0.75);
-    color: #ffeb3b;
-    border: 1px solid rgba(255, 235, 59, 0.5);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-    white-space: nowrap;
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: #ffeb3b !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8) !important;
+    text-shadow: 1px 1px 2px #000 !important;
     pointer-events: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    margin-top: -10px;
+    display: inline-block;
+    margin: 0 !important;
+    transform-origin: center center;
+    border: 1px solid rgba(255, 235, 59, 0.4) !important;
 }
 
 #rec-label-preview {
@@ -3103,31 +3106,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 }
 
 /* v1453-97F: Measurement Label Readability Improvement (Transparent Reuse) */
-.segment-label {
-    background: none !important;
-    color: #ffeb3b !important;
-    padding: 0 !important;
-    border-radius: 0;
-    font-size: 9px !important;
-    /* v1453-4-10F: 9px as requested, offset azaltıldı */
-    margin-top: -5px !important;
-    font-weight: 900 !important;
-    border: none !important;
-    white-space: nowrap;
-    box-shadow: none !important;
-    text-shadow:
-        -1px -1px 0 #000,
-        1px -1px 0 #000,
-        -1px 1px 0 #000,
-        1px 1px 0 #000,
-        0px 0px 3px rgba(0, 0, 0, 1);
-    /* Strong outline for readability */
-    pointer-events: none;
-    display: inline-block;
-    /* Reset landscape overrides if any */
-    margin: 0 !important;
-    transform-origin: center center;
-}
+/* Removed redundant segment-label block to prevent overrides */
 
 .segment-label-container {
     z-index: 1000 !important;
