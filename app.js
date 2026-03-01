@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53K'; // Smart Labeling Restoration 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53N'; // TWA/PWA Power Sync 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -313,13 +313,22 @@ async function migrateLegacyIDBStores() {
     }
 }
 
+let isStorageDurable = false; // Internal flag for resilience
 async function requestStoragePersistence() {
+    // v1453-4-53N: HIGH PRIORITY Persistence for Play Store / TWA
+    // We request 'durable' storage to prevent Chrome from ever auto-evicting this data.
     if (navigator.storage && navigator.storage.persist) {
         try {
-            const isPersisted = await navigator.storage.persist();
-            console.log(`Resilience: Storage persisted: ${isPersisted}`);
+            const alreadyPersisted = await navigator.storage.persisted();
+            if (alreadyPersisted) {
+                isStorageDurable = true;
+                console.log("Resilience: Storage ALREADY marked as DURABLE.");
+            } else {
+                isStorageDurable = await navigator.storage.persist();
+                console.log(`Resilience: Storage persistence request result: ${isStorageDurable}`);
+            }
         } catch (e) {
-            console.warn("Resilience: Storage persist request failed", e);
+            console.error("Resilience: Fatal Persistence Hook Error", e);
         }
     }
 }
@@ -1548,7 +1557,7 @@ function optimizeMapPoints() {
     try {
         if (labelOptimizeTimer) clearTimeout(labelOptimizeTimer);
 
-        labelOptimizeTimer = setTimeout(() => {
+        labelOptimizeTimer = setTimeout(async () => {
             const markers = allKmlMarkers;
             if (markers.length === 0) return;
 
@@ -1557,9 +1566,6 @@ function optimizeMapPoints() {
             const labelsToPlace = []; // Collect valid labels to process
 
             // 1. First, treat ALL visible markers (KML + Records) as obstacles
-            // This prevents labels from overlapping the "dots" or orientation symbols
-
-            // Collect KML markers that are visible
             markers.forEach(marker => {
                 const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
                 if (!parentLayer || !parentLayer.visible || !parentLayer.pointsVisible) return;
@@ -1581,7 +1587,7 @@ function optimizeMapPoints() {
                 }
             });
 
-            // Collect standard record markers
+            // 2. Standard record markers
             if (markerGroup) {
                 markerGroup.eachLayer(layer => {
                     if (layer instanceof L.Marker) {
@@ -1600,11 +1606,18 @@ function optimizeMapPoints() {
                 });
             }
 
-            // 3. Process Labels (v676: No Hiding)
-            labelsToPlace.forEach(({ marker, tooltip }) => {
+            // 3. Process Labels
+            for (const { marker, tooltip } of labelsToPlace) {
                 marker.openTooltip();
-                const tooltipEl = tooltip.getElement();
-                if (!tooltipEl) return;
+                let tooltipEl = tooltip.getElement();
+                if (!tooltipEl) continue;
+
+                // v1453-4-53L: Retry logic for race condition widths
+                if ((!tooltip._jeoWidth || tooltip._jeoWidth === 0) && tooltipEl.offsetWidth === 0) {
+                    await new Promise(r => setTimeout(r, 200));
+                    tooltipEl = tooltip.getElement();
+                    if (!tooltipEl) continue;
+                }
 
                 if ((!tooltip._jeoWidth || tooltip._jeoWidth === 0) && tooltipEl.offsetWidth > 0) {
                     tooltip._jeoWidth = tooltipEl.offsetWidth;
@@ -1615,8 +1628,7 @@ function optimizeMapPoints() {
 
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
-                // Check 8 directions (Center anchor baseline)
-                // v1453-05F: Increased padding for better visibility
+                // Check 8 directions
                 const pad = 3;
                 const directions = [
                     { x: -width / 2, y: -height / 2 - pad - 6 }, // N
@@ -1651,23 +1663,18 @@ function optimizeMapPoints() {
                 if (bestPos) {
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
-                    // Apply offset via margins (Shift from center anchor)
                     tooltipEl.style.marginLeft = `${bestPos.x + width / 2}px`;
                     tooltipEl.style.marginTop = `${bestPos.y + height / 2}px`;
                     occupiedRects.push(bestPos.rect);
                 } else {
-                    // v676: Fallback to North instead of hiding (User: "No Hiding")
                     const fallbackDir = directions[0];
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
                     tooltipEl.style.marginLeft = `${fallbackDir.x + width / 2}px`;
                     tooltipEl.style.marginTop = `${fallbackDir.y + height / 2}px`;
-                    // Note: We don't push to occupiedRects if it's a fallback collision, 
-                    // or we could if we want others to avoid it too. Let's not to avoid cascades.
                 }
-            });
-
-        }, 50);
+            }
+        }, 300); // v1453-4-53L: Increased from 50ms to 300ms for browser paint
     } catch (e) {
         console.error("optimizeMapPoints failed:", e);
     }
@@ -5197,7 +5204,7 @@ async function removeLayer(id) {
             }
             // v545: Clean up flat marker array
             externalLayers[index].layer.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
+                if (layer instanceof L.Marker || layer instanceof L.CircleMarker || layer.isKmlMarker) {
                     allKmlMarkers = allKmlMarkers.filter(m => m !== layer);
                 }
             });
