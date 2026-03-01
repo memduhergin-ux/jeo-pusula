@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-48F'; // Multi-Bug Fix 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-49F'; // Layer Load Fix 🟳️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -239,9 +239,9 @@ async function requestStoragePersistence() {
     }
 }
 
-async function dbSaveLayers(layers) {
-    if (!isDataLoaded) {
-        // GUARD: Never write before data is fully loaded
+async function dbSaveLayers(layers, forceWrite = false) {
+    if (!isDataLoaded && !forceWrite) {
+        // GUARD: Never write before data is fully loaded (unless forced)
         console.warn(`Resilience: dbSaveLayers blocked — data not yet loaded.`);
         return;
     }
@@ -5156,13 +5156,13 @@ async function loadExternalLayers(silent = false) {
             if (legacySaved) {
                 data = JSON.parse(legacySaved);
                 console.log("Migrating legacy layers to IndexedDB...");
-                await dbSaveLayers(data);
+                await dbSaveLayers(data, true); // forceWrite=true: bypass isDataLoaded guard
                 localStorage.removeItem('jeoExternalLayers');
             }
         }
 
         for (const d of data) {
-            addExternalLayer(d.name, d.geojson, true); // v1453-4-19F: Skip internal saves during bulk load
+            await addExternalLayer(d.name, d.geojson, true); // v1453-4-49F: await to ensure correct state
             const last = externalLayers[externalLayers.length - 1];
             if (last) {
                 last.id = d.id; // Ensure ID persistence
