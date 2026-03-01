@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-36F'; // Final Alignment & Stability 🧭💎
+const APP_VERSION = 'v1453-4-37F'; // Ultimate Drawing & Scale Fix 🧭💎✅
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 2; // v1453-4-26F: Upgraded for Records store
@@ -2119,6 +2119,7 @@ if (document.getElementById('btn-modal-save')) {
             recordModal.classList.remove('active');
             isSavingLayer = false;
             isMeasuring = false; 
+            await clearMeasurement(); // v1453-4-37F: Crucial reset after saving!
             updateMeasureModeUI();
             return;
         }
@@ -2965,30 +2966,30 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <!-- v1453-4-35F: Added padding (0 8px) to prevent label overflow (0 and dist) -->
-                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 8px; font-family:'Inter', sans-serif; line-height:1.05;">
+                        <!-- v1453-4-37F: Tightened gaps (gap:4px) and removed translateX from '0' to keep it inside -->
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px; font-family:'Inter', sans-serif; line-height:1.0;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
-                            <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:6px;">
-                                <div style="position:relative; width:65px; height:12px; color:#fff; font-size:10px; font-weight:bold;">
-                                    <span style="position:absolute; left:0; transform:translateX(-50%);">0</span>
-                                    <span style="position:absolute; left:65px; transform:translateX(-50%);">${displayDist}</span>
+                            <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:4px;">
+                                <div style="position:relative; width:60px; height:12px; color:#fff; font-size:10px; font-weight:bold;">
+                                    <span style="position:absolute; left:0;">0</span>
+                                    <span style="position:absolute; right:0; text-align:right;">${displayDist}</span>
                                 </div>
-                                <div style="width:18px;"></div> <!-- Gap for unit below -->
-                                <div style="min-width:125px; text-align:left; font-size:11px; font-weight:bold;">
+                                <div style="width:14px;"></div> <!-- Gap for unit below -->
+                                <div style="min-width:115px; text-align:left; font-size:11px; font-weight:bold;">
                                     <span style="color:#ffeb3b;">Y:</span> <span style="color:#fff;">${eastPart}</span>
                                 </div>
                             </div>
                             
                             <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
-                            <div style="display:flex; align-items:center; justify-content:flex-start; gap:6px; margin-top: -1px;">
-                                <div style="width:65px; height:2px; background:#ffeb3b; position:relative;">
+                            <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-top: -1px;">
+                                <div style="width:60px; height:2px; background:#ffeb3b; position:relative;">
                                     <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                 </div>
-                                <div style="color:#ffeb3b; width:18px; text-align:left; font-size:10px; font-weight:bold; margin-left:-3px;">${unit}</div>
-                                <div style="min-width:125px; text-align:left; font-size:11px; font-weight:bold;">
+                                <div style="color:#ffeb3b; width:14px; text-align:left; font-size:10px; font-weight:bold; margin-left:1px;">${unit}</div>
+                                <div style="min-width:115px; text-align:left; font-size:11px; font-weight:bold;">
                                     <span style="color:#ffeb3b;">X:</span> <span style="color:#fff;">${northPart}</span>
-                                    <span style="color:#ffeb3b; margin-left:8px;">Z:</span> <span style="color:#fff;">${displayAlt}m</span>
+                                    <span style="color:#ffeb3b; margin-left:6px;">Z:</span> <span style="color:#fff;">${displayAlt}m</span>
                                 </div>
                             </div>
                         </div>
@@ -5102,8 +5103,8 @@ if (btnPolygon) {
         } else {
             isMeasuring = true;
             measureMode = 'polygon';
-            // v1453-4-30F: Polygon tool MUST have isPolygon = true
-            isPolygon = true;
+            // v1453-4-37F: isPolygon must be false initially to allow adding nodes!
+            isPolygon = false; 
         }
 
         updateMeasureModeUI();
@@ -5224,11 +5225,11 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        // v1453-4-35F: Restored interactive: true effectively to ensure engagement
-        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: true };
+        // v1453-4-37F: interactive: false while drawing to allow map clicks
+        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: false };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: true }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: false }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
