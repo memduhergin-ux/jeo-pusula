@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53N'; // TWA/PWA Power Sync 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53O'; // Orux-Style Atomic Storage 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -73,34 +73,47 @@ function openJeoDB() {
     });
 }
 
-// v1453-4-53H: Atomic Record Persistence with forceWrite bypass
-async function dbSaveRecords(records, forceWrite = false) {
-    if (!isDataLoaded && !forceWrite) {
-        // GUARD: Never write before data is fully loaded (prevents race condition wipe)
-        console.warn(`Resilience: dbSaveRecords blocked — data not yet loaded.`);
-        return;
-    }
+// v1453-4-53O: Atomic Single Record Save (Incremental - No clear())
+async function dbPutRecord(record) {
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
             const store = tx.objectStore(JEO_RECORDS_STORE);
-
-            const clearReq = store.clear();
-            clearReq.onsuccess = () => {
-                records.forEach(record => store.put(record));
-            };
-
-            tx.oncomplete = () => {
-                console.log(`[${new Date().toISOString()}] Resilience: Saved ${records.length} records to IDB.`);
-                resolve();
-            };
+            const req = store.put(record);
+            tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
-            tx.onabort = () => reject(new Error("Transaction aborted"));
         });
-    } catch (e) {
-        console.error("IDB Save Records Error:", e);
+    } catch (e) { console.error("IDB Put Record Error:", e); }
+}
+
+async function dbDeleteRecord(id) {
+    try {
+        const db = await openJeoDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
+            const store = tx.objectStore(JEO_RECORDS_STORE);
+            const req = store.delete(Number(id));
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (e) { console.error("IDB Delete Record Error:", e); }
+}
+
+// v1453-4-53O: Bulk save refactored to be incremental (SAFETY FIRST)
+async function dbSaveRecords(recordsArray, forceWrite = false) {
+    if (!isDataLoaded && !forceWrite) {
+        console.warn(`Resilience: dbSaveRecords blocked — data not yet loaded.`);
+        return;
     }
+    try {
+        // We no longer use store.clear(). We put items one by one.
+        // This prevents the "empty overwrite" disaster.
+        for (const record of recordsArray) {
+            await dbPutRecord(record);
+        }
+        console.log(`[${new Date().toISOString()}] Resilience: Incremental sync of ${recordsArray.length} records completed.`);
+    } catch (e) { console.error("IDB Save Records Error:", e); }
 }
 
 async function dbLoadRecords() {
@@ -560,11 +573,9 @@ async function initApp() {
 
     } catch (err) {
         console.error("FATAL: initApp failed", err);
-        showToast("Error loading data. Using temporary storage.", 5000);
-        // Fallback: Initialize with empty arrays to prevent crashes
-        if (records === null) records = [];
-        if (jeoTracks === null) jeoTracks = [];
-        isDataLoaded = true; // Allow new saves to local if needed, or keep locked?
+        showToast("Veri yükleme hatası! Lütfen sayfayı yenileyin veya PWA olarak kullanın.", 5000);
+        // Fallback: Keeping isDataLoaded = false to prevent overwriting existing IDB data with empty arrays
+        isDataLoaded = false;
     } finally {
         // 1. Remove Splash Screen (Always do this)
         setTimeout(() => {
