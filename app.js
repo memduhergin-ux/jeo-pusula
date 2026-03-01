@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-34F'; // Precision Scale Centering 🧭🎯
+const APP_VERSION = 'v1453-4-35F'; // Stability & Alignment Fix 🧭✅
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 2; // v1453-4-26F: Upgraded for Records store
@@ -2965,28 +2965,28 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <!-- v1453-4-34F: width Fit-Content and Margin Auto to center the whole block in the 200px panel -->
-                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; font-family:'Inter', sans-serif; line-height:1.05;">
+                        <!-- v1453-4-35F: Added padding (0 8px) to prevent label overflow (0 and dist) -->
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 8px; font-family:'Inter', sans-serif; line-height:1.05;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
-                            <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:10px;">
-                                <div style="position:relative; width:70px; height:12px; color:#fff; font-size:10px; font-weight:bold;">
+                            <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:6px;">
+                                <div style="position:relative; width:65px; height:12px; color:#fff; font-size:10px; font-weight:bold;">
                                     <span style="position:absolute; left:0; transform:translateX(-50%);">0</span>
-                                    <span style="position:absolute; left:70px; transform:translateX(-50%);">${displayDist}</span>
+                                    <span style="position:absolute; left:65px; transform:translateX(-50%);">${displayDist}</span>
                                 </div>
-                                <div style="width:22px;"></div> <!-- Gap for unit below -->
-                                <div style="min-width:130px; text-align:left; font-size:11px; font-weight:bold;">
+                                <div style="width:18px;"></div> <!-- Gap for unit below -->
+                                <div style="min-width:125px; text-align:left; font-size:11px; font-weight:bold;">
                                     <span style="color:#ffeb3b;">Y:</span> <span style="color:#fff;">${eastPart}</span>
                                 </div>
                             </div>
                             
                             <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
-                            <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-top: -1px;">
-                                <div style="width:70px; height:2px; background:#ffeb3b; position:relative;">
+                            <div style="display:flex; align-items:center; justify-content:flex-start; gap:6px; margin-top: -1px;">
+                                <div style="width:65px; height:2px; background:#ffeb3b; position:relative;">
                                     <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                 </div>
-                                <div style="color:#ffeb3b; width:22px; text-align:left; font-size:11px; font-weight:bold; margin-left:-2px;">${unit}</div>
-                                <div style="min-width:130px; text-align:left; font-size:11px; font-weight:bold;">
+                                <div style="color:#ffeb3b; width:18px; text-align:left; font-size:10px; font-weight:bold; margin-left:-3px;">${unit}</div>
+                                <div style="min-width:125px; text-align:left; font-size:11px; font-weight:bold;">
                                     <span style="color:#ffeb3b;">X:</span> <span style="color:#fff;">${northPart}</span>
                                     <span style="color:#ffeb3b; margin-left:8px;">Z:</span> <span style="color:#fff;">${displayAlt}m</span>
                                 </div>
@@ -3871,25 +3871,16 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             }, 150); // v574: Slightly increased delay for stability
         }
 
-        // v1453-4-33F: Selective Orientation Lock (Compass only)
+        // v1453-4-33F: Selective Orientation Warning (Compass only)
         if (targetId === 'view-compass') {
-            // Try locking screen to portrait if API exists
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('portrait-primary').catch(() => {
-                    // Fail silently if not supported or not in fullscreen
-                    console.log("Orientation lock not subbed/failed");
-                });
-            }
-            // Check current orientation immediately
+            // v1453-4-35F: REMOVED screen.orientation.lock for browser compatibility/stability
+            // Only using the visual overlay warning now.
             if (window.innerWidth > window.innerHeight) {
                 const warn = document.getElementById('orientation-warning');
                 if (warn) warn.classList.add('active');
             }
         } else {
-            // Unlock orientation for all other views
-            if (screen.orientation && screen.orientation.unlock) {
-                screen.orientation.unlock();
-            }
+            // Unlock/Hide warning for all other views
             const warn = document.getElementById('orientation-warning');
             if (warn) warn.classList.remove('active');
         }
@@ -5233,12 +5224,11 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        // v1453-4-32F: interactive: false while drawing so you don't click the line instead of the map
-        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: false };
+        // v1453-4-35F: Restored interactive: true effectively to ensure engagement
+        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: true };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        // v1453-4-32F: interactive: false while drawing
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: false }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: true }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
