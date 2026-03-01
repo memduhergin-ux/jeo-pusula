@@ -1754,8 +1754,8 @@ textarea.form-input {
     justify-content: center !important;
     position: fixed;
     height: 40px !important;
-    width: 240px !important;
-    padding: 0 8px !important;
+    width: 200px !important;
+    padding: 0 4px !important;
     /* v1453-4-27F: Darker, wider capsule look as per latest screenshot */
     background: rgba(0, 0, 0, 0.65) !important;
     backdrop-filter: blur(10px);
