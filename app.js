@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-51F'; // Deep-Clone Layer Safety 🏷️🧭🔄
+const APP_VERSION = 'v1453-4-52G'; // Legacy IDB Recovery + Layer Fix 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -228,6 +228,71 @@ async function migrateToIndexedDB() {
     }
 }
 
+/**
+ * v1453-4-52G: Critical Legacy IndexedDB Recovery
+ * This function scans for OLD store names (from previous app versions) 
+ * and migrates their data to the new "-v1" suffixed stores.
+ */
+async function migrateLegacyIDBStores() {
+    const migrationKey = 'jeo_idb_migration_v52G';
+    if (localStorage.getItem(migrationKey) === 'true') return;
+
+    try {
+        const db = await openJeoDB();
+        const legacyStores = ['records', 'layers', 'meta', 'tracks', 'jeo_records', 'jeo_meta', 'jeo_layers'];
+        const existingStores = Array.from(db.objectStoreNames);
+
+        const storesToMigrate = legacyStores.filter(s => existingStores.includes(s));
+        if (storesToMigrate.length === 0) {
+            localStorage.setItem(migrationKey, 'true');
+            return;
+        }
+
+        console.log("Resilience: Found legacy IDB stores to migrate:", storesToMigrate);
+
+        for (const oldStoreName of storesToMigrate) {
+            await new Promise((resolve) => {
+                const tx = db.transaction(oldStoreName, 'readonly');
+                const store = tx.objectStore(oldStoreName);
+                const req = store.getAll();
+
+                req.onsuccess = async () => {
+                    const items = req.result;
+                    if (items && items.length > 0) {
+                        console.log(`Resilience: Migrating ${items.length} items from legacy store: ${oldStoreName}`);
+
+                        // Targeted migration based on content
+                        if (oldStoreName.includes('record')) {
+                            await dbSaveRecords(items);
+                        } else if (oldStoreName.includes('layer') || oldStoreName === 'layers') {
+                            await dbSaveLayers(items, true);
+                        } else if (oldStoreName === 'meta' || oldStoreName === 'tracks') {
+                            for (const item of items) {
+                                // Meta store items usually have {key, value}
+                                if (item.key && item.value) {
+                                    await dbSaveMeta(item.key, item.value);
+                                } else if (oldStoreName === 'tracks') {
+                                    // Handle cases where 'tracks' was a standalone store
+                                    const currentTracks = await dbLoadMeta('jeoTracks') || [];
+                                    currentTracks.push(item);
+                                    await dbSaveMeta('jeoTracks', currentTracks);
+                                }
+                            }
+                        }
+                    }
+                    resolve();
+                };
+                req.onerror = () => resolve(); // Don't block app if migration of one store fails
+            });
+        }
+
+        localStorage.setItem(migrationKey, 'true');
+        console.log("Resilience: Legacy IDB migration completed.");
+    } catch (e) {
+        console.error("Resilience: migrateLegacyIDBStores failed:", e);
+    }
+}
+
 async function requestStoragePersistence() {
     if (navigator.storage && navigator.storage.persist) {
         try {
@@ -267,12 +332,21 @@ async function dbPutLayer(layer) {
                 areasVisible: layer.areasVisible !== undefined ? layer.areasVisible : true,
                 labelsVisible: layer.labelsVisible !== undefined ? layer.labelsVisible : true
             });
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => { console.error('dbPutLayer tx error:', tx.error); resolve(); };
-            tx.onabort = () => { console.error('dbPutLayer tx abort'); resolve(); };
+            tx.oncomplete = () => {
+                console.log(`dbPutLayer: Success for "${layer.name}" (ID: ${layer.id})`);
+                resolve();
+            };
+            tx.onerror = () => {
+                console.error(`dbPutLayer: TX ERROR for "${layer.name}":`, tx.error);
+                resolve();
+            };
+            tx.onabort = () => {
+                console.warn(`dbPutLayer: TX ABORT for "${layer.name}"`);
+                resolve();
+            };
         });
     } catch (e) {
-        console.error('dbPutLayer exception:', e);
+        console.error(`dbPutLayer: CRITICAL EXCEPTION for "${layer.name}":`, e);
     }
 }
 
@@ -366,8 +440,10 @@ async function initApp() {
         updateAppVersionDisplay(); // Ensure version is updated early
         await requestStoragePersistence(); // v1453-4-40F: Request permanent storage
 
-        // 0. v1453-4-26F: Data Resilience Migration & Load
+        // 0. v1453-4-52G: Total Recovery - LocalStorage + Legacy IDB
         await migrateToIndexedDB();
+        await migrateLegacyIDBStores();
+
         records = await dbLoadRecords() || [];
         nextId = await dbLoadMeta('jeoNextId') || 1;
         jeoTracks = await dbLoadMeta('jeoTracks') || [];
@@ -5162,6 +5238,10 @@ async function saveExternalLayers() {
 async function loadExternalLayers(silent = false) {
     // v650: Restored blocking loading screen as per user request
     if (!silent) showLoading("Loading saved layers...");
+
+    // v1453-4-52G: Clear array before loading to prevent duplication
+    externalLayers = [];
+
     try {
         let data = await dbLoadLayers();
 
