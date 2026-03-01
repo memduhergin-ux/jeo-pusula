@@ -2415,9 +2415,6 @@ async function initMap() {
 
     // Map Click Handler for Interactions (v527: Absolute Grid Dominance)
     map.on('click', async (e) => {
-        // v1453-4-28F DEBUG: Check if click reaches here
-        if (isMeasuring) console.log("Map Click Detected in Measure Mode:", e.latlng);
-        
         // v527: If Grid Mode is active, SHUT DOWN all other interactions
         if (isGridMode && activeGridInterval) {
             if (e.originalEvent) e.originalEvent.stopPropagation();
@@ -2946,26 +2943,33 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <div class="scale-integrated-container" style="display:flex; flex-direction:row; align-items:center; justify-content:center; gap:15px; width:100%; height:100%;">
-                            <!-- v1453-20F: Optimized Scale Block -->
-                            <div class="scale-body">
-                                <div class="scale-labels">
+                        <div class="scale-integrated-container" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; padding-top: 2px;">
+                            <!-- Row 1: Labels and Y (Z above is empty) -->
+                            <div class="scale-row-top" style="display:flex; align-items:flex-end; gap:10px; font-size:10.5px; width:100%; justify-content:center;">
+                                <div style="display:flex; justify-content:space-between; width:70px; font-weight:bold; color:#fff; padding:0 2px;">
                                     <span>0</span>
-                                    <span id="scale-end">${displayDist}</span>
+                                    <span style="color:#ffeb3b;">${displayDist}</span>
                                 </div>
-                                <div class="scale-line">
-                                    <div class="scale-notch notch-left"></div>
-                                    <div class="scale-bar"></div>
-                                    <div class="scale-notch notch-right"></div>
+                                <div style="width:25px;"></div> <!-- Spacer for Unit -->
+                                <div style="min-width:85px;">
+                                    <span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span>
                                 </div>
-                                <div class="scale-unit" style="margin-top: -2px;">${unit}</div>
+                                <div style="min-width:45px;"></div> <!-- Empty space above Z -->
                             </div>
                             
-                            <!-- v1453-20F: Clean UTM Block -->
-                            <div class="utm-rows-container">
-                                <div class="utm-row"><span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span></div>
-                                <div class="utm-row"><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
-                                <div class="utm-row"><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
+                            <!-- Row 2: Line, Unit, X, Z (IP GIBI) -->
+                            <div class="scale-row-bottom" style="display:flex; align-items:center; gap:10px; font-size:10.5px; width:100%; justify-content:center;">
+                                <div class="scale-line" style="width:70px; height:2px; background:#ffeb3b; position:relative;">
+                                    <div style="position:absolute; left:0; top:-3px; width:2px; height:7px; background:#ffeb3b;"></div>
+                                    <div style="position:absolute; right:0; top:-3px; width:2px; height:7px; background:#ffeb3b;"></div>
+                                </div>
+                                <div style="color:#ffeb3b; font-weight:bold; width:25px; text-align:left;">${unit}</div>
+                                <div style="min-width:85px;">
+                                    <span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span>
+                                </div>
+                                <div style="min-width:45px;">
+                                    <span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -5042,18 +5046,20 @@ function openRecordModalWithCoords(lat, lon, note, alt = null, strike = null, di
     recordModal.classList.add('active');
 }
 
-if (btnMeasure) {
-    btnMeasure.addEventListener('click', () => {
-        if (isMeasuring && measureMode === 'line') {
-            isMeasuring = false;
-        } else {
-            isMeasuring = true;
-            measureMode = 'line';
-        }
+    if (btnMeasure) {
+        btnMeasure.addEventListener('click', () => {
+            if (isMeasuring && measureMode === 'line') {
+                isMeasuring = false;
+            } else {
+                isMeasuring = true;
+                measureMode = 'line';
+                // v1453-30F: Ruler tool is explicitly NOT a polygon
+                isPolygon = false;
+            }
 
-        updateMeasureModeUI();
-    });
-}
+            updateMeasureModeUI();
+        });
+    }
 
 if (btnPolygon) {
     btnPolygon.addEventListener('click', () => {
@@ -5062,8 +5068,8 @@ if (btnPolygon) {
         } else {
             isMeasuring = true;
             measureMode = 'polygon';
-            // v1453-4-28F: Ensure flag is reset when starting fresh
-            if (measurePoints.length === 0) isPolygon = false;
+            // v1453-4-30F: Polygon tool MUST have isPolygon = true
+            isPolygon = true;
         }
 
         updateMeasureModeUI();

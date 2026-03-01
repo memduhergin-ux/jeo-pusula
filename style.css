@@ -1753,11 +1753,11 @@ textarea.form-input {
     align-items: center !important;
     justify-content: center !important;
     position: fixed;
-    height: 42px !important;
+    height: 40px !important;
     width: 240px !important;
     padding: 0 8px !important;
     /* v1453-4-27F: Darker, wider capsule look as per latest screenshot */
-    background: rgba(0, 0, 0, 0.45) !important;
+    background: rgba(0, 0, 0, 0.65) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
