@@ -1,7 +1,7 @@
-const APP_VERSION = 'v1453-4-52G'; // Legacy IDB Recovery + Layer Fix 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53H'; // Ultra-Safe Recovery Shield 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
-const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
+const JEO_DB_VERSION = 4; // v1453-4-53H: Forced schema re-check for recovery
 const JEO_STORE_NAME = 'jeo-store-v1'; // Layers
 const JEO_RECORDS_STORE = 'jeo-records-v1'; // Geologic Records
 const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
@@ -73,9 +73,9 @@ function openJeoDB() {
     });
 }
 
-// v1453-4-26F: Atomic Record Persistence
-async function dbSaveRecords(records) {
-    if (!isDataLoaded) {
+// v1453-4-53H: Atomic Record Persistence with forceWrite bypass
+async function dbSaveRecords(records, forceWrite = false) {
+    if (!isDataLoaded && !forceWrite) {
         // GUARD: Never write before data is fully loaded (prevents race condition wipe)
         console.warn(`Resilience: dbSaveRecords blocked — data not yet loaded.`);
         return;
@@ -116,8 +116,8 @@ async function dbLoadRecords() {
     } catch (e) { console.error("IDB Load Records Error:", e); return []; }
 }
 
-async function dbSaveMeta(key, value) {
-    if (!isDataLoaded && key === 'jeoTracks') {
+async function dbSaveMeta(key, value, forceWrite = false) {
+    if (!isDataLoaded && key === 'jeoTracks' && !forceWrite) {
         console.warn('Resilience: dbSaveMeta jeoTracks blocked — data not yet loaded.');
         return;
     }
@@ -229,20 +229,19 @@ async function migrateToIndexedDB() {
 }
 
 /**
- * v1453-4-52G: Critical Legacy IndexedDB Recovery
- * This function scans for OLD store names (from previous app versions) 
- * and migrates their data to the new "-v1" suffixed stores.
+ * v1453-4-53H: Additive Legacy IndexedDB Recovery
+ * Merges data from OLD stores into NEW stores instead of overwriting.
  */
 async function migrateLegacyIDBStores() {
-    const migrationKey = 'jeo_idb_migration_v52G';
+    const migrationKey = 'jeo_idb_migration_v53H';
     if (localStorage.getItem(migrationKey) === 'true') return;
 
     try {
         const db = await openJeoDB();
-        const legacyStores = ['records', 'layers', 'meta', 'tracks', 'jeo_records', 'jeo_meta', 'jeo_layers'];
+        const legacyStores = ['records', 'layers', 'meta', 'tracks', 'jeo_records', 'jeo_meta', 'jeo_layers', 'jeo-store', 'jeo-records', 'jeo-meta'];
         const existingStores = Array.from(db.objectStoreNames);
 
-        const storesToMigrate = legacyStores.filter(s => existingStores.includes(s));
+        const storesToMigrate = legacyStores.filter(s => existingStores.includes(s) && !s.endsWith('-v1'));
         if (storesToMigrate.length === 0) {
             localStorage.setItem(migrationKey, 'true');
             return;
@@ -263,19 +262,27 @@ async function migrateLegacyIDBStores() {
 
                         // Targeted migration based on content
                         if (oldStoreName.includes('record')) {
-                            await dbSaveRecords(items);
+                            const current = await dbLoadRecords();
+                            const merged = [...current, ...items.filter(newItem => !current.find(c => c.id === newItem.id))];
+                            await dbSaveRecords(merged, true);
                         } else if (oldStoreName.includes('layer') || oldStoreName === 'layers') {
-                            await dbSaveLayers(items, true);
+                            for (const layer of items) {
+                                await dbPutLayer(layer);
+                            }
                         } else if (oldStoreName === 'meta' || oldStoreName === 'tracks') {
                             for (const item of items) {
-                                // Meta store items usually have {key, value}
                                 if (item.key && item.value) {
-                                    await dbSaveMeta(item.key, item.value);
+                                    if (item.key === 'jeoTracks') {
+                                        const currentTracks = await dbLoadMeta('jeoTracks') || [];
+                                        const mergedTracks = [...currentTracks, ...item.value.filter(nT => !currentTracks.find(cT => (cT.id && nT.id && cT.id === nT.id) || (cT.time && nT.time && cT.time === nT.time)))];
+                                        await dbSaveMeta('jeoTracks', mergedTracks, true);
+                                    } else {
+                                        await dbSaveMeta(item.key, item.value, true);
+                                    }
                                 } else if (oldStoreName === 'tracks') {
-                                    // Handle cases where 'tracks' was a standalone store
                                     const currentTracks = await dbLoadMeta('jeoTracks') || [];
                                     currentTracks.push(item);
-                                    await dbSaveMeta('jeoTracks', currentTracks);
+                                    await dbSaveMeta('jeoTracks', currentTracks, true);
                                 }
                             }
                         }
@@ -287,7 +294,7 @@ async function migrateLegacyIDBStores() {
         }
 
         localStorage.setItem(migrationKey, 'true');
-        console.log("Resilience: Legacy IDB migration completed.");
+        console.log("Resilience: Additive migration completed.");
     } catch (e) {
         console.error("Resilience: migrateLegacyIDBStores failed:", e);
     }
@@ -313,13 +320,17 @@ async function dbPutLayer(layer) {
             const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
             const store = tx.objectStore(JEO_STORE_NAME);
 
-            // Sanitize geojson before put
+            // Sanitize geojson - avoid circular refs with deep clone
             let safeGeojson = layer.geojson;
             try {
-                safeGeojson = JSON.parse(JSON.stringify(safeGeojson || {}));
+                if (typeof structuredClone === 'function') {
+                    safeGeojson = structuredClone(layer.geojson || {});
+                } else {
+                    safeGeojson = JSON.parse(JSON.stringify(layer.geojson || {}));
+                }
             } catch (e) {
-                console.error(`dbPutLayer: geojson sanitize failed for "${layer.name}"`, e);
-                resolve(); return; // Skip — don't abort
+                console.error(`dbPutLayer: GeoJSON clone failed for "${layer.name}":`, e);
+                resolve(); return;
             }
 
             const req = store.put({
