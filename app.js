@@ -3019,9 +3019,9 @@ function updateScaleValues() {
                         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px 0 12px; font-family:'Inter', sans-serif; line-height:1.0;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
                             <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:4px;">
-                                <div style="position:relative; width:60px; height:12px; color:#fff; font-size:10px; font-weight:bold;">
-                                    <span style="position:absolute; left:0;">0</span>
-                                    <span style="position:absolute; right:0; text-align:right;">${displayDist}</span>
+                                <div style="position:relative; width:60px; height:12px; color:#fff; font-size:10px; font-weight:bold; margin-left:2px;">
+                                    <span style="position:absolute; left:0; transform:translateX(-50%);">0</span>
+                                    <span style="position:absolute; right:0; transform:translateX(50%); text-align:center;">${displayDist}</span>
                                 </div>
                                 <div style="width:14px;"></div> <!-- Gap for unit below -->
                                 <div style="min-width:115px; text-align:left; font-size:11px; font-weight:bold;">
@@ -3031,7 +3031,7 @@ function updateScaleValues() {
                             
                             <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
                             <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-top: -1px;">
-                                <div style="width:60px; height:2px; background:#ffeb3b; position:relative;">
+                                <div style="width:60px; height:2px; background:#ffeb3b; position:relative; margin-left:2px;">
                                     <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                 </div>
