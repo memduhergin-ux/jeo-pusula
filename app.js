@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Q'; // Drawing Refinement 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53T'; // Scale Panel Refinement 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -1663,18 +1663,26 @@ function optimizeMapPoints() {
 
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
-                // Check 8 directions
-                const pad = 3;
-                const directions = [
-                    { x: -width / 2, y: -height / 2 - pad - 6 }, // N
-                    { x: pad + 6, y: -height / 2 - pad - 6 },    // NE
-                    { x: pad + 8, y: -height / 2 },              // E
-                    { x: pad + 6, y: height / 2 + pad + 2 },     // SE
-                    { x: -width / 2, y: height / 2 + pad + 2 },      // S
-                    { x: -width - pad - 4, y: height / 2 + pad + 2 }, // SW
-                    { x: -width - pad - 8, y: -height / 2 },     // W
-                    { x: -width - pad - 4, y: -height / 2 - pad - 6 } // NW
-                ];
+                // v1453-4-53S: Clockwise Smart Placement (0, 30, 60, 90, 120, 150, 180)
+                // 0 is North (Top), 90 is East (Right), 180 is South (Bottom)
+                const angles = [0, 30, 60, 90, 120, 150, 180];
+                const offset = 4 + 2; // Marker radius(4) + gap(2)
+                const directions = angles.map(deg => {
+                    const rad = (deg - 90) * (Math.PI / 180); // Adjusting so 0 is North
+                    const dx = Math.cos(rad) * offset;
+                    const dy = Math.sin(rad) * offset;
+
+                    // Adjust anchor point based on direction to keep it centered/properly distanced
+                    let ax = dx;
+                    let ay = dy;
+                    if (deg === 0) { ax -= width / 2; ay -= height; }
+                    else if (deg < 90) { ay -= height / 2; }
+                    else if (deg === 90) { ay -= height / 2; }
+                    else if (deg < 180) { ay -= height / 2; }
+                    else { ax -= width / 2; }
+
+                    return { x: ax, y: ay };
+                });
 
                 let bestPos = null;
                 for (const dir of directions) {
@@ -1709,7 +1717,7 @@ function optimizeMapPoints() {
                     tooltipEl.style.marginTop = `${fallbackDir.y + height / 2}px`;
                 }
             }
-        }, 300); // v1453-4-53L: Increased from 50ms to 300ms for browser paint
+        }, 300); // v1453-4-53S: Increased from 50ms to 300ms for browser paint
     } catch (e) {
         console.error("optimizeMapPoints failed:", e);
     }
@@ -2720,8 +2728,8 @@ async function initMap() {
         const zoom = map.getZoom();
         const mapContainer = document.getElementById('map-container');
         if (mapContainer) {
-            // v1453-4-53Q: Only hide labels at VERY low zoom (zoom < 5) to keep them visible longer
-            if (zoom < 5) {
+            // v1453-4-53S: Restored standard zoom hiding threshold (zoom < 10)
+            if (zoom < 10) {
                 mapContainer.classList.add('low-zoom-labels');
             } else {
                 mapContainer.classList.remove('low-zoom-labels');
@@ -3328,7 +3336,7 @@ function updateScaleValues() {
                                 <div style="color:#ffeb3b; width:14px; text-align:left; font-size:10px; font-weight:bold; margin-left:1px;">${unit}</div>
                                 <div style="min-width:115px; text-align:left; font-size:11px; font-weight:bold;">
                                     <span style="color:#ffeb3b;">X:</span> <span style="color:#fff;">${northPart}</span>
-                                    <span style="color:#ffeb3b; margin-left:6px;">Z:</span> <span style="color:#fff;">${displayAlt}m</span>
+                                    <span style="color:#ffeb3b; margin-left:5px;">Z:</span> <span style="color:#fff;">${displayAlt}m</span>
                                 </div>
                             </div>
                         </div>

@@ -2381,20 +2381,27 @@ textarea.form-input {
 }
 
 .segment-label {
-    background: rgba(0, 0, 0, 0.85) !important;
+    background: none !important;
     color: #ffeb3b !important;
-    padding: 3px 8px !important;
-    border-radius: 4px !important;
-    font-size: 0.85rem !important;
-    font-weight: bold !important;
+    padding: 0 !important;
+    border-radius: 0;
+    font-size: 9px !important;
+    font-weight: 900 !important;
     white-space: nowrap !important;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8) !important;
-    text-shadow: 1px 1px 2px #000 !important;
+    box-shadow: none !important;
+    text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000,
+        0px 0px 3px rgba(0, 0, 0, 1) !important;
     pointer-events: none;
     display: inline-block;
     margin: 0 !important;
+    margin-top: -3px !important;
+    /* 3px offset as requested */
     transform-origin: center center;
-    border: 1px solid rgba(255, 235, 59, 0.4) !important;
+    border: none !important;
 }
 
 #rec-label-preview {
