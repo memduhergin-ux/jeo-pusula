@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-49F'; // Layer Load Fix 🟳️🧭🔄
+const APP_VERSION = 'v1453-4-50F'; // Per-ID Layer Storage Safety 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -239,72 +239,70 @@ async function requestStoragePersistence() {
     }
 }
 
-async function dbSaveLayers(layers, forceWrite = false) {
-    if (!isDataLoaded && !forceWrite) {
-        // GUARD: Never write before data is fully loaded (unless forced)
-        console.warn(`Resilience: dbSaveLayers blocked — data not yet loaded.`);
-        return;
-    }
+// v1453-4-50F: Per-ID Layer Save — NEVER clears the whole store.
+// Each layer is put individually. A failure on one layer does NOT affect others.
+async function dbPutLayer(layer) {
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
             const store = tx.objectStore(JEO_STORE_NAME);
 
-            // Correctly clear, THEN put — all inside Promise callbacks
-            const clearReq = store.clear();
-            clearReq.onsuccess = () => {
-                let putError = false;
-                layers.forEach(layer => {
-                    if (putError) return;
-                    try {
-                        // Sanitize geojson - ensure it's plain serializable object
-                        let safeGeojson = layer.geojson;
-                        if (safeGeojson && typeof safeGeojson === 'object') {
-                            try {
-                                safeGeojson = JSON.parse(JSON.stringify(safeGeojson));
-                            } catch (e) {
-                                console.error(`Resilience: geojson sanitize failed for layer "${layer.name}"`, e);
-                                return; // Skip this layer
-                            }
-                        }
-                        const putReq = store.put({
-                            id: layer.id,
-                            name: layer.name,
-                            geojson: safeGeojson,
-                            visible: layer.visible,
-                            filled: layer.filled,
-                            pointsVisible: layer.pointsVisible,
-                            areasVisible: layer.areasVisible,
-                            labelsVisible: layer.labelsVisible
-                        });
-                        putReq.onerror = (e) => {
-                            console.error(`Resilience: put failed for layer "${layer.name}":`, e.target.error);
-                            putError = true;
-                        };
-                    } catch (e) {
-                        console.error(`Resilience: unexpected error storing layer "${layer.name}":`, e);
-                    }
-                });
-            };
-            clearReq.onerror = () => reject(clearReq.error);
+            // Sanitize geojson before put
+            let safeGeojson = layer.geojson;
+            try {
+                safeGeojson = JSON.parse(JSON.stringify(safeGeojson || {}));
+            } catch (e) {
+                console.error(`dbPutLayer: geojson sanitize failed for "${layer.name}"`, e);
+                resolve(); return; // Skip — don't abort
+            }
 
-            tx.oncomplete = () => {
-                console.log(`[${new Date().toISOString()}] Resilience: Saved ${layers.length} layers to IDB.`);
-                resolve();
-            };
-            tx.onerror = (e) => {
-                console.error('Resilience: layers tx.onerror:', e.target ? e.target.error : e);
-                reject(tx.error);
-            };
-            tx.onabort = (e) => {
-                console.error('Resilience: layers tx.onabort — transaction rolled back.');
-                resolve(); // Resolve (not reject) to avoid crashing the app
-            };
+            const req = store.put({
+                id: layer.id,
+                name: layer.name,
+                geojson: safeGeojson,
+                visible: layer.visible,
+                filled: layer.filled,
+                pointsVisible: layer.pointsVisible !== undefined ? layer.pointsVisible : true,
+                areasVisible: layer.areasVisible !== undefined ? layer.areasVisible : true,
+                labelsVisible: layer.labelsVisible !== undefined ? layer.labelsVisible : true
+            });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => { console.error('dbPutLayer tx error:', tx.error); resolve(); };
+            tx.onabort = () => { console.error('dbPutLayer tx abort'); resolve(); };
         });
     } catch (e) {
-        console.error("IndexedDB Save Layers Error:", e);
+        console.error('dbPutLayer exception:', e);
     }
+}
+
+async function dbDeleteLayerById(id) {
+    try {
+        const db = await openJeoDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
+            const store = tx.objectStore(JEO_STORE_NAME);
+            store.delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+            tx.onabort = () => resolve();
+        });
+    } catch (e) {
+        console.error('dbDeleteLayerById exception:', e);
+    }
+}
+
+// Legacy bulk save (still used for full sync on demand)
+async function dbSaveLayers(layers, forceWrite = false) {
+    if (!isDataLoaded && !forceWrite) {
+        console.warn('Resilience: dbSaveLayers blocked — data not yet loaded.');
+        return;
+    }
+    // Save each layer individually — no clear()
+    for (const layer of layers) {
+        await dbPutLayer(layer);
+    }
+    console.log(`[${new Date().toISOString()}] Resilience: Synced ${layers.length} layers to IDB.`);
 }
 
 async function dbLoadLayers() {
@@ -312,7 +310,6 @@ async function dbLoadLayers() {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(JEO_STORE_NAME, 'readonly');
-            // v546: Transaction abort safety
             tx.onerror = () => reject(new Error("IDB Transaction failed"));
             tx.onabort = () => reject(new Error("IDB Transaction aborted"));
 
@@ -5128,8 +5125,9 @@ async function removeLayer(id) {
             });
 
             map.removeLayer(externalLayers[index].layer);
+            const deletedId = externalLayers[index].id;
             externalLayers.splice(index, 1);
-            saveExternalLayers();
+            await dbDeleteLayerById(deletedId); // v1453-4-50F: precise delete, no full wipe
             renderLayerList();
 
             // v1453-15: Trigger recalculation via a dummy point deletion to prune the dictionary
@@ -5139,8 +5137,14 @@ async function removeLayer(id) {
 }
 
 async function saveExternalLayers() {
-    // v543: Store in IndexedDB to avoid 5MB localStorage limit
-    await dbSaveLayers(externalLayers);
+    // v1453-4-50F: Use per-ID put — never clears the whole store
+    if (!isDataLoaded) {
+        console.warn('saveExternalLayers: blocked before data load.');
+        return;
+    }
+    for (const layer of externalLayers) {
+        await dbPutLayer(layer);
+    }
     if (isHeatmapActive) updateHeatmapFilterOptions();
 }
 
