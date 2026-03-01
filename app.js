@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-47F'; // Layer Transaction Abort Fix 🔧🧭🔄
+const APP_VERSION = 'v1453-4-48F'; // Multi-Bug Fix 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -75,9 +75,9 @@ function openJeoDB() {
 
 // v1453-4-26F: Atomic Record Persistence
 async function dbSaveRecords(records) {
-    if (!records || records.length === 0) {
-        // ANTI-WIPE: Never clear the records store with empty data
-        console.warn(`Resilience: dbSaveRecords blocked — refusing to save empty records array.`);
+    if (!isDataLoaded) {
+        // GUARD: Never write before data is fully loaded (prevents race condition wipe)
+        console.warn(`Resilience: dbSaveRecords blocked — data not yet loaded.`);
         return;
     }
     try {
@@ -117,9 +117,8 @@ async function dbLoadRecords() {
 }
 
 async function dbSaveMeta(key, value) {
-    // ANTI-WIPE: Never save empty tracks array
-    if (key === 'jeoTracks' && Array.isArray(value) && value.length === 0) {
-        console.warn('Resilience: dbSaveMeta blocked — refusing to save empty jeoTracks array.');
+    if (!isDataLoaded && key === 'jeoTracks') {
+        console.warn('Resilience: dbSaveMeta jeoTracks blocked — data not yet loaded.');
         return;
     }
     try {
@@ -241,9 +240,9 @@ async function requestStoragePersistence() {
 }
 
 async function dbSaveLayers(layers) {
-    if (!layers || layers.length === 0) {
-        // ANTI-WIPE: Never clear the layers store with empty data
-        console.warn(`Resilience: dbSaveLayers blocked — refusing to save empty layers array. isDataLoaded=${isDataLoaded}`);
+    if (!isDataLoaded) {
+        // GUARD: Never write before data is fully loaded
+        console.warn(`Resilience: dbSaveLayers blocked — data not yet loaded.`);
         return;
     }
     try {
@@ -451,6 +450,7 @@ async function initApp() {
 
         // Refresh UI after data load
         renderRecords();
+        renderTracks(); // v1453-4-48F: Refresh track count after IDB load
         if (typeof updateMapMarkers === 'function') updateMapMarkers();
 
         console.log(`Resilience: Init complete. Records: ${records.length}, Tracks: ${jeoTracks.length}`);
