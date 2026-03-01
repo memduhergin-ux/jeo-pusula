@@ -126,7 +126,7 @@ async function migrateToIndexedDB() {
 
     try {
         console.log("Resilience: Starting localStorage to IndexedDB migration...");
-        
+
         // 1. Records
         const oldRecords = JSON.parse(localStorage.getItem('jeoRecords')) || [];
         if (oldRecords.length > 0) await dbSaveRecords(oldRecords);
@@ -142,7 +142,7 @@ async function migrateToIndexedDB() {
         // 4. Grid States & Other App Meta
         const gridParams = localStorage.getItem('jeoActiveGridParams');
         if (gridParams) await dbSaveMeta('jeoActiveGridParams', gridParams);
-        
+
         const gridMode = localStorage.getItem('jeoGridMode');
         if (gridMode) await dbSaveMeta('jeoGridMode', gridMode);
 
@@ -241,21 +241,64 @@ async function initApp() {
         trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
         isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
         await loadExternalLayers(true); // Silent load from IDB
-        
+
         const savedGridInterval = await dbLoadMeta('jeoGridInterval');
         if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
 
         const savedGridColor = await dbLoadMeta('jeoGridColor');
         if (savedGridColor !== null) activeGridColor = savedGridColor;
-        
+
         isDataLoaded = true; // Signal that it's safe to save now
         console.log("Resilience: Data loaded safely, save guard disabled.");
-        
-        // v466: Hide all saved tracks by default on startup
-    if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
 
-    // Refresh UI after data load
-    renderRecords();
+        // v1453-PERSIST: Restore Active Measurements from IndexedDB
+        const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
+        const savedIsPoly = await dbLoadMeta('jeoActiveMeasureIsPoly');
+
+        if (savedMeasurePoints) {
+            measurePoints = savedMeasurePoints;
+            isPolygon = savedIsPoly === 'true';
+
+            // Re-create markers
+            measurePoints.forEach(p => {
+                const marker = L.circleMarker(p, {
+                    radius: 4,
+                    color: '#ffeb3b',
+                    fillColor: '#ffeb3b',
+                    fillOpacity: 1,
+                    interactive: false
+                }).addTo(map);
+                measureMarkers.push(marker);
+            });
+
+            redrawMeasurement();
+        }
+
+        // v1453-PERSIST: Restore Grid from IndexedDB
+        const savedGrid = await dbLoadMeta('jeoActiveGridParams');
+        if (savedGrid && savedGrid.interval) {
+            // Give a small timeout to ensure layers are rendered
+            setTimeout(() => {
+                let targetLayer = null;
+                if (savedGrid.targetName === "__ACTIVE_MEASURE__") {
+                    targetLayer = measureLine;
+                } else {
+                    // Search in externalLayers
+                    const ext = externalLayers.find(l => l.name === savedGrid.targetName);
+                    if (ext) targetLayer = ext.layer;
+                }
+
+                if (targetLayer) {
+                    createAreaGrid(targetLayer, savedGrid.interval, savedGrid.color);
+                }
+            }, 1000); // 1s wait for external layers to finish loading
+        }
+
+        // v466: Hide all saved tracks by default on startup
+        if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
+
+        // Refresh UI after data load
+        renderRecords();
         if (typeof updateMapMarkers === 'function') updateMapMarkers();
 
     } catch (err) {
@@ -273,7 +316,7 @@ async function initApp() {
                 splash.classList.add('hidden');
                 setTimeout(() => splash.remove(), 1000);
             }
-        }, 1500); 
+        }, 1500);
 
         // 2. Request Wake Lock (Screen On)
         try {
@@ -309,7 +352,7 @@ const ELEMENT_ALIASES = {
     // TR
     'ALTIN': 'AU', 'GÜMÜŞ': 'AG', 'BAKIR': 'CU', 'DEMİR': 'FE', 'KURŞUN': 'PB', 'ÇİNKO': 'ZN',
     'CIVA': 'HG', 'KROM': 'CR', 'MANGAN': 'MN', 'MANGANEZ': 'MN', 'NİKEL': 'NI', 'KOBALT': 'CO',
-    'MNO': 'MN', 'MNO2': 'MN', 
+    'MNO': 'MN', 'MNO2': 'MN',
     'ALÜMİNYUM': 'AL', 'ARSENİK': 'AS', 'ANTİMON': 'SB', 'KALAY': 'SN', 'TİTANYUM': 'TI',
     'URANYUM': 'U', 'PLATİN': 'PT', 'PALADYUM': 'PD', 'OSMİYUM': 'OS', 'İRİDYUM': 'IR',
     'RODYUM': 'RH', 'RUTENYUM': 'RU', 'KADMİYUM': 'CD', 'BİZMUT': 'BI', 'MOLİBDEN': 'MO',
@@ -1130,7 +1173,7 @@ let lockStrike = false;
 let lockDip = false;
 let manualDeclination = parseFloat(localStorage.getItem('jeoDeclination')) || 0;
 let records = null; // v1453-4-26F: null = not loaded yet
-let nextId = 1; 
+let nextId = 1;
 let isDataLoaded = false; // v1453-4-26F: Crucial guard against race condition
 let map, markerGroup, liveMarker;
 let sensorSource = null; // 'ios', 'absolute', 'relative'
@@ -1208,7 +1251,7 @@ let isAddingPoint = false;
 
 // Grid State (v516/v563: Persisted)
 let isGridMode = false; // v1453-4-26F: Initialized as false, loaded async
-let activeGridInterval = null; 
+let activeGridInterval = null;
 let currentGridLayer = null;
 
 // KML/KMZ Layers State
@@ -2118,7 +2161,7 @@ if (document.getElementById('btn-modal-save')) {
 
             recordModal.classList.remove('active');
             isSavingLayer = false;
-            isMeasuring = false; 
+            isMeasuring = false;
             await clearMeasurement(); // v1453-4-37F: Crucial reset after saving!
             updateMeasureModeUI();
             return;
@@ -2202,7 +2245,7 @@ async function saveRecords() {
 
 function renderRecords(filter = '') {
     const tableBody = document.getElementById('records-body');
-    if (!tableBody || !records) return; 
+    if (!tableBody || !records) return;
 
     // v1453-4-26F: Redefine accidentally removed variables
     const selectAllTh = document.getElementById('select-all-th');
@@ -2512,12 +2555,12 @@ async function initMap() {
 
                     // Add markers back with stable styling
                     measurePoints.forEach(p => {
-                        const m = L.circleMarker(p, { 
-                            radius: 4, 
-                            color: '#ffeb3b', 
-                            fillColor: '#ffeb3b', 
-                            fillOpacity: 1, 
-                            interactive: false 
+                        const m = L.circleMarker(p, {
+                            radius: 4,
+                            color: '#ffeb3b',
+                            fillColor: '#ffeb3b',
+                            fillOpacity: 1,
+                            interactive: false
                         }).addTo(map);
                         measureMarkers.push(m);
                     });
@@ -2525,7 +2568,7 @@ async function initMap() {
                     updateMeasureModeUI();
                     redrawMeasurement();
                 }
-            } catch(e) { console.error("Resilience: Restore measurement failed", e); }
+            } catch (e) { console.error("Resilience: Restore measurement failed", e); }
         }
 
         // v1453-4-24F: Phased Grid Restoration (After Layers)
@@ -2562,7 +2605,7 @@ async function initMap() {
                     if (target) {
                         await createAreaGrid(target, activeGridInterval, activeGridColor);
                     }
-                } catch(e) { console.error("Resilience: Restore grid failed", e); }
+                } catch (e) { console.error("Resilience: Restore grid failed", e); }
             }, 500); // v1453-4-24F: Extra 500ms safety for grid
         }
     }, 1500); // v1453-4-24F: Increased to 1500ms for async stability
@@ -2706,7 +2749,7 @@ function initMapControls() {
         if (map) {
             map.invalidateSize();
             // v1453-4-32F: Force recalibration of map container after rotation
-            setTimeout(() => map.invalidateSize(), 500); 
+            setTimeout(() => map.invalidateSize(), 500);
         }
 
         // v1453-4-33F: Enforce Compass-only Portrait warning
@@ -2723,7 +2766,7 @@ function initMapControls() {
     };
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
-    
+
     map.on('zoomend', () => {
         if (isHeatmapActive) updateHeatmap();
     });
@@ -3087,17 +3130,17 @@ function updateMapMarkers(shouldFitBounds = false) {
     // Redraw saved tracks
     if (jeoTracks) {
         jeoTracks.forEach(t => {
-        if (t.visible && t.path && t.path.length > 1) {
-            const poly = L.polyline(t.path, {
-                color: t.color || '#ff5722',
-                weight: 6,
-                opacity: 0.8,
-                pane: 'tracking-pane'
-            }).addTo(map);
+            if (t.visible && t.path && t.path.length > 1) {
+                const poly = L.polyline(t.path, {
+                    color: t.color || '#ff5722',
+                    weight: 6,
+                    opacity: 0.8,
+                    pane: 'tracking-pane'
+                }).addTo(map);
 
-            poly.bindPopup(`<b>${t.name}</b><br>${t.time}<br>${formatScaleDist(calculateTrackLength(t.path))}`);
-            trackLayers[t.id] = poly;
-        }
+                poly.bindPopup(`<b>${t.name}</b><br>${t.time}<br>${formatScaleDist(calculateTrackLength(t.path))}`);
+                trackLayers[t.id] = poly;
+            }
         });
     }
 
@@ -3559,7 +3602,7 @@ async function saveCurrentTrack() {
 
     // v456: FIFO: Eger 20 kayit varsa, en eskiyi sil
     if (jeoTracks.length >= MAX_TRACKS) {
-        jeoTracks.shift(); 
+        jeoTracks.shift();
     }
 
     jeoTracks.push(newTrack);
@@ -3568,7 +3611,7 @@ async function saveCurrentTrack() {
 
     // Canlı izlei temizle
     trackPath = [];
-    trackStartTime = null; 
+    trackStartTime = null;
     localStorage.removeItem('jeoTrackPath');
     localStorage.removeItem('jeoTrackStartTime');
     if (trackPolyline && map) {
@@ -4222,9 +4265,15 @@ async function createAreaGrid(polygon, interval, color = '#ffeb3b') {
     currentGridLayer.addTo(map);
 
     // v1453-4-23F: Persist Grid State
-    if (polygon.name || (polygon.feature && polygon.feature.properties && polygon.feature.properties.name)) {
-        const name = polygon.name || polygon.feature.properties.name; // v1453-4-26F: Persist Grid Params to IndexedDB
-        await dbSaveMeta('jeoActiveGridParams', JSON.stringify({ interval, color, targetName: name }));
+    let name = null;
+    if (polygon === measureLine) {
+        name = "__ACTIVE_MEASURE__";
+    } else if (polygon.name || (polygon.feature && polygon.feature.properties && polygon.feature.properties.name)) {
+        name = polygon.name || polygon.feature.properties.name;
+    }
+
+    if (name) {
+        await dbSaveMeta('jeoActiveGridParams', { interval, color, targetName: name });
         await dbSaveMeta('jeoGridInterval', interval);
         await dbSaveMeta('jeoGridColor', color);
         await dbSaveMeta('jeoGridMode', 'true');
@@ -5087,20 +5136,20 @@ function openRecordModalWithCoords(lat, lon, note, alt = null, strike = null, di
     recordModal.classList.add('active');
 }
 
-    if (btnMeasure) {
-        btnMeasure.addEventListener('click', () => {
-            if (isMeasuring && measureMode === 'line') {
-                isMeasuring = false;
-            } else {
-                isMeasuring = true;
-                measureMode = 'line';
-                // v1453-30F: Ruler tool is explicitly NOT a polygon
-                isPolygon = false;
-            }
+if (btnMeasure) {
+    btnMeasure.addEventListener('click', () => {
+        if (isMeasuring && measureMode === 'line') {
+            isMeasuring = false;
+        } else {
+            isMeasuring = true;
+            measureMode = 'line';
+            // v1453-30F: Ruler tool is explicitly NOT a polygon
+            isPolygon = false;
+        }
 
-            updateMeasureModeUI();
-        });
-    }
+        updateMeasureModeUI();
+    });
+}
 
 if (btnPolygon) {
     btnPolygon.addEventListener('click', () => {
@@ -5110,7 +5159,7 @@ if (btnPolygon) {
             isMeasuring = true;
             measureMode = 'polygon';
             // v1453-4-37F: isPolygon must be false initially to allow adding nodes!
-            isPolygon = false; 
+            isPolygon = false;
         }
 
         updateMeasureModeUI();
@@ -5187,8 +5236,8 @@ async function clearMeasurement() {
     activeMeasureLabels = [];
 
     measureInfo.style.display = 'none';
-    localStorage.removeItem('jeoActiveMeasurePoints');
-    localStorage.removeItem('jeoActiveMeasureIsPoly');
+    dbSaveMeta('jeoActiveMeasurePoints', null);
+    dbSaveMeta('jeoActiveMeasureIsPoly', null);
     updateMeasureButtons();
 }
 
@@ -5319,9 +5368,9 @@ function redrawMeasurement() {
         });
     }
 
-    // v1453-4-24F: Immediate Robust Persistence
-    localStorage.setItem('jeoActiveMeasurePoints', JSON.stringify(measurePoints));
-    localStorage.setItem('jeoActiveMeasureIsPoly', String(isPolygon));
+    // v1453-4-24F: Immediate Robust Persistence (Migrated to IndexedDB)
+    dbSaveMeta('jeoActiveMeasurePoints', measurePoints);
+    dbSaveMeta('jeoActiveMeasureIsPoly', String(isPolygon));
 
     updateMeasureButtons();
 }
@@ -5383,14 +5432,14 @@ async function updateMeasurement(latlng) {
     // 1. Check Records (Points)
     if (records) {
         records.forEach(r => {
-        if (r.lat && r.lon) {
-            const pPx = map.latLngToContainerPoint([r.lat, r.lon]);
-            const dist = clickPx.distanceTo(pPx);
-            if (dist < 40 && dist < closestPixelDist) {
-                closestPixelDist = dist;
-                snappedLatLng = L.latLng(r.lat, r.lon);
+            if (r.lat && r.lon) {
+                const pPx = map.latLngToContainerPoint([r.lat, r.lon]);
+                const dist = clickPx.distanceTo(pPx);
+                if (dist < 40 && dist < closestPixelDist) {
+                    closestPixelDist = dist;
+                    snappedLatLng = L.latLng(r.lat, r.lon);
+                }
             }
-        }
         });
     }
 
