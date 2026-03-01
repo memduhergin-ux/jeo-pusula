@@ -2943,24 +2943,28 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:20px; height:100%; padding:0 12px;">
+                        <div class="info-flex-row" style="display:flex; align-items:center; justify-content:center; gap:22px; height:100%; padding:0 15px;">
                             <!-- Left: Classic Scale Section -->
-                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:flex-start; min-width:1.5cm;">
-                                <div class="scale-labels" style="display:flex; justify-content:space-between; width:100%; font-size:11px; font-weight:900; color:#fff; margin-bottom:1px; padding:0 1px;">
+                            <div class="scale-section" style="display:flex; flex-direction:column; align-items:flex-start; min-width:80px;">
+                                <div class="scale-labels" style="display:flex; justify-content:space-between; width:60px; font-size:12px; font-weight:900; color:#fff; margin-bottom:1px; line-height:1; padding:0 1px;">
                                     <span>0</span>
                                     <span>${displayDist}</span>
                                 </div>
-                                <div class="scale-line" style="width:100%; height:2px; background:#ffeb3b; position:relative; box-shadow: 0 0 2px rgba(0,0,0,0.5);">
-                                    <div style="position:absolute; left:0; top:-3px; width:2px; height:6px; background:#ffeb3b;"></div>
-                                    <div style="position:absolute; right:0; top:-3px; width:2px; height:6px; background:#ffeb3b;"></div>
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <div class="scale-line" style="width:60px; height:2px; background:#ffeb3b; position:relative; box-shadow: 0 0 2px rgba(0,0,0,0.5);">
+                                        <div style="position:absolute; left:0; top:-4px; width:2px; height:8px; background:#ffeb3b;"></div>
+                                        <div style="position:absolute; right:0; top:-4px; width:2px; height:8px; background:#ffeb3b;"></div>
+                                    </div>
+                                    <div class="scale-unit" style="font-size:12px; color:#ffeb3b; font-weight:bold; line-height:1;">${unit}</div>
                                 </div>
-                                <div class="scale-unit" style="align-self: flex-end; font-size:10px; color:#ffeb3b; font-weight:bold; margin-top:1px; line-height:1;">${unit}</div>
                             </div>
                             <!-- Right: UTM Section -->
-                            <div class="utm-section" style="display:flex; flex-direction:column; gap:0.5px; font-size:10.5px; line-height:1.1;">
+                            <div class="utm-section" style="display:flex; flex-direction:column; gap:1px; font-size:11px; line-height:1.2;">
                                 <div><span style="color:#ffeb3b; font-weight:bold;">Y:</span> <span style="color:#fff;">${eastPart}</span></div>
-                                <div><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
-                                <div><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <div><span style="color:#ffeb3b; font-weight:bold;">X:</span> <span style="color:#fff;">${northPart}</span></div>
+                                    <div><span style="color:#ffeb3b; font-weight:bold;">Z:</span> <span style="color:#fff; font-weight:bold;">${displayAlt}m</span></div>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -5072,6 +5076,15 @@ function updateMeasureModeUI() {
     if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
     isAddingPoint = false;
 
+    // v1453-4-27F: FORCE EXIT Grid Mode when measuring to prevent click blocking
+    if (isMeasuring) {
+        isGridMode = false;
+        const gridPanel = document.getElementById('grid-interval-panel');
+        const btnGrid = document.getElementById('btn-grid-toggle');
+        if (gridPanel) gridPanel.style.display = 'none';
+        if (btnGrid) btnGrid.classList.remove('active');
+    }
+
     if (isMeasuring) {
         if (measureMode === 'line') {
             btnMeasure.style.background = '#f44336'; // Active Red
@@ -5168,10 +5181,10 @@ function redrawMeasurement() {
 
     // Re-draw Polyline or Polygon
     if (isPolygon) {
-        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, renderer: L.svg(), interactive: true };
+        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: false };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, renderer: L.svg(), interactive: true }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: false }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)

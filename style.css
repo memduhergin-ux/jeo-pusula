@@ -1,4 +1,4 @@
-﻿* {
+* {
     box-sizing: border-box;
 }
 
@@ -1753,24 +1753,25 @@ textarea.form-input {
     align-items: center !important;
     justify-content: center !important;
     position: fixed;
-    height: 40px !important;
-    width: 220px !important;
-    padding: 0 10px !important;
-    /* v1453-15F: Equal padding for twin look */
-    background: rgba(0, 0, 0, 0.45) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px !important;
-    /* Twin Panels - v1453-14F */
+    height: 52px !important;
+    width: 290px !important;
+    padding: 0 15px !important;
+    /* v1453-4-27F: Darker, wider capsule look as per latest screenshot */
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 26px !important;
+    /* Perfect pill shape for 52px height */
     box-sizing: border-box !important;
     z-index: 3000 !important;
-    gap: 10px !important;
+    gap: 12px !important;
     overflow: hidden;
     touch-action: none;
     color: white;
     font-family: 'Inter', sans-serif;
     font-size: 11px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
 .custom-scale-wrapper.visible {
