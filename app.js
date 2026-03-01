@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-40F'; // Robust Resilience Fix 🧭💎🔄
+const APP_VERSION = 'v1453-4-42F'; // Ultra-Robust Persistence Fix 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -75,16 +75,31 @@ function openJeoDB() {
 
 // v1453-4-26F: Atomic Record Persistence
 async function dbSaveRecords(records) {
+    if (!isDataLoaded && records && records.length === 0) {
+        console.warn("Resilience: Blocked empty records save before load.");
+        return;
+    }
     try {
         const db = await openJeoDB();
-        const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
-        const store = tx.objectStore(JEO_RECORDS_STORE);
-        await store.clear();
-        for (const record of records) {
-            await store.put(record);
-        }
-        return new Promise(r => tx.oncomplete = () => r());
-    } catch (e) { console.error("IDB Save Records Error:", e); }
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
+            const store = tx.objectStore(JEO_RECORDS_STORE);
+
+            const clearReq = store.clear();
+            clearReq.onsuccess = () => {
+                records.forEach(record => store.put(record));
+            };
+
+            tx.oncomplete = () => {
+                console.log(`Resilience: Successfully saved ${records.length} records to IDB.`);
+                resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(new Error("Transaction aborted"));
+        });
+    } catch (e) {
+        console.error("IDB Save Records Error:", e);
+    }
 }
 
 async function dbLoadRecords() {
@@ -101,13 +116,24 @@ async function dbLoadRecords() {
 }
 
 async function dbSaveMeta(key, value) {
+    if (!isDataLoaded && (key === 'jeoActiveMeasurePoints' || key === 'jeoTracks')) {
+        console.warn(`Resilience: Blocked meta save for ${key} before load.`);
+        return;
+    }
     try {
         const db = await openJeoDB();
-        const tx = db.transaction(JEO_META_STORE, 'readwrite');
-        const store = tx.objectStore(JEO_META_STORE);
-        await store.put({ key, value });
-        return new Promise(r => tx.oncomplete = () => r());
-    } catch (e) { console.error("IDB Save Meta Error:", e); }
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(JEO_META_STORE, 'readwrite');
+            const store = tx.objectStore(JEO_META_STORE);
+            const request = store.put({ key, value });
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+            tx.onabort = () => reject(new Error("Meta Transaction aborted"));
+        });
+    } catch (e) {
+        console.error(`IDB Save Meta Error [${key}]:`, e);
+    }
 }
 
 async function dbLoadMeta(key) {
@@ -124,7 +150,8 @@ async function dbLoadMeta(key) {
 }
 
 async function migrateToIndexedDB() {
-    const isMigrated = localStorage.getItem('jeoIDBMigrated_v1453_4_26F') === 'true';
+    // v1453-4-42F: Final Resilience Key
+    const isMigrated = localStorage.getItem('jeo_resilience_v42F') === 'true';
     if (isMigrated) return;
 
     try {
@@ -193,8 +220,8 @@ async function migrateToIndexedDB() {
         if (activeMode && activeMode !== 'null') await dbSaveMeta('jeoMeasureMode', activeMode);
 
         // Mark as migrated
-        localStorage.setItem('jeoIDBMigrated_v1453_4_26F', 'true');
-        console.log("Resilience: Migration step completed safely.");
+        localStorage.setItem('jeo_resilience_v42F', 'true');
+        console.log("Resilience: Migration step completed.");
     } catch (e) {
         console.error("Resilience: Migration check failed", e);
     }
@@ -212,6 +239,10 @@ async function requestStoragePersistence() {
 }
 
 async function dbSaveLayers(layers) {
+    if (!isDataLoaded && layers && layers.length === 0) {
+        console.warn("Resilience: Blocked empty layers save before load.");
+        return;
+    }
     try {
         const db = await openJeoDB();
         const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
@@ -294,7 +325,7 @@ async function initApp() {
         if (savedGridColor !== null) activeGridColor = savedGridColor;
 
         isDataLoaded = true; // Signal that it's safe to save now
-        console.log("Resilience: Data loaded safely, save guard disabled.");
+        console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
 
         // v1453-PERSIST: Restore Active Measurements from IndexedDB
         const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
@@ -3006,9 +3037,8 @@ function updateScaleValues() {
             const y = center.lat;
             const x = center.lng;
 
-            // Scale Logic
-            // v1453-4-38F: UI uses 59px line (60px total - 1px shortening from 0 side)
-            const targetWidthPx = 59;
+            // v1453-4-41F: Calibrated to 10mm on user device (54px)
+            const targetWidthPx = 54;
 
             let distMeters = 0;
             try {
@@ -3071,7 +3101,7 @@ function updateScaleValues() {
                         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px 0 12px; font-family:'Inter', sans-serif; line-height:1.0;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
                             <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:4px;">
-                                <div style="position:relative; width:59px; height:12px; color:#fff; font-size:10px; font-weight:bold; margin-left:3px;">
+                                <div style="position:relative; width:54px; height:12px; color:#fff; font-size:10px; font-weight:bold; margin-left:8px;">
                                     <span style="position:absolute; left:0; transform:translateX(-50%);">0</span>
                                     <span style="position:absolute; right:0; transform:translateX(50%); text-align:center;">${displayDist}</span>
                                 </div>
@@ -3083,7 +3113,7 @@ function updateScaleValues() {
                             
                             <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
                             <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-top: -1px;">
-                                <div style="width:59px; height:2px; background:#ffeb3b; position:relative; margin-left:3px;">
+                                <div style="width:54px; height:2px; background:#ffeb3b; position:relative; margin-left:8px;">
                                     <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                 </div>
