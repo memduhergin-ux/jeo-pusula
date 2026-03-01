@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-37F'; // Ultimate Drawing & Scale Fix 🧭💎✅
+const APP_VERSION = 'v1453-4-38F'; // Scale Shift & Persistence Fix 🧭💎🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 2; // v1453-4-26F: Upgraded for Records store
@@ -2512,7 +2512,13 @@ async function initMap() {
 
                     // Add markers back with stable styling
                     measurePoints.forEach(p => {
-                        const m = L.circleMarker(p, { radius: 6, color: '#ffeb3b', fillOpacity: 0.8 }).addTo(map);
+                        const m = L.circleMarker(p, { 
+                            radius: 4, 
+                            color: '#ffeb3b', 
+                            fillColor: '#ffeb3b', 
+                            fillOpacity: 1, 
+                            interactive: false 
+                        }).addTo(map);
                         measureMarkers.push(m);
                     });
 
@@ -2966,8 +2972,8 @@ function updateScaleValues() {
 
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
-                        <!-- v1453-4-37F: Tightened gaps (gap:4px) and removed translateX from '0' to keep it inside -->
-                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px; font-family:'Inter', sans-serif; line-height:1.0;">
+                        <!-- v1453-4-38F: Added padding-left: 12px (approx 2mm shift) and kept gaps tight -->
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px 0 12px; font-family:'Inter', sans-serif; line-height:1.0;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
                             <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:4px;">
                                 <div style="position:relative; width:60px; height:12px; color:#fff; font-size:10px; font-weight:bold;">
