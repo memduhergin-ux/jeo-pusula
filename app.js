@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-46F'; // Anti-Wipe Protection 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-47F'; // Layer Transaction Abort Fix 🔧🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -255,27 +255,53 @@ async function dbSaveLayers(layers) {
             // Correctly clear, THEN put — all inside Promise callbacks
             const clearReq = store.clear();
             clearReq.onsuccess = () => {
+                let putError = false;
                 layers.forEach(layer => {
-                    store.put({
-                        id: layer.id,
-                        name: layer.name,
-                        geojson: layer.geojson,
-                        visible: layer.visible,
-                        filled: layer.filled,
-                        pointsVisible: layer.pointsVisible,
-                        areasVisible: layer.areasVisible,
-                        labelsVisible: layer.labelsVisible
-                    });
+                    if (putError) return;
+                    try {
+                        // Sanitize geojson - ensure it's plain serializable object
+                        let safeGeojson = layer.geojson;
+                        if (safeGeojson && typeof safeGeojson === 'object') {
+                            try {
+                                safeGeojson = JSON.parse(JSON.stringify(safeGeojson));
+                            } catch (e) {
+                                console.error(`Resilience: geojson sanitize failed for layer "${layer.name}"`, e);
+                                return; // Skip this layer
+                            }
+                        }
+                        const putReq = store.put({
+                            id: layer.id,
+                            name: layer.name,
+                            geojson: safeGeojson,
+                            visible: layer.visible,
+                            filled: layer.filled,
+                            pointsVisible: layer.pointsVisible,
+                            areasVisible: layer.areasVisible,
+                            labelsVisible: layer.labelsVisible
+                        });
+                        putReq.onerror = (e) => {
+                            console.error(`Resilience: put failed for layer "${layer.name}":`, e.target.error);
+                            putError = true;
+                        };
+                    } catch (e) {
+                        console.error(`Resilience: unexpected error storing layer "${layer.name}":`, e);
+                    }
                 });
             };
             clearReq.onerror = () => reject(clearReq.error);
 
             tx.oncomplete = () => {
-                console.log(`Resilience: Successfully saved ${layers.length} layers to IDB.`);
+                console.log(`[${new Date().toISOString()}] Resilience: Saved ${layers.length} layers to IDB.`);
                 resolve();
             };
-            tx.onerror = () => reject(tx.error);
-            tx.onabort = () => reject(new Error("Layers transaction aborted"));
+            tx.onerror = (e) => {
+                console.error('Resilience: layers tx.onerror:', e.target ? e.target.error : e);
+                reject(tx.error);
+            };
+            tx.onabort = (e) => {
+                console.error('Resilience: layers tx.onabort — transaction rolled back.');
+                resolve(); // Resolve (not reject) to avoid crashing the app
+            };
         });
     } catch (e) {
         console.error("IndexedDB Save Layers Error:", e);
