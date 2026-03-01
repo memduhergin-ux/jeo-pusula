@@ -1,7 +1,7 @@
-const APP_VERSION = 'v1453-4-38F'; // Scale Shift & Persistence Fix 🧭💎🔄
+const APP_VERSION = 'v1453-4-39F'; // Persistence & Grid Fix 🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
-const JEO_DB_VERSION = 2; // v1453-4-26F: Upgraded for Records store
+const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
 const JEO_STORE_NAME = 'jeo-store-v1'; // Layers
 const JEO_RECORDS_STORE = 'jeo-records-v1'; // Geologic Records
 const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
@@ -159,6 +159,19 @@ async function migrateToIndexedDB() {
         const oldTrackIdCounter = parseInt(localStorage.getItem('trackIdCounter')) || 1;
         await dbSaveMeta('trackIdCounter', oldTrackIdCounter);
 
+        // 6. Active Measurements (v1453-4-39F)
+        const activePoints = localStorage.getItem('jeoActiveMeasurePoints');
+        if (activePoints) await dbSaveMeta('jeoActiveMeasurePoints', JSON.parse(activePoints));
+
+        const activePoly = localStorage.getItem('jeoActiveMeasureIsPoly');
+        if (activePoly) await dbSaveMeta('jeoActiveMeasureIsPoly', activePoly);
+
+        const activeMeasuring = localStorage.getItem('jeoIsMeasuring');
+        if (activeMeasuring) await dbSaveMeta('jeoIsMeasuring', activeMeasuring);
+
+        const activeMode = localStorage.getItem('jeoMeasureMode');
+        if (activeMode) await dbSaveMeta('jeoMeasureMode', activeMode);
+
         // Mark as migrated
         localStorage.setItem('jeoIDBMigrated_v1453_4_26F', 'true');
         console.log("Resilience: Full migration completed successfully.");
@@ -254,10 +267,14 @@ async function initApp() {
         // v1453-PERSIST: Restore Active Measurements from IndexedDB
         const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
         const savedIsPoly = await dbLoadMeta('jeoActiveMeasureIsPoly');
+        const savedIsMeasuring = await dbLoadMeta('jeoIsMeasuring');
+        const savedMeasureMode = await dbLoadMeta('jeoMeasureMode');
 
-        if (savedMeasurePoints) {
+        if (savedMeasurePoints && savedMeasurePoints.length > 0) {
             measurePoints = savedMeasurePoints;
             isPolygon = savedIsPoly === 'true';
+            isMeasuring = savedIsMeasuring === 'true';
+            measureMode = savedMeasureMode || 'line';
 
             // Re-create markers
             measurePoints.forEach(p => {
@@ -272,6 +289,7 @@ async function initApp() {
             });
 
             redrawMeasurement();
+            updateMeasureModeUI(); // v1453-4-39F: Sync Button Colors
         }
 
         // v1453-PERSIST: Restore Grid from IndexedDB
@@ -300,6 +318,8 @@ async function initApp() {
         // Refresh UI after data load
         renderRecords();
         if (typeof updateMapMarkers === 'function') updateMapMarkers();
+
+        console.log(`Resilience: Init complete. Records: ${records.length}, Tracks: ${jeoTracks.length}`);
 
     } catch (err) {
         console.error("FATAL: initApp failed", err);
@@ -2955,9 +2975,8 @@ function updateScaleValues() {
             const x = center.lng;
 
             // Scale Logic
-            const targetWidthCm = 1.42;
-            const pxPerCm = 96 / 2.54;
-            const targetWidthPx = targetWidthCm * pxPerCm;
+            // v1453-4-38F: UI uses 59px line (60px total - 1px shortening from 0 side)
+            const targetWidthPx = 59;
 
             let distMeters = 0;
             try {
@@ -2971,8 +2990,9 @@ function updateScaleValues() {
 
             let displayDist = Math.round(distMeters);
             let unit = "m";
-            if (displayDist > 1000) {
-                displayDist = (distMeters / 1000).toFixed(1);
+            if (displayDist >= 1000) {
+                // v1453-4-38F: Round to integer for KM as requested
+                displayDist = Math.round(distMeters / 1000);
                 unit = "km";
             }
 
@@ -3019,7 +3039,7 @@ function updateScaleValues() {
                         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px 0 12px; font-family:'Inter', sans-serif; line-height:1.0;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
                             <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:4px;">
-                                <div style="position:relative; width:60px; height:12px; color:#fff; font-size:10px; font-weight:bold; margin-left:2px;">
+                                <div style="position:relative; width:59px; height:12px; color:#fff; font-size:10px; font-weight:bold; margin-left:3px;">
                                     <span style="position:absolute; left:0; transform:translateX(-50%);">0</span>
                                     <span style="position:absolute; right:0; transform:translateX(50%); text-align:center;">${displayDist}</span>
                                 </div>
@@ -3031,7 +3051,7 @@ function updateScaleValues() {
                             
                             <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
                             <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-top: -1px;">
-                                <div style="width:60px; height:2px; background:#ffeb3b; position:relative; margin-left:2px;">
+                                <div style="width:59px; height:2px; background:#ffeb3b; position:relative; margin-left:3px;">
                                     <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                 </div>
@@ -5368,9 +5388,11 @@ function redrawMeasurement() {
         });
     }
 
-    // v1453-4-24F: Immediate Robust Persistence (Migrated to IndexedDB)
+    // v1453-4-39F: Immediate Robust Persistence (Migrated to IndexedDB)
     dbSaveMeta('jeoActiveMeasurePoints', measurePoints);
     dbSaveMeta('jeoActiveMeasureIsPoly', String(isPolygon));
+    dbSaveMeta('jeoIsMeasuring', String(isMeasuring));
+    dbSaveMeta('jeoMeasureMode', measureMode);
 
     updateMeasureButtons();
 }

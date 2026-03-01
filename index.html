@@ -10,15 +10,15 @@
         content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
     <meta name="description"
         content="Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.">
-    <title>JeoCompass v1453-4-38F</title>
+    <title>JeoCompass v1453-4-39F</title>
     <!-- JeoCompass Version Managed by JS -->
-    <meta name="version" content="v1453-4-38F">
-    <meta name="jeo-version" content="v1453-4-38F">
+    <meta name="version" content="v1453-4-39F">
+    <meta name="jeo-version" content="v1453-4-39F">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=1453-4-38F">
+    <link rel="stylesheet" href="style.css?v=1453-4-39F">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -81,7 +81,7 @@
                 find your way.”
             </div>
             <div class="splash-version app-version-display"
-                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">v1453-4-26F
+                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">v1453-4-39F
             </div>
         </div>
     </div>
@@ -344,10 +344,10 @@
 
             <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
 
-        
 
 
-    <!-- v1453-27F: Update Logic -->
+
+            <!-- v1453-27F: Update Logic -->
             <!-- v1453-99F: Save Grid Button -->
             <button id="btn-grid-save" title="Save Grid as Layer"
                 style="cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(33, 150, 243, 0.1); margin-right: 4px; border: none;">
@@ -884,63 +884,63 @@
 
 
         /* --- JeoCompass Custom Modal System --- */
-        window.JeoAlert = function(message) {
+        window.JeoAlert = function (message) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('jeo-modal-overlay');
                 const body = document.getElementById('jeo-modal-body');
                 const okBtn = document.getElementById('jeo-modal-ok');
                 const cancelBtn = document.getElementById('jeo-modal-cancel');
-                
+
                 // Fallback to native if DOM not ready (extremely early errors)
-                if (!overlay || !body) { 
-                    alert("JeoCompass Message:\n" + message); 
-                    return resolve(); 
+                if (!overlay || !body) {
+                    alert("JeoCompass Message:\n" + message);
+                    return resolve();
                 }
-                
+
                 body.innerText = message;
                 if (cancelBtn) cancelBtn.style.display = 'none';
                 overlay.classList.add('show');
-                
-                const onOk = () => { 
-                    overlay.classList.remove('show'); 
-                    okBtn.removeEventListener('click', onOk); 
-                    resolve(); 
+
+                const onOk = () => {
+                    overlay.classList.remove('show');
+                    okBtn.removeEventListener('click', onOk);
+                    resolve();
                 };
                 okBtn.addEventListener('click', onOk);
             });
         };
 
-        window.JeoConfirm = function(message) {
+        window.JeoConfirm = function (message) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('jeo-modal-overlay');
                 const body = document.getElementById('jeo-modal-body');
                 const okBtn = document.getElementById('jeo-modal-ok');
                 const cancelBtn = document.getElementById('jeo-modal-cancel');
-                
+
                 // Fallback to native if DOM not ready
-                if (!overlay || !body) { 
-                    return resolve(confirm("JeoCompass:\n" + message)); 
+                if (!overlay || !body) {
+                    return resolve(confirm("JeoCompass:\n" + message));
                 }
-                
+
                 body.innerText = message;
                 if (cancelBtn) cancelBtn.style.display = 'block';
                 overlay.classList.add('show');
-                
-                const onOk = () => { 
-                    overlay.classList.remove('show'); 
-                    cleanup(); 
-                    resolve(true); 
+
+                const onOk = () => {
+                    overlay.classList.remove('show');
+                    cleanup();
+                    resolve(true);
                 };
-                const onCancel = () => { 
-                    overlay.classList.remove('show'); 
-                    cleanup(); 
-                    resolve(false); 
+                const onCancel = () => {
+                    overlay.classList.remove('show');
+                    cleanup();
+                    resolve(false);
                 };
-                const cleanup = () => { 
-                    okBtn.removeEventListener('click', onOk); 
-                    cancelBtn.removeEventListener('click', onCancel); 
+                const cleanup = () => {
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
                 };
-                
+
                 okBtn.addEventListener('click', onOk);
                 cancelBtn.addEventListener('click', onCancel);
             });
@@ -958,7 +958,7 @@
                 localStorage.setItem(lastCrashKey, now);
 
                 if (count >= 3) {
-                if (await JeoConfirm("The app crashed repeatedly. Start in Safe Mode by clearing layers?")) {
+                    if (await JeoConfirm("The app crashed repeatedly. Start in Safe Mode by clearing layers?")) {
                         localStorage.setItem(crashKey, 0);
                         indexedDB.deleteDatabase('JeoCompassDB');
                         location.reload();
