@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-42F'; // Ultra-Robust Persistence Fix 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-43F'; // IDB Diagnostic + Verify Fix 🔧🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 3; // v1453-4-39F: Forced upgrade for store verification
@@ -302,7 +302,28 @@ function hideLoading() {
     if (overlay) overlay.style.display = 'none';
 }
 
-// App Initialization & Splash Screen
+// -------------------------------------------------------
+// IDB Write-Verify Test (v1453-4-43F)
+// -------------------------------------------------------
+async function testIDBWrite() {
+    try {
+        const testKey = '__idb_test__';
+        const testValue = 'ok_' + Date.now();
+        await dbSaveMeta(testKey, testValue);
+        const readBack = await dbLoadMeta(testKey);
+        if (readBack === testValue) {
+            console.log('Resilience: IDB write-verify PASSED.');
+            return true;
+        } else {
+            console.error('Resilience: IDB write-verify FAILED. Written:', testValue, 'Read back:', readBack);
+            return false;
+        }
+    } catch (e) {
+        console.error('Resilience: IDB write-verify EXCEPTION:', e);
+        return false;
+    }
+}
+
 async function initApp() {
     try {
         console.log("Resilience: initApp starting...");
@@ -325,7 +346,14 @@ async function initApp() {
         if (savedGridColor !== null) activeGridColor = savedGridColor;
 
         isDataLoaded = true; // Signal that it's safe to save now
+
+        // v1453-4-43F: Show diagnostic toast to user
+        const idbOk = await testIDBWrite();
+        const diagMsg = idbOk
+            ? `✅ Veri OK: ${records.length} nokta, ${jeoTracks.length} iz, ${externalLayers.length} katman yüklendi.`
+            : '❌ IndexedDB HATA! Veri kaydedilemeyebilir. Tarayıcı ayarlarını kontrol edin.';
         console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
+        setTimeout(() => showToast(diagMsg, 6000), 2000);
 
         // v1453-PERSIST: Restore Active Measurements from IndexedDB
         const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
