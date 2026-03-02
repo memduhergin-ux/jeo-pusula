@@ -2396,7 +2396,8 @@ textarea.form-input {
         1.5px 1.5px 0 #000,
         0px 0px 5px rgba(0, 0, 0, 1) !important;
     pointer-events: none;
-    display: inline-block;
+    display: block !important;
+    visibility: visible !important;
     margin: 0 !important;
     margin-top: -3px !important;
     /* 3px offset as requested */
