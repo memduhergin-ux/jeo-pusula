@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Ω-Pro'; // OruxMaps Architecture 🛡️📂🧭
+const APP_VERSION = 'v1453-4-53Ω-Pro-Fix1'; // OruxMaps Architecture 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -5437,7 +5437,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
 
     } catch (e) {
         console.error("Critical error in addExternalLayer:", e);
-        JeoAlert("Katman eklenirken bir hata olutu: " + e.message);
+        JeoAlert("Katman eklenirken bir hata oluştu (ErrCode: 53Ω-Labels): " + e.message);
     }
 }
 
