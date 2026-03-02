@@ -1,10 +1,10 @@
 {
-    "name": "JeoCompass v1453-4-53X",
-    "version": "1453.4.53X",
+    "name": "JeoCompass",
+    "version": "1453.4.53",
     "short_name": "JeoCompass",
-    "description": "Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.",
+    "description": "Professional Geologic Compass & Data Analysis.",
     "start_url": "index.html",
-    "prefer_related_applications": false,
+    "prefer_related_applications": true,
     "orientation": "any",
     "id": "/JeolojiPusulasi/",
     "scope": "/JeolojiPusulasi/",
@@ -20,8 +20,8 @@
     "related_applications": [
         {
             "platform": "play",
-            "url": "https://play.google.com/store/apps/details?id=io.github.memduhergin_ux.twa",
-            "id": "io.github.memduhergin_ux.twa"
+            "url": "https://play.google.com/store/apps/details?id=com.jeocompass.app",
+            "id": "com.jeocompass.app"
         }
     ],
     "icons": [
