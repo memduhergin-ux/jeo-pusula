@@ -1403,10 +1403,17 @@ const btnHoldStrike = document.getElementById('btn-hold-strike');
 const btnHoldDip = document.getElementById('btn-hold-dip');
 const btnCleanLayers = document.getElementById('btn-clean-layers'); // Existing? checking..
 const btnFollowMe = document.getElementById('btn-follow-me');
+const btnMoreOptions = document.getElementById('btn-more-options');
+const btnShare = document.getElementById('btn-share');
+const btnToggleLock = document.getElementById('btn-toggle-lock');
+const btnToggleRecords = document.getElementById('btn-toggle-records');
+const recordModal = document.getElementById('record-modal');
+const optionsModal = document.getElementById('options-modal');
+
 if (btnMoreOptions) {
     btnMoreOptions.addEventListener('click', () => {
         updateAppVersionDisplay(); // v1453-4-53X: Refresh version on open
-        optionsModal.classList.add('active');
+        if (optionsModal) optionsModal.classList.add('active');
     });
 }
 const shareModal = document.getElementById('share-modal');
@@ -1535,9 +1542,9 @@ async function performAutoDiscoveryAndSync() {
     if (jeoTracks === null) jeoTracks = [];
 
     if (!syncFolderHandle) return;
-    if (!await verifyFolderPermission()) return;
 
     try {
+        if (!await verifyFolderPermission()) return;
         // 1. DISCOVER: Check if files exist in folder
         const pointsFile = await getFileFromFolder('points.json');
         const tracksFile = await getFileFromFolder('tracks.json');
@@ -1626,7 +1633,9 @@ async function writeJsonToFolder(name, data) {
 }
 
 async function pipelineSync() {
-    if (isSyncing) await syncToFolder();
+    try {
+        if (isSyncing) await syncToFolder();
+    } catch (e) { console.error("PipelineSync suppressed error:", e); }
 }
 
 // State
@@ -4088,8 +4097,6 @@ async function saveCurrentTrack() {
     jeoTracks.push(newTrack);
     await dbSaveMeta('jeoTracks', jeoTracks);
     await pipelineSync(); // v1453-4-53X: Mirror to folder
-    await dbSaveMeta('trackIdCounter', trackIdCounter);
-    // v1453-4-53X: Mirror to folder
     await dbSaveMeta('trackIdCounter', trackIdCounter);
 
     // Canlı izlei temizle
