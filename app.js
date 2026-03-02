@@ -488,6 +488,7 @@ async function testIDBWrite() {
 
 async function initApp() {
     try {
+        updateAppVersionDisplay(); // v1453-4-53Ω-Pro: Ensure version is visible
         console.log(`[${new Date().toISOString()}] initApp: Starting recovery & initialization sequence...`);
 
         // v1453-4-53U: Request persistence IMMEDIATELY (Priority #1)
@@ -5256,7 +5257,52 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                 }
 
                 // v1453-99F: Permanent Segment Labels for Polygons and LineStrings
-                // v1453-4-53J: Segment labels removed as per user request (use ruler instead)
+                // v1453-4-53Ω-Pro: Re-enabled as per user request to preserve measurement labels after save
+                if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
+                    const latlngs = layer.getLatLngs();
+                    const path = feature.geometry.type === 'Polygon' ? latlngs[0] : latlngs;
+
+                    // Recursive helper to handle MultiPolygon or nested arrays if needed
+                    const processPath = (pts) => {
+                        if (!Array.isArray(pts)) return;
+                        const isClosed = feature.geometry.type === 'Polygon';
+                        const labels = [];
+
+                        for (let i = 0; i < pts.length - (isClosed ? 0 : 1); i++) {
+                            const p1 = L.latLng(pts[i]);
+                            const p2 = L.latLng(pts[(i + 1) % pts.length]);
+                            const dist = p1.distanceTo(p2);
+                            const mid = getSegmentMidpoint(p1, p2);
+                            const angle = getSegmentAngle(p1, p2);
+
+                            const lab = L.marker(mid, {
+                                icon: L.divIcon({
+                                    className: 'segment-label-container',
+                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                                    iconSize: [1, 1],
+                                    iconAnchor: [0, 0]
+                                }),
+                                interactive: false
+                            });
+
+                            // Attach to feature for later collection into layerObj
+                            if (!feature._segmentLabels) feature._segmentLabels = [];
+                            feature._segmentLabels.push(lab);
+
+                            // Add to map immediately if layer is visible
+                            if (labelsVisible) lab.addTo(map);
+                        }
+                    };
+
+                    if (Array.isArray(path)) {
+                        if (L.LineUtil.isFlat(path)) {
+                            processPath(path);
+                        } else {
+                            // Handles MultiPolygon or Polygon with holes
+                            path.forEach(part => processPath(part));
+                        }
+                    }
+                }
 
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {
