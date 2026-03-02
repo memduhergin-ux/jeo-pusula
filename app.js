@@ -5289,8 +5289,8 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                             if (!feature._segmentLabels) feature._segmentLabels = [];
                             feature._segmentLabels.push(lab);
 
-                            // Add to map immediately if layer is visible
-                            if (labelsVisible) lab.addTo(map);
+                            // Add to map immediately (visibility will be synced by caller if hidden)
+                            lab.addTo(map);
                         }
                     };
 
