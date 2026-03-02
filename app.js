@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53W'; // Syntax Fix 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53X'; // Live Mirror (Boru Hattı) 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -594,6 +594,14 @@ async function initApp() {
 
         // v466: Hide all saved tracks by default on startup
         if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
+
+        // v1453-4-53X: Boot Pipeline (Mirror Sync)
+        syncFolderHandle = await dbLoadMeta('jeoSyncFolder');
+        if (syncFolderHandle) {
+            isSyncing = true;
+            updateSyncUI();
+            performAutoDiscoveryAndSync(); // Async background check
+        }
 
         // Refresh UI after data load
         renderRecords();
@@ -1459,6 +1467,153 @@ function generateTicks() {
     }
 }
 generateTicks();
+
+// v1453-4-53X: Mirror Pipeline (Boru Hattı) State
+let syncFolderHandle = null;
+let isSyncing = false;
+
+// -----------------------------------------------------------------
+// THE PIPELINE: Live Mirror Sync Logic (OruxMaps Style)
+// -----------------------------------------------------------------
+async function requestFolderAccess() {
+    try {
+        if (!('showDirectoryPicker' in window)) {
+            JeoAlert("Your browser does not support folder sync. Please use a modern version of Chrome.");
+            return;
+        }
+
+        syncFolderHandle = await window.showDirectoryPicker({
+            mode: 'readwrite'
+        });
+
+        // Store handle in IDB for persistence (v1453-4-53X)
+        await dbSaveMeta('jeoSyncFolder', syncFolderHandle);
+
+        isSyncing = true;
+        updateSyncUI();
+
+        // Initial Mirror (Automated Recovery)
+        await performAutoDiscoveryAndSync();
+        showToast("Pipeline connected! Data will now mirror to folder.");
+    } catch (err) {
+        console.error("Folder access failed", err);
+        if (err.name !== 'AbortError') showToast("Folder connection failed.");
+    }
+}
+
+async function updateSyncUI() {
+    const statusDot = document.getElementById('sync-status-dot');
+    const statusText = document.getElementById('sync-status-text');
+    const folderName = document.getElementById('sync-folder-name');
+
+    if (isSyncing && syncFolderHandle) {
+        if (statusDot) statusDot.style.background = '#4caf50';
+        if (statusText) statusText.textContent = 'Active (Live Mirror)';
+        if (folderName) folderName.textContent = syncFolderHandle.name;
+    } else {
+        if (statusDot) statusDot.style.background = '#f44336';
+        if (statusText) statusText.textContent = 'Disconnected';
+        if (folderName) folderName.textContent = 'Not Connected';
+    }
+}
+
+async function verifyFolderPermission() {
+    if (!syncFolderHandle) return false;
+    const options = { mode: 'readwrite' };
+    try {
+        if ((await syncFolderHandle.queryPermission(options)) === 'granted') return true;
+        if ((await syncFolderHandle.requestPermission(options)) === 'granted') return true;
+    } catch (e) {
+        console.warn("Folder permission request failed", e);
+    }
+    return false;
+}
+
+async function performAutoDiscoveryAndSync() {
+    if (!syncFolderHandle) return;
+    if (!await verifyFolderPermission()) return;
+
+    try {
+        // 1. DISCOVER: Check if files exist in folder
+        const pointsFile = await getFileFromFolder('points.json');
+        const tracksFile = await getFileFromFolder('tracks.json');
+        const layersFile = await getFileFromFolder('layers.json');
+
+        let dataIngested = false;
+
+        // 2. INGEST: If app is empty but folder has stuff, suck it in (v1453-4-53X)
+        if ((!records || records.length === 0) && pointsFile) {
+            records = JSON.parse(await pointsFile.text());
+            dataIngested = true;
+            console.log("Mirror: Ingested points from folder.");
+        }
+
+        if ((!jeoTracks || jeoTracks.length === 0) && tracksFile) {
+            jeoTracks = JSON.parse(await tracksFile.text());
+            dataIngested = true;
+            console.log("Mirror: Ingested tracks from folder.");
+        }
+
+        if (dataIngested) {
+            await saveRecords();
+            await dbSaveMeta('jeoTracks', jeoTracks);
+            await pipelineSync(); // v1453-4-53X: Mirror to folder
+            console.log("Track saved safely.");
+            renderRecords();
+            renderTracks();
+            showToast("Sync: Data recovered from folder automatically.");
+        }
+
+        // 3. SEED: Write current state to folder
+        await syncToFolder();
+    } catch (err) {
+        console.error("Mirror Discovery failed", err);
+    }
+}
+
+async function getFileFromFolder(name) {
+    try {
+        const handle = await syncFolderHandle.getFileHandle(name);
+        return await handle.getFile();
+    } catch (e) { return null; }
+}
+
+async function syncToFolder() {
+    if (!isSyncing || !syncFolderHandle) return;
+    if (!await verifyFolderPermission()) return;
+
+    try {
+        await writeJsonToFolder('points.json', records);
+        await writeJsonToFolder('tracks.json', jeoTracks);
+        await writeJsonToFolder('layers.json', externalLayers.map(l => ({
+            name: l.name,
+            geojson: l.geojson,
+            visible: l.visible,
+            filled: l.filled,
+            pointsVisible: l.pointsVisible,
+            areasVisible: l.areasVisible,
+            labelsVisible: l.labelsVisible
+        })));
+
+        console.log("Mirror: Sync completed.");
+        const statusText = document.getElementById('sync-status-text');
+        if (statusText) statusText.textContent = `Sync: ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+        console.error("Mirror Sync failed", err);
+        // Don't kill sync on a temporary failure, just log it
+    }
+}
+
+async function writeJsonToFolder(name, data) {
+    const handle = await syncFolderHandle.getFileHandle(name, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+}
+
+async function pipelineSync() {
+    if (isSyncing) await syncToFolder();
+}
 
 // State
 let currentMode = 'utm'; // Ekranda varsayılan görünüm UTM ED50 6 Derece
@@ -2546,6 +2701,7 @@ async function saveRecords() {
     try {
         await dbSaveRecords(records);
         await dbSaveMeta('jeoNextId', nextId);
+        await pipelineSync(); // v1453-4-53X: Mirror to folder
         if (isHeatmapActive) updateHeatmapFilterOptions();
     } catch (e) {
         console.error("Resilience: saveRecords failed", e);
@@ -3325,7 +3481,7 @@ function updateScaleValues() {
                     scaleWrapper.innerHTML = `
                         <div class="drag-handle" style="position:absolute; top:2px; left:10px; font-size:8px; opacity:0.5; pointer-events:none;">::::</div>
                         <!-- v1453-4-38F: Added padding-left: 12px (approx 2mm shift) and kept gaps tight -->
-                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding: 0 4px 0 12px; font-family:'Inter', sans-serif; line-height:1.0;">
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:0px; width:fit-content; margin:0 auto; padding:0 4px 0 12px; font-family:'Inter', sans-serif; line-height:1.0;">
                             <!-- TOP ROW: Labels 0..Dist (White) and Y (Headers Yellow) -->
                             <div style="display:flex; align-items:baseline; justify-content:flex-start; gap:4px;">
                                 <div style="position:relative; width:54px; height:12px; color:#fff; font-size:10px; font-weight:bold; margin-left:8px;">
@@ -3339,7 +3495,7 @@ function updateScaleValues() {
                             </div>
                             
                             <!-- BOTTOM ROW: Line (Yellow), Unit (Yellow), X (Headers Yellow), Z (Headers Yellow) -->
-                            <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-top: -1px;">
+                            <div style="display:flex; align-items:center; justify-content:flex-start; gap:4px; margin-top:-1px;">
                                 <div style="width:54px; height:2px; background:#ffeb3b; position:relative; margin-left:8px;">
                                     <div style="position:absolute; left:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
                                     <div style="position:absolute; right:0; top:-3.5px; width:1.5px; height:8px; background:#ffeb3b;"></div>
@@ -3917,6 +4073,9 @@ async function saveCurrentTrack() {
 
     jeoTracks.push(newTrack);
     await dbSaveMeta('jeoTracks', jeoTracks);
+    await pipelineSync(); // v1453-4-53X: Mirror to folder
+    await dbSaveMeta('trackIdCounter', trackIdCounter);
+    // v1453-4-53X: Mirror to folder
     await dbSaveMeta('trackIdCounter', trackIdCounter);
 
     // Canlı izlei temizle
@@ -5032,7 +5191,10 @@ async function addExternalLayer(name, geojson, skipSave = false) {
         }
 
         // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
-        if (!skipSave) await saveExternalLayers();
+        if (!skipSave) {
+            await dbSaveLayers(externalLayers);
+            await pipelineSync(); // v1453-4-53X: Mirror to folder
+        }
         renderLayerList();
         // Optimized trigger
         optimizeMapPoints();
@@ -5328,6 +5490,8 @@ async function loadExternalLayers(silent = false) {
             }
         }
         renderLayerList();
+        await pipelineSync();
+        renderRecords();
     } catch (e) {
         console.error("KML loading error:", e);
         showToast("Error loading layers", 3000);
@@ -6368,6 +6532,10 @@ const handleTerminationSave = () => {
 
 window.addEventListener('beforeunload', handleTerminationSave);
 window.addEventListener('pagehide', handleTerminationSave);
+
+if (document.getElementById('btn-setup-sync')) {
+    document.getElementById('btn-setup-sync').addEventListener('click', requestFolderAccess);
+}
 
 // Initial flow is handled by autoInitSensors() in the mid-section.
 
