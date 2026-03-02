@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Z'; // Silent Pipeline 🛡️📂🧭
+const APP_VERSION = 'v1453-4-53Ω'; // Omega Persistence 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -595,20 +595,17 @@ async function initApp() {
         // v466: Hide all saved tracks by default on startup
         if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
 
-        // v1453-4-53Z: Silent Boot (No Permission Nags)
+        // v1453-4-53Ω: Omega Boot (Stealth Disk)
+        await initOPFS();
+        await performOmegaDiscovery();
+
+        // Restore External Pipeline Handle (If exists)
         syncFolderHandle = await dbLoadMeta('jeoSyncFolder');
         if (syncFolderHandle) {
             isSyncing = true;
-            updateSyncUI(); // This will show Orange (Waiting) state silently
-            // Do NOT call performAutoDiscoveryAndSync here as it might trigger a nag
-            console.log("Mirror: Handle found. Waiting for user interaction or save.");
-        } else {
-            // v1453-4-53Y: English Onboarding for Pipeline
-            setTimeout(() => {
-                if (typeof JeoAlert === 'function') {
-                    JeoAlert("<b>Data Safety Pipeline</b><br><br>Enable Folder Mirroring to protect your geologic data from browser cleanup.<br><br>Go to <b>Options ➔ Select Data Folder</b> to start.");
-                }
-            }, 5000);
+            updateSyncUI();
+            // performAutoDiscoveryAndSync(); // v1453-4-53Z: REMOVED to prevent boot-time nags
+            console.log("Mirror: External Handle found.");
         }
 
         // Refresh UI after data load
@@ -1483,13 +1480,86 @@ function generateTicks() {
 }
 generateTicks();
 
-// v1453-4-53X: Mirror Pipeline (Boru Hattı) State
+// v1453-4-53Ω: Omega Persistence (Origin Private File System)
+let opfsRoot = null;
+let isOpfsInitialised = false;
+
+// v1453-4-53X: Mirror Pipeline (External Folder) State
 let syncFolderHandle = null;
 let isSyncing = false;
-let syncTimeout = null; // v1453-4-53Y: Debounce timer
+let syncTimeout = null;
 
 // -----------------------------------------------------------------
-// THE PIPELINE: Live Mirror Sync Logic (OruxMaps Style)
+// OMEGA PERSISTENCE: Internal Stealth Disk (OPFS)
+// -----------------------------------------------------------------
+async function initOPFS() {
+    try {
+        if (!navigator.storage || !navigator.storage.getDirectory) {
+            console.warn("OPFS: Not supported in this browser.");
+            return;
+        }
+        opfsRoot = await navigator.storage.getDirectory();
+        isOpfsInitialised = true;
+        console.log("OPFS: Stealth Disk Initialized.");
+    } catch (e) { console.error("OPFS Init failed:", e); }
+}
+
+async function opfsSave(filename, data) {
+    if (!isOpfsInitialised || !opfsRoot) return;
+    try {
+        const fileHandle = await opfsRoot.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(data));
+        await writable.close();
+        console.log(`OPFS: Saved ${filename}`);
+    } catch (e) { console.error(`OPFS Save failed [${filename}]:`, e); }
+}
+
+async function opfsLoad(filename) {
+    if (!isOpfsInitialised || !opfsRoot) return null;
+    try {
+        const fileHandle = await opfsRoot.getFileHandle(filename);
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        return JSON.parse(text);
+    } catch (e) { return null; }
+}
+
+async function performOmegaDiscovery() {
+    if (!isOpfsInitialised) return;
+
+    // Recovery trigger: If IDB is empty, try to restore from OPFS
+    const idbRecords = await dbLoadRecords();
+    const idbTracks = await dbLoadMeta('jeoTracks');
+
+    if ((!idbRecords || idbRecords.length === 0) || (!idbTracks || idbTracks.length === 0)) {
+        console.log("OPFS: IDB empty. Attempting stealth recovery...");
+
+        const savedRecords = await opfsLoad('points.json');
+        if (savedRecords && savedRecords.length > 0) {
+            records = savedRecords;
+            await dbSaveRecords(records, true);
+            console.log("OPFS: Recovered points.");
+        }
+
+        const savedTracks = await opfsLoad('tracks.json');
+        if (savedTracks && savedTracks.length > 0) {
+            jeoTracks = savedTracks;
+            await dbSaveMeta('jeoTracks', jeoTracks, true);
+            console.log("OPFS: Recovered tracks.");
+        }
+
+        if (records.length > 0 || (jeoTracks && jeoTracks.length > 0)) {
+            renderRecords();
+            renderTracks();
+            if (typeof updateMapMarkers === 'function') updateMapMarkers();
+            console.log("OPFS: Stealth recovery complete.");
+        }
+    }
+}
+
+// -----------------------------------------------------------------
+// THE PIPELINE: Live Mirror Sync Logic (External Folder)
 // -----------------------------------------------------------------
 async function requestFolderAccess() {
     try {
@@ -1651,6 +1721,13 @@ async function writeJsonToFolder(name, data) {
 
 async function pipelineSync() {
     try {
+        // v1453-4-53Ω: Always sync to OPFS (Invisible Disk)
+        if (isOpfsInitialised) {
+            opfsSave('points.json', records);
+            opfsSave('tracks.json', jeoTracks);
+        }
+
+        // External Mirror (Optional / Permission required)
         if (!isSyncing || !syncFolderHandle) return;
 
         // v1453-4-53Y: Debounce disk I/O by 2 seconds to keep app snappy
