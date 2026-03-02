@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Ω'; // Omega Persistence 🛡️📂🧭
+const APP_VERSION = 'v1453-4-53Ω-Pro'; // OruxMaps Architecture 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -12,25 +12,25 @@ const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
 
 // Native dialog replacement system moved to index.html for earlier availability.
 
-// S�r�m� UI �zerinde g�ncelleme fonksiyonu
+// Srm UI zerinde gncelleme fonksiyonu
 function updateAppVersionDisplay() {
     const versionElements = document.querySelectorAll('.app-version-display');
     versionElements.forEach(el => {
         el.textContent = APP_VERSION;
     });
 
-    // �zel ID'leri de g�ncelle (Eski yap�y� desteklemek i�in)
+    // zel ID'leri de gncelle (Eski yapy desteklemek iin)
     const activeVersionEl = document.getElementById('active-version');
     if (activeVersionEl) activeVersionEl.textContent = APP_VERSION;
 
     const sensorStatusText = document.getElementById('sensor-status-text');
     if (sensorStatusText && sensorStatusText.textContent.includes('v1453')) {
-        // Sadece versiyon k�sm�n� g�ncellemek zor olabilir, bu y�zden manuel b�rakabiliriz
-        // veya dinamik yapabiliriz. �imdilik s�n�f tabanl� g�ncelleme yeterli.
+        // Sadece versiyon ksmn gncellemek zor olabilir, bu yzden manuel brakabiliriz
+        // veya dinamik yapabiliriz. imdilik snf tabanl gncelleme yeterli.
     }
 }
 
-// v750: Global Security & Stability Kalkan�
+// v750: Global Security & Stability Kalkan
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     console.error(`GLOBAL ERROR: ${msg} at ${lineNo}:${columnNo}`, error);
     // v1453-06F: Restored polite message after debugging success
@@ -538,10 +538,16 @@ async function initApp() {
 
         isDataLoaded = true; // Signal that it's safe to save now
 
+        // v1453-4-53Ω-Pro: Request Persistent Storage from Chrome
+        if (navigator.storage && navigator.storage.persist) {
+            const isPersisted = await navigator.storage.persist();
+            console.log(`Storage Security: Persistent=${isPersisted}`);
+        }
+
         // v1453-4-46F: Verbose diagnostic log
         console.log(`[${new Date().toISOString()}] INIT-COMPLETE records.length=${records.length} tracks.length=${jeoTracks.length} layers.length=${externalLayers.length}`);
 
-        // v1453-4-53J: Removed startup diagnostic toast as per user request
+        // v1453-53J: Removed startup diagnostic toast as per user request
         console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
 
         // v1453-PERSIST: Restore Active Measurements from IndexedDB
@@ -599,21 +605,23 @@ async function initApp() {
         await initOPFS();
         await performOmegaDiscovery();
 
+        // v1453-4-53Ω-Pro: Prime the Fuel Pump (Gesture-based silent restore)
+        setupFuelPumpListener();
+
         // Restore External Pipeline Handle (If exists)
         syncFolderHandle = await dbLoadMeta('jeoSyncFolder');
         if (syncFolderHandle) {
             isSyncing = true;
             updateSyncUI();
-            // performAutoDiscoveryAndSync(); // v1453-4-53Z: REMOVED to prevent boot-time nags
-            console.log("Mirror: External Handle found.");
+            console.log("Fuel Pump: Mirror handle armed.");
         }
 
         // Refresh UI after data load
         renderRecords();
-        renderTracks(); // v1453-4-48F: Refresh track count after IDB load
+        renderTracks();
         if (typeof updateMapMarkers === 'function') updateMapMarkers();
 
-        console.log(`Resilience: Init complete. Records: ${records.length}, Tracks: ${jeoTracks.length}`);
+        console.log(`Fuel Pump: System Ready. Records: ${records.length}, Tracks: ${jeoTracks.length}`);
 
     } catch (err) {
         console.error("FATAL: initApp failed", err);
@@ -994,19 +1002,6 @@ function updateHeatmap() {
         // Fallback or Empty
         points = [];
     }
-
-    // v1453-1: Smart Radius Conversion (Meters to Pixels) - Fix for "Heatmap not working"
-    // radiusPixels and blurPixels are already defined above if needed, but let's ensure scope is clean.
-    // Actually, we defined them as 'let' above but the block structure might be confusing.
-    // Let's just use the logic directly without redeclaring if they are already in scope.
-
-    // In this specific function structure, we might have pasted code that duplicates declarations.
-    // Let's remove the duplicate block if it exists, or fix the declaration.
-
-    // Since we already have the logic above (lines 359-391 in previous view), 
-    // we should NOT have another block here.
-    // I will REMOVE this duplicate block entirely as it resets the smart radius logic.
-
 
     // v1453-1: Smart Radius Conversion (Meters to Pixels)
     if (heatmapRadius > 0) {
@@ -1504,56 +1499,42 @@ async function initOPFS() {
     } catch (e) { console.error("OPFS Init failed:", e); }
 }
 
-async function opfsSave(filename, data) {
-    if (!isOpfsInitialised || !opfsRoot) return;
-    try {
-        const fileHandle = await opfsRoot.getFileHandle(filename, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(JSON.stringify(data));
-        await writable.close();
-        console.log(`OPFS: Saved ${filename}`);
-    } catch (e) { console.error(`OPFS Save failed [${filename}]:`, e); }
-}
-
-async function opfsLoad(filename) {
-    if (!isOpfsInitialised || !opfsRoot) return null;
-    try {
-        const fileHandle = await opfsRoot.getFileHandle(filename);
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        return JSON.parse(text);
-    } catch (e) { return null; }
-}
-
+// OMEGA DISCOVERY (No changes needed, uses getFileFromFolder)
 async function performOmegaDiscovery() {
     if (!isOpfsInitialised) return;
 
-    // Recovery trigger: If IDB is empty, try to restore from OPFS
+    // Recovery trigger: If IDB is empty, try to restore from OPFS/Disk
     const idbRecords = await dbLoadRecords();
     const idbTracks = await dbLoadMeta('jeoTracks');
 
     if ((!idbRecords || idbRecords.length === 0) || (!idbTracks || idbTracks.length === 0)) {
-        console.log("OPFS: IDB empty. Attempting stealth recovery...");
+        console.log("Fuel Pump: IDB empty. Attempting re-prime from disks...");
 
-        const savedRecords = await opfsLoad('points.json');
-        if (savedRecords && savedRecords.length > 0) {
-            records = savedRecords;
-            await dbSaveRecords(records, true);
-            console.log("OPFS: Recovered points.");
+        const savedRecordsFile = await getFileFromFolder('points.json');
+        if (savedRecordsFile) {
+            const savedRecords = JSON.parse(await savedRecordsFile.text());
+            if (savedRecords && savedRecords.length > 0) {
+                records = savedRecords;
+                await dbSaveRecords(records, true);
+                console.log("Fuel Pump: Recovered points.");
+            }
         }
 
-        const savedTracks = await opfsLoad('tracks.json');
-        if (savedTracks && savedTracks.length > 0) {
-            jeoTracks = savedTracks;
-            await dbSaveMeta('jeoTracks', jeoTracks, true);
-            console.log("OPFS: Recovered tracks.");
+        const savedTracksFile = await getFileFromFolder('tracks.json');
+        if (savedTracksFile) {
+            const savedTracks = JSON.parse(await savedTracksFile.text());
+            if (savedTracks && savedTracks.length > 0) {
+                jeoTracks = savedTracks;
+                await dbSaveMeta('jeoTracks', jeoTracks, true);
+                console.log("Fuel Pump: Recovered tracks.");
+            }
         }
 
         if (records.length > 0 || (jeoTracks && jeoTracks.length > 0)) {
             renderRecords();
             renderTracks();
             if (typeof updateMapMarkers === 'function') updateMapMarkers();
-            console.log("OPFS: Stealth recovery complete.");
+            console.log("Fuel Pump: Recovery complete.");
         }
     }
 }
@@ -1592,16 +1573,24 @@ async function updateSyncUI() {
     const statusText = document.getElementById('sync-status-text');
     const folderName = document.getElementById('sync-folder-name');
 
-    if (isSyncing && syncFolderHandle) {
-        // v1453-4-53Z: Silent check for UI status
-        const isPermitted = await verifyFolderPermission(false);
+    if (!syncFolderHandle) {
+        if (statusDot) statusDot.style.background = '#ff9800'; // Warning Orange
+        if (statusText) statusText.innerHTML = '<span style="color:#ffb300">🛡️ Safety: Unprotected (At Risk)</span>';
+        if (folderName) folderName.textContent = 'Internal Only (Chrome can wipe this)';
+        return;
+    }
 
-        if (statusDot) statusDot.style.background = isPermitted ? '#4caf50' : '#ff9800';
-        if (statusText) statusText.textContent = isPermitted ? 'Active (Live Mirror)' : 'Waiting for Permission';
+    const isPermitted = await verifyFolderPermission(false);
+
+    if (isSyncing) {
+        if (statusDot) statusDot.style.background = isPermitted ? '#4caf50' : '#ffc107';
+        if (statusText) statusText.innerHTML = isPermitted ?
+            '<span style="color:#4caf50">🛡️ Safety: Wipe-Proof (OruxMaps Class)</span>' :
+            '<span style="color:#ffc107">🛡️ Safety: Pending Permission...</span>';
         if (folderName) folderName.textContent = syncFolderHandle.name;
     } else {
         if (statusDot) statusDot.style.background = '#f44336';
-        if (statusText) statusText.textContent = 'Disconnected';
+        if (statusText) statusText.textContent = 'Mirror: Disconnected';
         if (folderName) folderName.textContent = 'Not Connected';
     }
 }
@@ -1619,7 +1608,6 @@ async function verifyFolderPermission(request = true) {
 }
 
 async function performAutoDiscoveryAndSync() {
-    // v1453-4-53X: Ensure variables are initialized to avoid crashes
     if (records === null) records = [];
     if (jeoTracks === null) jeoTracks = [];
 
@@ -1628,119 +1616,145 @@ async function performAutoDiscoveryAndSync() {
     try {
         // v1453-4-53Y: Silent check first. Do not nag user on boot.
         if (!await verifyFolderPermission(false)) {
-            console.log("Mirror: Permission required for sync. Waiting for interaction.");
+            console.log("Fuel Pump: Permission required. Waiting for gesture.");
             updateSyncUI();
             return;
         }
-        // 1. DISCOVER: Check if files exist in folder
+
+        // 1. DISCOVER & INGEST: Check structured folders (customwpts, tracklogs, overlay)
         const pointsFile = await getFileFromFolder('points.json');
         const tracksFile = await getFileFromFolder('tracks.json');
-        const layersFile = await getFileFromFolder('layers.json');
 
         let dataIngested = false;
 
-        // 2. INGEST: If app is empty but folder has stuff, suck it in (v1453-4-53X)
         if ((!records || records.length === 0) && pointsFile) {
             try {
                 const data = JSON.parse(await pointsFile.text());
-                if (Array.isArray(data)) {
-                    records = data;
-                    dataIngested = true;
-                    console.log("Mirror: Ingested points from folder.");
-                }
+                if (Array.isArray(data)) { records = data; dataIngested = true; }
             } catch (e) { console.error("Mirror: Points parse failed", e); }
         }
 
         if ((!jeoTracks || jeoTracks.length === 0) && tracksFile) {
             try {
                 const data = JSON.parse(await tracksFile.text());
-                if (Array.isArray(data)) {
-                    jeoTracks = data;
-                    dataIngested = true;
-                    console.log("Mirror: Ingested tracks from folder.");
-                }
+                if (Array.isArray(data)) { jeoTracks = data; dataIngested = true; }
             } catch (e) { console.error("Mirror: Tracks parse failed", e); }
         }
 
         if (dataIngested) {
             await saveRecords();
             await dbSaveMeta('jeoTracks', jeoTracks);
-            await pipelineSync(); // v1453-4-53X: Mirror to folder
-            console.log("Track saved safely.");
+            console.log("OruxMaps Mirror: Data recovered successfully.");
             renderRecords();
             renderTracks();
-            showToast("Sync: Data recovered from folder automatically.");
+            if (typeof updateMapMarkers === 'function') updateMapMarkers();
+            showToast("Disk Sync: Data recovered automatically.", 3000);
         }
 
-        // 3. SEED: Write current state to folder
         await syncToFolder();
     } catch (err) {
         console.error("Mirror Discovery failed", err);
     }
 }
 
+// v1453-4-53Ω-Pro: The Fuel Pump (Silent Gesture Restore)
+function setupFuelPumpListener() {
+    const pumpTrigger = async () => {
+        if (!isDataLoaded) return;
+        if (syncFolderHandle && (records.length === 0 && jeoTracks.length === 0)) {
+            console.log("Fuel Pump: Empty state detected. Attempting re-prime...");
+            if (await verifyFolderPermission(true)) {
+                await performAutoDiscoveryAndSync();
+                window.removeEventListener('mousedown', pumpTrigger);
+                window.removeEventListener('touchstart', pumpTrigger);
+            }
+        } else {
+            window.removeEventListener('mousedown', pumpTrigger);
+            window.removeEventListener('touchstart', pumpTrigger);
+        }
+    };
+    window.addEventListener('mousedown', pumpTrigger);
+    window.addEventListener('touchstart', pumpTrigger);
+}
+
 async function getFileFromFolder(name) {
-    try {
-        const handle = await syncFolderHandle.getFileHandle(name);
-        return await handle.getFile();
-    } catch (e) { return null; }
+    if (!syncFolderHandle && !isOpfsInitialised) return null;
+    let folderName = 'customwpts';
+    if (name.includes('tracks')) folderName = 'tracklogs';
+    if (name.includes('layers')) folderName = 'overlay';
+
+    // Priority 1: External Mirror (If permitted)
+    if (syncFolderHandle && await verifyFolderPermission(false)) {
+        try {
+            const dirHandle = await syncFolderHandle.getDirectoryHandle(folderName);
+            const handle = await dirHandle.getFileHandle(name);
+            return await handle.getFile();
+        } catch (e) { }
+    }
+
+    // Priority 2: System Disk (OPFS)
+    if (isOpfsInitialised && opfsRoot) {
+        try {
+            const dirHandle = await opfsRoot.getDirectoryHandle(folderName);
+            const handle = await dirHandle.getFileHandle(name);
+            return await handle.getFile();
+        } catch (e) { }
+    }
+    return null;
 }
 
 async function syncToFolder() {
-    if (!isSyncing || !syncFolderHandle) return;
-    if (!await verifyFolderPermission()) return;
+    if (!syncFolderHandle && !isOpfsInitialised) return;
+    await writeJsonToFolder('points.json', records);
+    await writeJsonToFolder('tracks.json', jeoTracks);
 
-    try {
-        await writeJsonToFolder('points.json', records);
-        await writeJsonToFolder('tracks.json', jeoTracks);
-        await writeJsonToFolder('layers.json', externalLayers.map(l => ({
-            name: l.name,
-            geojson: l.geojson,
-            visible: l.visible,
-            filled: l.filled,
-            pointsVisible: l.pointsVisible,
-            areasVisible: l.areasVisible,
-            labelsVisible: l.labelsVisible
-        })));
-
-        console.log("Mirror: Sync completed.");
-        const statusText = document.getElementById('sync-status-text');
-        if (statusText) statusText.textContent = `Sync: ${new Date().toLocaleTimeString()}`;
-    } catch (err) {
-        console.error("Mirror Sync failed", err);
-        // Don't kill sync on a temporary failure, just log it
-    }
+    // Update UI status
+    const statusText = document.getElementById('sync-status-text');
+    if (statusText) statusText.textContent = `Sync: ${new Date().toLocaleTimeString()} (Structured)`;
+    updateSyncUI();
 }
 
 async function writeJsonToFolder(name, data) {
-    const handle = await syncFolderHandle.getFileHandle(name, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(JSON.stringify(data, null, 2));
-    await writable.close();
+    if (!syncFolderHandle && !isOpfsInitialised) return;
+
+    // v1453-4-53Ω-Pro: Genuine OruxMaps Structure
+    let folderName = 'customwpts'; // Points
+    if (name.includes('tracks')) folderName = 'tracklogs'; // Tracks
+    if (name.includes('layers')) folderName = 'overlay'; // Layers
+
+    // 1. Save to System Disk (OPFS) - ALWAYS
+    if (isOpfsInitialised && opfsRoot) {
+        try {
+            const dirHandle = await opfsRoot.getDirectoryHandle(folderName, { create: true });
+            const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(data, null, 2));
+            await writable.close();
+        } catch (e) { console.error("System Disk Save failed:", e); }
+    }
+
+    // 2. Save to External Mirror (If connected & permitted)
+    if (syncFolderHandle && await verifyFolderPermission(false)) {
+        try {
+            const dirHandle = await syncFolderHandle.getDirectoryHandle(folderName, { create: true });
+            const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(data, null, 2));
+            await writable.close();
+        } catch (e) {
+            console.error(`OruxMaps Mirror: Failed to write ${folderName}/${name}`, e);
+        }
+    }
 }
 
 async function pipelineSync() {
     try {
-        // v1453-4-53Ω: Always sync to OPFS (Invisible Disk)
-        if (isOpfsInitialised) {
-            opfsSave('points.json', records);
-            opfsSave('tracks.json', jeoTracks);
-        }
-
-        // External Mirror (Optional / Permission required)
-        if (!isSyncing || !syncFolderHandle) return;
-
-        // v1453-4-53Y: Debounce disk I/O by 2 seconds to keep app snappy
         if (syncTimeout) clearTimeout(syncTimeout);
-
-        const statusText = document.getElementById('sync-status-text');
-        if (statusText) statusText.textContent = 'Sync: Pending...';
-
         syncTimeout = setTimeout(async () => {
             await syncToFolder();
             syncTimeout = null;
         }, 2000);
-    } catch (e) { console.error("PipelineSync suppressed error:", e); }
+    } catch (e) { console.error("PipelineSync error:", e); }
 }
 
 // State
