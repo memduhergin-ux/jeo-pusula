@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53T'; // Scale Panel Refinement 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53U'; // Emergency Recovery 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -1706,6 +1706,7 @@ function optimizeMapPoints() {
                 if (bestPos) {
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
+                    tooltipEl.style.transition = "none"; // v1453-4-53U: Instant move
                     tooltipEl.style.marginLeft = `${bestPos.x + width / 2}px`;
                     tooltipEl.style.marginTop = `${bestPos.y + height / 2}px`;
                     occupiedRects.push(bestPos.rect);
@@ -1713,6 +1714,7 @@ function optimizeMapPoints() {
                     const fallbackDir = directions[0];
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
+                    tooltipEl.style.transition = "none";
                     tooltipEl.style.marginLeft = `${fallbackDir.x + width / 2}px`;
                     tooltipEl.style.marginTop = `${fallbackDir.y + height / 2}px`;
                 }
@@ -2728,8 +2730,8 @@ async function initMap() {
         const zoom = map.getZoom();
         const mapContainer = document.getElementById('map-container');
         if (mapContainer) {
-            // v1453-4-53S: Restored standard zoom hiding threshold (zoom < 10)
-            if (zoom < 10) {
+            // v1453-4-53U: Restored visible zoom hiding threshold (zoom < 7) to keep labels visible longer
+            if (zoom < 7) {
                 mapContainer.classList.add('low-zoom-labels');
             } else {
                 mapContainer.classList.remove('low-zoom-labels');

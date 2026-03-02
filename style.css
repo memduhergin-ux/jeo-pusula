@@ -2390,11 +2390,11 @@ textarea.form-input {
     white-space: nowrap !important;
     box-shadow: none !important;
     text-shadow:
-        -1px -1px 0 #000,
-        1px -1px 0 #000,
-        -1px 1px 0 #000,
-        1px 1px 0 #000,
-        0px 0px 3px rgba(0, 0, 0, 1) !important;
+        -1.5px -1.5px 0 #000,
+        1.5px -1.5px 0 #000,
+        -1.5px 1.5px 0 #000,
+        1.5px 1.5px 0 #000,
+        0px 0px 5px rgba(0, 0, 0, 1) !important;
     pointer-events: none;
     display: inline-block;
     margin: 0 !important;
