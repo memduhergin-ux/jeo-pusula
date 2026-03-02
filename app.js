@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53V'; // Durable Storage & Label Recovery 🛡️🧭🔄
+const APP_VERSION = 'v1453-4-53W'; // Syntax Fix 🛡️🧭🔄
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -490,139 +490,140 @@ async function testIDBWrite() {
 }
 
 async function initApp() {
-    console.log(`[${new Date().toISOString()}] initApp: Starting recovery & initialization sequence...`);
-
-    // v1453-4-53U: Request persistence IMMEDIATELY (Priority #1)
-    // v1453-4-53V: Now called in global scope but kept for safety
-    await requestStoragePersistence();
-
-    // v1453-4-53P: Database Load with RETRY Logic (Power Sync)
-    let loadSuccess = false;
-    for (let i = 0; i < 3; i++) {
-        try {
-            // 0. v1453-4-52G: Total Recovery - LocalStorage + Legacy IDB
-            await migrateToIndexedDB();
-            await migrateLegacyIDBStores();
-
-            records = await dbLoadRecords() || [];
-            nextId = await dbLoadMeta('jeoNextId') || 1;
-            jeoTracks = await dbLoadMeta('jeoTracks') || [];
-            trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
-            isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
-            await loadExternalLayers(true); // Silent load from IDB
-
-            // v1453-4-53P: Recover active track path if app crashed
-            const recoveredPath = await dbLoadMeta('jeoActiveTrackPath');
-            if (recoveredPath && recoveredPath.length > 0 && !isTracking) {
-                trackPath = recoveredPath;
-                trackStartTime = localStorage.getItem('jeoTrackStartTime');
-                console.log("Resilience: Recovered active track path from IDB.");
-            }
-
-            loadSuccess = true;
-            break; // Success!
-        } catch (loadErr) {
-            console.warn(`Resilience: Load attempt ${i + 1} failed. Retrying...`, loadErr);
-            await new Promise(r => setTimeout(r, 500));
-        }
-    }
-
-    if (!loadSuccess) throw new Error("IDB Loading failed after 3 attempts.");
-
-    const savedGridInterval = await dbLoadMeta('jeoGridInterval');
-    if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
-
-    const savedGridColor = await dbLoadMeta('jeoGridColor');
-    if (savedGridColor !== null) activeGridColor = savedGridColor;
-
-    isDataLoaded = true; // Signal that it's safe to save now
-
-    // v1453-4-46F: Verbose diagnostic log
-    console.log(`[${new Date().toISOString()}] INIT-COMPLETE records.length=${records.length} tracks.length=${jeoTracks.length} layers.length=${externalLayers.length}`);
-
-    // v1453-4-53J: Removed startup diagnostic toast as per user request
-    console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
-
-    // v1453-PERSIST: Restore Active Measurements from IndexedDB
-    const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
-    const savedIsPoly = await dbLoadMeta('jeoActiveMeasureIsPoly');
-    const savedIsMeasuring = await dbLoadMeta('jeoIsMeasuring');
-    const savedMeasureMode = await dbLoadMeta('jeoMeasureMode');
-
-    if (savedMeasurePoints && savedMeasurePoints.length > 0) {
-        measurePoints = savedMeasurePoints;
-        isPolygon = savedIsPoly === 'true';
-        isMeasuring = savedIsMeasuring === 'true';
-        measureMode = savedMeasureMode || 'line';
-
-        // Re-create markers
-        measurePoints.forEach(p => {
-            const marker = L.circleMarker(p, {
-                radius: 4,
-                color: '#ffeb3b',
-                fillColor: '#ffeb3b',
-                fillOpacity: 1,
-                interactive: false
-            }).addTo(map);
-            measureMarkers.push(marker);
-        });
-
-        redrawMeasurement();
-        updateMeasureModeUI(); // v1453-4-39F: Sync Button Colors
-    }
-
-    // v1453-PERSIST: Restore Grid from IndexedDB
-    const savedGrid = await dbLoadMeta('jeoActiveGridParams');
-    if (savedGrid && savedGrid.interval) {
-        // Give a small timeout to ensure layers are rendered
-        setTimeout(() => {
-            let targetLayer = null;
-            if (savedGrid.targetName === "__ACTIVE_MEASURE__") {
-                targetLayer = measureLine;
-            } else {
-                // Search in externalLayers
-                const ext = externalLayers.find(l => l.name === savedGrid.targetName);
-                if (ext) targetLayer = ext.layer;
-            }
-
-            if (targetLayer) {
-                createAreaGrid(targetLayer, savedGrid.interval, savedGrid.color);
-            }
-        }, 1000); // 1s wait for external layers to finish loading
-    }
-
-    // v466: Hide all saved tracks by default on startup
-    if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
-
-    // Refresh UI after data load
-    renderRecords();
-    renderTracks(); // v1453-4-48F: Refresh track count after IDB load
-    if (typeof updateMapMarkers === 'function') updateMapMarkers();
-
-    console.log(`Resilience: Init complete. Records: ${records.length}, Tracks: ${jeoTracks.length}`);
-
-} catch (err) {
-    console.error("FATAL: initApp failed", err);
-    showToast("Veri yükleme hatası! Lütfen sayfayı yenileyin veya PWA olarak kullanın.", 5000);
-    // Fallback: Keeping isDataLoaded = false to prevent overwriting existing IDB data with empty arrays
-    isDataLoaded = false;
-} finally {
-    // 1. Remove Splash Screen (Always do this)
-    setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
-        if (splash) {
-            splash.classList.add('hidden');
-            setTimeout(() => splash.remove(), 1000);
-        }
-    }, 1500);
-
-    // 2. Request Wake Lock (Screen On)
     try {
-        if (typeof requestWakeLock === 'function') requestWakeLock();
-    } catch (e) {
-        console.warn('Wake Lock request failed', e);
+        console.log(`[${new Date().toISOString()}] initApp: Starting recovery & initialization sequence...`);
+
+        // v1453-4-53U: Request persistence IMMEDIATELY (Priority #1)
+        // v1453-4-53V: Now called in global scope but kept for safety
+        await requestStoragePersistence();
+
+        // v1453-4-53P: Database Load with RETRY Logic (Power Sync)
+        let loadSuccess = false;
+        for (let i = 0; i < 3; i++) {
+            try {
+                // 0. v1453-4-52G: Total Recovery - LocalStorage + Legacy IDB
+                await migrateToIndexedDB();
+                await migrateLegacyIDBStores();
+
+                records = await dbLoadRecords() || [];
+                nextId = await dbLoadMeta('jeoNextId') || 1;
+                jeoTracks = await dbLoadMeta('jeoTracks') || [];
+                trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
+                isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
+                await loadExternalLayers(true); // Silent load from IDB
+
+                // v1453-4-53P: Recover active track path if app crashed
+                const recoveredPath = await dbLoadMeta('jeoActiveTrackPath');
+                if (recoveredPath && recoveredPath.length > 0 && !isTracking) {
+                    trackPath = recoveredPath;
+                    trackStartTime = localStorage.getItem('jeoTrackStartTime');
+                    console.log("Resilience: Recovered active track path from IDB.");
+                }
+
+                loadSuccess = true;
+                break; // Success!
+            } catch (loadErr) {
+                console.warn(`Resilience: Load attempt ${i + 1} failed. Retrying...`, loadErr);
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+
+        if (!loadSuccess) throw new Error("IDB Loading failed after 3 attempts.");
+
+        const savedGridInterval = await dbLoadMeta('jeoGridInterval');
+        if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
+
+        const savedGridColor = await dbLoadMeta('jeoGridColor');
+        if (savedGridColor !== null) activeGridColor = savedGridColor;
+
+        isDataLoaded = true; // Signal that it's safe to save now
+
+        // v1453-4-46F: Verbose diagnostic log
+        console.log(`[${new Date().toISOString()}] INIT-COMPLETE records.length=${records.length} tracks.length=${jeoTracks.length} layers.length=${externalLayers.length}`);
+
+        // v1453-4-53J: Removed startup diagnostic toast as per user request
+        console.log(`Resilience: Data loaded. Records: ${records.length}, Tracks: ${jeoTracks.length}, Layers: ${externalLayers.length}`);
+
+        // v1453-PERSIST: Restore Active Measurements from IndexedDB
+        const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
+        const savedIsPoly = await dbLoadMeta('jeoActiveMeasureIsPoly');
+        const savedIsMeasuring = await dbLoadMeta('jeoIsMeasuring');
+        const savedMeasureMode = await dbLoadMeta('jeoMeasureMode');
+
+        if (savedMeasurePoints && savedMeasurePoints.length > 0) {
+            measurePoints = savedMeasurePoints;
+            isPolygon = savedIsPoly === 'true';
+            isMeasuring = savedIsMeasuring === 'true';
+            measureMode = savedMeasureMode || 'line';
+
+            // Re-create markers
+            measurePoints.forEach(p => {
+                const marker = L.circleMarker(p, {
+                    radius: 4,
+                    color: '#ffeb3b',
+                    fillColor: '#ffeb3b',
+                    fillOpacity: 1,
+                    interactive: false
+                }).addTo(map);
+                measureMarkers.push(marker);
+            });
+
+            redrawMeasurement();
+            updateMeasureModeUI(); // v1453-4-39F: Sync Button Colors
+        }
+
+        // v1453-PERSIST: Restore Grid from IndexedDB
+        const savedGrid = await dbLoadMeta('jeoActiveGridParams');
+        if (savedGrid && savedGrid.interval) {
+            // Give a small timeout to ensure layers are rendered
+            setTimeout(() => {
+                let targetLayer = null;
+                if (savedGrid.targetName === "__ACTIVE_MEASURE__") {
+                    targetLayer = measureLine;
+                } else {
+                    // Search in externalLayers
+                    const ext = externalLayers.find(l => l.name === savedGrid.targetName);
+                    if (ext) targetLayer = ext.layer;
+                }
+
+                if (targetLayer) {
+                    createAreaGrid(targetLayer, savedGrid.interval, savedGrid.color);
+                }
+            }, 1000); // 1s wait for external layers to finish loading
+        }
+
+        // v466: Hide all saved tracks by default on startup
+        if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
+
+        // Refresh UI after data load
+        renderRecords();
+        renderTracks(); // v1453-4-48F: Refresh track count after IDB load
+        if (typeof updateMapMarkers === 'function') updateMapMarkers();
+
+        console.log(`Resilience: Init complete. Records: ${records.length}, Tracks: ${jeoTracks.length}`);
+
+    } catch (err) {
+        console.error("FATAL: initApp failed", err);
+        showToast("Veri yükleme hatası!", 5000);
+        // Fallback: Keeping isDataLoaded = false to prevent overwriting existing IDB data with empty arrays
+        isDataLoaded = false;
+    } finally {
+        // 1. Remove Splash Screen (Always do this)
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.classList.add('hidden');
+                setTimeout(() => splash.remove(), 1000);
+            }
+        }, 1500);
+
+        // 2. Request Wake Lock (Screen On)
+        try {
+            if (typeof requestWakeLock === 'function') requestWakeLock();
+        } catch (e) {
+            console.warn('Wake Lock request failed', e);
+        }
     }
-}
 }
 
 // Ensure init runs
