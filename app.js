@@ -7259,6 +7259,14 @@ document.addEventListener('DOMContentLoaded', function initTrackingSettings() {
                 console.log('Live Track:', showLiveTrack);
             });
         }
+
+        // v1453-4-53Ω-Pro: Show Recovery Hint if app is empty after a data clear
+        setTimeout(() => {
+            if (isDataLoaded && (!records || records.length === 0) && !syncFolderHandle) {
+                const hint = document.getElementById('recovery-hint');
+                if (hint) hint.style.display = 'block';
+            }
+        }, 1500);
     }, 100);
 });
 
