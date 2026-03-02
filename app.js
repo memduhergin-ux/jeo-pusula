@@ -611,6 +611,8 @@ async function initApp() {
             isSyncing = true;
             updateSyncUI();
             console.log("Fuel Pump: Mirror handle armed.");
+            // v1453-4-53Ω-Pro: Trigger silent sync on boot
+            performAutoDiscoveryAndSync();
         }
 
         // Refresh UI after data load
@@ -638,9 +640,10 @@ async function initApp() {
         // 2. Request Wake Lock (Screen On)
         try {
             if (typeof requestWakeLock === 'function') requestWakeLock();
-        } catch (e) {
-            console.warn('Wake Lock request failed', e);
-        }
+        } catch (e) { }
+
+        // v1453-4-53Ω-Pro: Mark app as fully ready (enables UI toasts for future syncs)
+        window._jeoAppInitialised = true;
     }
 }
 
@@ -1618,26 +1621,72 @@ async function performAutoDiscoveryAndSync() {
 
         let dataIngested = false;
 
-        if ((!records || records.length === 0) && pointsFile) {
+        if (pointsFile) {
             try {
-                const data = JSON.parse(await pointsFile.text());
-                if (Array.isArray(data)) { records = data; dataIngested = true; }
+                const diskData = JSON.parse(await pointsFile.text());
+                if (Array.isArray(diskData) && diskData.length > 0) {
+                    // v1453-4-53Ω-Pro: SMART MERGE instead of overwrite
+                    // If local is empty, just take disk.
+                    if (records.length === 0) {
+                        records = diskData;
+                        dataIngested = true;
+                    } else {
+                        // Merge logic: Add disk records that don't exist locally (by time/label)
+                        let addedCount = 0;
+                        diskData.forEach(dr => {
+                            const exists = records.some(r => r.time === dr.time && r.label === dr.label);
+                            if (!exists) {
+                                records.push({ ...dr, id: nextId++ });
+                                addedCount++;
+                            }
+                        });
+                        if (addedCount > 0) {
+                            console.log(`Fuel Pump: Merged ${addedCount} points from disk.`);
+                            dataIngested = true;
+                        }
+                    }
+                }
             } catch (e) { console.error("Mirror: Points parse failed", e); }
         }
 
-        if ((!jeoTracks || jeoTracks.length === 0) && tracksFile) {
+        if (tracksFile) {
             try {
-                const data = JSON.parse(await tracksFile.text());
-                if (Array.isArray(data)) { jeoTracks = data; dataIngested = true; }
+                const diskTracks = JSON.parse(await tracksFile.text());
+                if (Array.isArray(diskTracks) && diskTracks.length > 0) {
+                    if (jeoTracks.length === 0) {
+                        jeoTracks = diskTracks;
+                        dataIngested = true;
+                    } else {
+                        let tAdded = 0;
+                        diskTracks.forEach(dt => {
+                            const exists = jeoTracks.some(t => t.time === dt.time);
+                            if (!exists) {
+                                dt.id = trackIdCounter++;
+                                jeoTracks.push(dt);
+                                tAdded++;
+                            }
+                        });
+                        if (tAdded > 0) {
+                            console.log(`Fuel Pump: Merged ${tAdded} tracks from disk.`);
+                            dataIngested = true;
+                        }
+                    }
+                }
             } catch (e) { console.error("Mirror: Tracks parse failed", e); }
         }
 
         if (dataIngested) {
             await saveRecords();
             await dbSaveMeta('jeoTracks', jeoTracks);
+            await dbSaveMeta('jeoNextId', nextId);
+            await dbSaveMeta('trackIdCounter', trackIdCounter);
             renderRecords();
             renderTracks();
             if (typeof updateMapMarkers === 'function') updateMapMarkers();
+            // v1453-4-53Ω-Pro: ONLY show toast if this was NOT an automatic boot trigger
+            if (window._jeoAppInitialised) {
+                showToast("Workspace data synchronized.", 2000);
+            }
         }
 
         await syncToFolder();
@@ -1693,6 +1742,19 @@ async function getFileFromFolder(name) {
 
 async function syncToFolder() {
     if (!syncFolderHandle && !isOpfsInitialised) return;
+    if (!isDataLoaded) return; // v1453-4-53Ω-Pro: NEVER overwrite if app is booting
+
+    // Safety: If app is empty but handle exists, do NOT sync unless we are sure.
+    // (This prevents accidental empty overwrite)
+    if (records.length === 0 && jeoTracks.length === 0) {
+        // Check if disk has data
+        const pts = await getFileFromFolder('points.json');
+        if (pts && pts.size > 10) {
+            console.warn("Fuel Pump: Prevented empty overwrite of external disk.");
+            return;
+        }
+    }
+
     await writeJsonToFolder('points.json', records);
     await writeJsonToFolder('tracks.json', jeoTracks);
 
@@ -3999,7 +4061,7 @@ function renderTracks(filter = '') {
     }
 
     if (displayTracks.length === 0 && !trackPath.length) {
-        tableBody.innerHTML = `<tr><td colspan="${isTracksLocked ? 5 : 6}">No tracks found</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${isTracksLocked ? 5 : 6}">${filter ? 'No matching tracks found' : 'No tracks yet'}</td></tr>`;
         return;
     }
 
