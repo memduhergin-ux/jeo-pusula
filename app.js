@@ -1585,7 +1585,7 @@ async function updateSyncUI() {
     if (isSyncing) {
         if (statusDot) statusDot.style.background = isPermitted ? '#4caf50' : '#ffc107';
         if (statusText) statusText.innerHTML = isPermitted ?
-            '<span style="color:#4caf50">🛡️ Safety: Wipe-Proof (OruxMaps Class)</span>' :
+            '<span style="color:#4caf50">🛡️ Safety: Wipe-Proof (JeoCompass Native)</span>' :
             '<span style="color:#ffc107">🛡️ Safety: Pending Permission...</span>';
         if (folderName) folderName.textContent = syncFolderHandle.name;
     } else {
@@ -1644,11 +1644,11 @@ async function performAutoDiscoveryAndSync() {
         if (dataIngested) {
             await saveRecords();
             await dbSaveMeta('jeoTracks', jeoTracks);
-            console.log("OruxMaps Mirror: Data recovered successfully.");
+            console.log("JeoCompass Disk: Data recovered successfully.");
             renderRecords();
             renderTracks();
             if (typeof updateMapMarkers === 'function') updateMapMarkers();
-            showToast("Disk Sync: Data recovered automatically.", 3000);
+            showToast("JeoCompass Disk: Data restored.", 3000);
         }
 
         await syncToFolder();
@@ -1662,7 +1662,6 @@ function setupFuelPumpListener() {
     const pumpTrigger = async () => {
         if (!isDataLoaded) return;
         if (syncFolderHandle && (records.length === 0 && jeoTracks.length === 0)) {
-            console.log("Fuel Pump: Empty state detected. Attempting re-prime...");
             if (await verifyFolderPermission(true)) {
                 await performAutoDiscoveryAndSync();
                 window.removeEventListener('mousedown', pumpTrigger);
@@ -1710,7 +1709,7 @@ async function syncToFolder() {
 
     // Update UI status
     const statusText = document.getElementById('sync-status-text');
-    if (statusText) statusText.textContent = `Sync: ${new Date().toLocaleTimeString()} (Structured)`;
+    if (statusText) statusText.textContent = `Sync: ${new Date().toLocaleTimeString()} (Structured Disk)`;
     updateSyncUI();
 }
 
@@ -1742,7 +1741,7 @@ async function writeJsonToFolder(name, data) {
             await writable.write(JSON.stringify(data, null, 2));
             await writable.close();
         } catch (e) {
-            console.error(`OruxMaps Mirror: Failed to write ${folderName}/${name}`, e);
+            console.error(`JeoCompass Disk: Failed to write ${folderName}/${name}`, e);
         }
     }
 }
