@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53X'; // Live Mirror (Boru Hattı) 🛡️📂🧭
+const APP_VERSION = 'v1453-4-53Y'; // High-Octane Pipeline 🚀🛡️
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -1478,6 +1478,7 @@ generateTicks();
 // v1453-4-53X: Mirror Pipeline (Boru Hattı) State
 let syncFolderHandle = null;
 let isSyncing = false;
+let syncTimeout = null; // v1453-4-53Y: Debounce timer
 
 // -----------------------------------------------------------------
 // THE PIPELINE: Live Mirror Sync Logic (OruxMaps Style)
@@ -1524,14 +1525,14 @@ async function updateSyncUI() {
     }
 }
 
-async function verifyFolderPermission() {
+async function verifyFolderPermission(request = true) {
     if (!syncFolderHandle) return false;
     const options = { mode: 'readwrite' };
     try {
         if ((await syncFolderHandle.queryPermission(options)) === 'granted') return true;
-        if ((await syncFolderHandle.requestPermission(options)) === 'granted') return true;
+        if (request && (await syncFolderHandle.requestPermission(options)) === 'granted') return true;
     } catch (e) {
-        console.warn("Folder permission request failed", e);
+        console.warn("Folder permission check failed", e);
     }
     return false;
 }
@@ -1544,7 +1545,12 @@ async function performAutoDiscoveryAndSync() {
     if (!syncFolderHandle) return;
 
     try {
-        if (!await verifyFolderPermission()) return;
+        // v1453-4-53Y: Silent check first. Do not nag user on boot.
+        if (!await verifyFolderPermission(false)) {
+            console.log("Mirror: Permission required for sync. Waiting for interaction.");
+            updateSyncUI();
+            return;
+        }
         // 1. DISCOVER: Check if files exist in folder
         const pointsFile = await getFileFromFolder('points.json');
         const tracksFile = await getFileFromFolder('tracks.json');
@@ -1634,7 +1640,18 @@ async function writeJsonToFolder(name, data) {
 
 async function pipelineSync() {
     try {
-        if (isSyncing) await syncToFolder();
+        if (!isSyncing || !syncFolderHandle) return;
+
+        // v1453-4-53Y: Debounce disk I/O by 2 seconds to keep app snappy
+        if (syncTimeout) clearTimeout(syncTimeout);
+
+        const statusText = document.getElementById('sync-status-text');
+        if (statusText) statusText.textContent = 'Sync: Pending...';
+
+        syncTimeout = setTimeout(async () => {
+            await syncToFolder();
+            syncTimeout = null;
+        }, 2000);
     } catch (e) { console.error("PipelineSync suppressed error:", e); }
 }
 
