@@ -3,7 +3,7 @@
     "version": "1453.4.53",
     "short_name": "JeoCompass",
     "description": "Professional Geologic Compass & Data Analysis.",
-    "start_url": "index.html",
+    "start_url": "./index.html",
     "prefer_related_applications": true,
     "orientation": "any",
     "id": "/JeolojiPusulasi/",

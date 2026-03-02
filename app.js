@@ -7176,3 +7176,11 @@ function addCoordLayer(points, name) {
     };
     addExternalLayer(name, geojson);
 }
+// v1453-4-53Ω-Pro: Service Worker Registration for PWA/APK
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('JeoCompass: Service Worker Registered', reg))
+            .catch(err => console.error('JeoCompass: SW Registration Failed', err));
+    });
+}
