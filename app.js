@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Y'; // High-Octane Pipeline 🚀🛡️
+const APP_VERSION = 'v1453-4-53Z'; // Silent Pipeline 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -595,12 +595,20 @@ async function initApp() {
         // v466: Hide all saved tracks by default on startup
         if (jeoTracks) jeoTracks.forEach(t => { t.visible = false; });
 
-        // v1453-4-53X: Boot Pipeline (Mirror Sync)
+        // v1453-4-53Z: Silent Boot (No Permission Nags)
         syncFolderHandle = await dbLoadMeta('jeoSyncFolder');
         if (syncFolderHandle) {
             isSyncing = true;
-            updateSyncUI();
-            performAutoDiscoveryAndSync(); // Async background check
+            updateSyncUI(); // This will show Orange (Waiting) state silently
+            // Do NOT call performAutoDiscoveryAndSync here as it might trigger a nag
+            console.log("Mirror: Handle found. Waiting for user interaction or save.");
+        } else {
+            // v1453-4-53Y: English Onboarding for Pipeline
+            setTimeout(() => {
+                if (typeof JeoAlert === 'function') {
+                    JeoAlert("<b>Data Safety Pipeline</b><br><br>Enable Folder Mirroring to protect your geologic data from browser cleanup.<br><br>Go to <b>Options ➔ Select Data Folder</b> to start.");
+                }
+            }, 5000);
         }
 
         // Refresh UI after data load
@@ -1515,8 +1523,11 @@ async function updateSyncUI() {
     const folderName = document.getElementById('sync-folder-name');
 
     if (isSyncing && syncFolderHandle) {
-        if (statusDot) statusDot.style.background = '#4caf50';
-        if (statusText) statusText.textContent = 'Active (Live Mirror)';
+        // v1453-4-53Z: Silent check for UI status
+        const isPermitted = await verifyFolderPermission(false);
+
+        if (statusDot) statusDot.style.background = isPermitted ? '#4caf50' : '#ff9800';
+        if (statusText) statusText.textContent = isPermitted ? 'Active (Live Mirror)' : 'Waiting for Permission';
         if (folderName) folderName.textContent = syncFolderHandle.name;
     } else {
         if (statusDot) statusDot.style.background = '#f44336';
