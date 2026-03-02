@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Ω-Pro-Fix1'; // OruxMaps Architecture 🛡️📂🧭
+const APP_VERSION = 'v1453-4-53Ω-Pro-Final'; // Architecture Migration Complete 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -8,6 +8,11 @@ requestStoragePersistence();
 const JEO_STORE_NAME = 'jeo-store-v1'; // Layers
 const JEO_RECORDS_STORE = 'jeo-records-v1'; // Geologic Records
 const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
+
+// v1453-4-53Ω-Pro: Tier 3 Offline MBTiles (OPFS)
+let mbtilesWorker = null;
+let mbtilesLayer = null;
+let isMBTilesReady = false;
 
 
 // Native dialog replacement system moved to index.html for earlier availability.
@@ -103,20 +108,24 @@ async function dbDeleteRecord(id) {
     } catch (e) { console.error("IDB Delete Record Error:", e); }
 }
 
-// v1453-4-53O: Bulk save refactored to be incremental (SAFETY FIRST)
+// v1453-4-53Ω-Pro: Bulk save refactored to be incremental (SAFETY FIRST)
+// Mimics OruxMaps GPS-to-SQLite atomicity.
 async function dbSaveRecords(recordsArray, forceWrite = false) {
     if (!isDataLoaded && !forceWrite) {
         console.warn(`Resilience: dbSaveRecords blocked — data not yet loaded.`);
         return;
     }
     try {
-        // We no longer use store.clear(). We put items one by one.
-        // This prevents the "empty overwrite" disaster.
+        // We use individual transactions for each point to match "GPS-to-Store" atomicity.
+        // Each await dbPutRecord(record) starts its own transaction.
         for (const record of recordsArray) {
             await dbPutRecord(record);
         }
         console.log(`[${new Date().toISOString()}] Resilience: Incremental sync of ${recordsArray.length} records completed.`);
-    } catch (e) { console.error("IDB Save Records Error:", e); }
+    } catch (e) {
+        console.error("IDB Save Records Error:", e);
+        throw e; // Propagate for higher level handling
+    }
 }
 
 async function dbLoadRecords() {
@@ -145,11 +154,16 @@ async function dbSaveMeta(key, value, forceWrite = false) {
             const request = store.put({ key, value });
 
             request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-            tx.onabort = () => reject(new Error("Meta Transaction aborted"));
+            request.onerror = () => {
+                console.error(`IDB Save Meta Error [${key}]:`, request.error);
+                reject(request.error);
+            };
+            tx.onabort = () => reject(new Error(`Meta Transaction aborted for ${key}`));
+            tx.onerror = () => reject(tx.error);
         });
     } catch (e) {
-        console.error(`IDB Save Meta Error [${key}]:`, e);
+        console.error(`Fatal IDB Save Meta Error [${key}]:`, e);
+        throw e;
     }
 }
 
@@ -418,17 +432,22 @@ async function dbDeleteLayerById(id) {
     }
 }
 
-// Legacy bulk save (still used for full sync on demand)
+// v1453-4-53Ω-Pro: Incremental Layer Sync (No clear())
 async function dbSaveLayers(layers, forceWrite = false) {
     if (!isDataLoaded && !forceWrite) {
         console.warn('Resilience: dbSaveLayers blocked — data not yet loaded.');
         return;
     }
-    // Save each layer individually — no clear()
-    for (const layer of layers) {
-        await dbPutLayer(layer);
+    try {
+        // Save each layer individually — strictly transactional
+        for (const layer of layers) {
+            await dbPutLayer(layer);
+        }
+        console.log(`[${new Date().toISOString()}] Resilience: Synced ${layers.length} layers to IDB.`);
+    } catch (e) {
+        console.error("IDB Save Layers Error:", e);
+        throw e;
     }
-    console.log(`[${new Date().toISOString()}] Resilience: Synced ${layers.length} layers to IDB.`);
 }
 
 async function dbLoadLayers() {
@@ -1497,10 +1516,183 @@ async function initOPFS() {
         opfsRoot = await navigator.storage.getDirectory();
         isOpfsInitialised = true;
         console.log("OPFS: Stealth Disk Initialized.");
+
+        // v1453-4-53Ω-Pro: Check if offline map exists and init worker
+        const mbtilesDir = await opfsRoot.getDirectoryHandle('mbtiles', { create: true });
+        try {
+            await mbtilesDir.getFileHandle('offline-map.mbtiles');
+            await initMBTilesWorker();
+        } catch (e) {
+            console.log("MBTiles: No offline-map.mbtiles found in Stealth Disk.");
+        }
     } catch (e) { console.error("OPFS Init failed:", e); }
 }
 
-// OMEGA DISCOVERY (No changes needed, uses getFileFromFolder)
+/* v1453-4-53Ω-Pro: Tier 3 MBTiles (OPFS) Logic */
+async function initMBTilesWorker() {
+    if (mbtilesWorker) return;
+
+    try {
+        mbtilesWorker = new Worker('worker-mbtiles.js');
+        mbtilesWorker.postMessage({ type: 'init' });
+
+        mbtilesWorker.onmessage = (e) => {
+            const { type, payload, error } = e.data;
+            if (type === 'ready') {
+                isMBTilesReady = true;
+                updateMBTilesUI('Ready');
+                mbtilesWorker.postMessage({ type: 'getMetadata' }); // Fetch info
+            } else if (type === 'metadata') {
+                renderMBTilesMetadata(payload);
+            } else if (type === 'tileData') {
+                if (mbtilesLayer && mbtilesLayer._handleWorkerTile) {
+                    mbtilesLayer._handleWorkerTile(payload);
+                }
+            } else if (type === 'error') {
+                console.error("MBTiles Worker Error:", error);
+                isMBTilesReady = false;
+                updateMBTilesUI(`Error: ${error}`);
+            }
+        };
+    } catch (e) {
+        console.error("Failed to start MBTiles Worker:", e);
+    }
+}
+
+function updateMBTilesUI(status) {
+    const statusEl = document.getElementById('mbtiles-status');
+    const activeUI = document.getElementById('mbtiles-active-ui');
+    if (statusEl) statusEl.textContent = `Stealth Disk: ${status}`;
+    if (activeUI && status === 'Ready') activeUI.style.display = 'block';
+}
+
+function renderMBTilesMetadata(meta) {
+    const metaEl = document.getElementById('mbtiles-metadata');
+    if (!metaEl) return;
+
+    const name = meta.name || 'Unnamed Map';
+    const minZ = meta.minzoom || '?';
+    const maxZ = meta.maxzoom || '?';
+    const desc = meta.description || '';
+
+    metaEl.innerHTML = `
+        <strong>${escapeHTML(name)}</strong><br>
+        Zooms: ${minZ} - ${maxZ}<br>
+        ${escapeHTML(desc)}
+    `;
+}
+
+async function importMBTilesToOPFS() {
+    try {
+        if (typeof window.showOpenFilePicker !== 'function') {
+            JeoAlert("File System Access API not supported in this browser version. Use Chrome/Edge.");
+            return;
+        }
+
+        const [fileHandle] = await window.showOpenFilePicker({
+            types: [{ description: 'MBTiles Files', accept: { 'application/octet-stream': ['.mbtiles'] } }],
+            multiple: false
+        });
+
+        showLoading("Importing MBTiles to Stealth Disk...");
+        const file = await fileHandle.getFile();
+
+        const root = await navigator.storage.getDirectory();
+        const mbtilesDir = await root.getDirectoryHandle('mbtiles', { create: true });
+        const targetHandle = await mbtilesDir.getFileHandle('offline-map.mbtiles', { create: true });
+
+        const writable = await targetHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+
+        showToast("MBTiles imported to Stealth Disk!", 3000);
+        hideLoading();
+
+        if (mbtilesWorker) {
+            mbtilesWorker.postMessage({ type: 'init' });
+        } else {
+            await initMBTilesWorker();
+        }
+    } catch (e) {
+        console.error("MBTiles Import Failed:", e);
+        hideLoading();
+        if (e.name !== 'AbortError') showToast("Import failed. Make sure to use Chrome/Edge.", 4000);
+    }
+}
+
+// Custom Leaflet Layer for Work-based MBTiles
+function createMBTilesLayer() {
+    const MBTilesLayer = L.GridLayer.extend({
+        _tileRequests: new Map(),
+
+        createTile: function (coords, done) {
+            const tile = document.createElement('img');
+            const key = `${coords.z}:${coords.x}:${coords.y}`;
+
+            this._tileRequests.set(key, done);
+
+            if (mbtilesWorker && isMBTilesReady) {
+                mbtilesWorker.postMessage({
+                    type: 'getTile',
+                    payload: { z: coords.z, x: coords.x, y: coords.y }
+                });
+            } else {
+                setTimeout(() => done(null, tile), 0);
+            }
+
+            return tile;
+        },
+
+        _handleWorkerTile: function (payload) {
+            const { z, x, y, url } = payload;
+            const key = `${z}:${x}:${y}`;
+            const done = this._tileRequests.get(key);
+
+            if (done) {
+                const img = document.createElement('img');
+                if (url) {
+                    img.src = url;
+                    img.onload = () => URL.revokeObjectURL(url);
+                }
+                done(null, img);
+                this._tileRequests.delete(key);
+            }
+        }
+    });
+
+    return new MBTilesLayer();
+}
+
+function initMBTilesListeners() {
+    const btnImport = document.getElementById('btn-import-mbtiles');
+    const chkEnable = document.getElementById('chk-mbtiles-enable');
+
+    if (btnImport) {
+        btnImport.addEventListener('click', async () => {
+            await importMBTilesToOPFS();
+        });
+    }
+
+    if (chkEnable) {
+        chkEnable.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                if (isMBTilesReady) {
+                    if (!mbtilesLayer) mbtilesLayer = createMBTilesLayer();
+                    if (map) mbtilesLayer.addTo(map);
+                    showToast("Offline MBTiles Layer Enabled", 2000);
+                } else {
+                    JeoAlert("Stealth Disk: No MBTiles map active. Import one first.");
+                    e.target.checked = false;
+                }
+            } else {
+                if (mbtilesLayer && map) {
+                    map.removeLayer(mbtilesLayer);
+                    showToast("Offline Layer Disabled", 2000);
+                }
+            }
+        });
+    }
+}
 async function performOmegaDiscovery() {
     if (!isOpfsInitialised) return;
 
@@ -1605,8 +1797,9 @@ async function verifyFolderPermission(request = true) {
 async function performAutoDiscoveryAndSync() {
     if (records === null) records = [];
     if (jeoTracks === null) jeoTracks = [];
+    if (externalLayers === null) externalLayers = [];
 
-    if (!syncFolderHandle) return;
+    if (!syncFolderHandle && !isOpfsInitialised) return;
 
     try {
         // v1453-4-53Y: Silent check first. Do not nag user on boot.
@@ -1616,77 +1809,136 @@ async function performAutoDiscoveryAndSync() {
             return;
         }
 
-        // 1. DISCOVER & INGEST: Check structured folders (customwpts, tracklogs, overlay)
-        const pointsFile = await getFileFromFolder('points.json');
-        const tracksFile = await getFileFromFolder('tracks.json');
-
         let dataIngested = false;
+        let restoredCounts = { points: 0, tracks: 0, layers: 0, settings: 0 };
 
+        // v1453-4-53Ω-Pro: Essential Settings restoration
+        if (await restoreSettingsFromDisk()) {
+            restoredCounts.settings = 1;
+            dataIngested = true;
+        }
+
+        // 0. METADATA: Sync ID counters first to prevent collisions
+        const metaFile = await getFileFromFolder('metadata.json');
+        if (metaFile) {
+            try {
+                const meta = JSON.parse(await metaFile.text());
+                if (meta.nextId > nextId) {
+                    nextId = meta.nextId;
+                    await dbSaveMeta('jeoNextId', nextId);
+                }
+                if (meta.trackIdCounter > trackIdCounter) {
+                    trackIdCounter = meta.trackIdCounter;
+                    await dbSaveMeta('trackIdCounter', trackIdCounter);
+                }
+            } catch (e) { }
+        }
+
+        // 1. POINTS: Check structured folders (customwpts/points.json)
+        const pointsFile = await getFileFromFolder('points.json');
         if (pointsFile) {
             try {
                 const diskData = JSON.parse(await pointsFile.text());
                 if (Array.isArray(diskData) && diskData.length > 0) {
-                    // v1453-4-53Ω-Pro: SMART MERGE instead of overwrite
-                    // If local is empty, just take disk.
                     if (records.length === 0) {
                         records = diskData;
+                        restoredCounts.points = diskData.length;
                         dataIngested = true;
                     } else {
-                        // Merge logic: Add disk records that don't exist locally (by time/label)
-                        let addedCount = 0;
                         diskData.forEach(dr => {
-                            const exists = records.some(r => r.time === dr.time && r.label === dr.label);
-                            if (!exists) {
-                                records.push({ ...dr, id: nextId++ });
-                                addedCount++;
+                            const localIndex = records.findIndex(r => r.time === dr.time && r.label === dr.label);
+                            if (localIndex === -1) {
+                                records.push(dr);
+                                restoredCounts.points++;
+                                dataIngested = true;
+                            } else {
+                                // v1453-4-53Ω-Pro: Collision Detection
+                                const localRecord = records[localIndex];
+                                if ((dr.updatedAt || 0) > (localRecord.updatedAt || 0)) {
+                                    records[localIndex] = dr; // Disk version is newer
+                                    restoredCounts.points++;
+                                    dataIngested = true;
+                                }
                             }
                         });
-                        if (addedCount > 0) {
-                            console.log(`Fuel Pump: Merged ${addedCount} points from disk.`);
-                            dataIngested = true;
-                        }
                     }
                 }
             } catch (e) { console.error("Mirror: Points parse failed", e); }
         }
 
+        // 2. TRACKS: tracklogs/tracks.json
+        const tracksFile = await getFileFromFolder('tracks.json');
         if (tracksFile) {
             try {
                 const diskTracks = JSON.parse(await tracksFile.text());
                 if (Array.isArray(diskTracks) && diskTracks.length > 0) {
                     if (jeoTracks.length === 0) {
                         jeoTracks = diskTracks;
+                        restoredCounts.tracks = diskTracks.length;
                         dataIngested = true;
                     } else {
-                        let tAdded = 0;
                         diskTracks.forEach(dt => {
-                            const exists = jeoTracks.some(t => t.time === dt.time);
-                            if (!exists) {
-                                dt.id = trackIdCounter++;
+                            const localIndex = jeoTracks.findIndex(t => t.time === dt.time);
+                            if (localIndex === -1) {
                                 jeoTracks.push(dt);
-                                tAdded++;
+                                restoredCounts.tracks++;
+                                dataIngested = true;
+                            } else {
+                                // Collision Detection for tracks
+                                const localTrack = jeoTracks[localIndex];
+                                if ((dt.updatedAt || 0) > (localTrack.updatedAt || 0)) {
+                                    jeoTracks[localIndex] = dt;
+                                    restoredCounts.tracks++;
+                                    dataIngested = true;
+                                }
                             }
                         });
-                        if (tAdded > 0) {
-                            console.log(`Fuel Pump: Merged ${tAdded} tracks from disk.`);
-                            dataIngested = true;
-                        }
                     }
                 }
             } catch (e) { console.error("Mirror: Tracks parse failed", e); }
         }
 
+        // 3. LAYERS: overlay/layers.json
+        const layersFile = await getFileFromFolder('layers.json');
+        if (layersFile) {
+            try {
+                const diskLayers = JSON.parse(await layersFile.text());
+                if (Array.isArray(diskLayers) && diskLayers.length > 0) {
+                    diskLayers.forEach(dl => {
+                        const localIndex = externalLayers.findIndex(l => l.name === dl.name);
+                        if (localIndex === -1) {
+                            addExternalLayer(dl.name, dl.geojson, true); // skipSave=true
+                            restoredCounts.layers++;
+                            dataIngested = true;
+                        } else {
+                            // Layer collision detection (by name only for now, since layers don't have updatedAt yet)
+                            // We can add it if needed, but for now we leave it or replace if geojson is different
+                            if (JSON.stringify(dl.geojson) !== JSON.stringify(externalLayers[localIndex].geojson)) {
+                                // Disk version differs - update
+                                externalLayers[localIndex].geojson = dl.geojson;
+                                restoredCounts.layers++;
+                                dataIngested = true;
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("Mirror: Layers parse failed", e); }
+        }
+
         if (dataIngested) {
             await saveRecords();
             await dbSaveMeta('jeoTracks', jeoTracks);
-            await dbSaveMeta('jeoNextId', nextId);
-            await dbSaveMeta('trackIdCounter', trackIdCounter);
+            await saveExternalLayers(); // v1453-4-53Ω-Pro: Sync Layers to IDB
+
             renderRecords();
             renderTracks();
+            renderLayerList();
             if (typeof updateMapMarkers === 'function') updateMapMarkers();
-            // v1453-4-53Ω-Pro: ONLY show toast if this was NOT an automatic boot trigger
-            if (window._jeoAppInitialised) {
-                showToast("Workspace data synchronized.", 2000);
+
+            const sum = restoredCounts.points + restoredCounts.tracks + restoredCounts.layers;
+            if (sum > 0) {
+                // v1453-4-53Ω-Pro: Subtly notify user on successful restore
+                showToast(`Workspace Restored: ${restoredCounts.points} pts, ${restoredCounts.tracks} tracks, ${restoredCounts.layers} layers`, 4000);
             }
         }
 
@@ -1717,15 +1969,19 @@ function setupFuelPumpListener() {
 
 async function getFileFromFolder(name) {
     if (!syncFolderHandle && !isOpfsInitialised) return null;
-    let folderName = 'customwpts';
+    let folderName = null;
+    if (name.includes('points')) folderName = 'customwpts';
     if (name.includes('tracks')) folderName = 'tracklogs';
     if (name.includes('layers')) folderName = 'overlay';
 
     // Priority 1: External Mirror (If permitted)
     if (syncFolderHandle && await verifyFolderPermission(false)) {
         try {
-            const dirHandle = await syncFolderHandle.getDirectoryHandle(folderName);
-            const handle = await dirHandle.getFileHandle(name);
+            let targetHandle = syncFolderHandle;
+            if (folderName) {
+                targetHandle = await syncFolderHandle.getDirectoryHandle(folderName);
+            }
+            const handle = await targetHandle.getFileHandle(name);
             return await handle.getFile();
         } catch (e) { }
     }
@@ -1733,8 +1989,11 @@ async function getFileFromFolder(name) {
     // Priority 2: System Disk (OPFS)
     if (isOpfsInitialised && opfsRoot) {
         try {
-            const dirHandle = await opfsRoot.getDirectoryHandle(folderName);
-            const handle = await dirHandle.getFileHandle(name);
+            let targetHandle = opfsRoot;
+            if (folderName) {
+                targetHandle = await opfsRoot.getDirectoryHandle(folderName);
+            }
+            const handle = await targetHandle.getFileHandle(name);
             return await handle.getFile();
         } catch (e) { }
     }
@@ -1747,7 +2006,7 @@ async function syncToFolder() {
 
     // Safety: If app is empty but handle exists, do NOT sync unless we are sure.
     // (This prevents accidental empty overwrite)
-    if (records.length === 0 && jeoTracks.length === 0) {
+    if (records.length === 0 && jeoTracks.length === 0 && externalLayers.length === 0) {
         // Check if disk has data
         const pts = await getFileFromFolder('points.json');
         if (pts && pts.size > 10) {
@@ -1758,6 +2017,17 @@ async function syncToFolder() {
 
     await writeJsonToFolder('points.json', records);
     await writeJsonToFolder('tracks.json', jeoTracks);
+    await writeJsonToFolder('layers.json', externalLayers);
+
+    // v1453-4-53Ω-Pro: Sync Settings to Disk
+    await syncSettingsToFolder();
+
+    // v1453-4-53Ω-Pro: Sync ID counters to prevent collisions on restore
+    await writeJsonToFolder('metadata.json', {
+        nextId,
+        trackIdCounter,
+        lastSync: new Date().toISOString()
+    });
 
     // Update UI status
     const statusText = document.getElementById('sync-status-text');
@@ -1765,19 +2035,59 @@ async function syncToFolder() {
     updateSyncUI();
 }
 
+async function syncSettingsToFolder() {
+    // v1453-4-53Ω-Pro: Essential Settings Shield
+    const settingKeys = [
+        'jeoDeclination', 'jeoGridColor', 'jeoMapLayer', 'jeoScaleVisible',
+        'jeoHeatmapActive', 'jeoHeatmapRadius', 'jeoHeatmapFilter', 'jeoHeatmapMode',
+        'jeoShowLiveTrack', 'jeoAutoTrackEnabled', 'jeoIsTracking'
+    ];
+    let settings = {};
+    settingKeys.forEach(k => {
+        const v = localStorage.getItem(k);
+        if (v !== null) settings[k] = v;
+    });
+
+    if (Object.keys(settings).length > 0) {
+        await writeJsonToFolder('settings.json', settings);
+    }
+}
+
+async function restoreSettingsFromDisk() {
+    const file = await getFileFromFolder('settings.json');
+    if (!file) return false;
+    try {
+        const settings = JSON.parse(await file.text());
+        let restoredAny = false;
+        for (const [key, val] of Object.entries(settings)) {
+            // Restore if local is missing or explicitly syncing
+            if (localStorage.getItem(key) === null) {
+                localStorage.setItem(key, val);
+                restoredAny = true;
+            }
+        }
+        return restoredAny;
+    } catch (e) { return false; }
+}
+
 async function writeJsonToFolder(name, data) {
     if (!syncFolderHandle && !isOpfsInitialised) return;
 
     // v1453-4-53Ω-Pro: Genuine OruxMaps Structure
-    let folderName = 'customwpts'; // Points
+    let folderName = null;
+    if (name.includes('points')) folderName = 'customwpts'; // Points
     if (name.includes('tracks')) folderName = 'tracklogs'; // Tracks
-    if (name.includes('layers')) folderName = 'overlay'; // Layers
+    if (name.includes('layers')) folderName = 'overlay';   // Layers
+    // metadata.json stays in root (folderName = null)
 
     // 1. Save to System Disk (OPFS) - ALWAYS
     if (isOpfsInitialised && opfsRoot) {
         try {
-            const dirHandle = await opfsRoot.getDirectoryHandle(folderName, { create: true });
-            const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+            let targetHandle = opfsRoot;
+            if (folderName) {
+                targetHandle = await opfsRoot.getDirectoryHandle(folderName, { create: true });
+            }
+            const fileHandle = await targetHandle.getFileHandle(name, { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(JSON.stringify(data, null, 2));
             await writable.close();
@@ -1787,13 +2097,16 @@ async function writeJsonToFolder(name, data) {
     // 2. Save to External Mirror (If connected & permitted)
     if (syncFolderHandle && await verifyFolderPermission(false)) {
         try {
-            const dirHandle = await syncFolderHandle.getDirectoryHandle(folderName, { create: true });
-            const fileHandle = await dirHandle.getFileHandle(name, { create: true });
+            let targetHandle = syncFolderHandle;
+            if (folderName) {
+                targetHandle = await syncFolderHandle.getDirectoryHandle(folderName, { create: true });
+            }
+            const fileHandle = await targetHandle.getFileHandle(name, { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(JSON.stringify(data, null, 2));
             await writable.close();
         } catch (e) {
-            console.error(`JeoCompass Disk: Failed to write ${folderName}/${name}`, e);
+            console.error(`JeoCompass Disk: Failed to write ${folderName || 'root'}/${name}`, e);
         }
     }
 }
@@ -2832,10 +3145,14 @@ if (document.getElementById('btn-modal-save')) {
         const dip = document.getElementById('rec-dip').value;
 
         if (editingRecordId !== null) {
-            // Update existing
+            // v1453-4-53Ω-Pro: Update existing with new timestamp
             const index = records.findIndex(r => r.id === editingRecordId);
             if (index !== -1) {
-                records[index] = { ...records[index], label, strike: strikeLine, dip, note, y, x, z };
+                records[index] = {
+                    ...records[index],
+                    label, strike: strikeLine, dip, note, y, x, z,
+                    updatedAt: Date.now()
+                };
                 await saveRecords();
             }
         } else {
@@ -2856,6 +3173,7 @@ if (document.getElementById('btn-modal-save')) {
                 dip: dip,
                 note: note,
                 time: new Date().toLocaleString('en-GB'),
+                updatedAt: Date.now(), // v1453-4-53Ω-Pro: Track modifications
                 geom: pendingGeometry,
                 geomType: pendingGeometryType
             };
@@ -4255,8 +4573,9 @@ async function saveCurrentTrack() {
         path: [...trackPath],
         color: '#ff5722',
         visible: false, // v466: Hide newly saved tracks from map by default
-        time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), // v467: Only end time in date column
-        length: calculateTrackLength(trackPath) // v466: Save length in meters
+        time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        updatedAt: Date.now(), // v1453-4-53Ω-Pro: Track modifications
+        length: calculateTrackLength(trackPath)
     };
 
     // v456: FIFO: Eger 20 kayit varsa, en eskiyi sil
@@ -7281,3 +7600,6 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('JeoCompass: SW Registration Failed', err));
     });
 }
+
+// v1453-4-53?-Pro: MBTiles Initialization
+initMBTilesListeners();

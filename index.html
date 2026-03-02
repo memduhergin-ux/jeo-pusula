@@ -116,6 +116,12 @@
 
             <!-- Signature Tag (Top Right - Symmetric) -->
             <div class="signature-container">
+                <!-- v1453-4-53Ω-Pro: Persistence Shield Status Indicator -->
+                <div id="persistence-shield" class="persistence-shield" title="Storage Persistence">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                    </svg>
+                </div>
                 <div class="signature-tag">MET</div>
             </div>
 
@@ -759,8 +765,34 @@
             <div class="modal-body" style="min-height: 200px;">
                 <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Layers will be injected here -->
-                    <div style="color: #666; font-style: italic; text-align: center; padding: 20px;">
-                        No external layers found.
+                </div>
+                <!-- v1453-4-53Ω-Pro: Tier 3 Offline MBTiles Section -->
+                <div id="offline-map-section" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                    <h3
+                        style="font-size: 1.1em; color: #ffeb3b; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-database"></i> Offline MBTiles (OPFS)
+                    </h3>
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span id="mbtiles-status" style="font-size: 0.85em; color: #bbb;">Stealth Disk: No Map
+                                Loaded</span>
+                            <button id="btn-import-mbtiles" class="modal-btn"
+                                style="padding: 5px 12px; font-size: 0.85em; background: #2e7d32; border: none; border-radius: 4px;">
+                                Import .mbtiles
+                            </button>
+                        </div>
+                        <div id="mbtiles-active-ui" style="display: none;">
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; color: #eee; cursor: pointer; font-size: 0.9em;">
+                                <input type="checkbox" id="chk-mbtiles-enable" style="width:16px; height:16px;">
+                                Enable Offline Map Layer
+                            </label>
+                            <div id="mbtiles-metadata"
+                                style="font-size: 0.75em; color: #888; margin-top: 5px; padding-left: 26px;">
+                                <!-- Metadata injected via JS -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

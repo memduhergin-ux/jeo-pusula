@@ -392,7 +392,8 @@ body {
 .calib-container,
 .signature-container {
     position: absolute;
-    width: 40px;
+    width: auto;
+    min-width: 40px;
     height: 40px;
     z-index: 100;
 }
@@ -407,7 +408,18 @@ body {
     right: 15px;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+/* v1453-4-53Ω-Pro: Persistence Shield Status Indicator */
+.persistence-shield {
+    color: #999; /* Default: Gray/Unknown */
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
 }
 
 .signature-tag {
