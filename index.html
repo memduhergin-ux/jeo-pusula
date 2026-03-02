@@ -59,9 +59,8 @@
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div class="spinner-large"></div>
         <div id="loading-text"
-            style="color: white; margin-top: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 0 20px;">
-            Loading KML layers, please wait...</div>
-        <div style="color: #aaa; margin-top: 10px; font-size: 0.8rem;">Wait time may vary depending on file size.</div>
+            style="display: none; color: white; margin-top: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 0 20px;">
+            Loading...</div>
     </div>
 
 
@@ -82,13 +81,10 @@
                 find your way.”
             </div>
             <div class="splash-version app-version-display"
-                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">
+                style="display: none; color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">
                 v1453-4-53Ω-Pro
             </div>
-            <!-- v1453-4-53V: Durable Storage Indicator (Shield) -->
-            <div id="persistence-shield"
-                style="font-size: 1.5rem; margin-top: 10px; color: #666; transition: color 0.5s;"
-                title="Storage Persistence Status">🛡️</div>
+            <!-- v1453-4-53V: Durable Storage Indicator (Shield) Removed for True Silence -->
         </div>
     </div>
 
@@ -606,26 +602,22 @@
                 </button>
 
                 <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 5px;">
-                    <!-- v1453-4-53Ω-Pro: JeoCompass Data Disk Dashboard -->
+                    <!-- v1453-4-53Ω-Pro: JeoCompass Workspace Selection -->
                     <div id="sync-status-container"
                         style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <div style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
                             <div id="sync-status-dot"
-                                style="width: 12px; height: 12px; border-radius: 50%; background: #ff9800; box-shadow: 0 0 5px orange;">
+                                style="width: 12px; height: 12px; border-radius: 50%; background: #4caf50;">
                             </div>
-                            <strong id="sync-status-text">🛡️ Safety: Unprotected (At Risk)</strong>
+                            <strong id="sync-status-text">Workspace Sync</strong>
                         </div>
-                        <div style="font-size: 0.85em; opacity: 0.8; margin-bottom: 10px;">
-                            <i class="fas fa-hdd"></i> Disk: <span id="sync-folder-name">Internal Memory Only</span>
+                        <div style="font-size: 0.85em; opacity: 0.8; margin-bottom: 10px; color: #4caf50;">
+                            <i class="fas fa-folder"></i> Workspace: <span id="sync-folder-name">Internal</span>
                         </div>
                         <button onclick="requestFolderAccess()" class="btn btn-secondary"
                             style="width: 100%; font-size: 0.9em; padding: 12px; border: 1px solid #555;">
-                            <i class="fas fa-folder-open"></i> Link JeoCompass Folder (Wipe-Proof)
+                            <i class="fas fa-folder-open"></i> Select Workspace Folder
                         </button>
-                        <p style="font-size: 0.73em; margin-top: 8px; color: #ffca28; line-height: 1.3;">
-                            <i class="fas fa-info-circle"></i> If browser data is cleared, just re-link your folder to
-                            restore everything instantly.
-                        </p>
                     </div>
 
                     <button class="save-btn ready" id="btn-backup-json"

@@ -168,12 +168,10 @@ async function dbLoadMeta(key) {
 
 async function migrateToIndexedDB() {
     // v1453-4-42F: Final Resilience Key
-    const isMigrated = localStorage.getItem('jeo_resilience_v42F') === 'true';
-    if (isMigrated) return;
+    const legacyMeta = localStorage.getItem('jeo_resilience_v42F');
+    if (legacyMeta === 'true') return;
 
     try {
-        console.log("Resilience: Checking for legacy data to migrate...");
-
         // 1. Records
         const rawRecords = localStorage.getItem('jeoRecords');
         if (rawRecords && rawRecords !== '[]') {
@@ -238,9 +236,8 @@ async function migrateToIndexedDB() {
 
         // Mark as migrated
         localStorage.setItem('jeo_resilience_v42F', 'true');
-        console.log("Resilience: Migration step completed.");
     } catch (e) {
-        console.error("Resilience: Migration check failed", e);
+        // console.error("Resilience: Migration check failed", e); // Silenced
     }
 }
 
@@ -262,7 +259,7 @@ async function migrateLegacyIDBStores() {
     if (localStorage.getItem(migrationKey) === 'true' && !isEmpty) return;
 
     if (isEmpty && localStorage.getItem(migrationKey) === 'true') {
-        console.warn("Resilience: Emergency Scavenge Triggered (No data found).");
+        // console.warn("Resilience: Emergency Scavenge Triggered (No data found)."); // Silenced
     }
 
     try {
@@ -276,7 +273,7 @@ async function migrateLegacyIDBStores() {
             return;
         }
 
-        console.log("Resilience: Found legacy IDB stores to migrate:", storesToMigrate);
+        // console.log("Resilience: Found legacy IDB stores to migrate:", storesToMigrate); // Silenced
 
         for (const oldStoreName of storesToMigrate) {
             await new Promise((resolve) => {
@@ -287,7 +284,7 @@ async function migrateLegacyIDBStores() {
                 req.onsuccess = async () => {
                     const items = req.result;
                     if (items && items.length > 0) {
-                        console.log(`Resilience: Migrating ${items.length} items from legacy store: ${oldStoreName}`);
+                        // console.log(`Resilience: Migrating ${items.length} items from legacy store: ${oldStoreName}`); // Silenced
 
                         // Targeted migration based on content
                         if (oldStoreName.includes('record')) {
@@ -323,9 +320,9 @@ async function migrateLegacyIDBStores() {
         }
 
         localStorage.setItem(migrationKey, 'true');
-        console.log("Resilience: Additive migration completed.");
+        // console.log("Resilience: Additive migration completed."); // Silenced
     } catch (e) {
-        console.error("Resilience: migrateLegacyIDBStores failed:", e);
+        // console.error("Resilience: migrateLegacyIDBStores failed:", e); // Silenced
     }
 }
 
@@ -1516,7 +1513,6 @@ async function performOmegaDiscovery() {
             if (savedRecords && savedRecords.length > 0) {
                 records = savedRecords;
                 await dbSaveRecords(records, true);
-                console.log("Fuel Pump: Recovered points.");
             }
         }
 
@@ -1526,7 +1522,6 @@ async function performOmegaDiscovery() {
             if (savedTracks && savedTracks.length > 0) {
                 jeoTracks = savedTracks;
                 await dbSaveMeta('jeoTracks', jeoTracks, true);
-                console.log("Fuel Pump: Recovered tracks.");
             }
         }
 
@@ -1534,7 +1529,6 @@ async function performOmegaDiscovery() {
             renderRecords();
             renderTracks();
             if (typeof updateMapMarkers === 'function') updateMapMarkers();
-            console.log("Fuel Pump: Recovery complete.");
         }
     }
 }
@@ -1559,9 +1553,8 @@ async function requestFolderAccess() {
         isSyncing = true;
         updateSyncUI();
 
-        // Initial Mirror (Automated Recovery)
+        // Initial Workspace Sync
         await performAutoDiscoveryAndSync();
-        showToast("Pipeline connected! Data will now mirror to folder.");
     } catch (err) {
         console.error("Folder access failed", err);
         if (err.name !== 'AbortError') showToast("Folder connection failed.");
@@ -1583,15 +1576,13 @@ async function updateSyncUI() {
     const isPermitted = await verifyFolderPermission(false);
 
     if (isSyncing) {
-        if (statusDot) statusDot.style.background = isPermitted ? '#4caf50' : '#ffc107';
-        if (statusText) statusText.innerHTML = isPermitted ?
-            '<span style="color:#4caf50">🛡️ Safety: Wipe-Proof (JeoCompass Native)</span>' :
-            '<span style="color:#ffc107">🛡️ Safety: Pending Permission...</span>';
+        if (statusDot) statusDot.style.background = '#4caf50';
+        if (statusText) statusText.innerHTML = '<span style="color:#4caf50">Workspace Sync Active</span>';
         if (folderName) folderName.textContent = syncFolderHandle.name;
     } else {
-        if (statusDot) statusDot.style.background = '#f44336';
-        if (statusText) statusText.textContent = 'Mirror: Disconnected';
-        if (folderName) folderName.textContent = 'Not Connected';
+        if (statusDot) statusDot.style.background = '#777';
+        if (statusText) statusText.textContent = 'Workspace: Internal';
+        if (folderName) folderName.textContent = 'Internal';
     }
 }
 
@@ -1644,11 +1635,9 @@ async function performAutoDiscoveryAndSync() {
         if (dataIngested) {
             await saveRecords();
             await dbSaveMeta('jeoTracks', jeoTracks);
-            console.log("JeoCompass Disk: Data recovered successfully.");
             renderRecords();
             renderTracks();
             if (typeof updateMapMarkers === 'function') updateMapMarkers();
-            showToast("JeoCompass Disk: Data restored.", 3000);
         }
 
         await syncToFolder();
