@@ -19,17 +19,13 @@ Uygulamayı bir Android uygulamasına (.aab formatı) dönüştürmemiz gerekiyo
 ### ⚠️ Önemli Ayarlar (Signing Key)
 Burada "Signing Key" (İmza Anahtarı) oluşturmanız veya mevcut olanı yüklemeniz istenecek.
 
--   **Package ID:** `com.jeocompass.app` (Bu ID, `assetlinks.json` içindekiyle AYNI olmalıdır!)
+-   **Package ID:** `io.github.memduhergin_ux.twa`
 -   **App Name:** JeoCompass
 -   **Signing Key:**
-    -   Eğer daha önce bir key oluşturduysanız "Use existing key" diyerek onu yükleyin.
-    -   **Eğer ilk defa yüklüyorsanız:** "Create new key" seçeneğini kullanın.
-    -   **ÇOK ÖNEMLİ:** Oluşturulan **Signing Key (Keystore) dosyasını ve şifrelerini güvenli bir yere kaydedin!** Kaybederseniz uygulamayı bir daha güncelleyemezsiniz.
+    -   PWABuilder üzerinden oluşturduğunuz `.keystore` dosyasını saklayın.
 -   **SHA-256 Fingerprint:**
-    -   Bizim `assetlinks.json` dosyamızdaki parmak izi:
-        `0D:A2:A9:27:A0:27:63:9E:82:B3:D6:47:E1:C8:E8:3B:88:2F:28:0F:21:A4:C3:33:D1:C8:9A:6A:B7:96:29:45`
-    -   Eğer yeni bir key oluşturursanız, PWABuilder size **yeni bir SHA-256 parmak izi** verecektir.
-    -   **Eğer parmak izi değişirse:** Yeni parmak izini kopyalayıp projenizdeki `.well-known/assetlinks.json` dosyasına yapıştırmalı ve GitHub'a tekrar yüklemelisiniz.
+    -   Bizim `assetlinks.json` dosyamıza işlediğimiz yeni parmak izi:
+        `C2:24:79:D5:77:7F:F1:BD:60:C4:58:D0:18:F0:EB:7C:4C:F9:B0:BD:F7:2A:6B:EA:CC:92:5F:5C:37:49:C7:CA`
 
 6.  **İndir:** Ayarları tamamladıktan sonra "Download" butonuna basarak `.zip` dosyasını indirin. İçinde `.aab` (Android App Bundle) dosyası olacak.
 

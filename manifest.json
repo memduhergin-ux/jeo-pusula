@@ -20,8 +20,8 @@
     "related_applications": [
         {
             "platform": "play",
-            "url": "https://play.google.com/store/apps/details?id=com.jeocompass.app",
-            "id": "com.jeocompass.app"
+            "url": "https://play.google.com/store/apps/details?id=io.github.memduhergin_ux.twa",
+            "id": "io.github.memduhergin_ux.twa"
         }
     ],
     "icons": [
