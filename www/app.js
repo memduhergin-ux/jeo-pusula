@@ -2055,6 +2055,32 @@ const ELEMENT_COLORS = {
 // v560: Optimized discovery pattern and periodic table set (Moved to Global for performance)
 
 
+// v1453-4-53Ω-Pro: Numeric ID Assignment Helper (Fills gaps)
+function getNextAvailableNumericId(prefix) {
+    if (!externalLayers) return prefix + " 1";
+
+    // Extract numbers from names like "Line 1", "Line 2"
+    const existingIds = externalLayers
+        .map(l => {
+            const name = l.name || "";
+            if (name.startsWith(prefix + " ")) {
+                const num = parseInt(name.substring(prefix.length + 1));
+                return isNaN(num) ? null : num;
+            }
+            return null;
+        })
+        .filter(n => n !== null)
+        .sort((a, b) => a - b);
+
+    // Find first gap
+    let nextId = 1;
+    for (const id of existingIds) {
+        if (id === nextId) nextId++;
+        else if (id > nextId) break;
+    }
+    return prefix + " " + nextId;
+}
+
 // v556: Smart Color Generator for Dynamic Elements
 function getElementColor(symbol) {
     if (ELEMENT_COLORS[symbol]) return ELEMENT_COLORS[symbol];
@@ -2154,20 +2180,25 @@ function optimizeMapPoints() {
                 // v1453-4-53S: Clockwise Smart Placement (0, 30, 60, 90, 120, 150, 180)
                 // 0 is North (Top), 90 is East (Right), 180 is South (Bottom)
                 const angles = [0, 30, 60, 90, 120, 150, 180];
-                const offset = 12 + 2; // v1453-4-53S: Increased from 4+2 to 12+2 to clear symbol
+                const offset = 6; // v1453-4-53S: Fixed at 6px as requested
                 const directions = angles.map(deg => {
                     const rad = (deg - 90) * (Math.PI / 180); // Adjusting so 0 is North
                     const dx = Math.cos(rad) * offset;
                     const dy = Math.sin(rad) * offset;
 
-                    // Adjust anchor point based on direction to keep it centered/properly distanced
+                    // v1453-4-53Ω-Pro: Refined Anchor Logic for 0-180 Sweep
                     let ax = dx;
                     let ay = dy;
-                    if (deg === 0) { ax -= width / 2; ay -= height; }
-                    else if (deg < 90) { ay -= height / 2; }
-                    else if (deg === 90) { ay -= height / 2; }
-                    else if (deg < 180) { ay -= height / 2; }
-                    else { ax -= width / 2; }
+
+                    if (deg === 0 || deg === 180) {
+                        ax -= width / 2;
+                    } else if (deg > 0 && deg < 180) {
+                        ax = dx; // Text starts at right edge of gap
+                    }
+
+                    if (deg === 0) ay -= height;
+                    else if (deg === 180) ay = dy;
+                    else ay -= height / 2;
 
                     return { x: ax, y: ay };
                 });
@@ -5412,9 +5443,9 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
                         permanent: true,
-                        direction: 'top', // v1453-4-53K: Changed from 'center' to avoid symbol overlap
+                        direction: 'center', // v1453-4-53K: Re-enabled center to let optimizer handle it
                         className: 'kml-label',
-                        offset: [0, -12], // v1453-4-53K: Increased offset for clarity
+                        offset: [0, 0], // Handled by optimizeMapPoints
                         sticky: false
                     });
 
@@ -6260,8 +6291,10 @@ function saveMeasurement() {
 
     isSavingLayer = true;
 
-    // Clear/prepare the record modal fields
-    const defaultName = isPolygon ? "New Polygon" : "New Line";
+    // v1453-4-53Ω-Pro: Smart Numeric Naming (Line 1, Line 2...)
+    const prefix = isPolygon ? "Polygon" : "Line";
+    const defaultName = getNextAvailableNumericId(prefix);
+
     document.getElementById('rec-label').value = defaultName;
     document.getElementById('rec-note').value = measureText.innerText.replace(/\n/g, ", ");
 
