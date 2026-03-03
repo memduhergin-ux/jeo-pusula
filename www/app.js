@@ -3201,7 +3201,7 @@ async function initMap() {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#ff5722',
-                weight: 3,
+                weight: 1,
                 opacity: 0.8,
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -3887,7 +3887,7 @@ function updateMapMarkers(shouldFitBounds = false) {
             if (t.visible && t.path && t.path.length > 1) {
                 const poly = L.polyline(t.path, {
                     color: t.color || '#ff5722',
-                    weight: 3,
+                    weight: 1,
                     opacity: 0.8,
                     pane: 'tracking-pane'
                 }).addTo(map);
@@ -4321,7 +4321,7 @@ function updateTrack(lat, lon) {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#ff5722',
-                weight: 3,
+                weight: 1,
                 opacity: 0.8,
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -4848,7 +4848,7 @@ function updateLiveTrackVisibility() {
             } else {
                 trackPolyline = L.polyline(trackPath, {
                     color: '#ff5722',
-                    weight: 4,
+                    weight: 1,
                     opacity: 0.8,
                     pane: 'tracking-pane'
                 }).addTo(map);
