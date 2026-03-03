@@ -84,18 +84,6 @@
                 style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">
                 v1453-4-53Ω-Pro
             </div>
-            <!-- v1453-4-53Ω-Pro: Tier 4 Recovery Tip (Hidden by default) -->
-            <div id="recovery-hint"
-                style="display: none; margin-top: 25px; padding: 15px; background: rgba(76,175,80,0.15); border: 1px solid #4caf50; border-radius: 12px; max-width: 280px; animation: fadeIn 0.8s ease;">
-                <div style="color: #4caf50; font-weight: bold; margin-bottom: 5px;">🔄 Veri Kurtarma (Tier 4)</div>
-                <div style="color: #ccc; font-size: 0.85rem; line-height: 1.4; margin-bottom: 12px;">
-                    Tarayıcı verileri silinmiş. Verilerinizi geri getirmek için klasörünüzü tekrar bağlayın.
-                </div>
-                <button onclick="requestFolderAccess()"
-                    style="width:100%; padding:10px; background:#4caf50; border:none; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer;">
-                    Klasörü Bağla ve Geri Yükle
-                </button>
-            </div>
             <!-- v1453-4-53V: Durable Storage Indicator (Shield) Removed for True Silence -->
         </div>
     </div>
@@ -620,23 +608,6 @@
                 </button>
 
                 <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 5px;">
-                    <!-- v1453-4-53Ω-Pro: JeoCompass Workspace Selection -->
-                    <div id="sync-status-container"
-                        style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <div id="sync-status-dot"
-                                style="width: 12px; height: 12px; border-radius: 50%; background: #4caf50;">
-                            </div>
-                            <strong id="sync-status-text">Workspace Sync</strong>
-                        </div>
-                        <div style="font-size: 0.85em; opacity: 0.8; margin-bottom: 10px; color: #4caf50;">
-                            <i class="fas fa-folder"></i> Workspace: <span id="sync-folder-name">Internal</span>
-                        </div>
-                        <button id="btn-setup-sync" onclick="requestFolderAccess()" class="btn btn-secondary"
-                            style="width: 100%; font-size: 0.9em; padding: 12px; border: 1px solid #555;">
-                            <i class="fas fa-folder-open"></i> Select Workspace Folder
-                        </button>
-                    </div>
 
                     <button class="save-btn ready" id="btn-backup-json"
                         style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1)); border: 1px solid rgba(76, 175, 80, 0.4); color: #4caf50; font-weight: bold; margin-bottom: 12px; border-radius: 12px;">
