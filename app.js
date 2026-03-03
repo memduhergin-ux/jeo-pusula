@@ -1749,8 +1749,21 @@ async function requestFolderAccess() {
         isSyncing = true;
         updateSyncUI();
 
-        // Initial Workspace Sync
-        await performAutoDiscoveryAndSync();
+        showLoading("Veriler geri yükleniyor...");
+        const restored = await performAutoDiscoveryAndSync();
+
+        if (restored) {
+            showToast("Veriler klasörden başarıyla geri yüklendi!", 5000);
+            // v1453-4-53Ω-Pro: If we were on splash, it's safe to proceed now
+            const splash = document.getElementById('splash-screen');
+            if (splash && !splash.classList.contains('hidden')) {
+                splash.classList.add('hidden');
+                setTimeout(() => splash.remove(), 1000);
+            }
+        } else {
+            showToast("Klasör bağlantısı başarılı, ancak yeni veri bulunamadı.", 3000);
+        }
+        hideLoading();
     } catch (err) {
         console.error("Folder access failed", err);
         if (err.name !== 'AbortError') showToast("Folder connection failed.");
@@ -1926,6 +1939,7 @@ async function performAutoDiscoveryAndSync() {
         }
 
         if (dataIngested) {
+            isDataLoaded = true; // Safety: Ensure we can save even if init bit was shaky
             await saveRecords();
             await dbSaveMeta('jeoTracks', jeoTracks);
             await saveExternalLayers(); // v1453-4-53Ω-Pro: Sync Layers to IDB
@@ -1937,14 +1951,17 @@ async function performAutoDiscoveryAndSync() {
 
             const sum = restoredCounts.points + restoredCounts.tracks + restoredCounts.layers;
             if (sum > 0) {
-                // v1453-4-53Ω-Pro: Subtly notify user on successful restore
-                showToast(`Workspace Restored: ${restoredCounts.points} pts, ${restoredCounts.tracks} tracks, ${restoredCounts.layers} layers`, 4000);
+                // v1453-4-53Ω-Pro: Verbose log for debug, toast is handled by caller
+                console.log(`Fuel Pump Restore: ${restoredCounts.points} pts, ${restoredCounts.tracks} tracks, ${restoredCounts.layers} layers`);
+                return true;
             }
         }
 
         await syncToFolder();
+        return dataIngested;
     } catch (err) {
         console.error("Mirror Discovery failed", err);
+        return false;
     }
 }
 
