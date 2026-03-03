@@ -3152,7 +3152,7 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     padding-top: 50px;
     /* Spacing from top */
     justify-content: center;
-    z-index: 10000;
+    z-index: 30000;
     opacity: 0;
     visibility: hidden;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
