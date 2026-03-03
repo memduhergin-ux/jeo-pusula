@@ -447,8 +447,17 @@ async function migrateToIndexedDB() {
         const activeMode = localStorage.getItem('jeoMeasureMode');
         if (activeMode && activeMode !== 'null') await dbSaveMeta('jeoMeasureMode', activeMode);
 
-        // Mark as migrated
+        // Mark as migrated and CLEAR sources to prevent "ghost" revivals
         localStorage.setItem('jeo_resilience_v42F', 'true');
+        localStorage.removeItem('jeoRecords');
+        localStorage.removeItem('jeoNextId');
+        localStorage.removeItem('jeoExternalLayers');
+        localStorage.removeItem('jeoTracks');
+        localStorage.removeItem('trackIdCounter');
+        localStorage.removeItem('jeoActiveMeasurePoints');
+        localStorage.removeItem('jeoActiveMeasureIsPoly');
+        localStorage.removeItem('jeoIsMeasuring');
+        localStorage.removeItem('jeoMeasureMode');
     } catch (e) {
         // console.error("Resilience: Migration check failed", e); // Silenced
     }
@@ -642,7 +651,7 @@ async function dbDeleteLayerById(id) {
             await sqlite.run({
                 database: "jeo_pusula_native",
                 statement: "DELETE FROM layers WHERE id = ?",
-                values: [id]
+                values: [String(id)] // v1453: Case to String for SQLite consistency
             });
             return;
         } catch (e) { console.error("Native DeleteLayer Error:", e); }
@@ -652,7 +661,11 @@ async function dbDeleteLayerById(id) {
         return new Promise((resolve) => {
             const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
             const store = tx.objectStore(JEO_STORE_NAME);
+            // v1453: Defensive delete (try both number and string if unknown)
             store.delete(id);
+            if (typeof id === 'number') store.delete(String(id));
+            else if (!isNaN(id)) store.delete(Number(id));
+
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
             tx.onabort = () => resolve();
@@ -809,7 +822,10 @@ async function initApp() {
             }
         }
 
-        if (!loadSuccess) throw new Error("IDB Loading failed after 3 attempts.");
+        if (!loadSuccess) {
+            showToast("Data loading error!", 5000);
+            throw new Error("IDB Loading failed after 3 attempts.");
+        }
 
         const savedGridInterval = await dbLoadMeta('jeoGridInterval');
         if (savedGridInterval !== null) activeGridInterval = parseInt(savedGridInterval);
@@ -5485,7 +5501,8 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                                 interactive: false
                             });
                             feature._segmentLabels.push(lab);
-                            if (parentLayer && parentLayer.labelsVisible) lab.addTo(map);
+                            // v1453: Labels added by default (controlled by optimizer/layer visibility)
+                            lab.addTo(map);
                         }
                     }
                 }
@@ -5623,7 +5640,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
 
     } catch (e) {
         console.error("Critical error in addExternalLayer:", e);
-        JeoAlert("Katman eklenirken bir hata oluştu (ErrCode: 53Ω-Labels): " + e.message);
+        JeoAlert("An error occurred while adding the layer (ErrCode: 53Ω-Labels): " + e.message);
     }
 }
 
