@@ -1,0 +1,30 @@
+{
+  "name": "jeolojipusulasi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/memduhergin-ux/jeo-pusula.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/memduhergin-ux/jeo-pusula/issues"
+  },
+  "homepage": "https://github.com/memduhergin-ux/jeo-pusula#readme",
+  "dependencies": {
+    "@capacitor-community/sqlite": "^8.0.0",
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/device": "^8.0.1",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/preferences": "^8.0.1"
+  }
+}

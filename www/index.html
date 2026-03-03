@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <!-- v690: Content Security Policy to allow OSRM/GraphHopper connections -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://unpkg.com https://cdnjs.cloudflare.com https://*.google.com https://*.opentopomap.org; img-src 'self' data: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://*.google.com https://*.opentopomap.org; connect-src 'self' https://*.openstreetmap.org https://*.openstreetmap.de https://*.project-osrm.org https://*.geofabrik.de https://*.google.com https://*.opentopomap.org https://*.open-meteo.com;">
+    <meta name="description"
+        content="Professional Geological Compass: Dip, Strike, Location, Map and Data Analysis Tools.">
+    <title>JeoCompass v1453-4-53Ω-Pro</title>
+    <meta name="description" content="JeoCompass v1453-4-53Ω-Pro - The Fuel Pump Edition">
+    <!-- JeoCompass Version Managed by JS -->
+    <meta name="version" content="v1453-4-53Ω-Pro">
+    <meta name="jeo-version" content="v1453-4-53Ω-Pro">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css?v=1453-4-42F">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <!-- Custom JeoCompass Modals (Moved to top for early error catching v1453-4-26F) -->
+    <div id="jeo-modal-overlay" class="jeo-modal-overlay">
+        <div class="jeo-modal">
+            <div id="jeo-modal-header" class="jeo-modal-header">JeoCompass</div>
+            <div id="jeo-modal-body" class="jeo-modal-body"></div>
+            <div class="jeo-modal-footer">
+                <button id="jeo-modal-cancel" class="jeo-modal-btn secondary" style="display: none;">CANCEL</button>
+                <button id="jeo-modal-ok" class="jeo-modal-btn primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orientation Warning Overlay (v1453-4-33F) -->
+    <div id="orientation-warning" class="orientation-warning-overlay">
+        <div class="orientation-warning-icon">📱</div>
+        <h2 style="margin: 0 0 10px 0; font-size: 1.5rem;">Dikey Mod Gerekli</h2>
+        <p style="margin: 0; opacity: 0.8; font-size: 1rem;">
+            Pusula ölçümlerinin doğruluğu için lütfen cihazınızı dikey (dik) konumda tutun.
+        </p>
+    </div>
+
+    <!-- Loading Overlay (v543) -->
+    <div id="loading-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="spinner-large"></div>
+        <div id="loading-text"
+            style="display: none; color: white; margin-top: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; padding: 0 20px;">
+            Loading...</div>
+    </div>
+
+
+    <!-- Splash Screen (v1453-2) -->
+    <div id="splash-screen"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: #121212;">
+        <div class="splash-content"
+            style="text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <div
+                style="width: 120px; font-size: 1.1rem; font-weight: bold; color: #4caf50; margin-bottom: 10px; text-align: center; word-wrap: break-word; line-height: 1.2;">
+                JEOCOMPASS</div>
+            <img src="icon-512.png" alt="JeoCompass Logo" class="splash-logo"
+                style="width: 120px; margin-bottom: 20px;">
+            <div
+                style="font-style: italic; color: #888; font-size: 1.0rem; font-weight: 500; text-align: center; line-height: 1.6;">
+                “Record your discoveries,<br>
+                protect your knowledge,<br>
+                find your way.”
+            </div>
+            <div class="splash-version app-version-display"
+                style="color: #666; font-size: 0.75rem; margin-top: 15px; width: 100%; text-align: center;">
+                v1453-4-53Ω-Pro
+            </div>
+            <!-- v1453-4-53Ω-Pro: Tier 4 Recovery Tip (Hidden by default) -->
+            <div id="recovery-hint"
+                style="display: none; margin-top: 25px; padding: 15px; background: rgba(76,175,80,0.15); border: 1px solid #4caf50; border-radius: 12px; max-width: 280px; animation: fadeIn 0.8s ease;">
+                <div style="color: #4caf50; font-weight: bold; margin-bottom: 5px;">🔄 Veri Kurtarma (Tier 4)</div>
+                <div style="color: #ccc; font-size: 0.85rem; line-height: 1.4; margin-bottom: 12px;">
+                    Tarayıcı verileri silinmiş. Verilerinizi geri getirmek için klasörünüzü tekrar bağlayın.
+                </div>
+                <button onclick="requestFolderAccess()"
+                    style="width:100%; padding:10px; background:#4caf50; border:none; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer;">
+                    Klasörü Bağla ve Geri Yükle
+                </button>
+            </div>
+            <!-- v1453-4-53V: Durable Storage Indicator (Shield) Removed for True Silence -->
+        </div>
+    </div>
+
+    <!-- View 1: Compass (Pusula) -->
+    <div id="view-compass" class="view-section active">
+        <div class="compass-container">
+            <div class="compass-body">
+                <div class="lubber-line"></div>
+                <div class="dial">
+                    <div class="ring-ticks"></div>
+                    <div class="cardinal-points">
+                        <span class="cardinal n">N</span>
+                        <span class="cardinal e">E</span>
+                        <span class="cardinal s">S</span>
+                        <span class="cardinal w">W</span>
+                    </div>
+                </div>
+                <div class="needle-container" id="compass-needle">
+                    <div class="needle-north"></div>
+                    <div class="needle-south"></div>
+                    <div class="needle-center"></div>
+                </div>
+            </div>
+
+            <!-- Calibration Button (Top Left - Symmetric) -->
+            <div class="calib-container">
+                <button id="btn-calibrate" class="calibrate-btn">Cal</button>
+            </div>
+
+            <!-- Signature Tag (Top Right - Symmetric) -->
+            <div class="signature-container">
+                <!-- v1453-4-53Ω-Pro: Persistence Shield Status Indicator -->
+                <div id="persistence-shield" class="persistence-shield" title="Storage Persistence">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                    </svg>
+                </div>
+                <div class="signature-tag">MET</div>
+            </div>
+
+            <!-- Level Bubble moved to Housing (Bottom Left) -->
+            <div class="level-container">
+                <div class="level-bubble" id="level-bubble"></div>
+                <div class="level-crosshair"></div>
+                <div class="level-center-target"></div>
+            </div>
+
+            <!-- REC Button (Bottom Right - Symmetric) -->
+            <div class="save-container">
+                <button id="btn-save" class="save-btn">REC</button>
+            </div>
+        </div>
+
+        <div id="calibration-warning" class="warning"></div>
+
+        <div class="data-panel">
+            <div class="data-grid">
+                <!-- Strike Instrument (Left) -->
+                <div class="instrument-cluster cluster-strike">
+                    <button id="btn-hold-strike" class="hold-btn">H</button>
+                    <div class="display-box">
+                        <span class="data-label">Strike</span>
+                        <span class="data-value" id="val-strike">N0E</span>
+                    </div>
+                </div>
+
+                <!-- Dip Instrument (Right) -->
+                <div class="instrument-cluster cluster-dip">
+                    <div class="display-box">
+                        <span class="data-label">Dip</span>
+                        <span class="data-value" id="val-dip">0&deg;</span>
+                    </div>
+                    <button id="btn-hold-dip" class="hold-btn">H</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coordinates -->
+        <div class="panel">
+            <div class="toggle-container">
+                <button id="btn-wgs" class="toggle-btn" title="WGS84 (Lat/Lon)">WGS</button>
+                <button id="btn-utm" class="toggle-btn active" title="UTM ED50 (East/North)">UTM</button>
+            </div>
+
+            <!-- Coordinates Display -->
+            <div class="coords-container" id="coord-content">
+                <div class="data-label">Waiting for location...</div>
+            </div>
+        </div>
+
+        <!-- Permission Button -->
+        <button id="permission-btn" class="permission-btn">Enable Compass</button>
+    </div>
+
+    <!-- View 2: Map (Map) -->
+    <div id="view-map" class="view-section">
+        <!-- Measurement Info Box -->
+        <div id="measure-info"
+            style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 20px; z-index: 2000; color: white; border: 1px solid #444; font-size: 0.9rem; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+            <button id="btn-measure-undo" title="Undo"
+                style="display:none; background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem; margin-right: 5px;">↩️</button>
+            <span id="measure-text" style="font-family: monospace; font-size: 1rem;">0 m</span>
+            <button id="btn-measure-save" title="Save"
+                style="display:none; background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem; margin-left: 5px;">💾</button>
+            <div style="width: 1px; height: 16px; background: #666; margin: 0 5px;"></div>
+            <button id="btn-measure-clear"
+                style="background: #f44336; border: none; color: white; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;">✕</button>
+        </div>
+
+        <div id="map-center-crosshair"
+            style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1500;">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5));">
+                <circle cx="20" cy="20" r="18" stroke="white" stroke-width="2" stroke-dasharray="4 4" />
+                <circle cx="20" cy="20" r="3" fill="#ff5252" />
+                <line x1="20" y1="0" x2="20" y2="40" stroke="white" stroke-width="1.5" />
+                <line x1="0" y1="20" x2="40" y2="20" stroke="white" stroke-width="1.5" />
+            </svg>
+        </div>
+
+        <button id="btn-confirm-point"
+            style="display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2000; cursor: pointer;">
+            ✅ Add Point
+        </button>
+
+        <div id="map-container" style="height: 100%; z-index: 1; border-radius: 0;">
+            <!-- v1453-68F: App Watermark (Signature) -->
+            <div id="app-watermark">
+                JeoCompass
+            </div>
+            <!-- v701: Draggable Heatmap Legend -->
+            <!-- v1453-1: Compact Horizontal Legend -->
+            <div id="heatmap-legend" class="heatmap-legend" style="display: none;">
+                <div id="legend-header" class="legend-header">
+                    <span class="drag-handle">::::</span>
+                    <span id="legend-title" style="white-space: nowrap;">Density</span>
+                </div>
+                <div class="legend-body">
+                    <div id="legend-gradient-bar" class="legend-gradient-bar"></div>
+                    <div class="legend-labels">
+                        <span>Low</span>
+                        <span>High</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="map-fab-container" style="display: none;">
+        <div class="map-fab-scroll-area">
+            <!-- v593: Common scroll area for all FABs -->
+            <button id="btn-layers" class="map-fab" title="Layers">
+                <span class="fab-icon">📂</span>
+            </button>
+            <button id="btn-scale-toggle" class="map-fab" title="Toggle Scale">
+                <span class="fab-icon" style="display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Segmented Block Scale Design -->
+                        <rect x="3" y="11" width="6" height="4" fill="currentColor" />
+                        <rect x="9" y="11" width="6" height="4" stroke="currentColor" stroke-width="1.5" />
+                        <rect x="15" y="11" width="6" height="4" fill="currentColor" />
+                        <path d="M3 9V11M9 9V11M15 9V11M21 9V11" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" />
+                    </svg>
+                </span>
+            </button>
+            <button id="btn-grid-toggle" class="map-fab" title="Inner Polygon Grid">
+                <span class="fab-icon">🌐</span>
+            </button>
+            <button id="btn-add-point" class="map-fab" title="Add Point (GPS or Map Target)">
+                <span class="fab-icon">📍+</span>
+            </button>
+            <button id="btn-measure" class="map-fab" title="Measure Distance">
+                <span class="fab-icon">📏</span>
+            </button>
+            <button id="id-btn-polygon" class="map-fab" title="Measure Area (Polygon)">
+                <span class="fab-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L4.5 9L7 21H17L19.5 9L12 2Z" stroke="currentColor" stroke-width="2" fill="none" />
+                        <circle cx="12" cy="2" r="2" fill="currentColor" />
+                        <circle cx="4.5" cy="9" r="2" fill="currentColor" />
+                        <circle cx="7" cy="21" r="2" fill="currentColor" />
+                        <circle cx="17" cy="21" r="2" fill="currentColor" />
+                        <circle cx="19.5" cy="9" r="2" fill="currentColor" />
+                    </svg>
+                </span>
+            </button>
+            <button id="btn-toggle-records" class="map-fab records-toggle-fab" title="Show/Hide Records">
+                <span class="fab-icon"
+                    style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                    <span style="font-size: 1.25rem; line-height: 1;">👁️</span>
+                    <span
+                        style="position: absolute; font-size: 0.65rem; top: 50%; left: 50%; transform: translate(-50%, -50%); margin-top: -1px; pointer-events: none;">📍</span>
+                </span>
+            </button>
+            <button id="btn-heatmap-toggle" class="map-fab" title="Toggle Heatmap">
+                <span class="fab-icon">🌈</span>
+            </button>
+            <button id="btn-follow-me" class="map-fab" title="Follow Me">
+                <div class="crosshair-wrapper">
+                    <div class="crosshair-circle"></div>
+                    <div class="crosshair-line-v"></div>
+                    <div class="crosshair-line-h"></div>
+                </div>
+            </button>
+        </div>
+    </div>
+    <input type="file" id="file-import-input" accept=".kml,.kmz" style="display: none;">
+
+    <!-- Grid Interval Panel (v534: Fixed Pill Design) -->
+    <div id="grid-interval-panel"
+        style="display: none; background: rgba(15, 15, 15, 0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 6px 16px; border-radius: 50px; z-index: 2000; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: fit-content; max-width: 95vw; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; white-space: nowrap; -webkit-overflow-scrolling: touch;">
+
+        <style>
+            #grid-interval-panel::-webkit-scrollbar {
+                display: none;
+            }
+
+            .grid-pill-content {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: max-content;
+                height: 36px;
+            }
+        </style>
+
+        <div class="grid-pill-content">
+            <div style="font-size: 0.75rem; color: #00ffcc; font-weight: bold; opacity: 0.9; padding-right: 4px;">
+                GRID</div>
+
+            <div id="grid-intervals" style="display: flex; gap: 4px; align-items: center;">
+                <button class="grid-opt-btn" data-interval="50"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">50m</button>
+                <button class="grid-opt-btn active" data-interval="100"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">100m</button>
+                <button class="grid-opt-btn" data-interval="250"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">250m</button>
+                <button class="grid-opt-btn" data-interval="500"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">500m</button>
+                <button class="grid-opt-btn" data-interval="1000"
+                    style="padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; height: 30px;">1km</button>
+            </div>
+
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
+
+            <div id="grid-color-selectors" style="display: flex; gap: 8px; align-items: center;">
+                <div class="grid-color-opt active" data-color="#00ffcc"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #00ffcc; border: 2px solid #fff; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#ffeb3b"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #ffeb3b; border: 2px solid transparent; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#ffffff"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #ffffff; border: 2px solid transparent; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#f44336"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #f44336; border: 2px solid transparent; cursor: pointer;">
+                </div>
+                <div class="grid-color-opt" data-color="#000000"
+                    style="width: 22px; height: 22px; border-radius: 50%; background: #000000; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;">
+                </div>
+            </div>
+
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
+
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15);"></div>
+
+
+
+
+            <!-- v1453-27F: Update Logic -->
+            <!-- v1453-99F: Save Grid Button -->
+            <button id="btn-grid-save" title="Save Grid as Layer"
+                style="cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(33, 150, 243, 0.1); margin-right: 4px; border: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196f3" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+
+            <div id="btn-grid-clear" title="Clear Grid"
+                style="cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,82,82,0.1);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                    </path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Heatmap Radius Control (v401) -->
+    <div id="heatmap-radius-panel" class="heatmap-panel">
+        <div class="panel-section-header">Heatmap Radius</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+            <button class="radius-opt" data-radius="0" style="grid-column: span 2; font-weight: bold;">Oto.
+                Radius</button>
+            <button class="radius-opt" data-radius="25">25m</button>
+            <button class="radius-opt" data-radius="50">50m</button>
+            <button class="radius-opt" data-radius="100">100m</button>
+            <button class="radius-opt" data-radius="200">200m</button>
+            <button class="radius-opt" data-radius="300">300m</button>
+            <button class="radius-opt" data-radius="500">500m</button>
+        </div>
+
+        <div class="panel-section-header separator">Filter by Element</div>
+        <select id="heatmap-element-filter" class="panel-dropdown">
+            <option value="ALL">🌈 All Points</option>
+        </select>
+
+        <button id="btn-heatmap-off">Heatmap On/Off</button>
+    </div>
+
+    <!-- View 3: Records (Kayıtlar) -->
+    <div id="view-records" class="view-section">
+        <div class="records-header">
+            <button class="save-btn ready" id="btn-more-options" title="Actions">⋮</button>
+            <button class="save-btn ready" id="btn-toggle-lock" title="Lock/Unlock">🔒</button>
+
+            <div class="search-container">
+                <input type="text" id="record-search" placeholder="Search..." class="form-input">
+            </div>
+
+            <button class="save-btn ready" id="btn-share" title="Share Selected" disabled>📤</button>
+        </div>
+
+        <div class="records-tabs">
+            <button id="tab-points" class="tab-btn active">📍 Points</button>
+            <button id="tab-tracks" class="tab-btn">👣 Tracks <span id="track-count"
+                    style="font-size:0.7rem; color:#aaa;">(0/20)</span></button>
+        </div>
+
+        <div id="container-points" class="records-container active">
+            <div style="overflow-x: auto; margin-top: 10px;">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th id="select-all-th"><input type="checkbox" id="select-all-records"></th>
+                            <th>Label</th>
+                            <th>Y</th>
+                            <th>X</th>
+                            <th>Z</th>
+                            <th>Strike</th>
+                            <th>Dip</th>
+                            <th>Time</th>
+                            <th>Note</th>
+                            <th id="edit-th">Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-body">
+                        <tr>
+                            <td colspan="8">No records yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="container-tracks" class="records-container" style="display: none;">
+            <!-- v609: Restored Classic Settings Pills -->
+            <div class="settings-pill-container">
+                <label class="settings-pill">
+                    <span class="pill-label">Auto-Rec</span>
+                    <input type="checkbox" id="chk-auto-track" class="pill-checkbox">
+                </label>
+
+                <label class="settings-pill">
+                    <span class="pill-label">Live Track</span>
+                    <input type="checkbox" id="chk-show-live-track" class="pill-checkbox-cyan">
+                </label>
+            </div>
+
+
+            <!-- GPS Status Dashboard (v461) -->
+            <div id="track-debug-dashboard"
+                style="margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #444; font-family: monospace; font-size: 0.7rem; color: #4caf50;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>GPS STATUS:</span>
+                    <span id="gps-status-val">WAITING</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>ACCURACY:</span>
+                    <span id="gps-acc-val">---</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>POINTS:</span>
+                    <span id="track-points-val">0</span>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th id="select-all-tracks-th" class="locked-hidden"><input type="checkbox"
+                                    id="select-all-tracks"></th>
+                            <th>Name</th>
+                            <th>Length</th>
+                            <th>Color</th>
+                            <th>Visible</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracks-body">
+                        <tr>
+                            <td colspan="5">No tracks saved yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Compass Cal</h2>
+            </div>
+            <div class="modal-body">
+                <div class="calibration-guide">
+                    <div class="figure-8"></div>
+                    <p>Rotate the phone in the air in a <strong>figure-8 motion</strong> to calibrate sensors.</p>
+                </div>
+
+
+                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Sensor
+                        Status:</label>
+                    <p id="sensor-status-text" style="font-size: 0.85rem; color: #ff9800; font-weight: bold;">
+                        JeoCompass - Version v1453-4-10F</p>
+                </div>
+
+                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #fff;">Magnetic
+                        Declination:</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="declination-input" value="0" step="0.1"
+                            style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
+                        <span>Degrees</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">
+                        You can manually correct the difference from True North here.</p>
+                    <div style="font-size: 0.7rem; color: #444; margin-top: 5px;">Build: 2026.02.26-v1453-4-10F</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-confirm" id="btn-calibration-close">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Modal -->
+    <div class="modal-overlay" id="record-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Point Information</h2>
+            </div>
+            <div class="modal-body">
+                <!-- Record No -->
+                <div class="form-group">
+                    <label class="form-label">Label</label>
+                    <input type="text" id="rec-label" class="form-input" value="1">
+                </div>
+                <!-- Coordinates (UTM ED50) -->
+                <div class="form-group" style="padding: 10px 0;">
+                    <label class="form-label">Y</label>
+                    <input type="text" id="rec-y" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">X</label>
+                    <input type="text" id="rec-x" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Z</label>
+                    <input type="text" id="rec-z" class="form-input" readonly>
+                </div>
+                <!-- Structural Data -->
+                <div class="form-group">
+                    <label class="form-label">Strike</label>
+                    <input type="text" id="rec-strike" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dip</label>
+                    <input type="text" id="rec-dip" class="form-input" readonly>
+                </div>
+                <!-- Note -->
+                <div class="form-group" style="align-items: flex-start;">
+                    <label class="form-label" style="margin-top: 5px;">Note</label>
+                    <textarea id="rec-note" class="form-input" placeholder="Formation etc..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-modal-cancel">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-modal-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Options Modal -->
+    <div id="options-modal" class="modal-overlay">
+        <div class="modal-content"
+            style="max-width: 320px; border-radius: 20px; overflow: hidden; background: #1a1a1a;">
+            <div class="modal-body" style="padding: 25px 20px;">
+                <div
+                    style="font-size: 1rem; color: #fff; margin-bottom: 20px; text-align: center; font-weight: bold; letter-spacing: 1px;">
+                    ACTIONS & TOOLS</div>
+
+                <button class="save-btn ready" id="btn-delete-selected"
+                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.1)); border: 1px solid rgba(244, 67, 54, 0.5); color: #ff5252; font-weight: bold; margin-bottom: 12px; border-radius: 12px; transition: all 0.3s ease;">
+                    🗑️ Delete Selected
+                </button>
+
+                <button class="save-btn ready" onclick="forceAppUpdate()"
+                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(33, 150, 243, 0.1)); border: 1px solid rgba(33, 150, 243, 0.5); color: #2196f3; font-weight: bold; margin-bottom: 25px; border-radius: 12px; transition: all 0.3s ease;">
+                    🔄 Force App Update
+                </button>
+
+                <div style="border-top: 1px solid #333; padding-top: 20px; margin-top: 5px;">
+                    <!-- v1453-4-53Ω-Pro: JeoCompass Workspace Selection -->
+                    <div id="sync-status-container"
+                        style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
+                            <div id="sync-status-dot"
+                                style="width: 12px; height: 12px; border-radius: 50%; background: #4caf50;">
+                            </div>
+                            <strong id="sync-status-text">Workspace Sync</strong>
+                        </div>
+                        <div style="font-size: 0.85em; opacity: 0.8; margin-bottom: 10px; color: #4caf50;">
+                            <i class="fas fa-folder"></i> Workspace: <span id="sync-folder-name">Internal</span>
+                        </div>
+                        <button id="btn-setup-sync" onclick="requestFolderAccess()" class="btn btn-secondary"
+                            style="width: 100%; font-size: 0.9em; padding: 12px; border: 1px solid #555;">
+                            <i class="fas fa-folder-open"></i> Select Workspace Folder
+                        </button>
+                    </div>
+
+                    <button class="save-btn ready" id="btn-backup-json"
+                        style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1)); border: 1px solid rgba(76, 175, 80, 0.4); color: #4caf50; font-weight: bold; margin-bottom: 12px; border-radius: 12px;">
+                        📦 Full Backup (JSON)
+                    </button>
+                    <button class="save-btn ready" id="btn-restore-json"
+                        style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.1)); border: 1px solid rgba(255, 193, 7, 0.4); color: #ffc107; font-weight: bold; margin-bottom: 12px; border-radius: 12px;">
+                        📂 Restore Backup
+                    </button>
+                    <button class="save-btn ready" id="btn-show-about"
+                        style="width: 100%; padding: 16px; background: linear-gradient(135deg, rgba(158, 158, 158, 0.2), rgba(158, 158, 158, 0.1)); border: 1px solid rgba(158, 158, 158, 0.4); color: #e0e0e0; font-weight: bold; border-radius: 12px;">
+                        ℹ️ About
+                    </button>
+                    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+                </div>
+            </div>
+
+            <div class="modal-footer"
+                style="padding: 15px 20px 25px 20px; flex-direction: column; align-items: center; gap: 12px;">
+                <button class="modal-btn btn-cancel" id="btn-options-cancel"
+                    style="width: 100%; max-width: 180px; padding: 12px; border-radius: 25px; background: #333; border: 1px solid #444; color: #fff; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    Close
+                </button>
+                <div style="color: #555; font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">
+                    JeoCompass <span class="app-version-display">...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal (v1453-1) -->
+    <div id="about-modal" class="modal-overlay">
+        <div class="modal-content"
+            style="max-width: 320px; border-radius: 24px; overflow: hidden; background: #121212; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+            <div class="modal-body" style="padding: 30px 20px; text-align: center;">
+                <div
+                    style="width: 80px; height: 80px; background: #1a1a1a; border-radius: 20px; margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center; border: 1px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+                    <img src="icon-192.png" alt="Logo" style="width: 60px; height: 60px;">
+                </div>
+
+                <h2 style="color: #fff; margin: 0; font-size: 1.5rem; font-weight: 900; letter-spacing: 1px;">JEOCOMPASS
+                </h2>
+                <div style="color: #4caf50; font-weight: bold; font-size: 0.85rem; margin-top: 5px; opacity: 0.9;">
+                    Professional Geological Compass</div>
+                <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">JeoCompass <span
+                        class="app-version-display">v1453-4-53X</span></div>
+
+                <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #222;">
+                    <div
+                        style="font-style: italic; color: #888; font-size: 0.95rem; font-weight: 500; text-align: center; line-height: 1.6;">
+                        “Record your discoveries,<br>
+                        protect your knowledge,<br>
+                        find your way.”
+                    </div>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <div
+                        style="color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
+                        Contact</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <a href="mailto:metrockofficial@gmail.com"
+                            style="color: #2196f3; text-decoration: none; font-size: 0.9rem; font-weight: 500; background: rgba(33, 150, 243, 0.1); padding: 8px; border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.2);">
+                            📧 metrockofficial@gmail.com
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 0 20px 30px 20px;">
+                <button class="modal-btn btn-cancel" id="btn-about-close"
+                    style="width: 100%; padding: 14px; border-radius: 12px; background: #222; border: 1px solid #333; color: #fff; font-weight: bold; transition: all 0.2s;">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal (Redesigned v136) -->
+    <div id="share-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 330px;">
+            <div class="modal-header">
+                <h2 id="share-modal-title">Export</h2>
+            </div>
+
+            <div class="modal-body" style="padding: 15px 0;">
+                <!-- Step 1: Format Selection -->
+                <div id="share-step-1">
+                    <div
+                        style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 15px; font-size: 0.9rem;">
+                            Select export format:
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="radio" name="share-format" id="chk-share-csv" checked
+                                    style="width: 22px; height: 22px; accent-color: #4caf50;">
+                                <span style="font-size: 1rem;">CSV (Data Table)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="radio" name="share-format" id="chk-share-kml"
+                                    style="width: 22px; height: 22px; accent-color: #4caf50;">
+                                <span style="font-size: 1rem;">KML (Map File)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Confirmation -->
+                <div id="share-step-2" style="display: none; text-align: center; padding: 10px 0;">
+                    <div style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; line-height: 1.4;">
+                        Share selected points?
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" id="share-footer-1">
+                <button class="modal-btn btn-cancel" id="btn-share-cancel">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-share-next">Next</button>
+            </div>
+
+            <div class="modal-footer" id="share-footer-2" style="display: none;">
+                <button class="modal-btn btn-cancel" id="btn-share-back">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-share-accept">Accept</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Track Settings Modal (v444) -->
+    <!-- Track Settings Modal REMOVED (Embedded in Tab) -->
+
+    <!-- Layers Modal -->
+    <div id="layers-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Map Layers</h2>
+            </div>
+            <div class="modal-body" style="min-height: 200px;">
+                <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Layers will be injected here -->
+                </div>
+                <!-- v1453-4-53Ω-Pro: Tier 3 Offline MBTiles Section -->
+                <div id="offline-map-section" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                    <h3
+                        style="font-size: 1.1em; color: #ffeb3b; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-database"></i> Offline MBTiles (OPFS)
+                    </h3>
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span id="mbtiles-status" style="font-size: 0.85em; color: #bbb;">Stealth Disk: No Map
+                                Loaded</span>
+                            <button id="btn-import-mbtiles" class="modal-btn"
+                                style="padding: 5px 12px; font-size: 0.85em; background: #2e7d32; border: none; border-radius: 4px;">
+                                Import .mbtiles
+                            </button>
+                        </div>
+                        <div id="mbtiles-active-ui" style="display: none;">
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; color: #eee; cursor: pointer; font-size: 0.9em;">
+                                <input type="checkbox" id="chk-mbtiles-enable" style="width:16px; height:16px;">
+                                Enable Offline Map Layer
+                            </label>
+                            <div id="mbtiles-metadata"
+                                style="font-size: 0.75em; color: #888; margin-top: 5px; padding-left: 26px;">
+                                <!-- Metadata injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button class="modal-btn btn-cancel" id="btn-layers-close">Close</button>
+                <button class="modal-btn btn-confirm" id="id-btn-import-layer-trigger"
+                    style="display:none;">HIDDEN</button>
+                <button class="modal-btn btn-confirm" style="background:#ff9800; margin-right:6px;"
+                    id="btn-coord-import-trigger">📍 Coords</button>
+                <button class="modal-btn btn-confirm" id="btn-import-layer-trigger">Load File (+)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coordinate Import Modal -->
+    <div id="coord-import-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 360px;">
+            <div class="modal-header">
+                <h2>📍 Import Coordinates</h2>
+            </div>
+            <div class="modal-body" style="padding: 10px 0;">
+                <!-- Tabs -->
+                <div style="display:flex; gap:6px; margin-bottom:12px;">
+                    <button id="coord-tab-file" class="modal-btn btn-confirm"
+                        style="flex:1; padding:8px; font-size:0.85rem;">📂 File</button>
+                    <button id="coord-tab-manual" class="modal-btn btn-cancel"
+                        style="flex:1; padding:8px; font-size:0.85rem;">✏️ Manual</button>
+                </div>
+
+                <!-- File Tab -->
+                <div id="coord-panel-file">
+                    <div style="color:#aaa; font-size:0.8rem; margin-bottom:8px;">CSV or Excel (.xlsx) file with
+                        coordinate columns</div>
+                    <button id="btn-coord-file-pick" class="modal-btn btn-confirm"
+                        style="width:100%; padding:12px; margin-bottom:8px;">📂 Choose File</button>
+                    <input type="file" id="coord-file-input" accept=".csv,.xlsx,.xls" style="display:none;">
+                    <div id="coord-file-name"
+                        style="font-size:0.8rem; color:#888; text-align:center; margin-bottom:8px;">No file selected
+                    </div>
+                </div>
+
+                <!-- Manual Tab -->
+                <div id="coord-panel-manual" style="display:none;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Label</div>
+                            <input id="coord-m-label" type="text" placeholder="e.g. N1"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Z (m)</div>
+                            <input id="coord-m-z" type="number" placeholder="0"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">Y (Easting)</div>
+                            <input id="coord-m-y" type="number" placeholder="Y"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:3px;">X (Northing)</div>
+                            <input id="coord-m-x" type="number" placeholder="X"
+                                style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <button id="btn-coord-add-point"
+                        style="width:100%; padding:9px; background:#2196f3; border:none; color:#fff; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:8px;">
+                        + Add Point
+                    </button>
+                    <div id="coord-point-list"
+                        style="max-height:90px; overflow-y:auto; font-size:0.75rem; font-family:monospace; color:#4caf50; background:#111; border-radius:6px; padding:6px; display:none;">
+                    </div>
+                </div>
+
+                <!-- Shared Settings -->
+                <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>
+                        <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Format</div>
+                        <select id="coord-format"
+                            style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                            <option value="utm">UTM</option>
+                            <option value="wgs84">WGS84 (Lat/Lng)</option>
+                        </select>
+                    </div>
+                    <div id="coord-datum-wrap">
+                        <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Datum</div>
+                        <select id="coord-datum"
+                            style="width:100%; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                            <option value="ed50">ED50</option>
+                            <option value="wgs84">WGS84</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="coord-zone-wrap" style="margin-top:8px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">UTM Zone (auto-detect or
+                        override)
+                    </div>
+                    <input id="coord-zone" type="number" min="1" max="60" placeholder="e.g. 36"
+                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                </div>
+
+                <!-- Layer Name -->
+                <div style="margin-top:8px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">Layer Name</div>
+                    <input id="coord-layer-name" type="text" value="Coordinates"
+                        style="width:100%; box-sizing:border-box; background:#222; border:1px solid #444; color:#fff; padding:6px; border-radius:6px; font-size:0.85rem;">
+                </div>
+
+                <!-- Preview -->
+                <div id="coord-preview"
+                    style="margin-top:10px; display:none; background:#111; border-radius:6px; padding:8px; font-size:0.75rem; color:#4caf50; font-family:monospace; max-height:80px; overflow-y:auto;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="btn-coord-cancel">Cancel</button>
+                <button class="modal-btn btn-confirm" id="btn-coord-add">Add to Map</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item active" data-target="view-compass">
+            <span class="nav-icon">🧭</span>
+        </button>
+        <button class="nav-item" data-target="view-map">
+            <span class="nav-icon">🗺️</span>
+        </button>
+        <button class="nav-item" data-target="view-records">
+            <span class="nav-icon">📝</span>
+        </button>
+    </div>
+
+    <!-- Error Handler for Robustness & Stability (v546) -->
+    <script>
+        // Track consecutive crash counts for Safe Mode logic
+        const crashKey = 'jeo_crash_count';
+        const lastCrashKey = 'jeo_last_crash_time';
+
+
+        /* --- JeoCompass Custom Modal System --- */
+        window.JeoAlert = function (message) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('jeo-modal-overlay');
+                const body = document.getElementById('jeo-modal-body');
+                const okBtn = document.getElementById('jeo-modal-ok');
+                const cancelBtn = document.getElementById('jeo-modal-cancel');
+
+                // Fallback to native if DOM not ready (extremely early errors)
+                if (!overlay || !body) {
+                    alert("JeoCompass Message:\n" + message);
+                    return resolve();
+                }
+
+                body.innerText = message;
+                if (cancelBtn) cancelBtn.style.display = 'none';
+                overlay.classList.add('show');
+
+                const onOk = () => {
+                    overlay.classList.remove('show');
+                    okBtn.removeEventListener('click', onOk);
+                    resolve();
+                };
+                okBtn.addEventListener('click', onOk);
+            });
+        };
+
+        window.JeoConfirm = function (message) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('jeo-modal-overlay');
+                const body = document.getElementById('jeo-modal-body');
+                const okBtn = document.getElementById('jeo-modal-ok');
+                const cancelBtn = document.getElementById('jeo-modal-cancel');
+
+                // Fallback to native if DOM not ready
+                if (!overlay || !body) {
+                    return resolve(confirm("JeoCompass:\n" + message));
+                }
+
+                body.innerText = message;
+                if (cancelBtn) cancelBtn.style.display = 'block';
+                overlay.classList.add('show');
+
+                const onOk = () => {
+                    overlay.classList.remove('show');
+                    cleanup();
+                    resolve(true);
+                };
+                const onCancel = () => {
+                    overlay.classList.remove('show');
+                    cleanup();
+                    resolve(false);
+                };
+                const cleanup = () => {
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
+                };
+
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
+            });
+        };
+
+        window.onerror = async function (msg, url, lineNo, columnNo, error) {
+            console.error("Global Error Caught:", msg, "at", url, ":", lineNo);
+
+            // Increment crash count if error happens during boot (first 10 seconds)
+            const now = Date.now();
+            const lastCrashTime = parseInt(localStorage.getItem(lastCrashKey) || 0);
+            if (now - window.bootTime < 10000) {
+                let count = parseInt(localStorage.getItem(crashKey) || 0) + 1;
+                localStorage.setItem(crashKey, count);
+                localStorage.setItem(lastCrashKey, now);
+
+                if (count >= 3) {
+                    if (await JeoConfirm("The app crashed repeatedly. Start in Safe Mode by clearing layers?")) {
+                        localStorage.setItem(crashKey, 0);
+                        indexedDB.deleteDatabase('JeoCompassDB');
+                        location.reload();
+                        return true;
+                    }
+                }
+            }
+
+            JeoAlert("An Error Occurred:\n" + msg + "\nLine: " + lineNo + (columnNo ? ":" + columnNo : ""));
+            return true;
+        };
+
+        window.onunhandledrejection = function (event) {
+            console.error("Async Rejection:", event.reason);
+            const errorMsg = (event.reason ? event.reason.message || event.reason : "").toString();
+            if (errorMsg.includes("ServiceWorker") && errorMsg.includes("fetching")) {
+                console.log("ServiceWorker fetch error suppressed");
+                return;
+            }
+            JeoAlert("Unexpected Error (Async):\n" + (event.reason ? event.reason.message || event.reason : "Unknown error"));
+        };
+
+        window.bootTime = Date.now();
+        // Clear crash counter after 15 seconds of stable operation
+        setTimeout(() => localStorage.setItem(crashKey, 0), 15000);
+    </script>
+    <script src="app.js?v=FORCE_40F"></script>
+    <script>
+        console.log("App Version:", typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F');
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Register with version query to bypass browser cache of sw.js
+                // Use APP_VERSION if available (defined in app.js which is loaded before)
+                const v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v1453-04F';
+                navigator.serviceWorker.register(`sw.js?v=${v}`)
+                    .then(reg => {
+                        console.log('Service Worker registered', v);
+                        reg.update().catch(() => { });
+                        setInterval(() => { reg.update().catch(() => { }); }, 1000 * 60);
+                    })
+                    .catch(err => console.log('Service Worker failed', err));
+            });
+
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data === 'sw-updated') {
+                    console.log('New version detected. Manual refresh suggested.');
+                    // window.location.reload(); // v632: Stop aggressive reload
+                }
+            });
+
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                // window.location.reload(); // v632: Stop aggressive reload
+            });
+        }
+
+        function forceAppUpdate() {
+            if ('serviceWorker' in navigator) {
+                caches.keys().then(names => {
+                    for (let name of names) caches.delete(name);
+                }).then(() => {
+                    location.reload(true);
+                });
+            } else {
+                location.reload(true);
+            }
+        }
+    </script>
+
+</body>
+
+</html>

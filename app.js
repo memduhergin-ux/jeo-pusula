@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1453-4-53Ω-Pro-Final'; // Architecture Migration Complete 🛡️📂🧭
+const APP_VERSION = 'v1453-NATIVE-PRO'; // Forever Disk Architecture 🛡️📂🧭
 const JEO_VERSION = APP_VERSION; // Backward Compatibility
 const DB_NAME = 'jeo_pusulasi_db';
 const JEO_DB_VERSION = 5; // v1453-4-53I: Final Schema Verification
@@ -13,6 +13,39 @@ const JEO_META_STORE = 'jeo-meta-v1'; // NextID, tracks, etc.
 let mbtilesWorker = null;
 let mbtilesLayer = null;
 let isMBTilesReady = false;
+
+// v1453-NATIVE: Capacitor SQLite & Filesystem Bridge
+let isNative = false;
+let sqliteConnection = null;
+let nativeDB = null;
+
+async function initNativePlatform() {
+    if (window.Capacitor && window.Capacitor.getPlatform() !== 'web') {
+        isNative = true;
+        console.log("Resilience: Native Environment Detected.");
+        try {
+            const { CapacitorSQLite, SQLiteConnection } = CapacitorEventListener.SQLite || {}; // Placeholder for plugin access
+            // In a real Capacitor app, plugins are available via Capacitor.Plugins
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            if (sqlite) {
+                sqliteConnection = new SQLiteConnection(sqlite);
+                nativeDB = await sqliteConnection.createConnection("jeo_pusula_native", false, "no-encryption", 1, false);
+                await nativeDB.open();
+                
+                // Create tables if they don't exist
+                await nativeDB.execute(`
+                    CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+                    CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, data TEXT);
+                    CREATE TABLE IF NOT EXISTS layers (id TEXT PRIMARY KEY, data TEXT);
+                `);
+                console.log("Resilience: Native SQLite Initialized.");
+            }
+        } catch (e) {
+            console.error("Resilience: Native SQLite Init Failed", e);
+            isNative = false; // Fallback to IDB
+        }
+    }
+}
 
 
 // Native dialog replacement system moved to index.html for earlier availability.
@@ -83,6 +116,12 @@ function openJeoDB() {
 
 // v1453-4-53O: Atomic Single Record Save (Incremental - No clear())
 async function dbPutRecord(record) {
+    if (isNative && nativeDB) {
+        try {
+            await nativeDB.run("INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)", [record.id, JSON.stringify(record)]);
+            return;
+        } catch (e) { console.error("Native PutRecord Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
@@ -96,6 +135,12 @@ async function dbPutRecord(record) {
 }
 
 async function dbDeleteRecord(id) {
+    if (isNative && nativeDB) {
+        try {
+            await nativeDB.run("DELETE FROM records WHERE id = ?", [Number(id)]);
+            return;
+        } catch (e) { console.error("Native DeleteRecord Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
@@ -129,6 +174,15 @@ async function dbSaveRecords(recordsArray, forceWrite = false) {
 }
 
 async function dbLoadRecords() {
+    if (isNative && nativeDB) {
+        try {
+            const res = await nativeDB.query("SELECT data FROM records");
+            if (res.values) {
+                return res.values.map(row => JSON.parse(row.data));
+            }
+            return [];
+        } catch (e) { console.error("Native LoadRecords Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         const tx = db.transaction(JEO_RECORDS_STORE, 'readonly');
@@ -141,11 +195,21 @@ async function dbLoadRecords() {
     } catch (e) { console.error("IDB Load Records Error:", e); return []; }
 }
 
+// v1453-4-53Ω-Pro: Incremental save with Native Support
 async function dbSaveMeta(key, value, forceWrite = false) {
     if (!isDataLoaded && key === 'jeoTracks' && !forceWrite) {
         console.warn('Resilience: dbSaveMeta jeoTracks blocked — data not yet loaded.');
         return;
     }
+    
+    if (isNative && nativeDB) {
+        try {
+            const valStr = JSON.stringify(value);
+            await nativeDB.run("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", [key, valStr]);
+            return;
+        } catch (e) { console.error("Native SaveMeta Error:", e); }
+    }
+
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
@@ -168,6 +232,15 @@ async function dbSaveMeta(key, value, forceWrite = false) {
 }
 
 async function dbLoadMeta(key) {
+    if (isNative && nativeDB) {
+        try {
+            const res = await nativeDB.query("SELECT value FROM meta WHERE key = ?", [key]);
+            if (res.values && res.values.length > 0) {
+                return JSON.parse(res.values[0].value);
+            }
+            return null;
+        } catch (e) { console.error("Native LoadMeta Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         const tx = db.transaction(JEO_META_STORE, 'readonly');
@@ -178,6 +251,38 @@ async function dbLoadMeta(key) {
             request.onerror = () => r(null);
         });
     } catch (e) { return null; }
+}
+
+// v1453-NATIVE: Migration from IDB to SQLite
+async function migrateIDBToNative() {
+    if (!isNative || !nativeDB) return;
+    const migrationKey = 'jeo_native_migration_v1';
+    if (localStorage.getItem(migrationKey) === 'true') return;
+
+    console.log("Resilience: Starting IDB to Native SQLite migration...");
+    try {
+        // Records
+        const records = await dbLoadRecords(); // This will load from IDB since native is empty initially or via fallback logic
+        for (const r of records) {
+            await nativeDB.run("INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)", [r.id, JSON.stringify(r)]);
+        }
+
+        // Meta
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_META_STORE, 'readonly');
+        const metaItems = await new Promise(resolve => {
+            const req = tx.objectStore(JEO_META_STORE).getAll();
+            req.onsuccess = () => resolve(req.result);
+        });
+        for (const item of metaItems) {
+            await nativeDB.run("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", [item.key, JSON.stringify(item.value)]);
+        }
+
+        localStorage.setItem(migrationKey, 'true');
+        console.log("Resilience: Native Migration Completed.");
+    } catch (e) {
+        console.error("Resilience: Native Migration Failed", e);
+    }
 }
 
 async function migrateToIndexedDB() {
@@ -367,6 +472,12 @@ async function requestStoragePersistence() {
 // v1453-4-50F: Per-ID Layer Save — NEVER clears the whole store.
 // Each layer is put individually. A failure on one layer does NOT affect others.
 async function dbPutLayer(layer) {
+    if (isNative && nativeDB) {
+        try {
+            await nativeDB.run("INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)", [layer.id, JSON.stringify(layer)]);
+            return;
+        } catch (e) { console.error("Native PutLayer Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
@@ -417,6 +528,12 @@ async function dbPutLayer(layer) {
 }
 
 async function dbDeleteLayerById(id) {
+    if (isNative && nativeDB) {
+        try {
+            await nativeDB.run("DELETE FROM layers WHERE id = ?", [id]);
+            return;
+        } catch (e) { console.error("Native DeleteLayer Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         return new Promise((resolve) => {
@@ -451,6 +568,15 @@ async function dbSaveLayers(layers, forceWrite = false) {
 }
 
 async function dbLoadLayers() {
+    if (isNative && nativeDB) {
+        try {
+            const res = await nativeDB.query("SELECT data FROM layers");
+            if (res.values) {
+                return res.values.map(row => JSON.parse(row.data));
+            }
+            return [];
+        } catch (e) { console.error("Native LoadLayers Error:", e); }
+    }
     try {
         const db = await openJeoDB();
         return new Promise((resolve, reject) => {
@@ -508,7 +634,22 @@ async function testIDBWrite() {
 async function initApp() {
     try {
         updateAppVersionDisplay(); // v1453-4-53Ω-Pro: Ensure version is visible
-        console.log(`[${new Date().toISOString()}] initApp: Starting recovery & initialization sequence...`);
+        console.log(`[${new Date().toISOString()}] initApp: Starting native recovery & initialization...`);
+
+        // v1453-NATIVE: Initialize Capacitor / SQLite Platform
+        await initNativePlatform();
+        await migrateIDBToNative(); // Safe migration if just upgraded
+
+        // v1453-NATIVE: Restore Workspace Link from Preferences
+        if (isNative) {
+            const { Preferences } = window.Capacitor.Plugins;
+            const syncPref = await Preferences.get({ key: 'jeoSyncFolderNative' });
+            if (syncPref.value === 'enabled') {
+                syncFolderHandle = "Documents";
+                isSyncing = true;
+                console.log("Resilience: Restored Native Workspace Link.");
+            }
+        }
 
         // v1453-4-53U: Request persistence IMMEDIATELY (Priority #1)
         // v1453-4-53V: Now called in global scope but kept for safety
@@ -1733,6 +1874,32 @@ async function performOmegaDiscovery() {
 // THE PIPELINE: Live Mirror Sync Logic (External Folder)
 // -----------------------------------------------------------------
 async function requestFolderAccess() {
+    if (isNative) {
+        // v1453-NATIVE: On Android/iOS, we use the Documents directory by default for the 'Workspace'
+        // This ensures the link is permanent and doesn't require repeated permission grants.
+        try {
+            const { Filesystem } = window.Capacitor.Plugins;
+            const { Preferences } = window.Capacitor.Plugins;
+
+            // In Native, we "Select" the app's professional data folder
+            syncFolderHandle = "Documents"; // Identifier for native sync
+            await Preferences.set({ key: 'jeoSyncFolderNative', value: 'enabled' });
+
+            isSyncing = true;
+            updateSyncUI();
+
+            showLoading("Veriler geri yükleniyor...");
+            const restored = await performAutoDiscoveryAndSync();
+            if (restored) showToast("Veriler başarıyla geri yüklendi!", 5000);
+            hideLoading();
+            return;
+        } catch (e) {
+            console.error("Native Folder Setup Failed", e);
+            showToast("Native Folder Access Error", 3000);
+            return;
+        }
+    }
+
     try {
         if (!('showDirectoryPicker' in window)) {
             JeoAlert("Your browser does not support folder sync. Please use a modern version of Chrome.");
@@ -1796,7 +1963,9 @@ async function updateSyncUI() {
 }
 
 async function verifyFolderPermission(request = true) {
+    if (isNative) return !!syncFolderHandle; // Native apps have implicit permission once folder is set
     if (!syncFolderHandle) return false;
+    // Web API Permission Check
     const options = { mode: 'readwrite' };
     try {
         if ((await syncFolderHandle.queryPermission(options)) === 'granted') return true;
@@ -1985,36 +2154,33 @@ function setupFuelPumpListener() {
 }
 
 async function getFileFromFolder(name) {
-    if (!syncFolderHandle && !isOpfsInitialised) return null;
     let folderName = null;
     if (name.includes('points')) folderName = 'customwpts';
     if (name.includes('tracks')) folderName = 'tracklogs';
     if (name.includes('layers')) folderName = 'overlay';
 
-    // Priority 1: External Mirror (If permitted)
-    if (syncFolderHandle && await verifyFolderPermission(false)) {
+    if (isNative && syncFolderHandle === "Documents") {
         try {
-            let targetHandle = syncFolderHandle;
-            if (folderName) {
-                targetHandle = await syncFolderHandle.getDirectoryHandle(folderName);
-            }
-            const handle = await targetHandle.getFileHandle(name);
-            return await handle.getFile();
-        } catch (e) { }
+            const { Filesystem } = window.Capacitor.Plugins;
+            const path = folderName ? `JeoCompass/${folderName}/${name}` : `JeoCompass/${name}`;
+            const result = await Filesystem.readFile({
+                path: path,
+                directory: 'DOCUMENTS',
+                encoding: 'utf8'
+            });
+            return { text: () => Promise.resolve(result.data) };
+        } catch (e) { return null; }
     }
 
-    // Priority 2: System Disk (OPFS)
-    if (isOpfsInitialised && opfsRoot) {
-        try {
-            let targetHandle = opfsRoot;
-            if (folderName) {
-                targetHandle = await opfsRoot.getDirectoryHandle(folderName);
-            }
-            const handle = await targetHandle.getFileHandle(name);
-            return await handle.getFile();
-        } catch (e) { }
-    }
-    return null;
+    if (!syncFolderHandle) return null;
+    try {
+        let targetHandle = syncFolderHandle;
+        if (folderName) {
+            targetHandle = await syncFolderHandle.getDirectoryHandle(folderName);
+        }
+        const handle = await targetHandle.getFileHandle(name);
+        return await handle.getFile();
+    } catch (e) { return null; }
 }
 
 async function syncToFolder() {
@@ -2088,44 +2254,38 @@ async function restoreSettingsFromDisk() {
 }
 
 async function writeJsonToFolder(name, data) {
-    if (!syncFolderHandle && !isOpfsInitialised) return;
-
-    // v1453-4-53Ω-Pro: Genuine OruxMaps Structure
     let folderName = null;
-    if (name.includes('points')) folderName = 'customwpts'; // Points
-    if (name.includes('tracks')) folderName = 'tracklogs'; // Tracks
-    if (name.includes('layers')) folderName = 'overlay';   // Layers
-    // metadata.json stays in root (folderName = null)
+    if (name.includes('points')) folderName = 'customwpts';
+    if (name.includes('tracks')) folderName = 'tracklogs';
+    if (name.includes('layers')) folderName = 'overlay';
 
-    // 1. Save to System Disk (OPFS) - ALWAYS
-    if (isOpfsInitialised && opfsRoot) {
+    if (isNative && syncFolderHandle === "Documents") {
         try {
-            let targetHandle = opfsRoot;
-            if (folderName) {
-                targetHandle = await opfsRoot.getDirectoryHandle(folderName, { create: true });
-            }
-            const fileHandle = await targetHandle.getFileHandle(name, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(data, null, 2));
-            await writable.close();
-        } catch (e) { console.error("System Disk Save failed:", e); }
+            const { Filesystem } = window.Capacitor.Plugins;
+            const path = folderName ? `JeoCompass/${folderName}/${name}` : `JeoCompass/${name}`;
+            await Filesystem.writeFile({
+                path: path,
+                directory: 'DOCUMENTS',
+                data: JSON.stringify(data, null, 2),
+                encoding: 'utf8',
+                recursive: true
+            });
+            return true;
+        } catch (e) { return false; }
     }
 
-    // 2. Save to External Mirror (If connected & permitted)
-    if (syncFolderHandle && await verifyFolderPermission(false)) {
-        try {
-            let targetHandle = syncFolderHandle;
-            if (folderName) {
-                targetHandle = await syncFolderHandle.getDirectoryHandle(folderName, { create: true });
-            }
-            const fileHandle = await targetHandle.getFileHandle(name, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(data, null, 2));
-            await writable.close();
-        } catch (e) {
-            console.error(`JeoCompass Disk: Failed to write ${folderName || 'root'}/${name}`, e);
+    if (!syncFolderHandle) return false;
+    try {
+        let targetHandle = syncFolderHandle;
+        if (folderName) {
+            targetHandle = await syncFolderHandle.getDirectoryHandle(folderName, { create: true });
         }
-    }
+        const handle = await targetHandle.getFileHandle(name, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+        return true;
+    } catch (e) { return false; }
 }
 
 async function pipelineSync() {
