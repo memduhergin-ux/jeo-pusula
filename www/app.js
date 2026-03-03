@@ -4471,7 +4471,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         markerGroup.addLayer(edgeLabel);
                     }
                 } else {
-                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 6, renderer: L.svg(), interactive: true });
+                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4, renderer: L.svg(), interactive: true });
 
                     // Labelling Total Length for Polyline (at the middle of the path)
                     // DRAW SEGMENT LABELS FOR POLYLINE
@@ -4830,7 +4830,7 @@ function updateTrack(lat, lon) {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#ff5722',
-                weight: 6,
+                weight: 4,
                 opacity: 0.8,
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -5357,7 +5357,7 @@ function updateLiveTrackVisibility() {
             } else {
                 trackPolyline = L.polyline(trackPath, {
                     color: '#ff5722',
-                    weight: 6,
+                    weight: 4,
                     opacity: 0.8,
                     pane: 'tracking-pane'
                 }).addTo(map);
@@ -5518,7 +5518,7 @@ async function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
     const gridPoly = L.polyline(gridLines, {
         color: color,
-        weight: 6, // v1453-4-53Q: Enforced 6px Thickness
+        weight: 2, // v1453-4-53Q: Adjusted to 2px for Grid
         opacity: 0.9,
         dashArray: '5, 8',
         interactive: false
@@ -5704,7 +5704,7 @@ function initGridListeners() {
                             name: `Grid ${activeGridInterval}m`,
                             description: "Saved Grid Overlay",
                             color: activeGridColor,
-                            weight: 6
+                            weight: 2
                         },
                         geometry: {
                             type: "MultiLineString",
@@ -5781,7 +5781,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
     // Basic default styles
     const defaultStyle = {
         color: '#2196f3',
-        weight: 6,
+        weight: 4,
         opacity: 1,
         fillColor: '#2196f3',
         fillOpacity: 0.4,
@@ -5811,7 +5811,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     radius: 4, // v677: Reverted to blue dot (radius 4 as requested)
                     fillColor: '#2196f3',
                     color: '#ffffff',
-                    weight: 6,
+                    weight: 4,
                     opacity: 1,
                     fillOpacity: 1,
                     interactive: true // v1453-105: Explicitly enable interaction
@@ -6589,10 +6589,10 @@ function redrawMeasurement() {
     // Re-draw Polyline or Polygon
     if (isPolygon) {
         // v1453-4-37F: interactive: false while drawing to allow map clicks
-        const style = { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, interactive: false };
+        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3, interactive: false };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 6, interactive: false }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4, interactive: false }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
