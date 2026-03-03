@@ -731,7 +731,7 @@ async function initApp() {
             const syncStatusContainer = document.getElementById('sync-status-container');
             if (syncStatusContainer) syncStatusContainer.style.display = 'none';
         }
-        
+
         // v1453-NATIVE: Restore Workspace Link from Preferences
         if (isNative) {
             const { Preferences } = window.Capacitor.Plugins;
@@ -3715,7 +3715,7 @@ async function initMap() {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#ff5722',
-                weight: 6,
+                weight: 3,
                 opacity: 0.8,
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -4401,7 +4401,7 @@ function updateMapMarkers(shouldFitBounds = false) {
             if (t.visible && t.path && t.path.length > 1) {
                 const poly = L.polyline(t.path, {
                     color: t.color || '#ff5722',
-                    weight: 6,
+                    weight: 3,
                     opacity: 0.8,
                     pane: 'tracking-pane'
                 }).addTo(map);
@@ -4453,7 +4453,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                 let shape;
                 if (r.geomType === 'polygon') {
                     totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
-                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 6, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
+                    shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 3, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
 
                     // Labelling Polygon Edges
                     for (let i = 0; i < latlngs.length; i++) {
@@ -4835,7 +4835,7 @@ function updateTrack(lat, lon) {
         if (!trackPolyline) {
             trackPolyline = L.polyline(trackPath, {
                 color: '#ff5722',
-                weight: 4,
+                weight: 3,
                 opacity: 0.8,
                 pane: 'tracking-pane'
             }).addTo(map);
@@ -5786,7 +5786,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
     // Basic default styles
     const defaultStyle = {
         color: '#2196f3',
-        weight: 4,
+        weight: 3,
         opacity: 1,
         fillColor: '#2196f3',
         fillOpacity: 0.4,
@@ -5816,7 +5816,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     radius: 4, // v677: Reverted to blue dot (radius 4 as requested)
                     fillColor: '#2196f3',
                     color: '#ffffff',
-                    weight: 4,
+                    weight: 3,
                     opacity: 1,
                     fillOpacity: 1,
                     interactive: true // v1453-105: Explicitly enable interaction
