@@ -220,6 +220,34 @@ async function dbSaveRecords(recordsArray, forceWrite = false) {
     }
 }
 
+// v1453-4-53Ω-Pro: Forced IDB Access Helpers (Bypasses Platform Checks)
+// Used during platform migration to ensure we read from correct source.
+async function dbLoadRecordsForcedIDB() {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_RECORDS_STORE, 'readonly');
+        const store = tx.objectStore(JEO_RECORDS_STORE);
+        const request = store.getAll();
+        return new Promise((r, j) => {
+            request.onsuccess = () => r(request.result || []);
+            request.onerror = () => j(request.error);
+        });
+    } catch (e) { console.error("IDB Forced LoadRecords Error:", e); return []; }
+}
+
+async function dbLoadMetaForcedIDB(key) {
+    try {
+        const db = await openJeoDB();
+        const tx = db.transaction(JEO_META_STORE, 'readonly');
+        const store = tx.objectStore(JEO_META_STORE);
+        const request = store.get(key);
+        return new Promise((r) => {
+            request.onsuccess = () => r(request.result ? request.result.value : null);
+            request.onerror = () => r(null);
+        });
+    } catch (e) { return null; }
+}
+
 async function dbLoadRecords() {
     if (isNative) {
         try {
@@ -234,16 +262,7 @@ async function dbLoadRecords() {
             return [];
         } catch (e) { console.error("Native LoadRecords Error:", e); }
     }
-    try {
-        const db = await openJeoDB();
-        const tx = db.transaction(JEO_RECORDS_STORE, 'readonly');
-        const store = tx.objectStore(JEO_RECORDS_STORE);
-        const request = store.getAll();
-        return new Promise((r, j) => {
-            request.onsuccess = () => r(request.result);
-            request.onerror = () => j(request.error);
-        });
-    } catch (e) { console.error("IDB Load Records Error:", e); return []; }
+    return await dbLoadRecordsForcedIDB();
 }
 
 // v1453-4-53Ω-Pro: Incremental save with Native Support
@@ -325,9 +344,9 @@ async function migrateIDBToNative() {
 
     console.log("Resilience: Starting IDB to Native SQLite migration...");
     try {
-        // Records
-        const records = await dbLoadRecords(); // IDB fallback logic handles this
-        for (const r of records) {
+        // Records - FORCE IDB READ
+        const recordsToMigrate = await dbLoadRecordsForcedIDB();
+        for (const r of recordsToMigrate) {
             await sqlite.run({
                 database: "jeo_pusula_native",
                 statement: "INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)",
@@ -335,7 +354,7 @@ async function migrateIDBToNative() {
             });
         }
 
-        // Meta
+        // Meta - FORCE IDB READ
         const db = await openJeoDB();
         const tx = db.transaction(JEO_META_STORE, 'readonly');
         const metaItems = await new Promise(resolve => {
@@ -344,15 +363,17 @@ async function migrateIDBToNative() {
             req.onerror = () => resolve([]);
         });
         for (const item of metaItems) {
+            // v1453: Ensure value is stringified for SQLite consistency
+            const valStr = JSON.stringify(item.value);
             await sqlite.run({
                 database: "jeo_pusula_native",
                 statement: "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
-                values: [item.key, JSON.stringify(item.value)]
+                values: [item.key, valStr]
             });
         }
 
         localStorage.setItem(migrationKey, 'true');
-        console.log("Resilience: Native Migration Completed.");
+        console.log(`Resilience: Native Migration Completed (${recordsToMigrate.length} records).`);
     } catch (e) {
         console.error("Resilience: Native Migration Failed", e);
     }
@@ -441,14 +462,23 @@ async function migrateLegacyIDBStores() {
     const migrationKey = 'jeo_idb_migration_v53I';
 
     // v1453-4-53I: Emergency Scavenge Trigger
-    // If we have ZERO records and ZERO tracks, we force a re-check of old stores
-    // even if the migration key exists.
+    // Use FORCED IDB read to check source state properly before deciding to skip
     const currentRecords = await dbLoadRecords();
     const currentTracks = await dbLoadMeta('jeoTracks') || [];
     const currentLayers = await dbLoadLayers();
 
     const isEmpty = currentRecords.length === 0 && currentTracks.length === 0 && currentLayers.length === 0;
+
+    // Check if IDB has data at all (Source check)
+    const idbRecords = await dbLoadRecordsForcedIDB();
+    const idbTracks = await dbLoadMetaForcedIDB('jeoTracks') || [];
+    const idbHasData = idbRecords.length > 0 || idbTracks.length > 0;
+
     if (localStorage.getItem(migrationKey) === 'true' && !isEmpty) return;
+    if (!idbHasData) {
+        localStorage.setItem(migrationKey, 'true');
+        return;
+    }
 
     if (isEmpty && localStorage.getItem(migrationKey) === 'true') {
         // console.warn("Resilience: Emergency Scavenge Triggered (No data found)."); // Silenced
@@ -2989,7 +3019,7 @@ async function saveRecords() {
     }
     try {
         await dbSaveRecords(records);
-        await dbSaveMeta('jeoNextId', nextId);
+        await dbSaveMeta('jeoNextId', nextId, true); // Atomic save with force
         // pipelineSync removed
         if (isHeatmapActive) updateHeatmapFilterOptions();
     } catch (e) {
