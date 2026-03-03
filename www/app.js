@@ -727,6 +727,11 @@ async function initApp() {
         await initNativePlatform();
         await migrateIDBToNative(); // Safe migration if just upgraded
 
+        if (isNative) {
+            const syncStatusContainer = document.getElementById('sync-status-container');
+            if (syncStatusContainer) syncStatusContainer.style.display = 'none';
+        }
+        
         // v1453-NATIVE: Restore Workspace Link from Preferences
         if (isNative) {
             const { Preferences } = window.Capacitor.Plugins;
@@ -4288,7 +4293,7 @@ function updateScaleValues() {
                                 </div>
                                 <div style="width:14px;"></div> <!-- Gap for unit below -->
                                 <div style="min-width:115px; text-align:left; font-size:11px; font-weight:bold;">
-                                    <span style="color:#ffeb3b;">Y:</span> <span style="color:#fff;">${eastPart}</span>
+                                    <span style="color:#ffeb3b; position:relative; top:-1px;">Y:</span> <span style="color:#fff; position:relative; top:-1px;">${eastPart}</span>
                                 </div>
                             </div>
                             
@@ -4471,7 +4476,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         markerGroup.addLayer(edgeLabel);
                     }
                 } else {
-                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 4, renderer: L.svg(), interactive: true });
+                    shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 3, renderer: L.svg(), interactive: true });
 
                     // Labelling Total Length for Polyline (at the middle of the path)
                     // DRAW SEGMENT LABELS FOR POLYLINE
@@ -5518,7 +5523,7 @@ async function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
     const gridPoly = L.polyline(gridLines, {
         color: color,
-        weight: 2, // v1453-4-53Q: Adjusted to 2px for Grid
+        weight: 1.5, // v1453-4-53Q: Adjusted to 1.5px for Grid
         opacity: 0.9,
         dashArray: '5, 8',
         interactive: false
@@ -5704,7 +5709,7 @@ function initGridListeners() {
                             name: `Grid ${activeGridInterval}m`,
                             description: "Saved Grid Overlay",
                             color: activeGridColor,
-                            weight: 2
+                            weight: 1.5
                         },
                         geometry: {
                             type: "MultiLineString",
@@ -5862,53 +5867,11 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     });
                 }
 
-                // v1453-99F: Permanent Segment Labels for Polygons and LineStrings
-                // v1453-4-53Ω-Pro: Re-enabled as per user request to preserve measurement labels after save
+                /* v1453-4-53Ω-Pro: Segment labels REMOVED for Lines/Polygons as per user request
                 if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
-                    const latlngs = layer.getLatLngs();
-                    const path = feature.geometry.type === 'Polygon' ? latlngs[0] : latlngs;
-
-                    // Recursive helper to handle MultiPolygon or nested arrays if needed
-                    const processPath = (pts) => {
-                        if (!Array.isArray(pts)) return;
-                        const isClosed = feature.geometry.type === 'Polygon';
-                        const labels = [];
-
-                        for (let i = 0; i < pts.length - (isClosed ? 0 : 1); i++) {
-                            const p1 = L.latLng(pts[i]);
-                            const p2 = L.latLng(pts[(i + 1) % pts.length]);
-                            const dist = p1.distanceTo(p2);
-                            const mid = getSegmentMidpoint(p1, p2);
-                            const angle = getSegmentAngle(p1, p2);
-
-                            const lab = L.marker(mid, {
-                                icon: L.divIcon({
-                                    className: 'segment-label-container',
-                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                                    iconSize: [1, 1],
-                                    iconAnchor: [0, 0]
-                                }),
-                                interactive: false
-                            });
-
-                            // Attach to feature for later collection into layerObj
-                            if (!feature._segmentLabels) feature._segmentLabels = [];
-                            feature._segmentLabels.push(lab);
-
-                            // Add to map immediately (visibility will be synced by caller if hidden)
-                            lab.addTo(map);
-                        }
-                    };
-
-                    if (Array.isArray(path)) {
-                        if (L.LineUtil.isFlat(path)) {
-                            processPath(path);
-                        } else {
-                            // Handles MultiPolygon or Polygon with holes
-                            path.forEach(part => processPath(part));
-                        }
-                    }
+                    ... label logic ...
                 }
+                */
 
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {
@@ -6589,10 +6552,10 @@ function redrawMeasurement() {
     // Re-draw Polyline or Polygon
     if (isPolygon) {
         // v1453-4-37F: interactive: false while drawing to allow map clicks
-        const style = { color: '#ffeb3b', weight: 4, fillOpacity: 0.3, interactive: false };
+        const style = { color: '#ffeb3b', weight: 3, fillOpacity: 0.3, interactive: false };
         measureLine = L.polygon(measurePoints, style).addTo(map);
     } else {
-        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 4, interactive: false }).addTo(map);
+        measureLine = L.polyline(measurePoints, { color: '#ffeb3b', weight: 3, interactive: false }).addTo(map);
     }
 
     // DRAW SEGMENT LABELS (For both Line and Polygon)
