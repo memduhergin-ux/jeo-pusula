@@ -776,6 +776,18 @@ async function initApp() {
 
                 records = await dbLoadRecords() || [];
                 nextId = await dbLoadMeta('jeoNextId') || 1;
+
+                // v1453-4-53Ω-Pro: Atomic ID Reconciliation
+                // Ensure nextId is ALWAYS greater than the highest existing record ID.
+                if (records.length > 0) {
+                    const maxId = Math.max(...records.map(r => r.id || 0));
+                    if (nextId <= maxId) {
+                        nextId = maxId + 1;
+                        await dbSaveMeta('jeoNextId', nextId, true);
+                        console.log(`Resilience: Reconciled nextId to ${nextId} based on existing records.`);
+                    }
+                }
+
                 jeoTracks = await dbLoadMeta('jeoTracks') || [];
                 trackIdCounter = await dbLoadMeta('trackIdCounter') || 1;
                 isGridMode = (await dbLoadMeta('jeoGridMode')) === 'true';
@@ -2142,7 +2154,7 @@ function optimizeMapPoints() {
                 // v1453-4-53S: Clockwise Smart Placement (0, 30, 60, 90, 120, 150, 180)
                 // 0 is North (Top), 90 is East (Right), 180 is South (Bottom)
                 const angles = [0, 30, 60, 90, 120, 150, 180];
-                const offset = 4 + 2; // Marker radius(4) + gap(2)
+                const offset = 12 + 2; // v1453-4-53S: Increased from 4+2 to 12+2 to clear symbol
                 const directions = angles.map(deg => {
                     const rad = (deg - 90) * (Math.PI / 180); // Adjusting so 0 is North
                     const dx = Math.cos(rad) * offset;
@@ -3244,7 +3256,7 @@ async function initMap() {
 
     // Map Click Handler for Interactions (v527: Absolute Grid Dominance)
     map.on('click', async (e) => {
-        // v527: If Grid Mode is active, SHUT DOWN all other interactions
+        // v527: If Grid Mode is active, SHUT DOWN all other interactions (Strict Grid Mode)
         if (isGridMode && activeGridInterval) {
             if (e.originalEvent) e.originalEvent.stopPropagation();
             map.closePopup();
@@ -3306,6 +3318,37 @@ async function initMap() {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {
             // Handled by Crosshair
+        } else {
+            // v1453-4-53Ω-Pro: RESTORE COORDINATE QUERY (TOPUKLAR) - Normal Mode Only
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+
+            // Standard UTM-ED50 (Zone 36) for Turkey
+            const zone = Math.floor((lon + 180) / 6) + 1;
+            const utmZoneDefED50 = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+
+            try {
+                const utm = proj4('WGS84', utmZoneDefED50, [lon, lat]);
+
+                fetchElevation(lat, lon, (alt) => {
+                    const elevationStr = alt !== null ? `${Math.round(alt)} m` : "Yükleniyor...";
+                    const popupContent = `
+                        <div class="map-popup-container" style="min-width: 180px;">
+                            <b style="font-size: 1.1rem; color: #2196f3;">📍 Konum Bilgisi</b>
+                            <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                            <div style="font-size: 0.95rem; line-height: 1.6;">
+                                <b>UTM ED50/6:</b> ${Math.round(utm[0])} Y , ${Math.round(utm[1])} X <br>
+                                <b>WGS84:</b> ${lat.toFixed(6)} , ${lon.toFixed(6)} <br>
+                                <b>Z (Yükseklik):</b> ${elevationStr}
+                            </div>
+                        </div>
+                    `;
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(popupContent)
+                        .openOn(map);
+                });
+            } catch (err) { console.error("Map query failed:", err); }
         }
     });
 
@@ -5039,7 +5082,7 @@ async function createAreaGrid(polygon, interval, color = '#ffeb3b') {
 
     const gridPoly = L.polyline(gridLines, {
         color: color,
-        weight: 1.5, // v1453-4-53Q: Adjusted to 1.5px for Grid
+        weight: 1.0, // v1453-4-53Q: Reduced to 1.0px as requested
         opacity: 0.9,
         dashArray: '5, 8',
         interactive: false
@@ -5369,9 +5412,9 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                 if (featureName && feature.geometry.type === 'Point') {
                     layer.bindTooltip(String(featureName), {
                         permanent: true,
-                        direction: 'center', // v1453-4-53K: Re-enabled smart 8-way placement
+                        direction: 'top', // v1453-4-53K: Changed from 'center' to avoid symbol overlap
                         className: 'kml-label',
-                        offset: [0, 0], // Handled by optimizeMapPoints
+                        offset: [0, -12], // v1453-4-53K: Increased offset for clarity
                         sticky: false
                     });
 
@@ -5383,11 +5426,38 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     });
                 }
 
-                /* v1453-4-53Ω-Pro: Segment labels REMOVED for Lines/Polygons as per user request
+                // v1453-4-53Ω-Pro: Restore Segment labels for Lines/Polygons as requested
                 if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
-                    ... label logic ...
+                    const latlngs = layer.getLatLngs();
+                    const flatLatLngs = (feature.geometry.type === 'Polygon') ? latlngs[0] : latlngs;
+
+                    if (flatLatLngs && flatLatLngs.length > 1) {
+                        feature._segmentLabels = [];
+                        for (let i = 0; i < flatLatLngs.length - (feature.geometry.type === 'Polygon' ? 0 : 1); i++) {
+                            const p1 = L.latLng(flatLatLngs[i]);
+                            const p2 = L.latLng(flatLatLngs[(i + 1) % flatLatLngs.length]);
+                            const dist = map.distance(p1, p2);
+                            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+
+                            const point1 = map.latLngToContainerPoint(p1);
+                            const point2 = map.latLngToContainerPoint(p2);
+                            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+                            if (angle > 90 || angle < -90) angle += 180;
+
+                            const lab = L.marker(mid, {
+                                icon: L.divIcon({
+                                    className: 'segment-label-container',
+                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
+                                    iconSize: [1, 1],
+                                    iconAnchor: [0, 0]
+                                }),
+                                interactive: false
+                            });
+                            feature._segmentLabels.push(lab);
+                            if (parentLayer && parentLayer.labelsVisible) lab.addTo(map);
+                        }
+                    }
                 }
-                */
 
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {
@@ -6148,7 +6218,7 @@ function redrawMeasurement() {
         // v534: Disable popup interaction if Grid Mode is active
         measureLine.bindPopup(popupText, { closeButton: true });
         measureLine.on('click', (e) => {
-            if (isGridMode && activeGridInterval) {
+            if (isGridMode) {
                 L.DomEvent.stopPropagation(e);
                 map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
             }
