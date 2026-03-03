@@ -24,21 +24,58 @@ async function initNativePlatform() {
         isNative = true;
         console.log("Resilience: Native Environment Detected.");
         try {
-            const { CapacitorSQLite, SQLiteConnection } = CapacitorEventListener.SQLite || {}; // Placeholder for plugin access
-            // In a real Capacitor app, plugins are available via Capacitor.Plugins
             const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
             if (sqlite) {
-                sqliteConnection = new SQLiteConnection(sqlite);
-                nativeDB = await sqliteConnection.createConnection("jeo_pusula_native", false, "no-encryption", 1, false);
-                await nativeDB.open();
-                
-                // Create tables if they don't exist
-                await nativeDB.execute(`
-                    CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
-                    CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, data TEXT);
-                    CREATE TABLE IF NOT EXISTS layers (id TEXT PRIMARY KEY, data TEXT);
-                `);
-                console.log("Resilience: Native SQLite Initialized.");
+                // v1453-NATIVE: Using @capacitor-community/sqlite with direct calls if SQLiteConnection is not bundled
+                // Or try to use the global SQLiteConnection if available via script tag
+                if (window.SQLite) {
+                    sqliteConnection = new window.SQLite.SQLiteConnection(sqlite);
+                } else {
+                    // Fallback: Use direct plugin methods if possible or assume bridge is handled
+                    sqliteConnection = {
+                        createConnection: async (db, encrypt, mode, version, readOnly) => {
+                            return await sqlite.createConnection({ database: db, encrypted: encrypt, mode: mode, version: version, readonly: readOnly });
+                        }
+                    };
+                }
+
+                try {
+                    nativeDB = await sqlite.createConnection({
+                        database: "jeo_pusula_native",
+                        version: 1,
+                        encrypted: false,
+                        mode: "no-encryption"
+                    });
+                    await sqlite.open({ database: "jeo_pusula_native" });
+
+                    // Create tables if they don't exist
+                    await sqlite.execute({
+                        database: "jeo_pusula_native",
+                        statements: `
+                            CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+                            CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, data TEXT);
+                            CREATE TABLE IF NOT EXISTS layers (id TEXT PRIMARY KEY, data TEXT);
+                        `
+                    });
+
+                    // Wrap nativeDB to match expected API in app.js
+                    nativeDB = {
+                        run: async (sql, values) => await sqlite.run({ database: "jeo_pusula_native", statement: sql, values: values }),
+                        query: async (sql, values) => await sqlite.query({ database: "jeo_pusula_native", statement: sql, values: values }),
+                        execute: async (sql) => await sqlite.execute({ database: "jeo_pusula_native", statements: sql })
+                    };
+
+                    console.log("Resilience: Native SQLite Initialized.");
+                } catch (connErr) {
+                    console.error("Native Connection Error", connErr);
+                    // Try to retrieve existing connection
+                    await sqlite.open({ database: "jeo_pusula_native" });
+                    nativeDB = {
+                        run: async (sql, values) => await sqlite.run({ database: "jeo_pusula_native", statement: sql, values: values }),
+                        query: async (sql, values) => await sqlite.query({ database: "jeo_pusula_native", statement: sql, values: values }),
+                        execute: async (sql) => await sqlite.execute({ database: "jeo_pusula_native", statements: sql })
+                    };
+                }
             }
         } catch (e) {
             console.error("Resilience: Native SQLite Init Failed", e);
@@ -116,9 +153,14 @@ function openJeoDB() {
 
 // v1453-4-53O: Atomic Single Record Save (Incremental - No clear())
 async function dbPutRecord(record) {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            await nativeDB.run("INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)", [record.id, JSON.stringify(record)]);
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)",
+                values: [record.id, JSON.stringify(record)]
+            });
             return;
         } catch (e) { console.error("Native PutRecord Error:", e); }
     }
@@ -135,9 +177,14 @@ async function dbPutRecord(record) {
 }
 
 async function dbDeleteRecord(id) {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            await nativeDB.run("DELETE FROM records WHERE id = ?", [Number(id)]);
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "DELETE FROM records WHERE id = ?",
+                values: [Number(id)]
+            });
             return;
         } catch (e) { console.error("Native DeleteRecord Error:", e); }
     }
@@ -174,9 +221,13 @@ async function dbSaveRecords(recordsArray, forceWrite = false) {
 }
 
 async function dbLoadRecords() {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            const res = await nativeDB.query("SELECT data FROM records");
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            const res = await sqlite.query({
+                database: "jeo_pusula_native",
+                statement: "SELECT data FROM records"
+            });
             if (res.values) {
                 return res.values.map(row => JSON.parse(row.data));
             }
@@ -201,11 +252,16 @@ async function dbSaveMeta(key, value, forceWrite = false) {
         console.warn('Resilience: dbSaveMeta jeoTracks blocked — data not yet loaded.');
         return;
     }
-    
-    if (isNative && nativeDB) {
+
+    if (isNative) {
         try {
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
             const valStr = JSON.stringify(value);
-            await nativeDB.run("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", [key, valStr]);
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                values: [key, valStr]
+            });
             return;
         } catch (e) { console.error("Native SaveMeta Error:", e); }
     }
@@ -232,9 +288,14 @@ async function dbSaveMeta(key, value, forceWrite = false) {
 }
 
 async function dbLoadMeta(key) {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            const res = await nativeDB.query("SELECT value FROM meta WHERE key = ?", [key]);
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            const res = await sqlite.query({
+                database: "jeo_pusula_native",
+                statement: "SELECT value FROM meta WHERE key = ?",
+                values: [key]
+            });
             if (res.values && res.values.length > 0) {
                 return JSON.parse(res.values[0].value);
             }
@@ -255,16 +316,23 @@ async function dbLoadMeta(key) {
 
 // v1453-NATIVE: Migration from IDB to SQLite
 async function migrateIDBToNative() {
-    if (!isNative || !nativeDB) return;
+    if (!isNative) return;
+    const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+    if (!sqlite) return;
+
     const migrationKey = 'jeo_native_migration_v1';
     if (localStorage.getItem(migrationKey) === 'true') return;
 
     console.log("Resilience: Starting IDB to Native SQLite migration...");
     try {
         // Records
-        const records = await dbLoadRecords(); // This will load from IDB since native is empty initially or via fallback logic
+        const records = await dbLoadRecords(); // IDB fallback logic handles this
         for (const r of records) {
-            await nativeDB.run("INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)", [r.id, JSON.stringify(r)]);
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)",
+                values: [r.id, JSON.stringify(r)]
+            });
         }
 
         // Meta
@@ -273,9 +341,14 @@ async function migrateIDBToNative() {
         const metaItems = await new Promise(resolve => {
             const req = tx.objectStore(JEO_META_STORE).getAll();
             req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve([]);
         });
         for (const item of metaItems) {
-            await nativeDB.run("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", [item.key, JSON.stringify(item.value)]);
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                values: [item.key, JSON.stringify(item.value)]
+            });
         }
 
         localStorage.setItem(migrationKey, 'true');
@@ -472,9 +545,14 @@ async function requestStoragePersistence() {
 // v1453-4-50F: Per-ID Layer Save — NEVER clears the whole store.
 // Each layer is put individually. A failure on one layer does NOT affect others.
 async function dbPutLayer(layer) {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            await nativeDB.run("INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)", [layer.id, JSON.stringify(layer)]);
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)",
+                values: [layer.id, JSON.stringify(layer)]
+            });
             return;
         } catch (e) { console.error("Native PutLayer Error:", e); }
     }
@@ -528,9 +606,14 @@ async function dbPutLayer(layer) {
 }
 
 async function dbDeleteLayerById(id) {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            await nativeDB.run("DELETE FROM layers WHERE id = ?", [id]);
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            await sqlite.run({
+                database: "jeo_pusula_native",
+                statement: "DELETE FROM layers WHERE id = ?",
+                values: [id]
+            });
             return;
         } catch (e) { console.error("Native DeleteLayer Error:", e); }
     }
@@ -568,9 +651,13 @@ async function dbSaveLayers(layers, forceWrite = false) {
 }
 
 async function dbLoadLayers() {
-    if (isNative && nativeDB) {
+    if (isNative) {
         try {
-            const res = await nativeDB.query("SELECT data FROM layers");
+            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+            const res = await sqlite.query({
+                database: "jeo_pusula_native",
+                statement: "SELECT data FROM layers"
+            });
             if (res.values) {
                 return res.values.map(row => JSON.parse(row.data));
             }
@@ -2161,9 +2248,9 @@ async function getFileFromFolder(name) {
 
     if (isNative && syncFolderHandle === "Documents") {
         try {
-            const { Filesystem } = window.Capacitor.Plugins;
+            const filesystem = window.Capacitor.Plugins.Filesystem;
             const path = folderName ? `JeoCompass/${folderName}/${name}` : `JeoCompass/${name}`;
-            const result = await Filesystem.readFile({
+            const result = await filesystem.readFile({
                 path: path,
                 directory: 'DOCUMENTS',
                 encoding: 'utf8'
@@ -2261,17 +2348,40 @@ async function writeJsonToFolder(name, data) {
 
     if (isNative && syncFolderHandle === "Documents") {
         try {
-            const { Filesystem } = window.Capacitor.Plugins;
+            const filesystem = window.Capacitor.Plugins.Filesystem;
             const path = folderName ? `JeoCompass/${folderName}/${name}` : `JeoCompass/${name}`;
-            await Filesystem.writeFile({
+
+            // v1453-NATIVE: Ensure directory exists
+            if (folderName) {
+                try {
+                    await filesystem.mkdir({
+                        path: `JeoCompass/${folderName}`,
+                        directory: 'DOCUMENTS',
+                        recursive: true
+                    });
+                } catch (e) { /* ignore if already exists */ }
+            } else {
+                try {
+                    await filesystem.mkdir({
+                        path: `JeoCompass`,
+                        directory: 'DOCUMENTS',
+                        recursive: true
+                    });
+                } catch (e) { /* ignore if already exists */ }
+            }
+
+            await filesystem.writeFile({
                 path: path,
-                directory: 'DOCUMENTS',
                 data: JSON.stringify(data, null, 2),
+                directory: 'DOCUMENTS',
                 encoding: 'utf8',
                 recursive: true
             });
             return true;
-        } catch (e) { return false; }
+        } catch (e) {
+            console.error(`Native Write Error [${name}]:`, e);
+            return false;
+        }
     }
 
     if (!syncFolderHandle) return false;
