@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Android build files
+android/.gradle/
+android/app/build/
+android/.idea/
+android/*.iml
+android/local.properties
+android/capacitor-cordova-android-plugins/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Sensitive info
+signing.keystore
+encryption_public_key.pem
+
+# Build artifacts
+dist/
+build/
+bin/
+obj/
