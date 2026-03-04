@@ -508,15 +508,13 @@ async function migrateLegacyIDBStores() {
 
         for (const oldStoreName of storesToMigrate) {
             await new Promise((resolve) => {
-                const tx = db.transaction(oldStoreName, 'readonly');
+                const tx = db.transaction(oldStoreName, 'readwrite'); // Changed to readwrite to allow clearing
                 const store = tx.objectStore(oldStoreName);
                 const req = store.getAll();
 
                 req.onsuccess = async () => {
                     const items = req.result;
                     if (items && items.length > 0) {
-                        // console.log(`Resilience: Migrating ${items.length} items from legacy store: ${oldStoreName}`); // Silenced
-
                         // Targeted migration based on content
                         if (oldStoreName.includes('record')) {
                             const current = await dbLoadRecords();
@@ -543,10 +541,14 @@ async function migrateLegacyIDBStores() {
                                 }
                             }
                         }
+
+                        // v1453-4-53J: CLEAR legacy store after migration to prevent re-migration
+                        store.clear();
+                        // console.log(`Resilience: Cleared legacy store after migration: ${oldStoreName}`); // Silenced
                     }
                     resolve();
                 };
-                req.onerror = () => resolve(); // Don't block app if migration of one store fails
+                req.onerror = () => resolve();
             });
         }
 
@@ -2152,19 +2154,30 @@ function optimizeMapPoints() {
                 }
             });
 
-            // 2. Standard record markers
+            // 2. Standard record markers + their labels
             if (markerGroup) {
                 markerGroup.eachLayer(layer => {
                     if (layer instanceof L.Marker) {
                         const latLng = layer.getLatLng();
                         if (mapBounds.contains(latLng)) {
                             const pos = map.latLngToLayerPoint(latLng);
-                            const r = 12; // Standard pins are larger
+
+                            // Obstacle 1: The Pin itself
+                            const r = 16;
                             occupiedRects.push({
                                 left: pos.x - r,
                                 top: pos.y - r,
                                 right: pos.x + r,
                                 bottom: pos.y + r
+                            });
+
+                            // Obstacle 2: The ID Label of the record (approximate size)
+                            // Records have an ID label at the top-right of the pin
+                            occupiedRects.push({
+                                left: pos.x,
+                                top: pos.y - 25,
+                                right: pos.x + 30,
+                                bottom: pos.y
                             });
                         }
                     }
@@ -5471,40 +5484,6 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                             e.tooltip._container._sourceLayer = layer;
                         }
                     });
-                }
-
-                // v1453-4-53Ω-Pro: Restore Segment labels for Lines/Polygons as requested
-                if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon')) {
-                    const latlngs = layer.getLatLngs();
-                    const flatLatLngs = (feature.geometry.type === 'Polygon') ? latlngs[0] : latlngs;
-
-                    if (flatLatLngs && flatLatLngs.length > 1) {
-                        feature._segmentLabels = [];
-                        for (let i = 0; i < flatLatLngs.length - (feature.geometry.type === 'Polygon' ? 0 : 1); i++) {
-                            const p1 = L.latLng(flatLatLngs[i]);
-                            const p2 = L.latLng(flatLatLngs[(i + 1) % flatLatLngs.length]);
-                            const dist = map.distance(p1, p2);
-                            const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
-
-                            const point1 = map.latLngToContainerPoint(p1);
-                            const point2 = map.latLngToContainerPoint(p2);
-                            let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
-                            if (angle > 90 || angle < -90) angle += 180;
-
-                            const lab = L.marker(mid, {
-                                icon: L.divIcon({
-                                    className: 'segment-label-container',
-                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                                    iconSize: [1, 1],
-                                    iconAnchor: [0, 0]
-                                }),
-                                interactive: false
-                            });
-                            feature._segmentLabels.push(lab);
-                            // v1453: Labels added by default (controlled by optimizer/layer visibility)
-                            lab.addTo(map);
-                        }
-                    }
                 }
 
                 let popupContent = `<div class="map-popup-container">`;
