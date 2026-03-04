@@ -33,6 +33,35 @@
 </head>
 
 <body>
+    <!-- Custom Color Picker Modal (Original Style - English) -->
+    <div id="jeo-color-picker-modal" class="jeo-modal-overlay" style="background: rgba(0,0,0,0.5);">
+        <div class="jeo-modal original-style"
+            style="max-width: 300px; background: white; color: #333; border-radius: 8px;">
+            <div class="jeo-modal-header"
+                style="color: #333; border-bottom: none; padding: 20px 20px 10px 20px; font-size: 1.2rem;">Select Color
+            </div>
+            <div class="jeo-modal-body" style="padding: 10px 20px;">
+                <div class="color-picker-grid-original" id="jeo-color-grid">
+                    <!-- 4x2 Grid injected by JS -->
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                    <span style="color: #2196F3; font-weight: bold; cursor: pointer;">Custom</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.85rem; color: #666;">Selected color</span>
+                        <div id="jeo-selected-color-preview"
+                            style="width: 40px; height: 40px; border: 1px solid #ccc; background: #000;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="jeo-modal-footer"
+                style="border-top: none; padding: 10px 20px 20px 20px; justify-content: flex-end; gap: 15px;">
+                <button id="jeo-color-cancel"
+                    style="background: transparent; color: #4caf50; border: none; font-weight: bold; font-size: 0.9rem; cursor: pointer; text-transform: uppercase;">CANCEL</button>
+                <button id="jeo-color-apply"
+                    style="background: transparent; color: #4caf50; border: none; font-weight: bold; font-size: 0.9rem; cursor: pointer; text-transform: uppercase;">SET</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Custom JeoCompass Modals (Standard alerts/confirms) -->
     <div id="jeo-modal-overlay" class="jeo-modal-overlay">

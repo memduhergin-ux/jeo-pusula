@@ -105,29 +105,68 @@ function updateAppVersionDisplay() {
     }
 }
 
-/* --- Custom JeoCompass Color Picker (v1453-4-53-EN) --- */
-window.showJeoColorPicker = async function (initialColor, callback) {
-    // Reverting to a simpler version using JeoConfirm/Select to avoid UI issues
-    const colors = [
-        { name: 'Red', val: '#FF5722' },
-        { name: 'Green', val: '#4CAF50' },
-        { name: 'Blue', val: '#2196F3' },
-        { name: 'Yellow', val: '#FFEB3B' },
-        { name: 'Pink', val: '#E91E63' },
-        { name: 'Purple', val: '#9C27B0' },
-        { name: 'Cyan', val: '#00BCD4' },
-        { name: 'Orange', val: '#FF9800' }
-    ];
+/* --- Custom JeoCompass Color Picker (Original Style - English) --- */
+window.showJeoColorPicker = function (initialColor, callback) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('jeo-color-picker-modal');
+        const grid = document.getElementById('jeo-color-grid');
+        const preview = document.getElementById('jeo-selected-color-preview');
+        const applyBtn = document.getElementById('jeo-color-apply');
+        const cancelBtn = document.getElementById('jeo-color-cancel');
 
-    let msg = "Select a color for the track:\n\n";
-    colors.forEach((c, i) => { msg += `${i + 1}. ${c.name}\n`; });
+        if (!modal || !grid) {
+            console.error("Color picker DOM not found");
+            return resolve(null);
+        }
 
-    // User requested original logic, using JeoConfirm as a bridge for simple choice
-    const choice = await window.JeoConfirm(msg + "\nSet default orange?");
-    const finalColor = choice ? '#FF5722' : initialColor;
+        const colors = [
+            '#FF0000', '#00FFFF', '#0000FF', '#00FF00', // Red, Cyan, Blue, Green
+            '#FF00FF', '#FFFF00', '#000000', '#FFFFFF'  // Pink, Yellow, Black, White
+        ];
 
-    if (callback) callback(finalColor);
-    return finalColor;
+        let selectedColor = initialColor || colors[0];
+        grid.innerHTML = '';
+        if (preview) preview.style.backgroundColor = selectedColor;
+
+        colors.forEach(color => {
+            const opt = document.createElement('div');
+            opt.className = 'color-option-original';
+            opt.style.backgroundColor = color;
+            opt.style.width = '55px';
+            opt.style.height = '55px';
+            opt.style.border = '1px solid #ccc';
+            opt.style.cursor = 'pointer';
+
+            opt.onclick = () => {
+                selectedColor = color;
+                if (preview) preview.style.backgroundColor = selectedColor;
+            };
+            grid.appendChild(opt);
+        });
+
+        modal.classList.add('show');
+
+        const onApply = () => {
+            modal.classList.remove('show');
+            cleanup();
+            if (callback) callback(selectedColor);
+            resolve(selectedColor);
+        };
+
+        const onCancel = () => {
+            modal.classList.remove('show');
+            cleanup();
+            resolve(null);
+        };
+
+        const cleanup = () => {
+            applyBtn.removeEventListener('click', onApply);
+            cancelBtn.removeEventListener('click', onCancel);
+        };
+
+        applyBtn.addEventListener('click', onApply);
+        cancelBtn.addEventListener('click', onCancel);
+    });
 };
 
 // v750: Global Security & Stability Kalkan
@@ -2223,8 +2262,8 @@ function optimizeMapPoints() {
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
                 // v1453-4-53S: Clockwise Smart Placement (0, 30, 60, 90, 120, 150, 180)
-                // v1453-Pro: Multi-Radius Discovery (6px, 12px, 20px) to handle high density clusters
-                const distances = [8, 16, 26]; // Increased gaps
+                // v1453-Pro: Multi-Radius Discovery (7px, 14px, 21px) to handle high density clusters
+                const distances = [7, 14, 21]; // 4px radius + 3px gap = 7px base
                 const angles = [0, 30, 60, 90, 120, 150, 180];
 
                 let bestPos = null;
@@ -2254,10 +2293,10 @@ function optimizeMapPoints() {
 
                     for (const dir of directions) {
                         const rect = {
-                            left: markerPos.x + dir.x - 4, // Safety padding (Increased to 4px)
-                            top: markerPos.y + dir.y - 2,
-                            right: markerPos.x + dir.x + width + 4,
-                            bottom: markerPos.y + dir.y + height + 2
+                            left: markerPos.x + dir.x - 3, // 3px safety buffer
+                            top: markerPos.y + dir.y - 1,
+                            right: markerPos.x + dir.x + width + 3,
+                            bottom: markerPos.y + dir.y + height + 1
                         };
 
                         const hasCollision = occupiedRects.some(occ => {

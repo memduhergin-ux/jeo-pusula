@@ -3234,6 +3234,24 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     opacity: 0.9;
 }
 
+/* Color Picker Original Style (4x2 Grid) */
+.color-picker-grid-original {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.color-option-original {
+    box-sizing: border-box;
+    border-radius: 4px;
+    transition: transform 0.1s;
+}
+
+.color-option-original:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
 
 /* v1453-4-33F: Orientation Warning for Compass */
 .orientation-warning-overlay {
