@@ -2201,54 +2201,59 @@ function optimizeMapPoints() {
                     tooltip._jeoWidth = tooltipEl.offsetWidth;
                     tooltip._jeoHeight = tooltipEl.offsetHeight;
                 }
-                const width = tooltip._jeoWidth || 20;
-                const height = tooltip._jeoHeight || 12;
+                const width = tooltip._jeoWidth || 70; // v1453: Larger default for geology labels (e.g. Mn/1961)
+                const height = tooltip._jeoHeight || 16;
 
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
                 // v1453-4-53S: Clockwise Smart Placement (0, 30, 60, 90, 120, 150, 180)
-                // 0 is North (Top), 90 is East (Right), 180 is South (Bottom)
+                // v1453-Pro: Multi-Radius Discovery (6px, 12px, 20px) to handle high density clusters
+                const distances = [8, 16, 26]; // Increased gaps
                 const angles = [0, 30, 60, 90, 120, 150, 180];
-                const offset = 6; // v1453-4-53S: Fixed at 6px as requested
-                const directions = angles.map(deg => {
-                    const rad = (deg - 90) * (Math.PI / 180); // Adjusting so 0 is North
-                    const dx = Math.cos(rad) * offset;
-                    const dy = Math.sin(rad) * offset;
-
-                    // v1453-4-53Ω-Pro: Refined Anchor Logic for 0-180 Sweep
-                    let ax = dx;
-                    let ay = dy;
-
-                    if (deg === 0 || deg === 180) {
-                        ax -= width / 2;
-                    } else if (deg > 0 && deg < 180) {
-                        ax = dx; // Text starts at right edge of gap
-                    }
-
-                    if (deg === 0) ay -= height;
-                    else if (deg === 180) ay = dy;
-                    else ay -= height / 2;
-
-                    return { x: ax, y: ay };
-                });
 
                 let bestPos = null;
-                for (const dir of directions) {
-                    const rect = {
-                        left: markerPos.x + dir.x,
-                        top: markerPos.y + dir.y,
-                        right: markerPos.x + dir.x + width,
-                        bottom: markerPos.y + dir.y + height
-                    };
 
-                    const hasCollision = occupiedRects.some(occ => {
-                        return !(rect.right < occ.left || rect.left > occ.right || rect.bottom < occ.top || rect.top > occ.bottom);
+                for (const offset of distances) {
+                    const directions = angles.map(deg => {
+                        const rad = (deg - 90) * (Math.PI / 180); // Adjusting so 0 is North
+                        const dx = Math.cos(rad) * offset;
+                        const dy = Math.sin(rad) * offset;
+
+                        // v1453-4-53Ω-Pro: Refined Anchor Logic for 0-180 Sweep
+                        let ax = dx;
+                        let ay = dy;
+
+                        if (deg === 0 || deg === 180) {
+                            ax -= width / 2;
+                        } else if (deg > 0 && deg < 180) {
+                            ax = dx; // Text starts at right edge of gap
+                        }
+
+                        if (deg === 0) ay -= height;
+                        else if (deg === 180) ay = dy;
+                        else ay -= height / 2;
+
+                        return { x: ax, y: ay };
                     });
 
-                    if (!hasCollision) {
-                        bestPos = { x: dir.x, y: dir.y, rect: rect };
-                        break;
+                    for (const dir of directions) {
+                        const rect = {
+                            left: markerPos.x + dir.x - 4, // Safety padding (Increased to 4px)
+                            top: markerPos.y + dir.y - 2,
+                            right: markerPos.x + dir.x + width + 4,
+                            bottom: markerPos.y + dir.y + height + 2
+                        };
+
+                        const hasCollision = occupiedRects.some(occ => {
+                            return !(rect.right < occ.left || rect.left > occ.right || rect.bottom < occ.top || rect.top > occ.bottom);
+                        });
+
+                        if (!hasCollision) {
+                            bestPos = { x: dir.x, y: dir.y, rect: rect };
+                            break;
+                        }
                     }
+                    if (bestPos) break;
                 }
 
                 if (bestPos) {
@@ -2260,13 +2265,14 @@ function optimizeMapPoints() {
                     tooltipEl.style.marginTop = `${bestPos.y + height / 2}px`;
                     occupiedRects.push(bestPos.rect);
                 } else {
-                    const fallbackDir = directions[0];
-                    tooltipEl.style.opacity = "1";
+                    // CROWDED FALLBACK: If still no spot, use a much more staggered North offset
+                    const stagger = (labelsToPlace.indexOf({ marker, tooltip }) % 10) * 10;
+                    tooltipEl.style.opacity = "0.7"; // Dim slightly to indicate crowdedness
                     tooltipEl.style.visibility = "visible";
                     tooltipEl.style.transition = "none";
                     tooltipEl.style.transform = "none";
-                    tooltipEl.style.marginLeft = `${fallbackDir.x + width / 2}px`;
-                    tooltipEl.style.marginTop = `${fallbackDir.y + height / 2}px`;
+                    tooltipEl.style.marginLeft = `0px`;
+                    tooltipEl.style.marginTop = `-${40 + stagger}px`; // Increase base shift
                 }
             }
         }, 300); // v1453-4-53S: Increased from 50ms to 300ms for browser paint
@@ -4074,7 +4080,8 @@ function updateMapMarkers(shouldFitBounds = false) {
                     totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
                     shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 3, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
 
-                    // Labelling Polygon Edges
+                    // v1453: Only label Polygon Edges if explicitly requested or if it's a small drawing
+                    // Always show for drawn polygons, but maybe hide for huge imported ones if they became records
                     for (let i = 0; i < latlngs.length; i++) {
                         const nextIndex = (i + 1) % latlngs.length;
                         const p1 = L.latLng(latlngs[i]);
@@ -4097,8 +4104,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                 } else {
                     shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 3, renderer: L.svg(), interactive: true });
 
-                    // Labelling Total Length for Polyline (at the middle of the path)
-                    // DRAW SEGMENT LABELS FOR POLYLINE
+                    // v1453: Only label Polyline Segments for small drawings
                     if (r.geomType === 'polyline') {
                         for (let i = 0; i < latlngs.length - 1; i++) {
                             const p1 = L.latLng(latlngs[i]);
@@ -5587,16 +5593,9 @@ async function addExternalLayer(name, geojson, skipSave = false) {
             pointsVisible: true,
             areasVisible: true,
             labelsVisible: true,
-            segmentLabels: [], // Array to hold L.marker labels
+            segmentLabels: [], // v1453: CLEANED - No more segment labels for KML
             _jeoElements: layerElements // v1453-15: Store discovered elements
         };
-
-        // v1453-99F: Collect all attached segment labels from features into layerObj
-        layer.eachLayer(l => {
-            if (l.feature && l.feature._segmentLabels) {
-                layerObj.segmentLabels.push(...l.feature._segmentLabels);
-            }
-        });
 
         layer.addTo(map);
         externalLayers.push(layerObj);
@@ -5741,7 +5740,8 @@ async function toggleLayerLabels(id, showLabels) {
         }
     });
 
-    // v1453-99F: Toggle segment labels (distances)
+    // v1453-99F: Segment labels (distances) REMOVED for KML to prevent clutter as requested
+    /*
     if (l.segmentLabels && Array.isArray(l.segmentLabels)) {
         l.segmentLabels.forEach(lab => {
             if (showLabels && l.visible) {
@@ -5751,6 +5751,8 @@ async function toggleLayerLabels(id, showLabels) {
             }
         });
     }
+    */
+    l.segmentLabels = []; // Clear existing for safety
 
     saveExternalLayers();
 }
@@ -5764,12 +5766,8 @@ function toggleLayerVisibility(id, isVisible) {
         // Reapply sub-layer visibility based on their individual toggles
         toggleLayerPoints(id, l.pointsVisible);
         toggleLayerAreas(id, l.areasVisible);
-        // v1453-99F: Restore segment labels if labels are set to visible
-        if (l.labelsVisible && l.segmentLabels) {
-            l.segmentLabels.forEach(lab => {
-                if (!map.hasLayer(lab)) lab.addTo(map);
-            });
-        }
+        // v1453-99F: Segment labels (distances) REMOVED for KML
+        l.segmentLabels = [];
     } else {
         map.removeLayer(l.layer);
         // v1453-99F: Hide segment labels when main layer is hidden
@@ -5777,6 +5775,7 @@ function toggleLayerVisibility(id, isVisible) {
             l.segmentLabels.forEach(lab => {
                 if (map.hasLayer(lab)) map.removeLayer(lab);
             });
+            l.segmentLabels = []; // Clear reference
         }
     }
     saveExternalLayers();
