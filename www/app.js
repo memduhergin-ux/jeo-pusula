@@ -217,50 +217,42 @@ function openJeoDB() {
 // v1453-4-53O: Atomic Single Record Save (Incremental - No clear())
 async function dbPutRecord(record) {
     if (isNative) {
-        try {
-            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
-            await sqlite.run({
-                database: "jeo_pusula_native",
-                statement: "INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)",
-                values: [record.id, JSON.stringify(record)]
-            });
-            return;
-        } catch (e) { console.error("Native PutRecord Error:", e); }
-    }
-    try {
-        const db = await openJeoDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
-            const store = tx.objectStore(JEO_RECORDS_STORE);
-            const req = store.put(record);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
+        const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+        await sqlite.run({
+            database: "jeo_pusula_native",
+            statement: "INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)",
+            values: [record.id, JSON.stringify(record)]
         });
-    } catch (e) { console.error("IDB Put Record Error:", e); }
+        return;
+    }
+    const db = await openJeoDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
+        const store = tx.objectStore(JEO_RECORDS_STORE);
+        const req = store.put(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
 }
 
 async function dbDeleteRecord(id) {
     if (isNative) {
-        try {
-            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
-            await sqlite.run({
-                database: "jeo_pusula_native",
-                statement: "DELETE FROM records WHERE id = ?",
-                values: [Number(id)]
-            });
-            return;
-        } catch (e) { console.error("Native DeleteRecord Error:", e); }
-    }
-    try {
-        const db = await openJeoDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
-            const store = tx.objectStore(JEO_RECORDS_STORE);
-            const req = store.delete(Number(id));
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
+        const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+        await sqlite.run({
+            database: "jeo_pusula_native",
+            statement: "DELETE FROM records WHERE id = ?",
+            values: [Number(id)]
         });
-    } catch (e) { console.error("IDB Delete Record Error:", e); }
+        return;
+    }
+    const db = await openJeoDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(JEO_RECORDS_STORE, 'readwrite');
+        const store = tx.objectStore(JEO_RECORDS_STORE);
+        const req = store.delete(Number(id));
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
 }
 
 // v1453-4-53Ω-Pro: Bulk save refactored to be incremental (SAFETY FIRST)
@@ -650,94 +642,82 @@ async function requestStoragePersistence() {
 // Each layer is put individually. A failure on one layer does NOT affect others.
 async function dbPutLayer(layer) {
     if (isNative) {
-        try {
-            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
-            await sqlite.run({
-                database: "jeo_pusula_native",
-                statement: "INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)",
-                values: [layer.id, JSON.stringify(layer)]
-            });
-            return;
-        } catch (e) { console.error("Native PutLayer Error:", e); }
-    }
-    try {
-        const db = await openJeoDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
-            const store = tx.objectStore(JEO_STORE_NAME);
-
-            // Sanitize geojson - avoid circular refs with deep clone
-            let safeGeojson = layer.geojson;
-            try {
-                if (typeof structuredClone === 'function') {
-                    safeGeojson = structuredClone(layer.geojson || {});
-                } else {
-                    safeGeojson = JSON.parse(JSON.stringify(layer.geojson || {}));
-                }
-            } catch (e) {
-                console.error(`dbPutLayer: GeoJSON clone failed for "${layer.name}":`, e);
-                resolve(); return;
-            }
-
-            const req = store.put({
-                id: layer.id,
-                name: layer.name,
-                geojson: safeGeojson,
-                visible: layer.visible,
-                filled: layer.filled,
-                pointsVisible: layer.pointsVisible !== undefined ? layer.pointsVisible : true,
-                areasVisible: layer.areasVisible !== undefined ? layer.areasVisible : true,
-                labelsVisible: layer.labelsVisible !== undefined ? layer.labelsVisible : true
-            });
-            tx.oncomplete = () => {
-                console.log(`dbPutLayer: Success for "${layer.name}" (ID: ${layer.id})`);
-                resolve();
-            };
-            tx.onerror = () => {
-                const err = `IDB ERROR: Failed to save layer "${layer.name}". Check storage space.`;
-                console.error(`dbPutLayer: TX ERROR:`, tx.error);
-                showToast(err, 5000);
-                resolve();
-            };
-            tx.onabort = () => {
-                console.warn(`dbPutLayer: TX ABORT for "${layer.name}"`);
-                resolve();
-            };
+        const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+        await sqlite.run({
+            database: "jeo_pusula_native",
+            statement: "INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)",
+            values: [layer.id, JSON.stringify(layer)]
         });
-    } catch (e) {
-        console.error(`dbPutLayer: CRITICAL EXCEPTION for "${layer.name}":`, e);
+        return;
     }
+    const db = await openJeoDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(JEO_STORE_NAME);
+
+        // Sanitize geojson - avoid circular refs with deep clone
+        let safeGeojson = layer.geojson;
+        try {
+            if (typeof structuredClone === 'function') {
+                safeGeojson = structuredClone(layer.geojson || {});
+            } else {
+                safeGeojson = JSON.parse(JSON.stringify(layer.geojson || {}));
+            }
+        } catch (e) {
+            console.error(`dbPutLayer: GeoJSON clone failed for "${layer.name}":`, e);
+            resolve(); return;
+        }
+
+        const req = store.put({
+            id: layer.id,
+            name: layer.name,
+            geojson: safeGeojson,
+            visible: layer.visible,
+            filled: layer.filled,
+            pointsVisible: layer.pointsVisible !== undefined ? layer.pointsVisible : true,
+            areasVisible: layer.areasVisible !== undefined ? layer.areasVisible : true,
+            labelsVisible: layer.labelsVisible !== undefined ? layer.labelsVisible : true
+        });
+        tx.oncomplete = () => {
+            console.log(`dbPutLayer: Success for "${layer.name}" (ID: ${layer.id})`);
+            resolve();
+        };
+        tx.onerror = () => {
+            const err = `IDB ERROR: Failed to save layer "${layer.name}". Check storage space.`;
+            console.error(`dbPutLayer: TX ERROR:`, tx.error);
+            showToast(err, 5000);
+            resolve();
+        };
+        tx.onabort = () => {
+            console.warn(`dbPutLayer: TX ABORT for "${layer.name}"`);
+            resolve();
+        };
+    });
 }
 
 async function dbDeleteLayerById(id) {
     if (isNative) {
-        try {
-            const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
-            await sqlite.run({
-                database: "jeo_pusula_native",
-                statement: "DELETE FROM layers WHERE id = ?",
-                values: [String(id)] // v1453: Case to String for SQLite consistency
-            });
-            return;
-        } catch (e) { console.error("Native DeleteLayer Error:", e); }
-    }
-    try {
-        const db = await openJeoDB();
-        return new Promise((resolve) => {
-            const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
-            const store = tx.objectStore(JEO_STORE_NAME);
-            // v1453: Defensive delete (try both number and string if unknown)
-            store.delete(id);
-            if (typeof id === 'number') store.delete(String(id));
-            else if (!isNaN(id)) store.delete(Number(id));
-
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => resolve();
-            tx.onabort = () => resolve();
+        const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+        await sqlite.run({
+            database: "jeo_pusula_native",
+            statement: "DELETE FROM layers WHERE id = ?",
+            values: [String(id)] // v1453: Case to String for SQLite consistency
         });
-    } catch (e) {
-        console.error('dbDeleteLayerById exception:', e);
+        return;
     }
+    const db = await openJeoDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(JEO_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(JEO_STORE_NAME);
+        // v1453: Defensive delete (try both number and string if unknown)
+        store.delete(id);
+        if (typeof id === 'number') store.delete(String(id));
+        else if (!isNaN(id)) store.delete(Number(id));
+
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(new Error('Layer Delete Transaction aborted'));
+    });
 }
 
 // v1453-4-53Ω-Pro: Incremental Layer Sync (No clear())
@@ -3161,10 +3141,10 @@ async function saveRecords() {
     try {
         await dbSaveRecords(records);
         await dbSaveMeta('jeoNextId', nextId, true); // Atomic save with force
-        // pipelineSync removed
         if (isHeatmapActive) updateHeatmapFilterOptions();
     } catch (e) {
         console.error("Resilience: saveRecords failed", e);
+        showToast("Storage error: Failed to save points. Check disk space!", 7000);
     }
 }
 
@@ -6907,6 +6887,7 @@ if (btnDeleteSelected) {
 window.deleteRecordFromMap = async function (id) {
     if (await JeoConfirm(`Record #${id} will be deleted. Are you sure?`)) {
         records = records.filter(r => r.id !== id);
+        await dbDeleteRecord(id); // KALICI SILME: Hafizadan sonra DB'den de sil!
         await saveRecords();
         renderRecords();
         updateMapMarkers(false);
