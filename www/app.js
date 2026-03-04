@@ -643,10 +643,21 @@ async function requestStoragePersistence() {
 async function dbPutLayer(layer) {
     if (isNative) {
         const sqlite = window.Capacitor.Plugins.CapacitorSQLite;
+        // v1453-NATIVE: Clean data object for SQLite to avoid circular refs (JSON.stringify error)
+        const cleanLayer = {
+            id: layer.id,
+            name: layer.name,
+            geojson: layer.geojson,
+            visible: layer.visible,
+            filled: layer.filled,
+            pointsVisible: layer.pointsVisible,
+            areasVisible: layer.areasVisible,
+            labelsVisible: layer.labelsVisible
+        };
         await sqlite.run({
             database: "jeo_pusula_native",
             statement: "INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)",
-            values: [layer.id, JSON.stringify(layer)]
+            values: [layer.id, JSON.stringify(cleanLayer)]
         });
         // FALL THROUGH
     }
@@ -4025,8 +4036,10 @@ function calculateAreaHelper(latlngs) {
 }
 
 function formatArea(area) {
-    if (area < 10000) return Math.round(area).toLocaleString() + " m²";
-    return (area / 10000).toFixed(3) + " ha";
+    if (area < 10000) {
+        return Math.round(area).toLocaleString() + " m² (" + (area / 10000).toFixed(4) + " ha)";
+    }
+    return (area / 10000).toFixed(4) + " ha";
 }
 
 function updateMapMarkers(shouldFitBounds = false) {
@@ -4048,7 +4061,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     pane: 'tracking-pane'
                 }).addTo(map);
 
-                poly.bindPopup(`<b>Label:</b> ${escapeHTML(t.name)}`);
+                poly.bindPopup(`<b>Label:</b> ${escapeHTML(t.name)}<br><b>Length:</b> ${formatScaleDist(calculateTrackLength(t.path))}`);
                 trackLayers[t.id] = poly;
             }
         });
@@ -4157,8 +4170,12 @@ function updateMapMarkers(shouldFitBounds = false) {
 
                 const popupContent = `
                     <div class="map-popup-container">
+                        <div style="font-size:0.7rem; color:#aaa; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Layer: Local Database</div>
                         <b style="font-size: 1.1rem;">${escapeHTML(labelText)}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                        <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
+                            ${totalLenFormatted}
+                        </div>
                         <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                     </div>
                 `;
@@ -5514,8 +5531,51 @@ async function addExternalLayer(name, geojson, skipSave = false) {
 
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {
+                    popupContent += `<div style="font-size:0.7rem; color:#aaa; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Layer: ${escapeHTML(layerName)}</div>`;
                     if (feature.properties.name) {
                         popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
+                    }
+                    popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:5px;">`;
+
+                    // Add Length for Lines
+                    if (feature.geometry && (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString')) {
+                        try {
+                            let latlngs = layer.getLatLngs();
+                            let len = 0;
+                            if (feature.geometry.type === 'LineString') {
+                                for (let i = 0; i < latlngs.length - 1; i++) len += latlngs[i].distanceTo(latlngs[i + 1]);
+                            } else {
+                                // MultiLineString logic
+                                latlngs.forEach(part => {
+                                    for (let i = 0; i < part.length - 1; i++) len += part[i].distanceTo(part[i + 1]);
+                                });
+                            }
+                            popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">Length:</td><td style="padding:4px 0; text-align:right;">${formatScaleDist(len)}</td></tr>`;
+                        } catch (e) { }
+                    }
+
+                    // Add Perimeter & Area for Polygons
+                    if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                        try {
+                            let latlngs = layer.getLatLngs();
+                            if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
+                            else latlngs = latlngs[0][0];
+
+                            let perimeter = 0;
+                            for (let i = 0; i < latlngs.length; i++) {
+                                perimeter += latlngs[i].distanceTo(latlngs[(i + 1) % latlngs.length]);
+                            }
+                            const area = calculateAreaHelper(latlngs);
+
+                            popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">Perimeter:</td><td style="padding:4px 0; text-align:right;">${formatScaleDist(perimeter)}</td></tr>`;
+                            popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
+                        } catch (e) {
+                            console.error("GIS Info calculation failed", e);
+                        }
+                    }
+                    popupContent += `</table>`;
+                    if (feature.properties.description) {
+                        popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
                     }
                 }
                 popupContent += `</div>`;
