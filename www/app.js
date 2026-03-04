@@ -223,7 +223,7 @@ async function dbPutRecord(record) {
             statement: "INSERT OR REPLACE INTO records (id, data) VALUES (?, ?)",
             values: [record.id, JSON.stringify(record)]
         });
-        return;
+        // FALL THROUGH to IndexedDB for redundancy
     }
     const db = await openJeoDB();
     return new Promise((resolve, reject) => {
@@ -243,7 +243,7 @@ async function dbDeleteRecord(id) {
             statement: "DELETE FROM records WHERE id = ?",
             values: [Number(id)]
         });
-        return;
+        // FALL THROUGH
     }
     const db = await openJeoDB();
     return new Promise((resolve, reject) => {
@@ -336,7 +336,7 @@ async function dbSaveMeta(key, value, forceWrite = false) {
                 statement: "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
                 values: [key, valStr]
             });
-            return;
+            // FALL THROUGH
         } catch (e) { console.error("Native SaveMeta Error:", e); }
     }
 
@@ -648,7 +648,7 @@ async function dbPutLayer(layer) {
             statement: "INSERT OR REPLACE INTO layers (id, data) VALUES (?, ?)",
             values: [layer.id, JSON.stringify(layer)]
         });
-        return;
+        // FALL THROUGH
     }
     const db = await openJeoDB();
     return new Promise((resolve, reject) => {
@@ -703,7 +703,7 @@ async function dbDeleteLayerById(id) {
             statement: "DELETE FROM layers WHERE id = ?",
             values: [String(id)] // v1453: Case to String for SQLite consistency
         });
-        return;
+        // FALL THROUGH
     }
     const db = await openJeoDB();
     return new Promise((resolve, reject) => {
@@ -3431,6 +3431,7 @@ async function initMap() {
             // v1453-159: GENERAL MAP POPUP REMOVED as requested. 
             // Only clicks on objects (KML, Records, Tracks) will show popups now.
             // Coordinate info is still available in the bottom bar via crosshair.
+            if (map.hasLayer(measureLine)) return; // Don't interfere with measurement
         }
     });
 
@@ -4047,7 +4048,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     pane: 'tracking-pane'
                 }).addTo(map);
 
-                poly.bindPopup(`<b>Label:</b> ${escapeHTML(t.name)}<br><b>Length:</b> ${formatScaleDist(calculateTrackLength(t.path))}`);
+                poly.bindPopup(`<b>Label:</b> ${escapeHTML(t.name)}`);
                 trackLayers[t.id] = poly;
             }
         });
@@ -4096,8 +4097,8 @@ function updateMapMarkers(shouldFitBounds = false) {
                     totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
                     shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 3, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
 
-                    // v1453: Only label Polygon Edges if explicitly requested or if it's a small drawing
-                    // Always show for drawn polygons, but maybe hide for huge imported ones if they became records
+                    // v1453-99F: Segment labels (distances) REMOVED as requested to prevent clutter
+                    /*
                     for (let i = 0; i < latlngs.length; i++) {
                         const nextIndex = (i + 1) % latlngs.length;
                         const p1 = L.latLng(latlngs[i]);
@@ -4117,10 +4118,12 @@ function updateMapMarkers(shouldFitBounds = false) {
                         });
                         markerGroup.addLayer(edgeLabel);
                     }
+                    */
                 } else {
                     shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 3, renderer: L.svg(), interactive: true });
 
-                    // v1453: Only label Polyline Segments for small drawings
+                    // v1453-99F: Polyline Segment labels REMOVED
+                    /*
                     if (r.geomType === 'polyline') {
                         for (let i = 0; i < latlngs.length - 1; i++) {
                             const p1 = L.latLng(latlngs[i]);
@@ -4145,6 +4148,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                             }).addTo(map);
                         }
                     }
+                    */
                 }
 
                 const totalLenFormatted = r.geomType === 'polygon'
@@ -4155,9 +4159,6 @@ function updateMapMarkers(shouldFitBounds = false) {
                     <div class="map-popup-container">
                         <b style="font-size: 1.1rem;">${escapeHTML(labelText)}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                        <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
-                            ${totalLenFormatted}
-                        </div>
                         <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                     </div>
                 `;
@@ -5515,30 +5516,6 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                 if (feature.properties) {
                     if (feature.properties.name) {
                         popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
-                    }
-                    popupContent += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">`;
-                    for (let key in feature.properties) {
-                        const keyLower = key.toLowerCase();
-                        if (['name', 'styleurl', 'stylehash', 'stylemaphash', 'description', 'area'].indexOf(keyLower) === -1) {
-                            popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${key}:</td><td style="padding:4px 0; text-align:right;">${feature.properties[key]}</td></tr>`;
-                        }
-                    }
-
-                    // Add area for polygons
-                    if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                        try {
-                            let latlngs = layer.getLatLngs();
-                            if (feature.geometry.type === 'Polygon') latlngs = latlngs[0];
-                            else latlngs = latlngs[0][0];
-                            const area = calculateAreaHelper(latlngs);
-                            popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
-                        } catch (e) {
-                            console.error("GIS Area calculation failed", e);
-                        }
-                    }
-                    popupContent += `</table>`;
-                    if (feature.properties.description) {
-                        popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
                     }
                 }
                 popupContent += `</div>`;
