@@ -33,9 +33,28 @@
 </head>
 
 <body>
-    <!-- Custom JeoCompass Modals (Moved to top for early error catching v1453-4-26F) -->
+    <!-- Custom Color Picker Modal (v1453-4-53-EN) -->
+    <div id="jeo-color-picker-modal" class="jeo-modal-overlay">
+        <div class="jeo-modal" style="max-width: 300px;">
+            <div class="jeo-modal-header">Select Color</div>
+            <div class="jeo-modal-body">
+                <div class="color-picker-grid" id="jeo-color-grid">
+                    <!-- Colors injected by JS -->
+                </div>
+                <div style="margin-top: 15px; text-align: center; color: #888; font-size: 0.8rem;">
+                    Selected: <span id="jeo-selected-color-text">#FF5722</span>
+                </div>
+            </div>
+            <div class="jeo-modal-footer">
+                <button id="jeo-color-cancel" class="jeo-modal-btn secondary">CANCEL</button>
+                <button id="jeo-color-apply" class="jeo-modal-btn primary">SET</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JeoCompass Modals (Standard alerts/confirms) -->
     <div id="jeo-modal-overlay" class="jeo-modal-overlay">
-        <div class="jeo-modal">
+        <div class="jeo-modal" style="max-width: 320px;">
             <div id="jeo-modal-header" class="jeo-modal-header">JeoCompass</div>
             <div id="jeo-modal-body" class="jeo-modal-body"></div>
             <div class="jeo-modal-footer">

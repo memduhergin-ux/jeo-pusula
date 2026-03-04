@@ -105,6 +105,69 @@ function updateAppVersionDisplay() {
     }
 }
 
+/* --- Custom JeoCompass Color Picker (v1453-4-53-EN) --- */
+window.showJeoColorPicker = function (initialColor, callback) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('jeo-color-picker-modal');
+        const grid = document.getElementById('jeo-color-grid');
+        const selectedText = document.getElementById('jeo-selected-color-text');
+        const applyBtn = document.getElementById('jeo-color-apply');
+        const cancelBtn = document.getElementById('jeo-color-cancel');
+
+        if (!modal || !grid) {
+            console.error("Color picker DOM not found");
+            return resolve(null);
+        }
+
+        const colors = [
+            '#FF5722', '#4CAF50', '#2196F3', '#FFEB3B',
+            '#E91E63', '#9C27B0', '#00BCD4', '#FF9800'
+        ];
+
+        let selectedColor = initialColor || colors[0];
+        grid.innerHTML = '';
+        selectedText.textContent = selectedColor.toUpperCase();
+        selectedText.style.color = selectedColor;
+
+        colors.forEach(color => {
+            const opt = document.createElement('div');
+            opt.className = 'color-option' + (color.toLowerCase() === selectedColor.toLowerCase() ? ' selected' : '');
+            opt.style.backgroundColor = color;
+            opt.onclick = () => {
+                document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedColor = color;
+                selectedText.textContent = selectedColor.toUpperCase();
+                selectedText.style.color = selectedColor;
+            };
+            grid.appendChild(opt);
+        });
+
+        modal.classList.add('show');
+
+        const onApply = () => {
+            modal.classList.remove('show');
+            cleanup();
+            if (callback) callback(selectedColor);
+            resolve(selectedColor);
+        };
+
+        const onCancel = () => {
+            modal.classList.remove('show');
+            cleanup();
+            resolve(null);
+        };
+
+        const cleanup = () => {
+            applyBtn.removeEventListener('click', onApply);
+            cancelBtn.removeEventListener('click', onCancel);
+        };
+
+        applyBtn.addEventListener('click', onApply);
+        cancelBtn.addEventListener('click', onCancel);
+    });
+};
+
 // v750: Global Security & Stability Kalkan
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     console.error(`GLOBAL ERROR: ${msg} at ${lineNo}:${columnNo}`, error);
@@ -3385,36 +3448,9 @@ async function initMap() {
         } else if (isAddingPoint) {
             // Handled by Crosshair
         } else {
-            // v1453-4-53Ω-Pro: RESTORE COORDINATE QUERY (TOPUKLAR) - Normal Mode Only
-            const lat = e.latlng.lat;
-            const lon = e.latlng.lng;
-
-            // Standard UTM-ED50 (Zone 36) for Turkey
-            const zone = Math.floor((lon + 180) / 6) + 1;
-            const utmZoneDefED50 = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-
-            try {
-                const utm = proj4('WGS84', utmZoneDefED50, [lon, lat]);
-
-                fetchElevation(lat, lon, (alt) => {
-                    const elevationStr = alt !== null ? `${Math.round(alt)} m` : "Yükleniyor...";
-                    const popupContent = `
-                        <div class="map-popup-container" style="min-width: 180px;">
-                            <b style="font-size: 1.1rem; color: #2196f3;">📍 Konum Bilgisi</b>
-                            <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                            <div style="font-size: 0.95rem; line-height: 1.6;">
-                                <b>UTM ED50/6:</b> ${Math.round(utm[0])} Y , ${Math.round(utm[1])} X <br>
-                                <b>WGS84:</b> ${lat.toFixed(6)} , ${lon.toFixed(6)} <br>
-                                <b>Z (Yükseklik):</b> ${elevationStr}
-                            </div>
-                        </div>
-                    `;
-                    L.popup()
-                        .setLatLng(e.latlng)
-                        .setContent(popupContent)
-                        .openOn(map);
-                });
-            } catch (err) { console.error("Map query failed:", err); }
+            // v1453-159: GENERAL MAP POPUP REMOVED as requested. 
+            // Only clicks on objects (KML, Records, Tracks) will show popups now.
+            // Coordinate info is still available in the bottom bar via crosshair.
         }
     });
 
@@ -4031,7 +4067,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     pane: 'tracking-pane'
                 }).addTo(map);
 
-                poly.bindPopup(`<b>${t.name}</b><br>${t.time}<br>${formatScaleDist(calculateTrackLength(t.path))}`);
+                poly.bindPopup(`<b>Label:</b> ${escapeHTML(t.name)}<br><b>Length:</b> ${formatScaleDist(calculateTrackLength(t.path))}`);
                 trackLayers[t.id] = poly;
             }
         });
@@ -4131,13 +4167,16 @@ function updateMapMarkers(shouldFitBounds = false) {
                     }
                 }
 
+                const totalLenFormatted = r.geomType === 'polygon'
+                    ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}`
+                    : `<b>Length:</b> ${formatScaleDist(totalLen)}`;
+
                 const popupContent = `
                     <div class="map-popup-container">
-                        <b style="font-size: 1.1rem;">Measurement: ${escapeHTML(labelText)}</b>
+                        <b style="font-size: 1.1rem;">${escapeHTML(labelText)}</b>
                         <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                        <div style="font-size: 0.95rem; margin-bottom: 8px;">${escapeHTML(r.note) || 'Not yok'}</div>
                         <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 10px;">
-                            ${r.geomType === 'polygon' ? `<b>Perimeter:</b> ${formatScaleDist(totalLen)}<br><b>Area:</b> ${formatArea(calculateAreaHelper(latlngs.map(p => L.latLng(p[0], p[1]))))}` : `<b>Length:</b> ${formatScaleDist(totalLen)}`}
+                            ${totalLenFormatted}
                         </div>
                         <button onclick="deleteRecordFromMap(${r.id})" style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️ Delete</button>
                     </div>
@@ -4313,7 +4352,7 @@ function renderTracks(filter = '') {
                 <td class="${isTracksLocked ? 'locked-hidden' : ''}"></td>
                 <td style="color: #4caf50; font-weight: bold;">📍 ${liveName}</td>
                 <td style="font-family:monospace;">${Math.round(calculateTrackLength(trackPath))}m</td>
-                <td><div class="track-color-dot" style="background: #ff5722;"></div></td>
+                <td><div class="track-color-dot" style="background: #ff5722; cursor: default;"></div></td>
                 <td><input type="checkbox" checked disabled></td>
                 <td style="font-size:0.75rem; color:#4caf50; font-weight:bold;">Kaytta...</td>
             </tr>
@@ -4325,7 +4364,7 @@ function renderTracks(filter = '') {
             <td class="${isTracksLocked ? 'locked-hidden' : ''}"><input type="checkbox" class="track-select" data-id="${t.id}"></td>
             <td onclick="focusTrack(${t.id})">${escapeHTML(t.name)}</td>
             <td style="font-family:monospace;">${Math.round(t.length || 0)}m</td>
-            <td><input type="color" value="${t.color || '#ff5722'}" onchange="updateTrackColor(${t.id}, this.value)" class="track-color-dot"></td>
+            <td><div class="track-color-dot" style="background: ${t.color || '#ff5722'};" onclick="showJeoColorPicker('${t.color || '#ff5722'}', (c) => updateTrackColor(${t.id}, c))"></div></td>
             <td><input type="checkbox" ${t.visible ? 'checked' : ''} onchange="toggleTrackVisibility(${t.id})"></td>
             <td style="font-size:0.7rem; color:#aaa;">${escapeHTML(t.time)}</td>
         </tr>
