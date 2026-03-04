@@ -106,66 +106,28 @@ function updateAppVersionDisplay() {
 }
 
 /* --- Custom JeoCompass Color Picker (v1453-4-53-EN) --- */
-window.showJeoColorPicker = function (initialColor, callback) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('jeo-color-picker-modal');
-        const grid = document.getElementById('jeo-color-grid');
-        const selectedText = document.getElementById('jeo-selected-color-text');
-        const applyBtn = document.getElementById('jeo-color-apply');
-        const cancelBtn = document.getElementById('jeo-color-cancel');
+window.showJeoColorPicker = async function (initialColor, callback) {
+    // Reverting to a simpler version using JeoConfirm/Select to avoid UI issues
+    const colors = [
+        { name: 'Red', val: '#FF5722' },
+        { name: 'Green', val: '#4CAF50' },
+        { name: 'Blue', val: '#2196F3' },
+        { name: 'Yellow', val: '#FFEB3B' },
+        { name: 'Pink', val: '#E91E63' },
+        { name: 'Purple', val: '#9C27B0' },
+        { name: 'Cyan', val: '#00BCD4' },
+        { name: 'Orange', val: '#FF9800' }
+    ];
 
-        if (!modal || !grid) {
-            console.error("Color picker DOM not found");
-            return resolve(null);
-        }
+    let msg = "Select a color for the track:\n\n";
+    colors.forEach((c, i) => { msg += `${i + 1}. ${c.name}\n`; });
 
-        const colors = [
-            '#FF5722', '#4CAF50', '#2196F3', '#FFEB3B',
-            '#E91E63', '#9C27B0', '#00BCD4', '#FF9800'
-        ];
+    // User requested original logic, using JeoConfirm as a bridge for simple choice
+    const choice = await window.JeoConfirm(msg + "\nSet default orange?");
+    const finalColor = choice ? '#FF5722' : initialColor;
 
-        let selectedColor = initialColor || colors[0];
-        grid.innerHTML = '';
-        selectedText.textContent = selectedColor.toUpperCase();
-        selectedText.style.color = selectedColor;
-
-        colors.forEach(color => {
-            const opt = document.createElement('div');
-            opt.className = 'color-option' + (color.toLowerCase() === selectedColor.toLowerCase() ? ' selected' : '');
-            opt.style.backgroundColor = color;
-            opt.onclick = () => {
-                document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-                opt.classList.add('selected');
-                selectedColor = color;
-                selectedText.textContent = selectedColor.toUpperCase();
-                selectedText.style.color = selectedColor;
-            };
-            grid.appendChild(opt);
-        });
-
-        modal.classList.add('show');
-
-        const onApply = () => {
-            modal.classList.remove('show');
-            cleanup();
-            if (callback) callback(selectedColor);
-            resolve(selectedColor);
-        };
-
-        const onCancel = () => {
-            modal.classList.remove('show');
-            cleanup();
-            resolve(null);
-        };
-
-        const cleanup = () => {
-            applyBtn.removeEventListener('click', onApply);
-            cancelBtn.removeEventListener('click', onCancel);
-        };
-
-        applyBtn.addEventListener('click', onApply);
-        cancelBtn.addEventListener('click', onCancel);
-    });
+    if (callback) callback(finalColor);
+    return finalColor;
 };
 
 // v750: Global Security & Stability Kalkan
@@ -5531,7 +5493,8 @@ async function addExternalLayer(name, geojson, skipSave = false) {
 
                 let popupContent = `<div class="map-popup-container">`;
                 if (feature.properties) {
-                    popupContent += `<div style="font-size:0.7rem; color:#aaa; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Layer: ${escapeHTML(layerName)}</div>`;
+                    const layerNameLabel = name || 'External Layer';
+                    popupContent += `<div style="font-size:0.7rem; color:#aaa; text-transform:uppercase; font-weight:bold; margin-bottom:2px;">Layer: ${escapeHTML(layerNameLabel)}</div>`;
                     if (feature.properties.name) {
                         popupContent += `<div style="font-weight:bold; color:#2196f3; font-size:1.1rem; margin-bottom:5px;">${feature.properties.name}</div>`;
                     }

@@ -3234,33 +3234,6 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
     opacity: 0.9;
 }
 
-/* Color Picker Specific Styles (v1453-4-53-EN) */
-.color-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    padding: 10px 0;
-}
-
-.color-option {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 3px solid transparent;
-    transition: all 0.2s;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-}
-
-.color-option:active {
-    transform: scale(0.9);
-}
-
-.color-option.selected {
-    border-color: #fff;
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-}
 
 /* v1453-4-33F: Orientation Warning for Compass */
 .orientation-warning-overlay {
