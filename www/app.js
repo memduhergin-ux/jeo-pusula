@@ -6215,7 +6215,7 @@ function updateMeasureModeUI() {
     if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
     if (crosshair) crosshair.style.display = 'none';
     if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
-    isAddingPoint = false;
+    // isAddingPoint = false; // v1453-PRO: Sticky Mode restored. Manual toggle required.
 
     // v1453-4-27F: FORCE EXIT Grid Mode when measuring to prevent click blocking
     if (isMeasuring) {
