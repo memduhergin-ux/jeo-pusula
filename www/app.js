@@ -3067,54 +3067,57 @@ if (document.getElementById('btn-modal-save')) {
         const label = document.getElementById('rec-label').value;
         const note = document.getElementById('rec-note').value;
 
-        // Force reset states immediately to unblock popups even during save process
         const wasSavingLayer = isSavingLayer;
-        isMeasuring = false;
-        isPolygon = false;
-        isSavingLayer = false;
-        updateMeasureModeUI();
+        // Global variables remain UNTOUCHED until logic finishes below
+
 
         if (wasSavingLayer) {
-            const label = document.getElementById('rec-label').value;
-            const note = document.getElementById('rec-note').value;
+            // v1453-PRO: ROBUST STATE CAPTURE
+            // We use local variables to ensure that the geometry is constructed 
+            // with the EXACT state as it was when the save button was pressed.
+            const localIsPolygon = isPolygon;
+            const localPoints = [...measurePoints];
 
-            // If we are saving a drawing/measurement as an external layer instead of a point
-            if (wasSavingLayer) {
-                if (!label) {
-                    JeoAlert("Please enter a name for the shape.");
-                    return;
-                }
-
-                let geojson = {
-                    type: "FeatureCollection",
-                    name: label,
-                    crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-                    features: []
-                };
-
-                const feature = {
-                    type: "Feature",
-                    properties: {
-                        "name": label,
-                        "note": note,
-                        "color": "#ffeb3b",
-                        "fillColor": "#ffeb3b",
-                        "isMeasurement": true // v1453-PRO: Flag to identify custom drawings
-                    },
-                    geometry: {
-                        type: isPolygon ? "Polygon" : "LineString",
-                        coordinates: isPolygon ? [measurePoints.map(p => [p.lng, p.lat]).concat([[measurePoints[0].lng, measurePoints[0].lat]])] : measurePoints.map(p => [p.lng, p.lat])
-                    }
-                };
-                geojson.features.push(feature);
-
-                await addExternalLayer(label, geojson);
-                showToast(`Layer "${label}" saved to Map Layers!`, 3000);
-
-                recordModal.classList.remove('active');
-                await clearMeasurement();
+            if (!label) {
+                JeoAlert("Please enter a name for the shape.");
                 return;
             }
+
+            let geojson = {
+                type: "FeatureCollection",
+                name: label,
+                crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+                features: []
+            };
+
+            const feature = {
+                type: "Feature",
+                properties: {
+                    "name": label,
+                    "note": note,
+                    "color": "#ffeb3b",
+                    "fillColor": "#ffeb3b",
+                    "isMeasurement": true
+                },
+                geometry: {
+                    type: localIsPolygon ? "Polygon" : "LineString",
+                    coordinates: localIsPolygon ? [localPoints.map(p => [p.lng, p.lat]).concat([[localPoints[0].lng, localPoints[0].lat]])] : localPoints.map(p => [p.lng, p.lat])
+                }
+            };
+            geojson.features.push(feature);
+
+            await addExternalLayer(label, geojson);
+            showToast(`Layer "${label}" saved to Map Layers!`, 3000);
+
+            recordModal.classList.remove('active');
+
+            // v1453-PRO: ONLY RESET GLOBAL STATES AFTER SUCCESSFUL SAVE
+            isMeasuring = false;
+            isPolygon = false;
+            isSavingLayer = false;
+            await clearMeasurement();
+            updateMeasureModeUI();
+            return;
         }
 
         // --- Standard Point Saving Logic ---
@@ -3476,9 +3479,8 @@ async function initMap() {
         } else if (isAddingPoint) {
             // Handled by Crosshair
         } else {
-            // v1453-159: GENERAL MAP POPUP REMOVED as requested. 
-            // Clicks on objects (KML, Records, Tracks) will show popups now.
-            // v1453-PRO: Explicitly removed measurement click interceptor to prevent popup blockage
+            // v1453-PRO: Clicks on objects (KML, Records, Tracks) will show popups now.
+            // All blocking logic removed. Popups are free.
         }
     });
 
@@ -4228,11 +4230,6 @@ function updateMapMarkers(shouldFitBounds = false) {
                 shape.bindPopup(popupContent);
                 // v535: Enable Grid Interaction for saved geometries
                 shape.on('click', (e) => {
-                    if (isMeasuring && !isPolygon) {
-                        L.DomEvent.stopPropagation(e);
-                        updateMeasurement(e.latlng);
-                        return;
-                    }
                     if (isAddingPoint) {
                         L.DomEvent.stopPropagation(e);
                         return;
@@ -4240,19 +4237,18 @@ function updateMapMarkers(shouldFitBounds = false) {
                     if (isGridMode && activeGridInterval) {
                         L.DomEvent.stopPropagation(e);
                         map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
+                        return;
                     }
+                    // All other modes (including measuring): Fall-through to bound popup
                 });
 
                 markerGroup.addLayer(shape);
-                // SKIP THE PIN for geometries as requested
                 return;
             }
 
-            // 2. Draw Marker (Only for Point Records)
+            // 2. Draw Marker
             const strikeAngle = parseFloat(r.strike) || 0;
-
-            // Element Detection (v401)
-            let pinColor = '#f44336'; // Default Red
+            let pinColor = '#f44336';
             const labelStr = labelText.toString().toUpperCase();
             for (const [el, color] of Object.entries(ELEMENT_COLORS)) {
                 if (labelStr.includes(el)) {
@@ -4263,34 +4259,16 @@ function updateMapMarkers(shouldFitBounds = false) {
 
             const markerIcon = L.divIcon({
                 className: 'geology-marker-pin',
-                html: `
-                    <div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px; display: flex; align-items: center; justify-content: center; position: relative;">
-                        <!-- v669: Much larger red dot with thick white border -->
-                        <div class="red-dot-symbol" style="
-                            width:${20 * scaleFactor}px;
-                            height:${20 * scaleFactor}px;
-                            background-color: ${pinColor};
-                            border-radius: 50%;
-                            border: ${3 * scaleFactor}px solid white;
-                            box-shadow: 0 0 6px rgba(0,0,0,0.6);
-                        "></div>
-                        <!-- v669: Adjusted label size and position -->
-                        <div class="marker-id-label-v3" style="
-                            font-size:${labelFontSize * 1.2}px;
-                            padding: 2px ${5 * scaleFactor}px;
-                            top:-${8 * scaleFactor}px;
-                            right:-${10 * scaleFactor}px;
-                        ">${labelText}</div>
-                    </div>
-                `,
+                html: `<div class="pin-container" style="width:${iconBaseSize}px; height:${iconBaseSize}px; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <div class="red-dot-symbol" style="width:${20 * scaleFactor}px; height:${20 * scaleFactor}px; background-color: ${pinColor}; border-radius: 50%; border: ${3 * scaleFactor}px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.6);"></div>
+                        <div class="marker-id-label-v3" style="font-size:${labelFontSize * 1.2}px; padding: 2px ${5 * scaleFactor}px; top:-${8 * scaleFactor}px; right:-${10 * scaleFactor}px;">${labelText}</div>
+                    </div>`,
                 iconSize: [iconBaseSize, iconBaseSize],
                 iconAnchor: [iconBaseSize / 2, iconBaseSize / 2]
             });
 
             const marker = L.marker([r.lat, r.lon], { icon: markerIcon });
-            // v1453-4-9F: Manual click handler to respect isMeasuring / isAddingPoint / isGridMode
-            const recordPopupContent = `
-                <div class="map-popup-container">
+            const recordPopupContent = `<div class="map-popup-container">
                     <b style="font-size: 1.1rem;">Record ${labelText}</b><hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
                     <div style="margin-bottom: 5px;"><b>Strike / Dip:</b> ${r.strike} / ${r.dip}</div>
                     <div style="margin-bottom: 5px;"><b>Coordinate:</b> ${r.y}, ${r.x}</div>
@@ -4299,14 +4277,9 @@ function updateMapMarkers(shouldFitBounds = false) {
                         <button onclick="startRouting(${r.lat}, ${r.lon})" style="flex: 1; background: #2196f3; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px;">🗺️ Rota</button>
                         <button onclick="deleteRecordFromMap(${r.id})" style="background: #f44336; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;">🗑️</button>
                     </div>
-                </div>
-            `;
+                </div>`;
+
             marker.on('click', (e) => {
-                if (isMeasuring && !isPolygon) {
-                    L.DomEvent.stopPropagation(e);
-                    updateMeasurement(e.latlng);
-                    return;
-                }
                 if (isAddingPoint) {
                     L.DomEvent.stopPropagation(e);
                     return;
@@ -4316,6 +4289,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                     map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
                     return;
                 }
+
                 const isTopHalf = e.containerPoint.y < (window.innerHeight / 2);
                 L.popup({
                     maxHeight: window.innerHeight / 4,
@@ -5718,10 +5692,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     }
                     */
 
-                    if (isMeasuring && !isPolygon) {
-                        L.DomEvent.stopPropagation(e); // Stop popup
-                        updateMeasurement(e.latlng);
-                    } else if (isAddingPoint) {
+                    if (isAddingPoint) {
                         L.DomEvent.stopPropagation(e); // Stop popup
                         map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
                     } else {
@@ -6496,12 +6467,6 @@ function saveMeasurement() {
     document.getElementById('rec-strike').value = "";
     document.getElementById('rec-dip').value = "";
 
-    // v1453-PRO: Reset state before opening modal to ensure popups work if they click map
-    isMeasuring = false;
-    if (btnMeasure) btnMeasure.style.background = '';
-    if (btnPolygon) btnPolygon.style.background = '';
-    if (measureInfo) measureInfo.style.display = 'none';
-
     // Open the existing Modal
     recordModal.classList.add('active');
 }
@@ -6570,7 +6535,7 @@ async function updateMeasurement(latlng) {
             if (await JeoConfirm("Do you want to close the polygon? (Area will be calculated)")) {
                 measurePoints.push(measurePoints[0]);
                 isPolygon = true;
-                redrawMeasurement();
+                redrawMeasurement(); // Ensure fill appears immediately
             }
             return;
         }
