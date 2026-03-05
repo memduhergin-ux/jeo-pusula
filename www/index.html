@@ -805,25 +805,31 @@
     <!-- Layers Modal -->
     <div id="layers-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>Map Layers</h2>
+            <div class="modal-header"
+                style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between; align-items: center; padding: 10px 15px; min-height: 50px;">
+                <label class="settings-pill" title="Show/Hide All External Layers"
+                    style="margin: 0; padding: 4px 8px; flex-shrink: 0;">
+                    <span class="pill-label" style="font-size: 0.70rem;">Layers</span>
+                    <input type="checkbox" id="chk-all-layers-toggle" class="pill-checkbox-cyan" checked
+                        style="width: 28px; height: 16px;">
+                </label>
+
+                <h2
+                    style="margin: 0; padding: 0 5px; flex-grow: 1; text-align: center; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    Map Layers</h2>
+
+                <label class="settings-pill" title="Show/Hide Record Labels on Map"
+                    style="margin: 0; padding: 4px 8px; flex-shrink: 0;">
+                    <span class="pill-label" style="font-size: 0.70rem;">Labels</span>
+                    <input type="checkbox" id="chk-show-record-labels-global" class="pill-checkbox" checked
+                        style="width: 28px; height: 16px;">
+                </label>
             </div>
             <div class="modal-body" style="min-height: 200px;">
                 <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Layers will be injected here -->
                 </div>
 
-                <div class="settings-pill-container" style="margin-top: 15px;">
-                    <label class="settings-pill" title="Show/Hide All External Layers">
-                        <span class="pill-label">Layers</span>
-                        <input type="checkbox" id="chk-all-layers-toggle" class="pill-checkbox-cyan" checked>
-                    </label>
-
-                    <label class="settings-pill" title="Show/Hide Record Labels on Map">
-                        <span class="pill-label">Labels</span>
-                        <input type="checkbox" id="chk-show-record-labels-global" class="pill-checkbox" checked>
-                    </label>
-                </div>
                 <!-- v1453-4-53Ω-Pro: Tier 3 Offline MBTiles Section -->
                 <div id="offline-map-section" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
                     <h3

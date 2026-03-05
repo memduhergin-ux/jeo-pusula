@@ -2934,12 +2934,23 @@ function startGeolocationWatch() {
 
                 if (followMe) {
                     const now = Date.now();
-                    if (now - lastMapUpdate > MAP_UPDATE_THROTTLE) {
-                        // v1453-PRO: Use non-animated setView for high-speed tracking (Google Maps style)
-                        map.setView(livePos, map.getZoom(), { animate: false });
+                    const throttleTime = typeof MAP_UPDATE_THROTTLE !== 'undefined' ? MAP_UPDATE_THROTTLE : 1000; // Default 1 second
+                    if (now - lastMapUpdate > throttleTime) {
+                        // v1453-PRO: FIX: map.setView cancels tile loading if called too fast.
+                        // map.panTo is smoother and doesn't interrupt background tile downloads!
+                        const currentMaxH = map.getBounds().getNorth() - map.getBounds().getSouth();
+                        const pDist = Math.abs(map.getCenter().lat - livePos[0]);
+
+                        // If tracking is very far off screen, snap it. Otherwise pan smoothly.
+                        if (pDist > currentMaxH * 1.5) {
+                            map.setView(livePos, map.getZoom(), { animate: false });
+                        } else {
+                            map.panTo(livePos, { animate: true, duration: 1.0 });
+                        }
                         lastMapUpdate = now;
                     }
                 }
+
 
                 // v549: TRAVEL-ONLY HEADLIGHT
                 // The user specifically wants the headlight to ONLY follow the direction of progress.
@@ -5628,11 +5639,24 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                             const area = calculateAreaHelper(latlngs);
 
                             popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">Perimeter:</td><td style="padding:4px 0; text-align:right;">${formatScaleDist(perimeter)}</td></tr>`;
-                            popupContent += `<tr style="color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
+                            popupContent += `<tr style="border-bottom:1px solid #eee; color:#2196f3; font-weight:bold;"><td style="padding:8px 0;">Area:</td><td style="padding:8px 0; text-align:right;">${formatArea(area)}</td></tr>`;
                         } catch (e) {
                             console.error("GIS Info calculation failed", e);
                         }
                     }
+
+                    // v1453-PRO: Restore all generic KML properties to the table
+                    const excludeProps = ['name', 'description', 'desc', 'note', 'styleUrl', 'styleHash', 'styleMapHash', 'stroke', 'stroke-opacity', 'stroke-width', 'fill', 'fill-opacity'];
+                    for (const key in feature.properties) {
+                        if (feature.properties.hasOwnProperty(key) && !excludeProps.includes(key)) {
+                            const val = feature.properties[key];
+                            // Only add if it's a valid string/number and not an object
+                            if (val !== null && val !== undefined && typeof val !== 'object') {
+                                popupContent += `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 0; color:#666; font-weight:bold;">${escapeHTML(key)}:</td><td style="padding:4px 0; text-align:right;">${escapeHTML(String(val))}</td></tr>`;
+                            }
+                        }
+                    }
+
                     popupContent += `</table>`;
                     if (feature.properties.description) {
                         popupContent += `<div style="margin-top:8px; font-size:0.8rem; border-top:1px solid #eee; padding-top:5px; color:#444;">${feature.properties.description}</div>`;
