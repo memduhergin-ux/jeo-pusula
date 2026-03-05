@@ -3976,9 +3976,6 @@ function formatScaleDist(d) {
     return `${parts.val} ${parts.unit}`;
 }
 
-// Show/Hide Records State
-let showRecordsOnMap = true;
-// v1453-PRO: Global toggle for internal labels with persistence
 // v1453-PRO: Global UI States
 let showRecordsOnMap = true;
 let showRecordLabels = localStorage.getItem('jeoShowRecordLabels') !== 'false';
