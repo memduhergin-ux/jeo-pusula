@@ -3979,7 +3979,10 @@ function formatScaleDist(d) {
 // Show/Hide Records State
 let showRecordsOnMap = true;
 // v1453-PRO: Global toggle for internal labels with persistence
+// v1453-PRO: Global UI States
+let showRecordsOnMap = true;
 let showRecordLabels = localStorage.getItem('jeoShowRecordLabels') !== 'false';
+let showAllLayers = true; // Master switch for all external layers
 
 /** Parallel Labeling Helpers **/
 function getSegmentAngle(p1, p2) {
@@ -4057,7 +4060,7 @@ function updateMapMarkers(shouldFitBounds = false) {
         });
     }
 
-    if (!showRecordsOnMap) return;
+    if (!showRecordsOnMap || !showAllLayers) return;
 
     // Remove fixed zoom limit, we will use dynamic scaling instead
     const zoom = map.getZoom();
@@ -4356,6 +4359,7 @@ window.updateTrackColor = function (id, color) {
         track.color = color;
         dbSaveMeta('jeoTracks', jeoTracks);
         updateMapMarkers(false);
+        renderTracks(); // v1453-PRO: Refresh UI immediately
     }
 };
 
@@ -4366,6 +4370,7 @@ window.toggleTrackVisibility = function (id) {
         track.visible = !track.visible;
         dbSaveMeta('jeoTracks', jeoTracks);
         updateMapMarkers(false);
+        renderTracks(); // v1453-PRO: Refresh UI immediately
     }
 };
 
@@ -4631,14 +4636,38 @@ if (btnToggleRecords) {
     });
 }
 
-// v1453-PRO: Internal Labels Toggle
-const chkShowRecordLabels = document.getElementById('chk-show-record-labels');
+// v1453-PRO: Shared UI Toggles
+const chkShowRecordLabels = document.getElementById('chk-show-record-labels-global');
 if (chkShowRecordLabels) {
     chkShowRecordLabels.checked = showRecordLabels;
     chkShowRecordLabels.addEventListener('change', (e) => {
         showRecordLabels = e.target.checked;
         localStorage.setItem('jeoShowRecordLabels', showRecordLabels);
         updateMapMarkers();
+        // v1453-PRO: Sync all external layer labels too
+        externalLayers.forEach(l => {
+            if (l.visible) toggleLayerLabels(l.id, showRecordLabels);
+        });
+    });
+}
+
+const chkAllLayersToggle = document.getElementById('chk-all-layers-toggle');
+if (chkAllLayersToggle) {
+    chkAllLayersToggle.checked = showAllLayers;
+    chkAllLayersToggle.addEventListener('change', (e) => {
+        showAllLayers = e.target.checked;
+        // Apply to all layers
+        externalLayers.forEach(l => {
+            if (showAllLayers) {
+                // Restore their individual visibility state
+                if (l.visible) l.layer.addTo(map);
+            } else {
+                // Force hide regardless of individual state
+                if (map.hasLayer(l.layer)) map.removeLayer(l.layer);
+            }
+        });
+        updateMapMarkers(); // v1453-PRO: Sync internal records too
+        showToast(showAllLayers ? "All Layers Visible" : "All Layers Hidden", 2000);
     });
 }
 
@@ -5646,6 +5675,11 @@ async function addExternalLayer(name, geojson, skipSave = false) {
         layer.addTo(map);
         externalLayers.push(layerObj);
 
+        // v1453-PRO: Respect Master Switch
+        if (!showAllLayers) {
+            map.removeLayer(layer);
+        }
+
         // Zoom to layer
         try {
             map.fitBounds(layer.getBounds());
@@ -5791,7 +5825,7 @@ function toggleLayerVisibility(id, isVisible) {
     if (!l) return;
     l.visible = isVisible;
     if (l.visible) {
-        l.layer.addTo(map);
+        if (showAllLayers) l.layer.addTo(map);
         toggleLayerPoints(id, l.pointsVisible);
         toggleLayerAreas(id, l.areasVisible);
         // v1453-PRO: Clear any residual segment labels for KML (NOT wanted for external)
@@ -5800,7 +5834,7 @@ function toggleLayerVisibility(id, isVisible) {
             l.segmentLabels = [];
         }
     } else {
-        map.removeLayer(l.layer);
+        if (map.hasLayer(l.layer)) map.removeLayer(l.layer);
         if (l.segmentLabels) {
             l.segmentLabels.forEach(lab => { if (map.hasLayer(lab)) map.removeLayer(lab); });
             l.segmentLabels = [];

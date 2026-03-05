@@ -3314,3 +3314,90 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
         transform: rotate(90deg);
     }
 }
+
+/* v1453-PRO: Dynamic Settings Pills (Pill-shaped toggles) */
+.settings-pill-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+}
+
+.settings-pill {
+    background: #333;
+    border: 1px solid #444;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.settings-pill:active {
+    transform: scale(0.96);
+}
+
+.pill-label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pill-checkbox,
+.pill-checkbox-cyan {
+    appearance: none;
+    width: 32px;
+    height: 18px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid #555;
+    transition: background 0.3s;
+}
+
+.pill-checkbox::after,
+.pill-checkbox-cyan::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: #888;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.pill-checkbox:checked {
+    background: #4caf50;
+}
+
+.pill-checkbox-cyan:checked {
+    background: #00ffcc;
+}
+
+.pill-checkbox:checked::after,
+.pill-checkbox-cyan:checked::after {
+    left: 16px;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.settings-pill:has(input:checked) {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: #3d3d3d;
+}
+
+.settings-pill:has(input:checked) .pill-label {
+    color: #fff;
+}

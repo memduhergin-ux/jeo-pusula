@@ -523,11 +523,6 @@
                     <span class="pill-label">Live Track</span>
                     <input type="checkbox" id="chk-show-live-track" class="pill-checkbox-cyan">
                 </label>
-
-                <label class="settings-pill">
-                    <span class="pill-label">Labels</span>
-                    <input type="checkbox" id="chk-show-record-labels" class="pill-checkbox" checked>
-                </label>
             </div>
 
 
@@ -816,6 +811,18 @@
             <div class="modal-body" style="min-height: 200px;">
                 <div id="layers-list" style="display: flex; flex-direction: column; gap: 10px;">
                     <!-- Layers will be injected here -->
+                </div>
+
+                <div class="settings-pill-container" style="margin-top: 15px;">
+                    <label class="settings-pill" title="Show/Hide All External Layers">
+                        <span class="pill-label">Layers</span>
+                        <input type="checkbox" id="chk-all-layers-toggle" class="pill-checkbox-cyan" checked>
+                    </label>
+
+                    <label class="settings-pill" title="Show/Hide Record Labels on Map">
+                        <span class="pill-label">Labels</span>
+                        <input type="checkbox" id="chk-show-record-labels-global" class="pill-checkbox" checked>
+                    </label>
                 </div>
                 <!-- v1453-4-53Ω-Pro: Tier 3 Offline MBTiles Section -->
                 <div id="offline-map-section" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
