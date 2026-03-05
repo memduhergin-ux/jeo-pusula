@@ -6532,12 +6532,43 @@ if (document.getElementById('btn-backup-json')) {
             }))
         };
 
-        const jsonStr = JSON.stringify(backupData, null, 2);
-        const dateStr = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
-        const fileName = `JeoCompass_Backup_${dateStr}.json`;
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('tr-TR').replace(/\./g, '-');
+        const timeStr = now.getHours().toString().padStart(2, '0') + '-' + now.getMinutes().toString().padStart(2, '0');
+        const fileName = `JeoCompass_Backup_${dateStr}_${timeStr}.json`;
+
+        // v1453-NATIVE: Native Filesystem & Share Logic
+        if (isNative && window.Capacitor && window.Capacitor.Plugins.Filesystem) {
+            try {
+                const fs = window.Capacitor.Plugins.Filesystem;
+                await fs.writeFile({
+                    path: fileName,
+                    data: jsonStr,
+                    directory: 'DOCUMENTS',
+                    encoding: 'utf8'
+                });
+
+                showToast("Backup saved to Documents folder");
+
+                // Attempt to share the file as well for convenience
+                if (navigator.share) {
+                    const shareFile = new File([jsonStr], fileName, { type: 'application/json' });
+                    if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+                        await navigator.share({
+                            title: 'JeoCompass Backup',
+                            files: [shareFile]
+                        });
+                    }
+                }
+                return;
+            } catch (nativeErr) {
+                console.error("Native Backup error:", nativeErr);
+                // Continue to fallback if native FS fails
+            }
+        }
 
         try {
-            // Modern File System Access API (Save As)
+            // Modern File System Access API (Save As - Desktop)
             if ('showSaveFilePicker' in window) {
                 const handle = await window.showSaveFilePicker({
                     suggestedName: fileName,
@@ -6551,7 +6582,7 @@ if (document.getElementById('btn-backup-json')) {
                 await writable.close();
                 showToast("Backup successful (Saved to file)");
             } else {
-                // Fallback
+                // Fallback (Generic Browser)
                 downloadFile(jsonStr, fileName, 'application/json');
                 showToast("Backup successful (Downloads folder)");
             }
