@@ -2857,21 +2857,17 @@ function startGeolocationWatch() {
             }
 
 
-            // v464: Prevent (0,0) jump from entering smoothedPos
+            // v1453-PRO: Adaptive Smoothing (Alpha depends on speed to prevent lag in vehicles)
+            const speed = p.coords.speed || 0;
+            const adaptiveAlpha = speed > 1.0 ? 1.0 : SMOOTH_ALPHA; // Zero lag if moving > 3.6km/h
+
             if (currentCoords.lat !== 0 || currentCoords.lon !== 0) {
                 if (smoothedPos.lat === 0 && smoothedPos.lon === 0) {
                     smoothedPos.lat = currentCoords.lat;
                     smoothedPos.lon = currentCoords.lon;
-
-                    // v515: Auto-focus map on very first GPS success
-                    if (isFirstLocationFix && map) {
-                        map.setView([currentCoords.lat, currentCoords.lon], 17);
-                        isFirstLocationFix = false;
-                        console.log("v515: Initial GPS Focus Triggered");
-                    }
                 } else {
-                    smoothedPos.lat = (currentCoords.lat * SMOOTH_ALPHA) + (smoothedPos.lat * (1 - SMOOTH_ALPHA));
-                    smoothedPos.lon = (currentCoords.lon * SMOOTH_ALPHA) + (smoothedPos.lon * (1 - SMOOTH_ALPHA));
+                    smoothedPos.lat = (currentCoords.lat * adaptiveAlpha) + (smoothedPos.lat * (1 - adaptiveAlpha));
+                    smoothedPos.lon = (currentCoords.lon * adaptiveAlpha) + (smoothedPos.lon * (1 - adaptiveAlpha));
                 }
             }
 
