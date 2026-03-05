@@ -2238,7 +2238,8 @@ function optimizeMapPoints() {
                 });
             }
 
-            for (const { marker, tooltip } of labelsToPlace) {
+            for (let i = 0; i < labelsToPlace.length; i++) {
+                const { marker, tooltip } = labelsToPlace[i];
                 marker.openTooltip();
                 let tooltipEl = tooltip.getElement();
                 if (!tooltipEl) continue;
@@ -2258,8 +2259,11 @@ function optimizeMapPoints() {
                 const height = tooltip._jeoHeight || 14;
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
-                const distances = [7, 14, 21]; // 4px radius + 3px gap = 7px base dist
-                const angles = [0, 30, 60, 90, 120, 150, 180];
+                // v1453: 4px radius + 2px user requested gap = 6px base offset
+                const baseGap = 6;
+                const distances = [baseGap, baseGap * 2, baseGap * 3, baseGap * 4, baseGap * 5, baseGap * 6];
+                // Try top and right alignments first as per user explicit suggestion, then full circle
+                const angles = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 
                 let bestPos = null;
 
@@ -2272,15 +2276,19 @@ function optimizeMapPoints() {
                         let ax = dx;
                         let ay = dy;
 
+                        // X alignment (smart anchor to avoid overlapping point from the left)
                         if (deg === 0 || deg === 180) {
-                            ax -= width / 2;
-                        } else if (deg > 0 && deg < 180) {
-                            ax = dx;
+                            ax -= width / 2; // Center horizontally
+                        } else if (deg > 180) {
+                            ax -= width; // Anchor on the right side of the text box (for left placement)
                         }
 
-                        if (deg === 0) ay -= height;
-                        else if (deg === 180) ay = dy;
-                        else ay -= height / 2;
+                        // Y alignment (smart anchor to avoid overlapping point from the top)
+                        if (deg === 90 || deg === 270) {
+                            ay -= height / 2; // Center vertically
+                        } else if (deg < 90 || deg > 270) {
+                            ay -= height; // Anchor on the bottom of the text box (for top placement)
+                        }
 
                         const rect = {
                             left: markerPos.x + ax - 2,
@@ -2304,16 +2312,35 @@ function optimizeMapPoints() {
                 if (bestPos) {
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
-                    tooltipEl.style.transform = `translate(${bestPos.x}px, ${bestPos.y}px)`;
+                    // v1453-PRO: FIX: The ONLY way to beat Leaflet's engine is to use internal Leaflet API
+                    if (tooltip._updatePosition) {
+                        tooltip.options.offset = L.point(bestPos.x, bestPos.y);
+                        tooltip._updatePosition();
+                    } else {
+                        // Hard CSS override if API fails
+                        tooltipEl.style.transform = "none !important";
+                        tooltipEl.style.marginLeft = `${bestPos.x}px`;
+                        tooltipEl.style.marginTop = `${bestPos.y}px`;
+                    }
                     occupiedRects.push(bestPos.rect);
                 } else {
-                    const stagger = (labelsToPlace.indexOf({ marker, tooltip }) % 5) * 8;
-                    tooltipEl.style.opacity = "0.6";
-                    tooltipEl.style.transform = `translate(-${width / 2}px, -${35 + stagger}px)`;
+                    // Fallback purely staggered
+                    const stagger = (i % 6) * 12;
+                    tooltipEl.style.opacity = "0.7";
+
+                    if (tooltip._updatePosition) {
+                        tooltip.options.offset = L.point(-(width / 2), -(20 + stagger));
+                        tooltip._updatePosition();
+                    } else {
+                        tooltipEl.style.transform = "none !important";
+                        tooltipEl.style.marginLeft = `-${width / 2}px`;
+                        tooltipEl.style.marginTop = `-${20 + stagger}px`;
+                    }
                 }
             }
         }, 150);
     } catch (e) {
+
         console.error("optimizeMapPoints failed:", e);
     }
 }
@@ -2811,6 +2838,7 @@ autoInitSensors();
 
 // Robust Geolocation Watcher (v461)
 let watchId = null;
+let hasAutoCentered = false; // v1453-PRO: Track first location fix for auto-center
 function startGeolocationWatch() {
     if (!('geolocation' in navigator)) return;
     if (watchId !== null) navigator.geolocation.clearWatch(watchId);
@@ -2896,6 +2924,12 @@ function startGeolocationWatch() {
                     liveMarker = L.marker(livePos, { icon: liveIcon, zIndexOffset: 1000 }).addTo(liveLayer);
                 } else {
                     liveMarker.setLatLng(livePos);
+                }
+
+                // v1453-PRO: Auto-center map on VERY FIRST live location fix upon app startup
+                if (!hasAutoCentered) {
+                    map.setView(livePos, 17, { animate: true });
+                    hasAutoCentered = true;
                 }
 
                 if (followMe) {
@@ -3036,7 +3070,8 @@ if (document.getElementById('btn-modal-save')) {
                     "name": label,
                     "note": note,
                     "color": "#ffeb3b",
-                    "fillColor": "#ffeb3b"
+                    "fillColor": "#ffeb3b",
+                    "isMeasurement": true // v1453-PRO: Flag to identify custom drawings
                 },
                 geometry: {
                     type: isPolygon ? "Polygon" : "LineString",
@@ -3424,6 +3459,15 @@ async function initMap() {
             if (map.hasLayer(measureLine)) return; // Don't interfere with measurement
         }
     });
+
+    // v1453-PRO: FIX: Re-calculate label collisions instantly when map moves or zooms
+    map.on('zoomend', () => {
+        if (typeof optimizeMapPoints === 'function') optimizeMapPoints();
+    });
+    map.on('moveend', () => {
+        if (typeof optimizeMapPoints === 'function') optimizeMapPoints();
+    });
+
 
 
 
@@ -5664,7 +5708,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
             filled: true,
             pointsVisible: true,
             areasVisible: true,
-            labelsVisible: true,
+            labelsVisible: showRecordLabels, // v1453-PRO: Default from global
             segmentLabels: [], // v1453: CLEANED - No more segment labels for KML per request
             _jeoElements: layerElements // v1453-15: Store discovered elements
         };
@@ -5677,17 +5721,19 @@ async function addExternalLayer(name, geojson, skipSave = false) {
             map.removeLayer(layer);
         }
 
+        // v1453-PRO: Calculate segment labels if enabled
+        if (layerObj.labelsVisible) toggleLayerLabels(layerObj.id, true);
+
         // Zoom to layer
         try {
             map.fitBounds(layer.getBounds());
         } catch (e) {
-            // Empty layer
+            // Empty layer or bounds error
         }
 
         // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
         if (!skipSave) {
             await dbSaveLayers(externalLayers);
-            // v1453-4-53X: Mirror to folder removed
         }
         renderLayerList();
         // Optimized trigger
@@ -5798,23 +5844,71 @@ async function toggleLayerLabels(id, showLabels) {
     l.labelsVisible = showLabels;
 
     l.layer.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer.isKmlMarker) {
+        if (layer instanceof L.Marker || layer.isKmlMarker || (layer.getTooltip && layer.getTooltip())) {
             const tooltip = layer.getTooltip();
             if (tooltip) {
-                if (showLabels) layer.openTooltip();
-                else layer.closeTooltip();
+                if (showLabels) {
+                    layer.openTooltip();
+                    if (layer.getElement && layer.getElement()) layer.getElement().style.display = '';
+                } else {
+                    layer.closeTooltip();
+                    if (layer.getElement && layer.getElement()) layer.getElement().style.display = 'none';
+                }
             }
         }
     });
 
-    // KML Segment labels removed per user request
+    // Handle Segment Labels (Lengths)
     if (l.segmentLabels) {
         l.segmentLabels.forEach(lab => { if (map.hasLayer(lab)) map.removeLayer(lab); });
         l.segmentLabels = [];
     }
 
+    if (showLabels) {
+        l.segmentLabels = [];
+
+        // v1453-PRO: Only calculate lengths if this is an app-drawn measurement
+        let isMeasureLayer = false;
+        if (l.geojson && l.geojson.features) {
+            isMeasureLayer = l.geojson.features.some(f => f.properties && f.properties.isMeasurement);
+        }
+
+        if (isMeasureLayer) {
+            l.layer.eachLayer(layer => {
+                if (layer instanceof L.Polyline || layer instanceof L.Polygon) {
+                    const latlngs = layer.getLatLngs();
+                    const points = (layer instanceof L.Polygon) ? latlngs[0] : latlngs;
+                    if (!points || !Array.isArray(points)) return;
+
+                    for (let i = 0; i < points.length - 1; i++) {
+                        const p1 = L.latLng(points[i]);
+                        const p2 = L.latLng(points[i + 1]);
+                        const dist = p1.distanceTo(p2);
+                        const mid = L.latLng((p1.lat + p2.lat) / 2, (p1.lng + p2.lng) / 2);
+
+                        const point1 = map.latLngToContainerPoint(p1);
+                        const point2 = map.latLngToContainerPoint(p2);
+                        let angle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+                        if (angle > 90 || angle < -90) angle += 180;
+
+                        const lab = L.marker(mid, {
+                            icon: L.divIcon({
+                                className: 'segment-label-container',
+                                html: `<div class="segment-label" style="transform: rotate(${angle}deg); font-size: 10px; color: ${l.color || '#ffeb3b'};">${formatScaleDist(dist)}</div>`,
+                                iconSize: [0, 0],
+                                iconAnchor: [0, 0]
+                            }),
+                            interactive: false
+                        }).addTo(map);
+                        l.segmentLabels.push(lab);
+                    }
+                }
+            });
+        }
+    }
+
     saveExternalLayers();
-    optimizeMapPoints(); // v1453-4-53Ω: Trigger alignment immediately
+    optimizeMapPoints();
 }
 
 function toggleLayerVisibility(id, isVisible) {
@@ -6169,6 +6263,7 @@ if (btnMeasureClear) {
 async function clearMeasurement() {
     measurePoints = [];
     isPolygon = false; // v1453-4-26F: Reset flag to allow drawing again!
+    isMeasuring = false; // v1453-PRO: FIX: Ensure popups re-enable after clearing measure
     measureMarkers.forEach(m => map.removeLayer(m));
     measureMarkers = [];
     if (measureLine) map.removeLayer(measureLine);
@@ -6567,6 +6662,7 @@ if (document.getElementById('btn-backup-json')) {
         const dateStr = now.toLocaleDateString('tr-TR').replace(/\./g, '-');
         const timeStr = now.getHours().toString().padStart(2, '0') + '-' + now.getMinutes().toString().padStart(2, '0');
         const fileName = `JeoCompass_Backup_${dateStr}_${timeStr}.json`;
+        const jsonStr = JSON.stringify(backupData, null, 2);
 
         // v1453-NATIVE: Native Filesystem & Share Logic
         if (isNative && window.Capacitor && window.Capacitor.Plugins.Filesystem) {
@@ -6580,6 +6676,7 @@ if (document.getElementById('btn-backup-json')) {
                 });
 
                 showToast("Backup saved to Documents folder");
+                JeoAlert(`Backup Successful!\n\nFile Name: ${fileName}\nLocation: Documents folder`, "Backup Info");
 
                 // Attempt to share the file as well for convenience
                 if (navigator.share) {
@@ -6612,6 +6709,7 @@ if (document.getElementById('btn-backup-json')) {
                 await writable.write(jsonStr);
                 await writable.close();
                 showToast("Backup successful (Saved to file)");
+                JeoAlert(`Backup Successful!\n\nFile: ${fileName}`, "Backup Info");
             } else {
                 // Fallback (Generic Browser)
                 downloadFile(jsonStr, fileName, 'application/json');
@@ -7054,7 +7152,13 @@ setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setIn
 
 
 if (document.getElementById('btn-restore-json')) {
-    document.getElementById('btn-restore-json').addEventListener('click', () => {
+    document.getElementById('btn-restore-json').addEventListener('click', async () => {
+        const isEnglish = (localStorage.getItem('jeoLang') === 'en');
+        const alertMsg = isEnglish
+            ? "Your backups are saved in the 'Documents' folder. Please navigate there to select your backup file when the file picker opens."
+            : "Yedekleriniz telefonunuzun 'Belgeler' (Documents) klasörüne kaydedilmektedir.\n\nLütfen dosya seçimi menüsü açıldığında, öncelikle cihazınızın Belgeler klasörüne gidip yedeğinizi oradan seçin.";
+
+        await JeoAlert(alertMsg, isEnglish ? "Restore Info" : "Geri Yükleme Bilgisi");
         document.getElementById('restore-file-input').click();
     });
 }

@@ -2498,7 +2498,6 @@ textarea.form-input {
     pointer-events: none;
     padding: 0px 1px !important;
     /* tighter look */
-    transition: opacity 0.3s, visibility 0.3s;
 }
 
 .leaflet-tooltip-pane .kml-label::before {
@@ -3130,21 +3129,20 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 
 .segment-label {
     background: none !important;
-    color: #ffeb3b !important;
-    font-size: 10px !important;
+    color: #000 !important;
+    font-size: 11px !important;
     font-weight: 900 !important;
     padding: 0 !important;
     border: none !important;
     white-space: nowrap !important;
     text-shadow:
-        2px 2px 0px #000,
-        -2px -2px 0px #000,
-        2px -2px 0px #000,
-        -2px 2px 0px #000,
-        0 0 4px #000 !important;
+        -1px -1px 0 #fff,
+        1px -1px 0 #fff,
+        -1px 1px 0 #fff,
+        1px 1px 0 #fff,
+        0px 0px 3px #fff !important;
     box-shadow: none !important;
     margin-top: -8px !important;
-    /* Center on line with slight vertical bias */
     display: block !important;
     visibility: visible !important;
     pointer-events: none;
