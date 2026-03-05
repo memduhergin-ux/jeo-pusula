@@ -1964,12 +1964,20 @@ function createMBTilesLayer() {
             const done = this._tileRequests.get(key);
 
             if (done) {
-                const img = document.createElement('img');
                 if (url) {
+                    const img = document.createElement('img');
                     img.src = url;
-                    img.onload = () => URL.revokeObjectURL(url);
+                    img.onload = () => {
+                        URL.revokeObjectURL(url);
+                        done(null, img);
+                    };
+                    img.onerror = () => {
+                        URL.revokeObjectURL(url);
+                        done(null, null); // v1453-PRO: Skip broken tiles
+                    };
+                } else {
+                    done(null, null); // v1453-PRO: Skip missing tiles silently
                 }
-                done(null, img);
                 this._tileRequests.delete(key);
             }
         }
@@ -2098,6 +2106,10 @@ let measureLine = null;
 let activeMeasureLabels = []; // Track segment labels during active measurement
 let isPolygon = false;
 let measureMode = 'line'; // 'line' or 'polygon'
+
+// Map Update Throttling (v1453-PRO)
+let lastMapUpdate = 0;
+const MAP_UPDATE_THROTTLE = 800; // 800ms
 
 // Add Point State
 let isAddingPoint = false;
@@ -2890,7 +2902,14 @@ function startGeolocationWatch() {
                     liveMarker.setLatLng(livePos);
                 }
 
-                if (followMe) map.panTo(livePos);
+                if (followMe) {
+                    const now = Date.now();
+                    if (now - lastMapUpdate > MAP_UPDATE_THROTTLE) {
+                        // v1453-PRO: Use non-animated setView for high-speed tracking (Google Maps style)
+                        map.setView(livePos, map.getZoom(), { animate: false });
+                        lastMapUpdate = now;
+                    }
+                }
 
                 // v549: TRAVEL-ONLY HEADLIGHT
                 // The user specifically wants the headlight to ONLY follow the direction of progress.
