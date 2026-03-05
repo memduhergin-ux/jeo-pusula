@@ -3399,3 +3399,8 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 .settings-pill:has(input:checked) .pill-label {
     color: #fff;
 }
+
+#app-watermark {
+    pointer-events: none !important;
+    z-index: 10 !important;
+}

@@ -3051,55 +3051,70 @@ let isSavingLayer = false;
 
 if (document.getElementById('btn-modal-cancel')) {
     document.getElementById('btn-modal-cancel').addEventListener('click', () => {
+        console.log("Modal Cancel: Cleaning up states...");
         recordModal.classList.remove('active');
         isSavingLayer = false;
+        isMeasuring = false;
+        isPolygon = false;
+        clearMeasurement();
+        updateMeasureModeUI();
     });
 }
 
 if (document.getElementById('btn-modal-save')) {
     document.getElementById('btn-modal-save').addEventListener('click', async () => {
+        console.log("Modal Save Pressed. Current isSavingLayer:", isSavingLayer);
         const label = document.getElementById('rec-label').value;
         const note = document.getElementById('rec-note').value;
 
-        // If we are saving a drawing/measurement as an external layer instead of a point
-        if (isSavingLayer) {
-            if (!label) {
-                JeoAlert("Please enter a name for the shape.");
+        // Force reset states immediately to unblock popups even during save process
+        const wasSavingLayer = isSavingLayer;
+        isMeasuring = false;
+        isPolygon = false;
+        isSavingLayer = false;
+        updateMeasureModeUI();
+
+        if (wasSavingLayer) {
+            const label = document.getElementById('rec-label').value;
+            const note = document.getElementById('rec-note').value;
+
+            // If we are saving a drawing/measurement as an external layer instead of a point
+            if (wasSavingLayer) {
+                if (!label) {
+                    JeoAlert("Please enter a name for the shape.");
+                    return;
+                }
+
+                let geojson = {
+                    type: "FeatureCollection",
+                    name: label,
+                    crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+                    features: []
+                };
+
+                const feature = {
+                    type: "Feature",
+                    properties: {
+                        "name": label,
+                        "note": note,
+                        "color": "#ffeb3b",
+                        "fillColor": "#ffeb3b",
+                        "isMeasurement": true // v1453-PRO: Flag to identify custom drawings
+                    },
+                    geometry: {
+                        type: isPolygon ? "Polygon" : "LineString",
+                        coordinates: isPolygon ? [measurePoints.map(p => [p.lng, p.lat]).concat([[measurePoints[0].lng, measurePoints[0].lat]])] : measurePoints.map(p => [p.lng, p.lat])
+                    }
+                };
+                geojson.features.push(feature);
+
+                await addExternalLayer(label, geojson);
+                showToast(`Layer "${label}" saved to Map Layers!`, 3000);
+
+                recordModal.classList.remove('active');
+                await clearMeasurement();
                 return;
             }
-
-            let geojson = {
-                type: "FeatureCollection",
-                name: label,
-                crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-                features: []
-            };
-
-            const feature = {
-                type: "Feature",
-                properties: {
-                    "name": label,
-                    "note": note,
-                    "color": "#ffeb3b",
-                    "fillColor": "#ffeb3b",
-                    "isMeasurement": true // v1453-PRO: Flag to identify custom drawings
-                },
-                geometry: {
-                    type: isPolygon ? "Polygon" : "LineString",
-                    coordinates: isPolygon ? [measurePoints.map(p => [p.lng, p.lat]).concat([[measurePoints[0].lng, measurePoints[0].lat]])] : measurePoints.map(p => [p.lng, p.lat])
-                }
-            };
-            geojson.features.push(feature);
-
-            await addExternalLayer(label, geojson);
-            showToast(`Layer "${label}" saved to Map Layers!`, 3000);
-
-            recordModal.classList.remove('active');
-            isSavingLayer = false;
-            isMeasuring = false;
-            await clearMeasurement(); // v1453-4-37F: Crucial reset after saving!
-            updateMeasureModeUI();
-            return;
         }
 
         // --- Standard Point Saving Logic ---
@@ -3160,12 +3175,9 @@ if (document.getElementById('btn-modal-save')) {
         recordModal.classList.remove('active');
         editingRecordId = null;
 
-        // Clear measurement state if we happened to just save one normally previously
-        if (measurePoints.length > 0) {
-            clearMeasurement();
-            isMeasuring = false;
-            updateMeasureModeUI();
-        }
+        // Final cleanup
+        await clearMeasurement();
+        updateMeasureModeUI();
     });
 }
 
@@ -3459,15 +3471,14 @@ async function initMap() {
             return; // Even if no polygon found, stop here if grid mode is on (prevents random popups)
         }
 
-        if (isMeasuring) {
+        if (isMeasuring && !isPolygon) {
             updateMeasurement(e.latlng);
         } else if (isAddingPoint) {
             // Handled by Crosshair
         } else {
             // v1453-159: GENERAL MAP POPUP REMOVED as requested. 
-            // Only clicks on objects (KML, Records, Tracks) will show popups now.
-            // Coordinate info is still available in the bottom bar via crosshair.
-            if (map.hasLayer(measureLine)) return; // Don't interfere with measurement
+            // Clicks on objects (KML, Records, Tracks) will show popups now.
+            // v1453-PRO: Explicitly removed measurement click interceptor to prevent popup blockage
         }
     });
 
@@ -3489,8 +3500,9 @@ async function initMap() {
 
     // v1453-4-24F: Total Data Resilience - Atomic Auto-Restore Sequence
     setTimeout(async () => {
-        const savedMeasurePoints = localStorage.getItem('jeoActiveMeasurePoints');
-        const savedGrid = await dbLoadMeta('jeoActiveGridParams'); // v1453-4-26F: IDB Load
+        // v1453-PRO: Prefer dbLoadMeta (IDB/SQLite) over localStorage for consistency
+        const savedMeasurePoints = await dbLoadMeta('jeoActiveMeasurePoints');
+        const savedGrid = await dbLoadMeta('jeoActiveGridParams');
 
         if (savedMeasurePoints) {
             try {
@@ -3498,18 +3510,18 @@ async function initMap() {
                 if (points && points.length > 0) {
                     measurePoints = points.map(p => L.latLng(p.lat, p.lng));
 
-                    // v1453-4-24F: Safe Boolean Conversion Fix
-                    const isPoly = localStorage.getItem('jeoActiveMeasureIsPoly');
+                    const isPoly = await dbLoadMeta('jeoActiveMeasureIsPoly');
                     isPolygon = (isPoly === 'true');
 
                     measureMode = isPolygon ? 'polygon' : 'line';
-                    isMeasuring = true;
 
-                    // Clear any existing active markers before restoring
-                    measureMarkers.forEach(m => map.removeLayer(m));
-                    measureMarkers = [];
+                    // Check if it was actively measuring
+                    const wasMeasuring = await dbLoadMeta('jeoIsMeasuring');
+                    isMeasuring = (wasMeasuring === 'true');
 
                     // Add markers back with stable styling
+                    measureMarkers.forEach(m => map.removeLayer(m));
+                    measureMarkers = [];
                     measurePoints.forEach(p => {
                         const m = L.circleMarker(p, {
                             radius: 4,
@@ -4216,7 +4228,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                 shape.bindPopup(popupContent);
                 // v535: Enable Grid Interaction for saved geometries
                 shape.on('click', (e) => {
-                    if (isMeasuring) {
+                    if (isMeasuring && !isPolygon) {
                         L.DomEvent.stopPropagation(e);
                         updateMeasurement(e.latlng);
                         return;
@@ -4290,7 +4302,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                 </div>
             `;
             marker.on('click', (e) => {
-                if (isMeasuring) {
+                if (isMeasuring && !isPolygon) {
                     L.DomEvent.stopPropagation(e);
                     updateMeasurement(e.latlng);
                     return;
@@ -5706,7 +5718,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
                     }
                     */
 
-                    if (isMeasuring) {
+                    if (isMeasuring && !isPolygon) {
                         L.DomEvent.stopPropagation(e); // Stop popup
                         updateMeasurement(e.latlng);
                     } else if (isAddingPoint) {
@@ -6280,14 +6292,16 @@ if (btnMeasureSave) {
 
 if (btnMeasureClear) {
     btnMeasureClear.addEventListener('click', () => {
+        isMeasuring = false; // v1453-PRO: FIX: Ensure popups re-enable
         clearMeasurement();
     });
 }
 
 async function clearMeasurement() {
+    console.log("clearMeasurement called. Current isMeasuring:", isMeasuring);
     measurePoints = [];
-    isPolygon = false; // v1453-4-26F: Reset flag to allow drawing again!
-    isMeasuring = false; // v1453-PRO: FIX: Ensure popups re-enable after clearing measure
+    isPolygon = false;
+    isMeasuring = false;
     measureMarkers.forEach(m => map.removeLayer(m));
     measureMarkers = [];
     if (measureLine) map.removeLayer(measureLine);
@@ -6298,6 +6312,11 @@ async function clearMeasurement() {
     measureInfo.style.display = 'none';
     dbSaveMeta('jeoActiveMeasurePoints', null);
     dbSaveMeta('jeoActiveMeasureIsPoly', null);
+    dbSaveMeta('jeoIsMeasuring', 'false'); // Sync state
+    // v1453-PRO: Legacy cleanup to prevent double-restoration from localStorage
+    localStorage.removeItem('jeoActiveMeasurePoints');
+    localStorage.removeItem('jeoActiveMeasureIsPoly');
+    localStorage.removeItem('jeoIsMeasuring');
     updateMeasureButtons();
 }
 
@@ -6477,8 +6496,11 @@ function saveMeasurement() {
     document.getElementById('rec-strike').value = "";
     document.getElementById('rec-dip').value = "";
 
-    // Set modal text temporarily to guide the user
-    document.getElementById('rec-label').placeholder = defaultName;
+    // v1453-PRO: Reset state before opening modal to ensure popups work if they click map
+    isMeasuring = false;
+    if (btnMeasure) btnMeasure.style.background = '';
+    if (btnPolygon) btnPolygon.style.background = '';
+    if (measureInfo) measureInfo.style.display = 'none';
 
     // Open the existing Modal
     recordModal.classList.add('active');
