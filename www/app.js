@@ -4230,6 +4230,12 @@ function updateMapMarkers(shouldFitBounds = false) {
                 shape.bindPopup(popupContent);
                 // v535: Enable Grid Interaction for saved geometries
                 shape.on('click', (e) => {
+                    // v1453-PRO: Snap to existing point while drawing
+                    if (isMeasuring && !isPolygon) {
+                        L.DomEvent.stopPropagation(e);
+                        updateMeasurement(e.latlng);
+                        return;
+                    }
                     if (isAddingPoint) {
                         L.DomEvent.stopPropagation(e);
                         return;
@@ -4239,7 +4245,7 @@ function updateMapMarkers(shouldFitBounds = false) {
                         map.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent });
                         return;
                     }
-                    // All other modes (including measuring): Fall-through to bound popup
+                    // Not measuring: fall-through to bound popup
                 });
 
                 markerGroup.addLayer(shape);
@@ -4280,6 +4286,12 @@ function updateMapMarkers(shouldFitBounds = false) {
                 </div>`;
 
             marker.on('click', (e) => {
+                // v1453-PRO: Snap to existing point while drawing
+                if (isMeasuring && !isPolygon) {
+                    L.DomEvent.stopPropagation(e);
+                    updateMeasurement(e.latlng);
+                    return;
+                }
                 if (isAddingPoint) {
                     L.DomEvent.stopPropagation(e);
                     return;
@@ -6209,13 +6221,16 @@ if (btnPolygon) {
 }
 
 function updateMeasureModeUI() {
-    // Reset buttons
+    // Reset measurement buttons
     if (btnMeasure) btnMeasure.style.background = '';
     if (btnPolygon) btnPolygon.style.background = '';
-    if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
-    if (crosshair) crosshair.style.display = 'none';
-    if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
-    // isAddingPoint = false; // v1453-PRO: Sticky Mode restored. Manual toggle required.
+
+    // v1453-PRO: Sticky Mode - Only reset Add Point UI if not actively adding a point
+    if (!isAddingPoint) {
+        if (btnAddPoint) btnAddPoint.classList.remove('active-add-point');
+        if (crosshair) crosshair.style.display = 'none';
+        if (btnConfirmPoint) btnConfirmPoint.style.display = 'none';
+    }
 
     // v1453-4-27F: FORCE EXIT Grid Mode when measuring to prevent click blocking
     if (isMeasuring) {

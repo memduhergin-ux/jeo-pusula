@@ -1,4 +1,4 @@
-package com.memduhergin.jeopusula;
+package com.metrockofficial.jeocompass;
 
 import com.getcapacitor.BridgeActivity;
 
