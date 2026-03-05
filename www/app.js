@@ -131,15 +131,15 @@ window.showJeoColorPicker = function (initialColor, callback) {
         colors.forEach(color => {
             const opt = document.createElement('div');
             opt.className = 'color-option-original';
+            if (color.toLowerCase() === selectedColor.toLowerCase()) opt.classList.add('selected');
             opt.style.backgroundColor = color;
-            opt.style.width = '55px';
-            opt.style.height = '55px';
-            opt.style.border = '1px solid #ccc';
-            opt.style.cursor = 'pointer';
 
             opt.onclick = () => {
                 selectedColor = color;
                 if (preview) preview.style.backgroundColor = selectedColor;
+                // Highlight selected square
+                document.querySelectorAll('.color-option-original').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
             };
             grid.appendChild(opt);
         });
@@ -2367,13 +2367,6 @@ function getFeatureName(properties) {
     for (const key of keys) {
         if (properties[key]) return properties[key];
     }
-    // Deep fallback: first non-empty string or number property
-    for (const key in properties) {
-        const val = properties[key];
-        if ((typeof val === 'string' && val.trim().length > 0) || typeof val === 'number') {
-            return val;
-        }
-    }
     return null;
 }
 
@@ -4000,6 +3993,8 @@ function formatScaleDist(d) {
 
 // Show/Hide Records State
 let showRecordsOnMap = true;
+// v1453-PRO: Global toggle for internal labels with persistence
+let showRecordLabels = localStorage.getItem('jeoShowRecordLabels') !== 'false';
 
 /** Parallel Labeling Helpers **/
 function getSegmentAngle(p1, p2) {
@@ -4072,7 +4067,7 @@ function updateMapMarkers(shouldFitBounds = false) {
     if (activeMeasureLabels && activeMeasureLabels.length > 0) {
         activeMeasureLabels.forEach(l => {
             if (l.getElement && l.getElement()) {
-                l.getElement().style.display = showRecordsOnMap ? '' : 'none';
+                l.getElement().style.display = (showRecordsOnMap && showRecordLabels) ? '' : 'none';
             }
         });
     }
@@ -4111,34 +4106,31 @@ function updateMapMarkers(shouldFitBounds = false) {
                     totalLen += L.latLng(latlngs[latlngs.length - 1]).distanceTo(L.latLng(latlngs[0]));
                     shape = L.polygon(latlngs, { color: '#ffeb3b', weight: 3, fillOpacity: 0.3, renderer: L.svg(), interactive: true });
 
-                    // v1453-99F: Segment labels (distances) REMOVED as requested to prevent clutter
-                    /*
-                    for (let i = 0; i < latlngs.length; i++) {
-                        const nextIndex = (i + 1) % latlngs.length;
-                        const p1 = L.latLng(latlngs[i]);
-                        const p2 = L.latLng(latlngs[nextIndex]);
-                        const dist = p1.distanceTo(p2);
-                        const mid = getSegmentMidpoint(p1, p2);
-                        const angle = getSegmentAngle(p1, p2);
+                    if (showRecordLabels) {
+                        for (let i = 0; i < latlngs.length; i++) {
+                            const nextIndex = (i + 1) % latlngs.length;
+                            const p1 = L.latLng(latlngs[i]);
+                            const p2 = L.latLng(latlngs[nextIndex]);
+                            const dist = p1.distanceTo(p2);
+                            const mid = getSegmentMidpoint(p1, p2);
+                            const angle = getSegmentAngle(p1, p2);
 
-                        const edgeLabel = L.marker(mid, {
-                            icon: L.divIcon({
-                                className: 'segment-label-container',
-                                html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                                iconSize: [1, 1],
-                                iconAnchor: [0, 0]
-                            }),
-                            interactive: false
-                        });
-                        markerGroup.addLayer(edgeLabel);
+                            const edgeLabel = L.marker(mid, {
+                                icon: L.divIcon({
+                                    className: 'segment-label-container',
+                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg); font-size: 10px;">${formatScaleDist(dist)}</div>`,
+                                    iconSize: [0, 0],
+                                    iconAnchor: [0, 0]
+                                }),
+                                interactive: false
+                            });
+                            markerGroup.addLayer(edgeLabel);
+                        }
                     }
-                    */
                 } else {
                     shape = L.polyline(latlngs, { color: '#ffeb3b', weight: 3, renderer: L.svg(), interactive: true });
 
-                    // v1453-99F: Polyline Segment labels REMOVED
-                    /*
-                    if (r.geomType === 'polyline') {
+                    if (r.geomType === 'polyline' && showRecordLabels) {
                         for (let i = 0; i < latlngs.length - 1; i++) {
                             const p1 = L.latLng(latlngs[i]);
                             const p2 = L.latLng(latlngs[i + 1]);
@@ -4154,15 +4146,15 @@ function updateMapMarkers(shouldFitBounds = false) {
                             const segmentLabel = L.marker(mid, {
                                 icon: L.divIcon({
                                     className: 'segment-label-container',
-                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                                    iconSize: [1, 1],
+                                    html: `<div class="segment-label" style="transform: rotate(${angle}deg); font-size: 10px;">${formatScaleDist(dist)}</div>`,
+                                    iconSize: [0, 0],
                                     iconAnchor: [0, 0]
                                 }),
                                 interactive: false
-                            }).addTo(map);
+                            });
+                            markerGroup.addLayer(segmentLabel);
                         }
                     }
-                    */
                 }
 
                 const totalLenFormatted = r.geomType === 'polygon'
@@ -4651,6 +4643,17 @@ if (btnToggleRecords) {
         showRecordsOnMap = !showRecordsOnMap;
         btnToggleRecords.classList.toggle('active', showRecordsOnMap);
         updateMapMarkers(showRecordsOnMap);
+    });
+}
+
+// v1453-PRO: Internal Labels Toggle
+const chkShowRecordLabels = document.getElementById('chk-show-record-labels');
+if (chkShowRecordLabels) {
+    chkShowRecordLabels.checked = showRecordLabels;
+    chkShowRecordLabels.addEventListener('change', (e) => {
+        showRecordLabels = e.target.checked;
+        localStorage.setItem('jeoShowRecordLabels', showRecordLabels);
+        updateMapMarkers();
     });
 }
 
@@ -5651,7 +5654,7 @@ async function addExternalLayer(name, geojson, skipSave = false) {
             pointsVisible: true,
             areasVisible: true,
             labelsVisible: true,
-            segmentLabels: [], // v1453: CLEANED - No more segment labels for KML
+            segmentLabels: [], // v1453: CLEANED - No more segment labels for KML per request
             _jeoElements: layerElements // v1453-15: Store discovered elements
         };
 
@@ -5779,38 +5782,20 @@ async function toggleLayerLabels(id, showLabels) {
     l.labelsVisible = showLabels;
 
     l.layer.eachLayer(layer => {
-        // v674: Support CircleMarker (instanceof L.Path with isKmlMarker flag)
         if (layer instanceof L.Marker || layer.isKmlMarker) {
             const tooltip = layer.getTooltip();
             if (tooltip) {
-                if (showLabels) {
-                    layer.openTooltip();
-                    const container = tooltip.getElement();
-                    if (container) {
-                        container.style.display = '';
-                        container.style.opacity = '1';
-                        container.style.visibility = 'visible';
-                    }
-                } else {
-                    layer.closeTooltip();
-                }
+                if (showLabels) layer.openTooltip();
+                else layer.closeTooltip();
             }
         }
     });
 
-    // v1453-99F: Segment labels (distances) REMOVED for KML to prevent clutter as requested
-    /*
-    if (l.segmentLabels && Array.isArray(l.segmentLabels)) {
-        l.segmentLabels.forEach(lab => {
-            if (showLabels && l.visible) {
-                if (!map.hasLayer(lab)) lab.addTo(map);
-            } else {
-                if (map.hasLayer(lab)) map.removeLayer(lab);
-            }
-        });
+    // KML Segment labels removed per user request
+    if (l.segmentLabels) {
+        l.segmentLabels.forEach(lab => { if (map.hasLayer(lab)) map.removeLayer(lab); });
+        l.segmentLabels = [];
     }
-    */
-    l.segmentLabels = []; // Clear existing for safety
 
     saveExternalLayers();
 }
@@ -5821,23 +5806,21 @@ function toggleLayerVisibility(id, isVisible) {
     l.visible = isVisible;
     if (l.visible) {
         l.layer.addTo(map);
-        // Reapply sub-layer visibility based on their individual toggles
         toggleLayerPoints(id, l.pointsVisible);
         toggleLayerAreas(id, l.areasVisible);
-        // v1453-99F: Segment labels (distances) REMOVED for KML
-        l.segmentLabels = [];
+        // v1453-PRO: Clear any residual segment labels for KML (NOT wanted for external)
+        if (l.segmentLabels) {
+            l.segmentLabels.forEach(lab => { if (map.hasLayer(lab)) map.removeLayer(lab); });
+            l.segmentLabels = [];
+        }
     } else {
         map.removeLayer(l.layer);
-        // v1453-99F: Hide segment labels when main layer is hidden
         if (l.segmentLabels) {
-            l.segmentLabels.forEach(lab => {
-                if (map.hasLayer(lab)) map.removeLayer(lab);
-            });
-            l.segmentLabels = []; // Clear reference
+            l.segmentLabels.forEach(lab => { if (map.hasLayer(lab)) map.removeLayer(lab); });
+            l.segmentLabels = [];
         }
     }
     saveExternalLayers();
-    // No need to re-render list, just update the internal state
 }
 
 function toggleLayerFill(id, isFilled) {
@@ -6247,8 +6230,8 @@ function redrawMeasurement() {
             const lab = L.marker(mid, {
                 icon: L.divIcon({
                     className: 'segment-label-container',
-                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                    iconSize: [1, 1],
+                    html: `<div class="segment-label" style="transform: rotate(${angle}deg); font-size: 10px;">${formatScaleDist(dist)}</div>`,
+                    iconSize: [0, 0],
                     iconAnchor: [0, 0]
                 }),
                 interactive: false
@@ -6269,8 +6252,8 @@ function redrawMeasurement() {
             const lab = L.marker(mid, {
                 icon: L.divIcon({
                     className: 'segment-label-container',
-                    html: `<div class="segment-label" style="transform: rotate(${angle}deg)">${formatScaleDist(dist)}</div>`,
-                    iconSize: [0, 0], // v1453-4-53V: Force overflow
+                    html: `<div class="segment-label" style="transform: rotate(${angle}deg); font-size: 10px;">${formatScaleDist(dist)}</div>`,
+                    iconSize: [0, 0],
                     iconAnchor: [0, 0]
                 }),
                 interactive: false

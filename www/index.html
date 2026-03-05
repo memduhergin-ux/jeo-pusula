@@ -35,21 +35,54 @@
 <body>
     <!-- Custom Color Picker Modal (Original Style - English) -->
     <div id="jeo-color-picker-modal" class="jeo-modal-overlay" style="background: rgba(0,0,0,0.5);">
+        <style>
+            .color-picker-grid-original {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                justify-items: center;
+                align-items: center;
+                margin: 20px auto;
+                width: fit-content;
+            }
+
+            .color-option-original {
+                width: 20px;
+                height: 20px;
+                border: 1px solid #ccc;
+                cursor: pointer;
+                border-radius: 4px;
+                box-sizing: border-box;
+                transition: transform 0.1s ease;
+            }
+
+            .color-option-original:active {
+                transform: scale(0.9);
+            }
+
+            .color-option-original.selected {
+                border: 2px solid #2196F3 !important;
+                box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+            }
+        </style>
         <div class="jeo-modal original-style"
             style="max-width: 300px; background: white; color: #333; border-radius: 8px;">
             <div class="jeo-modal-header"
-                style="color: #333; border-bottom: none; padding: 20px 20px 10px 20px; font-size: 1.2rem;">Select Color
+                style="color: #333; border-bottom: none; padding: 20px 20px 10px 20px; font-size: 1.1rem; text-align: center; font-weight: bold; text-transform: uppercase;">
+                Select Color
             </div>
             <div class="jeo-modal-body" style="padding: 10px 20px;">
                 <div class="color-picker-grid-original" id="jeo-color-grid">
                     <!-- 4x2 Grid injected by JS -->
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                    <span style="color: #2196F3; font-weight: bold; cursor: pointer;">Custom</span>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 0 10px;">
+                    <span style="color: #2196F3; font-weight: bold; cursor: pointer; font-size: 0.9rem;">Custom</span>
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 0.85rem; color: #666;">Selected color</span>
+                        <span style="font-size: 0.8rem; color: #666;">Selected color</span>
                         <div id="jeo-selected-color-preview"
-                            style="width: 40px; height: 40px; border: 1px solid #ccc; background: #000;"></div>
+                            style="width: 30px; height: 30px; border: 1px solid #ccc; background: #000; border-radius: 4px;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -489,6 +522,11 @@
                 <label class="settings-pill">
                     <span class="pill-label">Live Track</span>
                     <input type="checkbox" id="chk-show-live-track" class="pill-checkbox-cyan">
+                </label>
+
+                <label class="settings-pill">
+                    <span class="pill-label">Labels</span>
+                    <input type="checkbox" id="chk-show-record-labels" class="pill-checkbox" checked>
                 </label>
             </div>
 

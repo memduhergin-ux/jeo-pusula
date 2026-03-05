@@ -2218,26 +2218,6 @@ textarea.form-input {
     }
 
 
-    /* Parallel Segment/Edge Labels */
-    .segment-label-container {
-        pointer-events: none;
-    }
-
-    .segment-label {
-        background: none;
-        color: #ffeb3b;
-        /* Match line color */
-        font-size: 11px;
-        font-weight: 900;
-        padding: 0;
-        border: none;
-        white-space: nowrap;
-        text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-        box-shadow: none;
-        margin-top: -6px;
-        /* Offset it slightly away from the line */
-        transition: transform 0.1s ease-out;
-    }
 
     /* KML Point Hiding Helper */
     .leaflet-marker-icon.hidden-point,
@@ -3129,9 +3109,40 @@ input[type="color"].track-color-dot::-webkit-color-swatch {
 /* v1453-97F: Measurement Label Readability Improvement (Transparent Reuse) */
 /* Removed redundant segment-label block to prevent overrides */
 
+/* v1453-97P: High-Performance Global Segment/Edge Labels */
 .segment-label-container {
-    z-index: 1000 !important;
+    pointer-events: none !important;
+    z-index: 5000 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
+
+.segment-label {
+    background: none !important;
+    color: #ffeb3b !important;
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    padding: 0 !important;
+    border: none !important;
+    white-space: nowrap !important;
+    text-shadow:
+        2px 2px 0px #000,
+        -2px -2px 0px #000,
+        2px -2px 0px #000,
+        -2px 2px 0px #000,
+        0 0 4px #000 !important;
+    box-shadow: none !important;
+    margin-top: -8px !important;
+    /* Center on line with slight vertical bias */
+    display: block !important;
+    visibility: visible !important;
+    pointer-events: none;
+}
+
+/* Redundant removal - merged above */
 
 /* v1453-97F: Hide labels when zoomed out */
 .low-zoom-labels .segment-label-container {
