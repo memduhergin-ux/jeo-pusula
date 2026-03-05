@@ -2184,10 +2184,9 @@ function optimizeMapPoints() {
             if (markers.length === 0) return;
 
             const mapBounds = map.getBounds();
-            const occupiedRects = []; // Store {top, left, right, bottom} in layer points
-            const labelsToPlace = []; // Collect valid labels to process
+            const occupiedRects = [];
+            const labelsToPlace = [];
 
-            // 1. First, treat ALL visible markers (KML + Records) as obstacles
             markers.forEach(marker => {
                 const parentLayer = externalLayers.find(l => l.id === marker.jeoLayerId);
                 if (!parentLayer || !parentLayer.visible || !parentLayer.pointsVisible) return;
@@ -2196,7 +2195,7 @@ function optimizeMapPoints() {
                 if (!mapBounds.contains(latLng)) return;
 
                 const pos = map.latLngToLayerPoint(latLng);
-                const r = 4; // Marker radius in pixels
+                const r = 4;
                 occupiedRects.push({
                     left: pos.x - r,
                     top: pos.y - r,
@@ -2209,15 +2208,12 @@ function optimizeMapPoints() {
                 }
             });
 
-            // 2. Standard record markers + their labels
             if (markerGroup) {
                 markerGroup.eachLayer(layer => {
-                    if (layer instanceof L.Marker) {
+                    if (layer instanceof L.Marker && layer.getLatLng) {
                         const latLng = layer.getLatLng();
                         if (mapBounds.contains(latLng)) {
                             const pos = map.latLngToLayerPoint(latLng);
-
-                            // Obstacle 1: The Pin itself
                             const r = 16;
                             occupiedRects.push({
                                 left: pos.x - r,
@@ -2225,29 +2221,18 @@ function optimizeMapPoints() {
                                 right: pos.x + r,
                                 bottom: pos.y + r
                             });
-
-                            // Obstacle 2: The ID Label of the record (approximate size)
-                            // Records have an ID label at the top-right of the pin
-                            occupiedRects.push({
-                                left: pos.x,
-                                top: pos.y - 25,
-                                right: pos.x + 30,
-                                bottom: pos.y
-                            });
                         }
                     }
                 });
             }
 
-            // 3. Process Labels
             for (const { marker, tooltip } of labelsToPlace) {
                 marker.openTooltip();
                 let tooltipEl = tooltip.getElement();
                 if (!tooltipEl) continue;
 
-                // v1453-4-53L: Retry logic for race condition widths
                 if ((!tooltip._jeoWidth || tooltip._jeoWidth === 0) && tooltipEl.offsetWidth === 0) {
-                    await new Promise(r => setTimeout(r, 200));
+                    await new Promise(r => setTimeout(r, 100));
                     tooltipEl = tooltip.getElement();
                     if (!tooltipEl) continue;
                 }
@@ -2256,47 +2241,40 @@ function optimizeMapPoints() {
                     tooltip._jeoWidth = tooltipEl.offsetWidth;
                     tooltip._jeoHeight = tooltipEl.offsetHeight;
                 }
-                const width = tooltip._jeoWidth || 70; // v1453: Larger default for geology labels (e.g. Mn/1961)
-                const height = tooltip._jeoHeight || 16;
 
+                const width = tooltip._jeoWidth || 60;
+                const height = tooltip._jeoHeight || 14;
                 const markerPos = map.latLngToLayerPoint(marker.getLatLng());
 
-                // v1453-4-53S: Clockwise Smart Placement (0, 30, 60, 90, 120, 150, 180)
-                // v1453-Pro: Multi-Radius Discovery (7px, 14px, 21px) to handle high density clusters
-                const distances = [7, 14, 21]; // 4px radius + 3px gap = 7px base
+                const distances = [7, 14, 21]; // 4px radius + 3px gap = 7px base dist
                 const angles = [0, 30, 60, 90, 120, 150, 180];
 
                 let bestPos = null;
 
                 for (const offset of distances) {
-                    const directions = angles.map(deg => {
-                        const rad = (deg - 90) * (Math.PI / 180); // Adjusting so 0 is North
+                    for (const deg of angles) {
+                        const rad = (deg - 90) * (Math.PI / 180);
                         const dx = Math.cos(rad) * offset;
                         const dy = Math.sin(rad) * offset;
 
-                        // v1453-4-53Ω-Pro: Refined Anchor Logic for 0-180 Sweep
                         let ax = dx;
                         let ay = dy;
 
                         if (deg === 0 || deg === 180) {
                             ax -= width / 2;
                         } else if (deg > 0 && deg < 180) {
-                            ax = dx; // Text starts at right edge of gap
+                            ax = dx;
                         }
 
                         if (deg === 0) ay -= height;
                         else if (deg === 180) ay = dy;
                         else ay -= height / 2;
 
-                        return { x: ax, y: ay };
-                    });
-
-                    for (const dir of directions) {
                         const rect = {
-                            left: markerPos.x + dir.x - 3, // 3px safety buffer
-                            top: markerPos.y + dir.y - 1,
-                            right: markerPos.x + dir.x + width + 3,
-                            bottom: markerPos.y + dir.y + height + 1
+                            left: markerPos.x + ax - 2,
+                            top: markerPos.y + ay - 1,
+                            right: markerPos.x + ax + width + 2,
+                            bottom: markerPos.y + ay + height + 1
                         };
 
                         const hasCollision = occupiedRects.some(occ => {
@@ -2304,7 +2282,7 @@ function optimizeMapPoints() {
                         });
 
                         if (!hasCollision) {
-                            bestPos = { x: dir.x, y: dir.y, rect: rect };
+                            bestPos = { x: ax, y: ay, rect: rect };
                             break;
                         }
                     }
@@ -2314,23 +2292,15 @@ function optimizeMapPoints() {
                 if (bestPos) {
                     tooltipEl.style.opacity = "1";
                     tooltipEl.style.visibility = "visible";
-                    tooltipEl.style.transition = "none";
-                    tooltipEl.style.transform = "none"; // v1453-4-53V: Override Leaflet centering
-                    tooltipEl.style.marginLeft = `${bestPos.x + width / 2}px`;
-                    tooltipEl.style.marginTop = `${bestPos.y + height / 2}px`;
+                    tooltipEl.style.transform = `translate(${bestPos.x}px, ${bestPos.y}px)`;
                     occupiedRects.push(bestPos.rect);
                 } else {
-                    // CROWDED FALLBACK: If still no spot, use a much more staggered North offset
-                    const stagger = (labelsToPlace.indexOf({ marker, tooltip }) % 10) * 10;
-                    tooltipEl.style.opacity = "0.7"; // Dim slightly to indicate crowdedness
-                    tooltipEl.style.visibility = "visible";
-                    tooltipEl.style.transition = "none";
-                    tooltipEl.style.transform = "none";
-                    tooltipEl.style.marginLeft = `0px`;
-                    tooltipEl.style.marginTop = `-${40 + stagger}px`; // Increase base shift
+                    const stagger = (labelsToPlace.indexOf({ marker, tooltip }) % 5) * 8;
+                    tooltipEl.style.opacity = "0.6";
+                    tooltipEl.style.transform = `translate(-${width / 2}px, -${35 + stagger}px)`;
                 }
             }
-        }, 300); // v1453-4-53S: Increased from 50ms to 300ms for browser paint
+        }, 150);
     } catch (e) {
         console.error("optimizeMapPoints failed:", e);
     }
@@ -5798,6 +5768,7 @@ async function toggleLayerLabels(id, showLabels) {
     }
 
     saveExternalLayers();
+    optimizeMapPoints(); // v1453-4-53Ω: Trigger alignment immediately
 }
 
 function toggleLayerVisibility(id, isVisible) {
