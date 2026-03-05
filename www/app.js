@@ -7176,14 +7176,19 @@ setTimeout(() => { if (displayedHeading === 0 && currentTilt.beta === 0) { setIn
 
 
 if (document.getElementById('btn-restore-json')) {
-    document.getElementById('btn-restore-json').addEventListener('click', async () => {
-        const isEnglish = (localStorage.getItem('jeoLang') === 'en');
-        const alertMsg = isEnglish
-            ? "Your backups are saved in the 'Documents' folder. Please navigate there to select your backup file when the file picker opens."
-            : "Yedekleriniz telefonunuzun 'Belgeler' (Documents) klasörüne kaydedilmektedir.\n\nLütfen dosya seçimi menüsü açıldığında, öncelikle cihazınızın Belgeler klasörüne gidip yedeğinizi oradan seçin.";
+    document.getElementById('btn-restore-json').addEventListener('click', () => {
+        const alertMsg = "Your backups are saved in your phone's 'Documents' folder.\n\nPlease navigate to the Documents folder and select your backup when the file picker opens.";
 
-        await JeoAlert(alertMsg, isEnglish ? "Restore Info" : "Geri Yükleme Bilgisi");
-        document.getElementById('restore-file-input').click();
+        // We do NOT await here because awaiting a Promise loses the 'transient user activation',
+        // which prevents the programmatic .click() on the file input from working on Android WebViews.
+        JeoAlert(alertMsg);
+
+        const okBtn = document.getElementById('jeo-modal-ok');
+        const triggerInput = () => {
+            document.getElementById('restore-file-input').click();
+            okBtn.removeEventListener('click', triggerInput);
+        };
+        okBtn.addEventListener('click', triggerInput);
     });
 }
 
